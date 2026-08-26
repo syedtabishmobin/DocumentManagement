@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EVT-P1-025 RequirementCase state changed v1",
+  "allOf": [
+    {
+      "$ref": "../common/event-envelope.v1.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "const": "EVT-P1-025"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "scope_kind": {
+          "const": "WORKSPACE"
+        },
+        "aggregate_type": {
+          "const": "RequirementCase"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "requirement_profile_version",
+            "health_evaluation_id",
+            "applicability_outcome",
+            "health_signals",
+            "user_disposition",
+            "previous_fulfilment_state",
+            "fulfilment_state",
+            "reason_code"
+          ],
+          "properties": {
+            "requirement_profile_version": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "health_evaluation_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "applicability_outcome": {
+              "type": "string",
+              "enum": [
+                "APPLICABLE",
+                "NON_APPLICABLE",
+                "INDETERMINATE",
+                "REVIEW_REQUIRED",
+                "RESTRICTED",
+                "UNAVAILABLE"
+              ]
+            },
+            "health_signals": {
+              "type": "array",
+              "maxItems": 8,
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "enum": [
+                  "MISSING",
+                  "POTENTIALLY_EXPIRED",
+                  "STALE",
+                  "SUPERSEDED",
+                  "CONTRADICTORY",
+                  "INSUFFICIENT",
+                  "RESTRICTED",
+                  "SOURCE_OR_RULE_UNAVAILABLE"
+                ]
+              }
+            },
+            "user_disposition": {
+              "type": "string",
+              "enum": [
+                "NO_DISPOSITION",
+                "EVIDENCE_ADDED",
+                "ALTERNATIVE_SELECTED",
+                "WAIVER_REVIEW_REQUESTED",
+                "NOT_APPLICABLE_SELECTED",
+                "DISMISSED",
+                "REMINDER_SET"
+              ]
+            },
+            "previous_fulfilment_state": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/fulfilmentState"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "fulfilment_state": {
+              "$ref": "#/$defs/fulfilmentState"
+            },
+            "reason_code": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeReasonCode"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "fulfilmentState": {
+      "type": "string",
+      "enum": [
+        "UNASSESSED",
+        "UNMET",
+        "EVIDENCE_PENDING",
+        "VERIFICATION_REQUIRED",
+        "FULFILLED_PRIMARY",
+        "FULFILLED_ALTERNATIVE",
+        "FULFILLED_BY_APPROVED_EXCEPTION",
+        "CONFLICTED",
+        "RESTRICTED",
+        "EXPIRED_OR_REOPENED"
+      ]
+    }
+  }
+}

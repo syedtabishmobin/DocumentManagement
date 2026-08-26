@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EVT-P1-002 Membership state changed v1",
+  "allOf": [
+    {
+      "$ref": "../common/event-envelope.v1.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "const": "EVT-P1-002"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "scope_kind": {
+          "const": "WORKSPACE"
+        },
+        "aggregate_type": {
+          "const": "Workspace"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "membership_id",
+            "subject_id",
+            "from_state",
+            "to_state",
+            "reason_code",
+            "effective_authorization_epoch"
+          ],
+          "properties": {
+            "membership_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "subject_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "from_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/nullableSafeState"
+            },
+            "to_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "reason_code": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeReasonCode"
+            },
+            "effective_authorization_epoch": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

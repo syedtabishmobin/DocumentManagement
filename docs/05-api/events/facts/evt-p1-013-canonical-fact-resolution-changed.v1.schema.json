@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EVT-P1-013 CanonicalFact resolution changed v1",
+  "allOf": [
+    {
+      "$ref": "../common/event-envelope.v1.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "const": "EVT-P1-013"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "scope_kind": {
+          "const": "WORKSPACE"
+        },
+        "aggregate_type": {
+          "const": "CanonicalFact"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fact_resolution_id",
+            "from_conflict_state",
+            "to_conflict_state",
+            "resolution_state",
+            "selected_occurrence_refs",
+            "effective_intervals_ref",
+            "reason_code"
+          ],
+          "properties": {
+            "fact_resolution_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "from_conflict_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/nullableSafeState"
+            },
+            "to_conflict_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "resolution_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "selected_occurrence_refs": {
+              "type": "array",
+              "maxItems": 64,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+              }
+            },
+            "effective_intervals_ref": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "reason_code": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeReasonCode"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

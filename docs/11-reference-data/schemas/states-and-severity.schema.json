@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.document-management.example.invalid/reference-data/v1/states-and-severity.schema.json",
+  "x-schema-version": "1.0.0",
+  "title": "Phase 1 state-machine and severity definitions",
+  "type": "object",
+  "required": ["$schema", "pack", "state_machines", "severities"],
+  "properties": {
+    "$schema": {"const": "../schemas/states-and-severity.schema.json"},
+    "pack": {"$ref": "common.schema.json#/$defs/record"},
+    "state_machines": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"allOf": [
+        {"$ref": "common.schema.json#/$defs/record"},
+        {"type": "object", "properties": {"attributes": {
+          "type": "object",
+          "required": ["dimension", "multi_valued", "states", "transitions", "runtime_enabled"],
+          "properties": {
+            "dimension": {"type": "string", "minLength": 1},
+            "multi_valued": {"type": "boolean"},
+            "states": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "type": "object",
+                "required": ["id", "code", "terminal", "description"],
+                "properties": {
+                  "id": {"$ref": "common.schema.json#/$defs/stableId"},
+                  "code": {"type": "string", "minLength": 1},
+                  "terminal": {"type": "boolean"},
+                  "description": {"type": "string", "minLength": 1}
+                },
+                "additionalProperties": false
+              }
+            },
+            "transitions": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "object",
+                "required": ["id", "from_ref", "to_ref", "reason_code"],
+                "properties": {
+                  "id": {"$ref": "common.schema.json#/$defs/stableId"},
+                  "from_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+                  "to_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+                  "reason_code": {"type": "string", "minLength": 1}
+                },
+                "additionalProperties": false
+              }
+            },
+            "runtime_enabled": {"const": false}
+          },
+          "additionalProperties": false
+        }}}
+      ]}
+    },
+    "severities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"allOf": [
+        {"$ref": "common.schema.json#/$defs/record"},
+        {"type": "object", "properties": {"attributes": {
+          "type": "object",
+          "required": ["code", "numeric_rank", "threshold_policy", "consequence_action_refs", "runtime_enabled"],
+          "properties": {
+            "code": {"enum": ["UNASSIGNED", "LOW", "MODERATE", "HIGH", "CRITICAL"]},
+            "numeric_rank": {"const": null},
+            "threshold_policy": {"const": "UNSET"},
+            "consequence_action_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+            "runtime_enabled": {"const": false}
+          },
+          "additionalProperties": false
+        }}}
+      ]}
+    }
+  },
+  "additionalProperties": false
+}

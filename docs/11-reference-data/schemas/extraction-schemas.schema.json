@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.document-management.example.invalid/reference-data/v1/extraction-schemas.schema.json",
+  "x-schema-version": "1.0.0",
+  "title": "Phase 1 extraction schemas and evidence fields",
+  "type": "object",
+  "required": ["$schema", "pack", "field_types", "evidence_anchor_types", "support_roles", "evidence_fields", "extraction_schemas"],
+  "properties": {
+    "$schema": {"const": "../schemas/extraction-schemas.schema.json"},
+    "pack": {"$ref": "common.schema.json#/$defs/record"},
+    "field_types": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {"type": "object", "required": ["wire_type", "runtime_enabled"], "properties": {"wire_type": {"enum": ["STRING", "LOCAL_DATE", "OPAQUE_IDENTIFIER"]}, "runtime_enabled": {"const": false}}, "additionalProperties": false}}}
+    ]}},
+    "evidence_anchor_types": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {"type": "object", "required": ["code", "location_fields", "runtime_enabled"], "properties": {"code": {"type": "string", "minLength": 1}, "location_fields": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}, "runtime_enabled": {"const": false}}, "additionalProperties": false}}}
+    ]}},
+    "support_roles": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {"type": "object", "required": ["code", "runtime_enabled"], "properties": {"code": {"enum": ["DIRECT", "CONTEXT", "QUALIFIER", "CONTRADICTORY"]}, "runtime_enabled": {"const": false}}, "additionalProperties": false}}}
+    ]}},
+    "evidence_fields": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["field_type_ref", "cardinality", "sensitivity_ref", "material", "anchor_type_refs", "support_role_refs", "presence_state_refs", "runtime_enabled"],
+        "properties": {
+          "field_type_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "cardinality": {"enum": ["ZERO_OR_ONE", "EXACTLY_ONE", "ZERO_OR_MANY", "ONE_OR_MANY"]},
+          "sensitivity_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "material": {"type": "boolean"},
+          "anchor_type_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "support_role_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "presence_state_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}},
+    "extraction_schemas": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["document_type_refs", "evidence_field_refs", "anchor_schema_version", "additional_fields_allowed", "clinical_allowed", "runtime_enabled"],
+        "properties": {
+          "document_type_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "evidence_field_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "anchor_schema_version": {"$ref": "common.schema.json#/$defs/version"},
+          "additional_fields_allowed": {"const": false},
+          "clinical_allowed": {"const": false},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}}
+  },
+  "additionalProperties": false
+}

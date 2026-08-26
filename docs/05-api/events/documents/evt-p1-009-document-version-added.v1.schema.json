@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EVT-P1-009 Document version added v1",
+  "allOf": [
+    {
+      "$ref": "../common/event-envelope.v1.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "const": "EVT-P1-009"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "scope_kind": {
+          "const": "WORKSPACE"
+        },
+        "aggregate_type": {
+          "const": "LogicalDocument"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "document_version_id",
+            "artifact_id",
+            "version_sequence",
+            "link_decision_id",
+            "link_state",
+            "active_analysis_generation_id"
+          ],
+          "properties": {
+            "document_version_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "artifact_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "version_sequence": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "link_decision_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "link_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "active_analysis_generation_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/nullableSafeRef"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

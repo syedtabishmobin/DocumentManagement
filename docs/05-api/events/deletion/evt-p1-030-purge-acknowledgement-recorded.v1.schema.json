@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EVT-P1-030 Purge acknowledgement recorded v1",
+  "allOf": [
+    {
+      "$ref": "../common/event-envelope.v1.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "const": "EVT-P1-030"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "scope_kind": {
+          "const": "WORKSPACE"
+        },
+        "aggregate_type": {
+          "const": "DeletionCase"
+        },
+        "deletion_fence": {
+          "properties": {
+            "state": {
+              "const": "FENCED"
+            }
+          }
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "data_role_class",
+            "purge_operation_ref",
+            "acknowledgement_state",
+            "residual_state",
+            "verification_ref",
+            "failure_reason_code"
+          ],
+          "properties": {
+            "data_role_class": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "purge_operation_ref": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "acknowledgement_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "residual_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "verification_ref": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/nullableSafeRef"
+            },
+            "failure_reason_code": {
+              "oneOf": [
+                {
+                  "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeReasonCode"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

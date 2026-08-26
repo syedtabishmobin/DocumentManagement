@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EVT-P1-023 ActionExecution state changed v1",
+  "allOf": [
+    {
+      "$ref": "../common/event-envelope.v1.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "const": "EVT-P1-023"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "scope_kind": {
+          "const": "WORKSPACE"
+        },
+        "aggregate_type": {
+          "const": "ActionExecution"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "from_state",
+            "to_state",
+            "external_command_id",
+            "effect_digest_ref",
+            "approval_id",
+            "outcome_evidence_ref",
+            "reconciliation_state",
+            "reason_code"
+          ],
+          "properties": {
+            "from_state": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/actionState"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "to_state": {
+              "$ref": "#/$defs/actionState"
+            },
+            "external_command_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "effect_digest_ref": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "approval_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "outcome_evidence_ref": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/nullableSafeRef"
+            },
+            "reconciliation_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "reason_code": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeReasonCode"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "actionState": {
+      "type": "string",
+      "enum": [
+        "Requested",
+        "Blocked",
+        "DispatchPending",
+        "Dispatched",
+        "Acknowledged",
+        "OutcomeUnknown",
+        "Failed",
+        "Succeeded",
+        "PartiallySucceeded",
+        "ReconciliationPending",
+        "RepairPending",
+        "EvidencePending",
+        "ReversalPending",
+        "Reversed"
+      ]
+    }
+  }
+}

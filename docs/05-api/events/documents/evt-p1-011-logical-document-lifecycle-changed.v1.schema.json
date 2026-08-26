@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EVT-P1-011 LogicalDocument lifecycle changed v1",
+  "allOf": [
+    {
+      "$ref": "../common/event-envelope.v1.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "const": "EVT-P1-011"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "scope_kind": {
+          "const": "WORKSPACE"
+        },
+        "aggregate_type": {
+          "const": "LogicalDocument"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "transition_id",
+            "from_availability_state",
+            "to_availability_state",
+            "reason_code",
+            "deletion_case_id"
+          ],
+          "properties": {
+            "transition_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "from_availability_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/nullableSafeState"
+            },
+            "to_availability_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "reason_code": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeReasonCode"
+            },
+            "deletion_case_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/nullableSafeRef"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EVT-P1-004 AccessGrant state changed v1",
+  "allOf": [
+    {
+      "$ref": "../common/event-envelope.v1.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "const": "EVT-P1-004"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "scope_kind": {
+          "const": "WORKSPACE"
+        },
+        "aggregate_type": {
+          "const": "AccessGrant"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "from_state",
+            "to_state",
+            "reason_code",
+            "grant_scope_version",
+            "effective_authorization_epoch"
+          ],
+          "properties": {
+            "from_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/nullableSafeState"
+            },
+            "to_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "reason_code": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeReasonCode"
+            },
+            "grant_scope_version": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "effective_authorization_epoch": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

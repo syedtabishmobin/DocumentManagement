@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.document-management.example.invalid/reference-data/v1/monitoring-rules.schema.json",
+  "x-schema-version": "1.0.0",
+  "title": "Phase 1 monitoring strategy and rule catalogue",
+  "type": "object",
+  "required": ["$schema", "pack", "trigger_strategies", "monitoring_rules"],
+  "properties": {
+    "$schema": {"const": "../schemas/monitoring-rules.schema.json"},
+    "pack": {"$ref": "common.schema.json#/$defs/record"},
+    "trigger_strategies": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"allOf": [
+        {"$ref": "common.schema.json#/$defs/record"},
+        {"type": "object", "properties": {"attributes": {
+          "type": "object",
+          "required": ["code", "input_kind", "schedule_required", "runtime_enabled"],
+          "properties": {
+            "code": {"enum": ["DATE", "PERIODIC", "USER_OR_LIFE_EVENT", "SOURCE_CHANGE", "DEPENDENCY_CHANGE", "DOCUMENT_VERSION"]},
+            "input_kind": {"type": "string", "minLength": 1},
+            "schedule_required": {"type": "boolean"},
+            "runtime_enabled": {"const": false}
+          },
+          "additionalProperties": false
+        }}}
+      ]}
+    },
+    "monitoring_rules": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"allOf": [
+        {"$ref": "common.schema.json#/$defs/record"},
+        {"type": "object", "properties": {"attributes": {
+          "type": "object",
+          "required": ["strategy_ref", "jurisdiction_refs", "document_type_refs", "evidence_field_refs", "source_refs", "applicability_machine_ref", "impact_machine_ref", "purpose_ref", "schedule_policy", "runtime_enabled", "synthetic", "non_production", "production_coverage_claim"],
+          "properties": {
+            "strategy_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+            "jurisdiction_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+            "document_type_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+            "evidence_field_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+            "source_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+            "applicability_machine_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+            "impact_machine_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+            "purpose_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+            "schedule_policy": {"const": "UNSET_NOT_ACTIVATABLE"},
+            "runtime_enabled": {"const": false},
+            "synthetic": {"const": true},
+            "non_production": {"const": true},
+            "production_coverage_claim": {"const": false}
+          },
+          "additionalProperties": false
+        }}}
+      ]}
+    }
+  },
+  "additionalProperties": false
+}

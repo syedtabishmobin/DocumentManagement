@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EVT-P1-008 DocumentAnalysis generation recorded v1",
+  "allOf": [
+    {
+      "$ref": "../common/event-envelope.v1.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "const": "EVT-P1-008"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "scope_kind": {
+          "const": "WORKSPACE"
+        },
+        "aggregate_type": {
+          "const": "DocumentAnalysis"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "analysis_generation_id",
+            "analysis_kind",
+            "result_state",
+            "review_state",
+            "source_document_version_id",
+            "predecessor_generation_id",
+            "output_schema_ref",
+            "processor_ref"
+          ],
+          "properties": {
+            "analysis_generation_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "analysis_kind": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "result_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "review_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "source_document_version_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "predecessor_generation_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/nullableSafeRef"
+            },
+            "output_schema_ref": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "processor_ref": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

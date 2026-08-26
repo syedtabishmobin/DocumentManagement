@@ -1,0 +1,290 @@
+{
+  "manifest_id": "ai-dataset-manifest.phase1.synthetic",
+  "version": "0.1.0-draft",
+  "status": "DRAFT",
+  "effective_from": "2026-08-26",
+  "owner": "AI Evaluation",
+  "review": {
+    "state": "REQUIRED",
+    "required_roles": [
+      "Product",
+      "Document Intelligence",
+      "AI Assurance",
+      "Security",
+      "Privacy"
+    ],
+    "decision_fences": [
+      "DEC-034",
+      "DEC-035",
+      "DEC-036",
+      "DEC-040"
+    ]
+  },
+  "synthetic_only": true,
+  "privacy_class": "P1-SYNTHETIC-NONPERSONAL",
+  "split_policy": {
+    "strategy": "TEMPLATE_FAMILY_ISOLATED",
+    "partitions": [
+      "DEVELOPMENT",
+      "CALIBRATION",
+      "VALIDATION",
+      "RELEASE_HOLDOUT"
+    ],
+    "near_duplicate_isolation": true,
+    "release_holdout_tuning": false
+  },
+  "adjudication": {
+    "material_items": "TWO_INDEPENDENT_BLINDED_PLUS_ADJUDICATOR",
+    "high_risk_items": "TWO_INDEPENDENT_BLINDED_PLUS_SPECIALIST_ADJUDICATOR",
+    "model_output_may_be_gold": false,
+    "forced_label_when_ambiguous": false,
+    "corrections": "ADDITIVE_VERSIONED_WITH_REPLAY_IMPACT"
+  },
+  "datasets": [
+    {
+      "dataset_id": "DATASET-P1-001",
+      "version": "0.1.0-draft",
+      "title": "Taxonomy classification boundary set",
+      "status": "DRAFT",
+      "synthetic": true,
+      "privacy_class": "P1-SYNTHETIC-NONPERSONAL",
+      "generator": "dataset-generator.classification.v1",
+      "seed": "phase1-dataset-001",
+      "fixture_refs": [
+        "FIX-P1-003",
+        "FIX-P1-013",
+        "FIX-P1-014"
+      ],
+      "slices": [
+        "supported-candidate",
+        "near-neighbour",
+        "ambiguous",
+        "unsupported",
+        "suspected-clinical",
+        "quality-native",
+        "quality-degraded"
+      ],
+      "gold_contract": "Versioned taxonomy outcome plus rationale and policy route",
+      "sample_status": "INSUFFICIENT_FOR_GATE",
+      "limitations": [
+        "Launch document types and sample minima await DEC-035",
+        "Clinical disposition remains POLICY_HOLD"
+      ]
+    },
+    {
+      "dataset_id": "DATASET-P1-002",
+      "version": "0.1.0-draft",
+      "title": "Typed extraction and evidence set",
+      "status": "DRAFT",
+      "synthetic": true,
+      "privacy_class": "P1-SYNTHETIC-NONPERSONAL",
+      "generator": "dataset-generator.extraction.v1",
+      "seed": "phase1-dataset-002",
+      "fixture_refs": [
+        "FIX-P1-003",
+        "FIX-P1-005"
+      ],
+      "slices": [
+        "scalar",
+        "composite",
+        "list",
+        "multi-page",
+        "table",
+        "unreadable",
+        "restricted",
+        "missing",
+        "unknown-schema"
+      ],
+      "gold_contract": "Typed value or exact presence state with immutable evidence anchor and uncertainty",
+      "sample_status": "INSUFFICIENT_FOR_GATE",
+      "limitations": [
+        "Synthetic layouts only",
+        "No processor accuracy claim"
+      ]
+    },
+    {
+      "dataset_id": "DATASET-P1-003",
+      "version": "0.1.0-draft",
+      "title": "Entity fact and graph reasoning set",
+      "status": "DRAFT",
+      "synthetic": true,
+      "privacy_class": "P1-SYNTHETIC-NONPERSONAL",
+      "generator": "dataset-generator.fact-graph.v1",
+      "seed": "phase1-dataset-003",
+      "fixture_refs": [
+        "FIX-P1-006",
+        "FIX-P1-007"
+      ],
+      "slices": [
+        "duplicate-candidate",
+        "conflict",
+        "backdated-correction",
+        "restricted-occurrence",
+        "cycle",
+        "depth-bound",
+        "restricted-bridge"
+      ],
+      "gold_contract": "Occurrence and proposed resolution plus typed authorized path or explicit limited coverage",
+      "sample_status": "INSUFFICIENT_FOR_GATE",
+      "limitations": [
+        "Artificial entity labels only"
+      ]
+    },
+    {
+      "dataset_id": "DATASET-P1-004",
+      "version": "0.1.0-draft",
+      "title": "Version comparison and conformed-view set",
+      "status": "DRAFT",
+      "synthetic": true,
+      "privacy_class": "P1-SYNTHETIC-NONPERSONAL",
+      "generator": "dataset-generator.comparison.v1",
+      "seed": "phase1-dataset-004",
+      "fixture_refs": [
+        "FIX-P1-003",
+        "FIX-P1-005"
+      ],
+      "slices": [
+        "representation-change",
+        "structural-change",
+        "material-change",
+        "supported-no-change",
+        "partial",
+        "alignment-failed",
+        "conflicted-conformed-view"
+      ],
+      "gold_contract": "Exact ordered versions comparison outcome coverage and two-sided anchors",
+      "sample_status": "INSUFFICIENT_FOR_GATE",
+      "limitations": [
+        "No legal materiality claim"
+      ]
+    },
+    {
+      "dataset_id": "DATASET-P1-005",
+      "version": "0.1.0-draft",
+      "title": "Authorized retrieval citation and faithfulness set",
+      "status": "DRAFT",
+      "synthetic": true,
+      "privacy_class": "P1-SYNTHETIC-NONPERSONAL",
+      "generator": "dataset-generator.rag.v1",
+      "seed": "phase1-dataset-005",
+      "fixture_refs": [
+        "FIX-P1-001",
+        "FIX-P1-002",
+        "FIX-P1-012"
+      ],
+      "slices": [
+        "lexical",
+        "semantic",
+        "fact",
+        "graph",
+        "historical",
+        "conflicting",
+        "stale",
+        "insufficient",
+        "restricted",
+        "revoked-conversation"
+      ],
+      "gold_contract": "Actor-authorized evidence set structured claims exact citations and limitation outcome",
+      "sample_status": "INSUFFICIENT_FOR_GATE",
+      "limitations": [
+        "No launch language or model claim"
+      ]
+    },
+    {
+      "dataset_id": "DATASET-P1-006",
+      "version": "0.1.0-draft",
+      "title": "Source applicability impact and health outcome set",
+      "status": "DRAFT",
+      "synthetic": true,
+      "privacy_class": "P1-SYNTHETIC-NONPERSONAL",
+      "generator": "dataset-generator.monitor-impact-health.v1",
+      "seed": "phase1-dataset-006",
+      "fixture_refs": [
+        "FIX-P1-007",
+        "FIX-P1-008",
+        "FIX-P1-009",
+        "FIX-P1-010",
+        "FIX-P1-011"
+      ],
+      "slices": [
+        "all-source-health-states",
+        "all-six-applicability-outcomes",
+        "all-five-impact-classes",
+        "all-eight-health-signals",
+        "all-seven-dispositions",
+        "all-ten-fulfilment-states"
+      ],
+      "gold_contract": "Exact registered outcomes with source rule evidence typed path and separated dimensions",
+      "sample_status": "INSUFFICIENT_FOR_GATE",
+      "limitations": [
+        "Sources rules profiles and severities are DRAFT and disabled",
+        "No compliance or aggregate-score claim"
+      ]
+    },
+    {
+      "dataset_id": "DATASET-P1-007",
+      "version": "0.1.0-draft",
+      "title": "AI guardrail and authorization red-team set",
+      "status": "DRAFT",
+      "synthetic": true,
+      "privacy_class": "P1-SYNTHETIC-NONPERSONAL",
+      "generator": "dataset-generator.ai-redteam.v1",
+      "seed": "phase1-dataset-007",
+      "fixture_refs": [
+        "FIX-P1-001",
+        "FIX-P1-002",
+        "FIX-P1-012",
+        "FIX-P1-014",
+        "FIX-P1-019"
+      ],
+      "slices": [
+        "direct-injection",
+        "indirect-injection",
+        "cross-workspace",
+        "field-edge-inference",
+        "tool-target-change",
+        "citation-tamper",
+        "clinical-boundary",
+        "telemetry-canary",
+        "deletion-revoke-race"
+      ],
+      "gold_contract": "No unauthorized disclosure call effect storage or telemetry emission and exact safe outcome",
+      "sample_status": "MANDATORY_ZERO_TOLERANCE_FIXTURES_DEFINED",
+      "limitations": [
+        "Does not replace independent penetration testing"
+      ]
+    },
+    {
+      "dataset_id": "DATASET-P1-008",
+      "version": "0.1.0-draft",
+      "title": "Reliability calibration and cost set",
+      "status": "DRAFT",
+      "synthetic": true,
+      "privacy_class": "P1-SYNTHETIC-NONPERSONAL",
+      "generator": "dataset-generator.reliability.v1",
+      "seed": "phase1-dataset-008",
+      "fixture_refs": [
+        "FIX-P1-004",
+        "FIX-P1-012",
+        "FIX-P1-018"
+      ],
+      "slices": [
+        "invalid-output",
+        "timeout",
+        "refusal",
+        "partial",
+        "retry",
+        "cancellation",
+        "policy-change",
+        "long-input",
+        "budget-exhausted",
+        "repeated-run"
+      ],
+      "gold_contract": "Truthful execution status calibrated confidence bounded work and content-free usage evidence",
+      "sample_status": "INSUFFICIENT_FOR_GATE",
+      "limitations": [
+        "No approved calibration threshold workload or monetary budget"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EVT-P1-005 Authorization epoch advanced v1",
+  "allOf": [
+    {
+      "$ref": "../common/event-envelope.v1.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "const": "EVT-P1-005"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "scope_kind": {
+          "const": "WORKSPACE"
+        },
+        "aggregate_type": {
+          "const": "Workspace"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "previous_authorization_epoch",
+            "authorization_epoch",
+            "invalidation_reason_code",
+            "affected_scope_class"
+          ],
+          "properties": {
+            "previous_authorization_epoch": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "authorization_epoch": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "invalidation_reason_code": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeReasonCode"
+            },
+            "affected_scope_class": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

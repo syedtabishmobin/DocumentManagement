@@ -1,0 +1,38 @@
+{
+  "$schema": "../schemas/jurisdictions.schema.json",
+  "pack": {
+    "id": "pack.jurisdictions.phase1",
+    "version": "0.1.0-draft",
+    "label": "Phase 1 jurisdiction identifiers",
+    "description": "Jurisdiction-neutral core plus an Australia identifier for draft test composition; no launch or authority coverage is asserted.",
+    "meta_ref": "meta.reference-data-draft",
+    "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+    "decision_refs": ["DEC-035"],
+    "contract_refs": ["DIT-TAX-P1-006", "DATA-P1-010"],
+    "attributes": {"runtime_enabled": false, "australia_first_seed": true, "production_coverage_claim": false}
+  },
+  "jurisdictions": [
+    {
+      "id": "jurisdiction.core.neutral",
+      "version": "0.1.0-draft",
+      "label": "Jurisdiction-neutral reference scope",
+      "description": "A configuration scope for definitions that make no jurisdictional applicability claim.",
+      "meta_ref": "meta.reference-data-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-035"],
+      "contract_refs": ["DIT-TAX-P1-006"],
+      "attributes": {"code": "CORE-NEUTRAL", "kind": "REFERENCE_SCOPE", "parent_ref": null, "runtime_enabled": false, "coverage_claim": false, "synthetic": true, "non_production": true}
+    },
+    {
+      "id": "jurisdiction.AU",
+      "version": "0.1.0-draft",
+      "label": "Australia",
+      "description": "Australia identifier for draft composition only; it does not activate Commonwealth, state, territory, or local coverage.",
+      "meta_ref": "meta.reference-data-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-035"],
+      "contract_refs": ["DIT-TAX-P1-006", "DIT-SRC-P1-002"],
+      "attributes": {"code": "AU", "kind": "COUNTRY", "parent_ref": null, "runtime_enabled": false, "coverage_claim": false, "synthetic": false, "non_production": true}
+    }
+  ]
+}

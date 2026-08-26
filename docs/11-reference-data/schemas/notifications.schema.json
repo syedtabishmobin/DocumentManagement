@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.document-management.example.invalid/reference-data/v1/notifications.schema.json",
+  "x-schema-version": "1.0.0",
+  "title": "Phase 1 notification channels and templates",
+  "type": "object",
+  "required": ["$schema", "pack", "channels", "templates"],
+  "properties": {
+    "$schema": {"const": "../schemas/notifications.schema.json"},
+    "pack": {"$ref": "common.schema.json#/$defs/record"},
+    "channels": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["code", "external", "purpose_ref", "retention_policy", "recipient_policy_defined", "synthetic", "non_production", "runtime_enabled"],
+        "properties": {
+          "code": {"enum": ["IN_APP", "EMAIL", "PUSH"]},
+          "external": {"type": "boolean"},
+          "purpose_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "retention_policy": {"const": "UNSET"},
+          "recipient_policy_defined": {"const": false},
+          "synthetic": {"const": true},
+          "non_production": {"const": true},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}},
+    "templates": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["template_key", "locale", "channel_refs", "trigger_state_refs", "permitted_action_refs", "content_class_ref", "safe_variable_codes", "contains_protected_payload", "delivery_changes_domain_truth", "synthetic", "non_production", "runtime_enabled"],
+        "properties": {
+          "template_key": {"type": "string", "pattern": "^[a-z0-9_.-]+$"},
+          "locale": {"type": "string", "minLength": 2},
+          "channel_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "trigger_state_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "permitted_action_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "content_class_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "safe_variable_codes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "contains_protected_payload": {"const": false},
+          "delivery_changes_domain_truth": {"const": false},
+          "synthetic": {"const": true},
+          "non_production": {"const": true},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}}
+  },
+  "additionalProperties": false
+}

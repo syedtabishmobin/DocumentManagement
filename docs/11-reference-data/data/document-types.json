@@ -1,0 +1,87 @@
+{
+  "$schema": "../schemas/document-types.schema.json",
+  "pack": {
+    "id": "pack.document-types.phase1",
+    "version": "0.1.0-draft",
+    "label": "Phase 1 document taxonomy seed",
+    "description": "Disabled synthetic document types, formats, content boundaries, aliases, and launch profile relationships.",
+    "meta_ref": "meta.product-draft",
+    "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+    "decision_refs": ["DEC-035", "DEC-036"],
+    "contract_refs": ["DIT-TAX-001", "DIT-ING-001", "SEC-PRIV-001"],
+    "attributes": {"runtime_enabled": false, "production_coverage_claim": false}
+  },
+  "content_boundaries": [
+    {"id": "content-boundary.NON_CLINICAL_ADMINISTRATIVE", "version": "0.1.0-draft", "label": "Non-clinical administrative content", "description": "Draft boundary for administrative content; it does not by itself authorize processing.", "meta_ref": "meta.security-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["DIT-TAX-P1-021"], "attributes": {"code": "NON_CLINICAL_ADMINISTRATIVE", "clinical": false, "ordinary_processing_allowed": false, "privacy_ref": "privacy.P3-SENSITIVE", "runtime_enabled": false}},
+    {"id": "content-boundary.SENSITIVE_HOUSEHOLD", "version": "0.1.0-draft", "label": "Sensitive household content", "description": "Draft boundary for sensitive household material; authorization and purpose remain field-specific.", "meta_ref": "meta.security-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["DIT-TAX-P1-021", "PRIV-P1-003"], "attributes": {"code": "SENSITIVE_HOUSEHOLD", "clinical": false, "ordinary_processing_allowed": false, "privacy_ref": "privacy.P4-RESTRICTED", "runtime_enabled": false}},
+    {"id": "content-boundary.CLINICAL_EXCLUDED", "version": "0.1.0-draft", "label": "Clinical content excluded from ordinary processing", "description": "Suspected clinical content remains held outside ordinary OCR, AI, search, graph, analytics, preview, and notification routes.", "meta_ref": "meta.security-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-036"], "contract_refs": ["DIT-TAX-P1-022", "DIT-ING-P1-009", "AI-GRD-P1-017"], "attributes": {"code": "CLINICAL_EXCLUDED", "clinical": true, "ordinary_processing_allowed": false, "privacy_ref": "privacy.P5-EXCLUDED", "runtime_enabled": false}}
+  ],
+  "formats": [
+    {"id": "format.application-pdf", "version": "0.1.0-draft", "label": "PDF", "description": "Representable PDF format definition; upload acceptance is not enabled.", "meta_ref": "meta.product-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["DIT-TAX-P1-013", "DIT-ING-P1-004"], "attributes": {"mime_type": "application/pdf", "binary": true, "runtime_enabled": false}},
+    {"id": "format.image-jpeg", "version": "0.1.0-draft", "label": "JPEG image", "description": "Representable JPEG format definition; upload acceptance is not enabled.", "meta_ref": "meta.product-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["DIT-TAX-P1-013", "DIT-ING-P1-004"], "attributes": {"mime_type": "image/jpeg", "binary": true, "runtime_enabled": false}},
+    {"id": "format.image-png", "version": "0.1.0-draft", "label": "PNG image", "description": "Representable PNG format definition; upload acceptance is not enabled.", "meta_ref": "meta.product-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["DIT-TAX-P1-013", "DIT-ING-P1-004"], "attributes": {"mime_type": "image/png", "binary": true, "runtime_enabled": false}}
+  ],
+  "document_types": [
+    {
+      "id": "doctype.coverage.generic-policy",
+      "version": "0.1.0-draft",
+      "label": "Synthetic generic coverage record",
+      "description": "Non-production fixture type used to connect taxonomy, extraction, monitoring, source, graph, and requirement-profile contracts without asserting a real legal category.",
+      "meta_ref": "meta.product-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-035"],
+      "contract_refs": ["DIT-TAX-P1-001", "DIT-TAX-P1-006", "DIT-TAX-P1-016"],
+      "attributes": {
+        "code": "SYNTHETIC_GENERIC_COVERAGE_RECORD",
+        "jurisdiction_refs": ["jurisdiction.core.neutral", "jurisdiction.AU"],
+        "content_boundary_ref": "content-boundary.NON_CLINICAL_ADMINISTRATIVE",
+        "sensitivity_ref": "privacy.P3-SENSITIVE",
+        "supported_format_refs": ["format.application-pdf", "format.image-jpeg", "format.image-png"],
+        "extraction_schema_refs": ["extraction-schema.generic-policy"],
+        "monitoring_rule_refs": ["monitoring-rule.synthetic.au.generic-policy-date", "monitoring-rule.synthetic.au.reference-source-change"],
+        "source_refs": ["source.synthetic.au.reference-series"],
+        "clinical": false,
+        "processing_disposition": "DRAFT_REVIEW_ONLY",
+        "launch_enabled": false,
+        "aliases": [{"locale": "en-AU", "term": "synthetic generic coverage record", "polarity": "POSITIVE", "synthetic": true}]
+      }
+    },
+    {
+      "id": "doctype.health.clinical-record",
+      "version": "0.1.0-draft",
+      "label": "Suspected clinical record boundary fixture",
+      "description": "Classification-only excluded fixture. It has no ordinary processing, extraction, source, monitoring, or launch route while DEC-036 is open.",
+      "meta_ref": "meta.security-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-036"],
+      "contract_refs": ["DIT-TAX-P1-022", "DIT-ING-P1-009", "AI-GRD-P1-017"],
+      "attributes": {
+        "code": "SUSPECTED_CLINICAL_RECORD",
+        "jurisdiction_refs": ["jurisdiction.core.neutral", "jurisdiction.AU"],
+        "content_boundary_ref": "content-boundary.CLINICAL_EXCLUDED",
+        "sensitivity_ref": "privacy.P5-EXCLUDED",
+        "supported_format_refs": [],
+        "extraction_schema_refs": [],
+        "monitoring_rule_refs": [],
+        "source_refs": [],
+        "clinical": true,
+        "processing_disposition": "POLICY_HOLD",
+        "launch_enabled": false,
+        "aliases": [{"locale": "en-AU", "term": "synthetic clinical boundary fixture", "polarity": "POSITIVE", "synthetic": true}]
+      }
+    }
+  ],
+  "launch_profiles": [
+    {
+      "id": "launch-profile.synthetic.au.phase1",
+      "version": "0.1.0-draft",
+      "label": "Synthetic Australia-first composition profile",
+      "description": "Disabled fixture showing how an Australia-scoped launch profile would bind types, rules, and sources after DEC-035 approval.",
+      "meta_ref": "meta.product-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-035", "DEC-036"],
+      "contract_refs": ["DIT-TAX-P1-016", "AI-CAP-P1-015"],
+      "attributes": {"jurisdiction_refs": ["jurisdiction.AU"], "document_type_refs": ["doctype.coverage.generic-policy"], "source_refs": ["source.synthetic.au.reference-series"], "monitoring_rule_refs": ["monitoring-rule.synthetic.au.generic-policy-date", "monitoring-rule.synthetic.au.reference-source-change"], "clinical_enabled": false, "runtime_enabled": false, "production_coverage_claim": false}
+    }
+  ]
+}

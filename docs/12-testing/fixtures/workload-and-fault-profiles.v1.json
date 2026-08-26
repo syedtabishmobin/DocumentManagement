@@ -1,0 +1,330 @@
+{
+  "manifest_id": "workload-fault-manifest.phase1.synthetic",
+  "version": "0.1.0-draft",
+  "status": "DRAFT",
+  "effective_from": "2026-08-26",
+  "owner": "Performance and Resilience Quality",
+  "review": {
+    "state": "REQUIRED",
+    "targets_provisional": true,
+    "decision_fences": [
+      "DEC-038",
+      "DEC-039",
+      "DEC-040"
+    ]
+  },
+  "synthetic_only": true,
+  "privacy_class": "P1-SYNTHETIC-NONPERSONAL",
+  "workloads": [
+    {
+      "workload_id": "WORK-P1-001",
+      "version": "0.1.0-draft",
+      "title": "Authorized simple read and mutation diagnostic",
+      "status": "DRAFT",
+      "representative": false,
+      "seed": "phase1-work-001",
+      "fixture_refs": [
+        "FIX-P1-001",
+        "FIX-P1-002"
+      ],
+      "population": {
+        "workspaces": 2,
+        "actors_per_workspace": 3,
+        "documents_per_workspace": 8
+      },
+      "operations": [
+        "authorized-read",
+        "idempotent-mutation",
+        "stale-revision"
+      ],
+      "cache_state": [
+        "cold",
+        "warm"
+      ],
+      "limitations": [
+        "Diagnostic only; no production forecast or SLA"
+      ]
+    },
+    {
+      "workload_id": "WORK-P1-002",
+      "version": "0.1.0-draft",
+      "title": "Search graph comparison and cited-answer diagnostic",
+      "status": "DRAFT",
+      "representative": false,
+      "seed": "phase1-work-002",
+      "fixture_refs": [
+        "FIX-P1-001",
+        "FIX-P1-007",
+        "FIX-P1-012"
+      ],
+      "population": {
+        "workspaces": 2,
+        "documents_per_workspace": 20,
+        "edges_per_workspace": 40,
+        "queries_per_actor": 12
+      },
+      "operations": [
+        "lexical-search",
+        "semantic-search",
+        "bounded-graph",
+        "comparison",
+        "cited-answer",
+        "citation-redemption"
+      ],
+      "cache_state": [
+        "cold",
+        "warm"
+      ],
+      "limitations": [
+        "Synthetic corpus; no model or launch scale claim"
+      ]
+    },
+    {
+      "workload_id": "WORK-P1-003",
+      "version": "0.1.0-draft",
+      "title": "Ingestion queue and backlog diagnostic",
+      "status": "DRAFT",
+      "representative": false,
+      "seed": "phase1-work-003",
+      "fixture_refs": [
+        "FIX-P1-003",
+        "FIX-P1-004",
+        "FIX-P1-013",
+        "FIX-P1-014"
+      ],
+      "population": {
+        "workspaces": 2,
+        "acquisition_attempts": 40,
+        "pages_per_clean_artifact": 4
+      },
+      "operations": [
+        "receive",
+        "safety-check",
+        "quarantine",
+        "policy-hold",
+        "extract",
+        "cancel",
+        "replay"
+      ],
+      "cache_state": [
+        "not-applicable"
+      ],
+      "limitations": [
+        "Deterministic fake scanner parser and OCR"
+      ]
+    },
+    {
+      "workload_id": "WORK-P1-004",
+      "version": "0.1.0-draft",
+      "title": "Monitoring impact task and source-freshness diagnostic",
+      "status": "DRAFT",
+      "representative": false,
+      "seed": "phase1-work-004",
+      "fixture_refs": [
+        "FIX-P1-007",
+        "FIX-P1-008",
+        "FIX-P1-009",
+        "FIX-P1-010",
+        "FIX-P1-011",
+        "FIX-P1-017"
+      ],
+      "population": {
+        "workspaces": 2,
+        "rules_per_workspace": 8,
+        "subscriptions_per_workspace": 10,
+        "graph_edges_per_workspace": 50
+      },
+      "operations": [
+        "schedule",
+        "retrieve-source",
+        "parse-source",
+        "evaluate-applicability",
+        "traverse-impact",
+        "create-task",
+        "replay"
+      ],
+      "cache_state": [
+        "last-known-stale",
+        "fresh"
+      ],
+      "limitations": [
+        "DRAFT disabled sources and rules; no authority coverage claim"
+      ]
+    },
+    {
+      "workload_id": "WORK-P1-005",
+      "version": "0.1.0-draft",
+      "title": "Noisy-neighbour burst and bounded-work diagnostic",
+      "status": "DRAFT",
+      "representative": false,
+      "seed": "phase1-work-005",
+      "fixture_refs": [
+        "FIX-P1-001",
+        "FIX-P1-004",
+        "FIX-P1-007",
+        "FIX-P1-012"
+      ],
+      "population": {
+        "workspaces": 4,
+        "hot_workspace_ratio": 8,
+        "burst_units": 64
+      },
+      "operations": [
+        "burst-ingestion",
+        "deep-graph-request",
+        "search-fanout",
+        "retry-storm",
+        "cost-limit"
+      ],
+      "cache_state": [
+        "mixed"
+      ],
+      "limitations": [
+        "Relative synthetic amplification only; no forecast"
+      ]
+    },
+    {
+      "workload_id": "WORK-P1-006",
+      "version": "0.1.0-draft",
+      "title": "Restore rebuild and backlog-drain diagnostic",
+      "status": "DRAFT",
+      "representative": false,
+      "seed": "phase1-work-006",
+      "fixture_refs": [
+        "FIX-P1-016",
+        "FIX-P1-018",
+        "FIX-P1-020"
+      ],
+      "population": {
+        "workspaces": 2,
+        "canonical_records_per_workspace": 60,
+        "events_per_workspace": 120,
+        "projection_generations": 2
+      },
+      "operations": [
+        "restore-isolated",
+        "reconcile-events",
+        "verify-audit",
+        "rebuild-projections",
+        "apply-fence",
+        "drain-backlog"
+      ],
+      "cache_state": [
+        "empty-after-restore"
+      ],
+      "limitations": [
+        "No approved topology RPO RTO cadence or region"
+      ]
+    }
+  ],
+  "fault_profiles": [
+    {
+      "fault_id": "FAULT-P1-001",
+      "version": "0.1.0-draft",
+      "title": "Dependency timeout before effect",
+      "status": "DRAFT",
+      "deterministic_trigger": "adapter-call-1-before-dispatch",
+      "expected_class": "DEPENDENCY_UNAVAILABLE",
+      "external_effect_possible": false
+    },
+    {
+      "fault_id": "FAULT-P1-002",
+      "version": "0.1.0-draft",
+      "title": "Timeout after possible effect",
+      "status": "DRAFT",
+      "deterministic_trigger": "adapter-call-1-after-dispatch-before-receipt",
+      "expected_class": "OUTCOME_UNKNOWN",
+      "external_effect_possible": true
+    },
+    {
+      "fault_id": "FAULT-P1-003",
+      "version": "0.1.0-draft",
+      "title": "Malformed or incompatible adapter output",
+      "status": "DRAFT",
+      "deterministic_trigger": "adapter-response-schema-invalid",
+      "expected_class": "SCHEMA_OR_COMPATIBILITY_UNAVAILABLE",
+      "external_effect_possible": false
+    },
+    {
+      "fault_id": "FAULT-P1-004",
+      "version": "0.1.0-draft",
+      "title": "Crash after canonical commit before publish",
+      "status": "DRAFT",
+      "deterministic_trigger": "transaction-committed-outbox-unsent",
+      "expected_class": "REPAIR_REQUIRED",
+      "external_effect_possible": false
+    },
+    {
+      "fault_id": "FAULT-P1-005",
+      "version": "0.1.0-draft",
+      "title": "Duplicate reordered and forward-gap delivery",
+      "status": "DRAFT",
+      "deterministic_trigger": "event-order-2-2-4-1-with-3-held",
+      "expected_class": "REPAIR_REQUIRED",
+      "external_effect_possible": false
+    },
+    {
+      "fault_id": "FAULT-P1-006",
+      "version": "0.1.0-draft",
+      "title": "Poison event and dead-letter repair",
+      "status": "DRAFT",
+      "deterministic_trigger": "unsupported-major-event-at-checkpoint",
+      "expected_class": "SCHEMA_OR_COMPATIBILITY_UNAVAILABLE",
+      "external_effect_possible": false
+    },
+    {
+      "fault_id": "FAULT-P1-007",
+      "version": "0.1.0-draft",
+      "title": "Authorization epoch changes mid-flow",
+      "status": "DRAFT",
+      "deterministic_trigger": "revoke-after-candidate-before-release",
+      "expected_class": "FORBIDDEN",
+      "external_effect_possible": false
+    },
+    {
+      "fault_id": "FAULT-P1-008",
+      "version": "0.1.0-draft",
+      "title": "Deletion fence changes mid-flow",
+      "status": "DRAFT",
+      "deterministic_trigger": "fence-after-commit-before-consumer",
+      "expected_class": "POLICY_BLOCKED",
+      "external_effect_possible": false
+    },
+    {
+      "fault_id": "FAULT-P1-009",
+      "version": "0.1.0-draft",
+      "title": "Source parser failure and freshness expiry",
+      "status": "DRAFT",
+      "deterministic_trigger": "parser-version-b-fails-at-controlled-clock",
+      "expected_class": "STALE_OR_PARTIAL",
+      "external_effect_possible": false
+    },
+    {
+      "fault_id": "FAULT-P1-010",
+      "version": "0.1.0-draft",
+      "title": "Required audit outage",
+      "status": "DRAFT",
+      "deterministic_trigger": "audit-obligation-unavailable-before-consequential-completion",
+      "expected_class": "REPAIR_REQUIRED",
+      "external_effect_possible": false
+    },
+    {
+      "fault_id": "FAULT-P1-011",
+      "version": "0.1.0-draft",
+      "title": "Telemetry outage",
+      "status": "DRAFT",
+      "deterministic_trigger": "signal-sink-unavailable-after-source-validation",
+      "expected_class": "DEPENDENCY_UNAVAILABLE",
+      "external_effect_possible": false
+    },
+    {
+      "fault_id": "FAULT-P1-012",
+      "version": "0.1.0-draft",
+      "title": "Restore with stale policy fence and ineligible route",
+      "status": "DRAFT",
+      "deterministic_trigger": "isolated-restore-before-current-gate-application",
+      "expected_class": "POLICY_BLOCKED",
+      "external_effect_possible": false
+    }
+  ]
+}

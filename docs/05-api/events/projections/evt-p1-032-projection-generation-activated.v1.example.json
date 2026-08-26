@@ -1,0 +1,52 @@
+{
+  "event_id": "evt_synthetic_p1_032",
+  "event_type": "EVT-P1-032",
+  "schema_version": "1.0.0",
+  "occurred_at": "2026-08-26T06:05:00Z",
+  "recorded_at": "2026-08-26T06:05:01Z",
+  "scope_kind": "WORKSPACE",
+  "workspace_id": "workspace_synthetic_001",
+  "aggregate_type": "ProjectionWatermark",
+  "aggregate_id": "projection_watermark_synthetic_001",
+  "aggregate_revision": 2,
+  "aggregate_event_index": 0,
+  "attempt": 1,
+  "producer": {
+    "producer_id": "service.projection.synthetic",
+    "operation": "ACTIVATE_PROJECTION_GENERATION"
+  },
+  "actor": {
+    "actor_id": "service.projection.synthetic",
+    "actor_class": "SERVICE"
+  },
+  "authorization": {
+    "decision_ref": "authz_synthetic_032",
+    "decision": "ALLOW",
+    "policy_version": "policy.synthetic.v1",
+    "authorization_epoch": "auth_epoch_004"
+  },
+  "correlation_id": "correlation_synthetic_032",
+  "causation_id": "projection_build_synthetic_001",
+  "idempotency_key": "idempotency_synthetic_032",
+  "classification": {
+    "data_class": "P2-HOUSEHOLD",
+    "purpose_id": "PUR-P1-001",
+    "residency_policy_ref": "residency.unresolved.DEC-040",
+    "retention_rule_ref": "retention.unresolved.DEC-039",
+    "deletion_lineage_ref": "deletion.lineage.synthetic.v1"
+  },
+  "deletion_fence": {
+    "state": "NOT_FENCED",
+    "generation": 0
+  },
+  "payload": {
+    "projection_kind": "FULL_TEXT",
+    "retired_generation_id": "projection_generation_synthetic_000",
+    "active_generation_id": "projection_generation_synthetic_001",
+    "source_watermark_ref": "source_watermark_synthetic_032",
+    "authorization_epoch": "auth_epoch_004",
+    "deletion_fence_generation": 0,
+    "validation_state": "Validated",
+    "cutover_state": "Activated"
+  }
+}

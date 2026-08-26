@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.document-management.example.invalid/reference-data/v1/document-types.schema.json",
+  "x-schema-version": "1.0.0",
+  "title": "Phase 1 document types and content boundaries",
+  "type": "object",
+  "required": ["$schema", "pack", "content_boundaries", "formats", "document_types", "launch_profiles"],
+  "properties": {
+    "$schema": {"const": "../schemas/document-types.schema.json"},
+    "pack": {"$ref": "common.schema.json#/$defs/record"},
+    "content_boundaries": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "allOf": [
+          {"$ref": "common.schema.json#/$defs/record"},
+          {"type": "object", "properties": {"attributes": {
+            "type": "object",
+            "required": ["code", "clinical", "ordinary_processing_allowed", "privacy_ref", "runtime_enabled"],
+            "properties": {
+              "code": {"type": "string", "minLength": 1},
+              "clinical": {"type": "boolean"},
+              "ordinary_processing_allowed": {"type": "boolean"},
+              "privacy_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+              "runtime_enabled": {"const": false}
+            },
+            "additionalProperties": false
+          }}}
+        ]
+      }
+    },
+    "formats": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "allOf": [
+          {"$ref": "common.schema.json#/$defs/record"},
+          {"type": "object", "properties": {"attributes": {
+            "type": "object",
+            "required": ["mime_type", "binary", "runtime_enabled"],
+            "properties": {
+              "mime_type": {"type": "string", "minLength": 3},
+              "binary": {"type": "boolean"},
+              "runtime_enabled": {"const": false}
+            },
+            "additionalProperties": false
+          }}}
+        ]
+      }
+    },
+    "document_types": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "allOf": [
+          {"$ref": "common.schema.json#/$defs/record"},
+          {"type": "object", "properties": {"attributes": {
+            "type": "object",
+            "required": ["code", "jurisdiction_refs", "content_boundary_ref", "sensitivity_ref", "supported_format_refs", "extraction_schema_refs", "monitoring_rule_refs", "source_refs", "clinical", "processing_disposition", "launch_enabled", "aliases"],
+            "properties": {
+              "code": {"type": "string", "minLength": 1},
+              "jurisdiction_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+              "content_boundary_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+              "sensitivity_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+              "supported_format_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+              "extraction_schema_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+              "monitoring_rule_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+              "source_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+              "clinical": {"type": "boolean"},
+              "processing_disposition": {"enum": ["DRAFT_REVIEW_ONLY", "POLICY_HOLD"]},
+              "launch_enabled": {"const": false},
+              "aliases": {"type": "array", "uniqueItems": true, "items": {
+                "type": "object",
+                "required": ["locale", "term", "polarity", "synthetic"],
+                "properties": {
+                  "locale": {"type": "string", "minLength": 2},
+                  "term": {"type": "string", "minLength": 1},
+                  "polarity": {"enum": ["POSITIVE", "NEGATIVE"]},
+                  "synthetic": {"const": true}
+                },
+                "additionalProperties": false
+              }}
+            },
+            "additionalProperties": false
+          }}}
+        ]
+      }
+    },
+    "launch_profiles": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "allOf": [
+          {"$ref": "common.schema.json#/$defs/record"},
+          {"type": "object", "properties": {"attributes": {
+            "type": "object",
+            "required": ["jurisdiction_refs", "document_type_refs", "source_refs", "monitoring_rule_refs", "clinical_enabled", "runtime_enabled", "production_coverage_claim"],
+            "properties": {
+              "jurisdiction_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+              "document_type_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+              "source_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+              "monitoring_rule_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+              "clinical_enabled": {"const": false},
+              "runtime_enabled": {"const": false},
+              "production_coverage_claim": {"const": false}
+            },
+            "additionalProperties": false
+          }}}
+        ]
+      }
+    }
+  },
+  "additionalProperties": false
+}

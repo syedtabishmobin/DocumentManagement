@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EVT-P1-021 Recommendation state changed v1",
+  "allOf": [
+    {
+      "$ref": "../common/event-envelope.v1.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "const": "EVT-P1-021"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "scope_kind": {
+          "const": "WORKSPACE"
+        },
+        "aggregate_type": {
+          "const": "Recommendation"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "impact_assessment_id",
+            "from_state",
+            "to_state",
+            "recommendation_decision",
+            "evidence_bundle_ref",
+            "proposed_effect_digest_ref",
+            "reason_code"
+          ],
+          "properties": {
+            "impact_assessment_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "from_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/nullableSafeState"
+            },
+            "to_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "recommendation_decision": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "APPROVE_REQUEST",
+                    "REJECT",
+                    "EDIT",
+                    "DEFER",
+                    "DISMISS",
+                    "NOT_APPLICABLE"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "evidence_bundle_ref": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "proposed_effect_digest_ref": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/nullableSafeRef"
+            },
+            "reason_code": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeReasonCode"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

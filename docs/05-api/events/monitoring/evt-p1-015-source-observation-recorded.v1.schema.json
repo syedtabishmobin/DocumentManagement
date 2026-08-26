@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EVT-P1-015 SourceObservation recorded v1",
+  "allOf": [
+    {
+      "$ref": "../common/event-envelope.v1.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "const": "EVT-P1-015"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "scope_kind": {
+          "enum": [
+            "WORKSPACE",
+            "GLOBAL_REFERENCE"
+          ]
+        },
+        "aggregate_type": {
+          "const": "SourceObservation"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source_definition_version",
+            "endpoint_version",
+            "coverage_manifest_version",
+            "retrieval_attempt_id",
+            "observation_kind",
+            "prior_observation_id",
+            "integrity_evidence_ref",
+            "observed_at",
+            "personalization_state"
+          ],
+          "properties": {
+            "source_definition_version": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "endpoint_version": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "coverage_manifest_version": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "retrieval_attempt_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "observation_kind": {
+              "type": "string",
+              "enum": [
+                "SNAPSHOT",
+                "NO_CHANGE"
+              ]
+            },
+            "prior_observation_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/nullableSafeRef"
+            },
+            "integrity_evidence_ref": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "observed_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "personalization_state": {
+              "type": "string",
+              "enum": [
+                "GLOBAL_NON_PERSONALIZED",
+                "WORKSPACE_ISOLATED"
+              ]
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "scope_kind": {
+                "const": "GLOBAL_REFERENCE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "personalization_state": {
+                    "const": "GLOBAL_NON_PERSONALIZED"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "scope_kind": {
+                "const": "WORKSPACE"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "personalization_state": {
+                    "const": "WORKSPACE_ISOLATED"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.document-management.example.invalid/reference-data/v1/trusted-sources.schema.json",
+  "x-schema-version": "1.0.0",
+  "title": "Phase 1 trusted-source registry and coverage catalogue",
+  "type": "object",
+  "required": ["$schema", "pack", "authority_tiers", "freshness_policies", "source_definitions", "coverage_manifests", "endpoints", "parsers"],
+  "properties": {
+    "$schema": {"const": "../schemas/trusted-sources.schema.json"},
+    "pack": {"$ref": "common.schema.json#/$defs/record"},
+    "authority_tiers": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {"type": "object", "required": ["code", "consequential_eligible", "runtime_enabled"], "properties": {"code": {"enum": ["OFFICIAL_PRIMARY", "OFFICIAL_DELEGATED", "GOVERNED_SECONDARY", "GUIDANCE_ONLY", "UNAPPROVED_OR_UNKNOWN"]}, "consequential_eligible": {"const": false}, "runtime_enabled": {"const": false}}, "additionalProperties": false}}}
+    ]}},
+    "freshness_policies": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {"type": "object", "required": ["objective_defined", "duration_defined", "runtime_enabled"], "properties": {"objective_defined": {"const": false}, "duration_defined": {"const": false}, "runtime_enabled": {"const": false}}, "additionalProperties": false}}}
+    ]}},
+    "source_definitions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["jurisdiction_refs", "authority_tier_ref", "coverage_manifest_refs", "endpoint_refs", "parser_refs", "freshness_policy_ref", "source_health_machine_ref", "synthetic", "non_production", "runtime_enabled", "arbitrary_web_authority", "production_coverage_claim"],
+        "properties": {
+          "jurisdiction_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "authority_tier_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "coverage_manifest_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "endpoint_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "parser_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "freshness_policy_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "source_health_machine_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "synthetic": {"const": true},
+          "non_production": {"const": true},
+          "runtime_enabled": {"const": false},
+          "arbitrary_web_authority": {"const": false},
+          "production_coverage_claim": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}},
+    "coverage_manifests": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["source_ref", "jurisdiction_refs", "topic_codes", "publication_scope", "runtime_enabled", "production_coverage_claim"],
+        "properties": {
+          "source_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "jurisdiction_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "topic_codes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "publication_scope": {"const": "SYNTHETIC_FIXTURE_ONLY"},
+          "runtime_enabled": {"const": false},
+          "production_coverage_claim": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}},
+    "endpoints": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["source_ref", "coverage_manifest_ref", "url", "retrieval_method", "synthetic", "non_production", "runtime_enabled"],
+        "properties": {
+          "source_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "coverage_manifest_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "url": {"type": "string", "pattern": "^https://[A-Za-z0-9.-]+\\.invalid(?:/.*)?$"},
+          "retrieval_method": {"enum": ["SYNTHETIC_HTTPS_SNAPSHOT"]},
+          "synthetic": {"const": true},
+          "non_production": {"const": true},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}},
+    "parsers": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["source_ref", "input_media_types", "output_contract_refs", "coverage_manifest_ref", "synthetic", "non_production", "runtime_enabled"],
+        "properties": {
+          "source_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "input_media_types": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 3}},
+          "output_contract_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "coverage_manifest_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "synthetic": {"const": true},
+          "non_production": {"const": true},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}}
+  },
+  "additionalProperties": false
+}

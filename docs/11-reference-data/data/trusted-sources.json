@@ -1,0 +1,76 @@
+{
+  "$schema": "../schemas/trusted-sources.schema.json",
+  "pack": {
+    "id": "pack.trusted-sources.phase1",
+    "version": "0.1.0-draft",
+    "label": "Phase 1 trusted-source registry seed",
+    "description": "Authority-tier vocabulary and one disabled synthetic Australia-scoped source fixture; no real authority, coverage, endpoint, cadence, or freshness objective is asserted.",
+    "meta_ref": "meta.source-draft",
+    "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+    "decision_refs": ["DEC-035"],
+    "contract_refs": ["DIT-SRC-001", "DIT-MON-001", "SEC-ARCH-001"],
+    "attributes": {"runtime_enabled": false, "arbitrary_web_authority": false, "production_coverage_claim": false}
+  },
+  "authority_tiers": [
+    {"id": "authority-tier.OFFICIAL_PRIMARY", "version": "0.1.0-draft", "label": "Official primary", "description": "Representable tier definition; no source is assigned this tier by this seed.", "meta_ref": "meta.source-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["DIT-SRC-P1-003"], "attributes": {"code": "OFFICIAL_PRIMARY", "consequential_eligible": false, "runtime_enabled": false}},
+    {"id": "authority-tier.OFFICIAL_DELEGATED", "version": "0.1.0-draft", "label": "Official delegated", "description": "Representable tier definition; no source is assigned this tier by this seed.", "meta_ref": "meta.source-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["DIT-SRC-P1-003"], "attributes": {"code": "OFFICIAL_DELEGATED", "consequential_eligible": false, "runtime_enabled": false}},
+    {"id": "authority-tier.GOVERNED_SECONDARY", "version": "0.1.0-draft", "label": "Governed secondary", "description": "Representable tier definition; no source is assigned this tier by this seed.", "meta_ref": "meta.source-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["DIT-SRC-P1-003"], "attributes": {"code": "GOVERNED_SECONDARY", "consequential_eligible": false, "runtime_enabled": false}},
+    {"id": "authority-tier.GUIDANCE_ONLY", "version": "0.1.0-draft", "label": "Guidance only", "description": "Representable non-authoritative guidance tier; no launch guidance source is enabled.", "meta_ref": "meta.source-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["DIT-SRC-P1-003", "DIT-HLT-P1-012"], "attributes": {"code": "GUIDANCE_ONLY", "consequential_eligible": false, "runtime_enabled": false}},
+    {"id": "authority-tier.UNAPPROVED_OR_UNKNOWN", "version": "0.1.0-draft", "label": "Unapproved or unknown", "description": "Source has no approved authority status and cannot support consequential use.", "meta_ref": "meta.source-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["DIT-SRC-P1-003"], "attributes": {"code": "UNAPPROVED_OR_UNKNOWN", "consequential_eligible": false, "runtime_enabled": false}}
+  ],
+  "freshness_policies": [
+    {"id": "freshness-policy.unset", "version": "0.1.0-draft", "label": "Unset freshness policy", "description": "No cadence, freshness objective, retry interval, or consequence eligibility is defined.", "meta_ref": "meta.source-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["DIT-SRC-P1-021", "DIT-SRC-P1-024"], "attributes": {"objective_defined": false, "duration_defined": false, "runtime_enabled": false}}
+  ],
+  "source_definitions": [
+    {
+      "id": "source.synthetic.au.reference-series",
+      "version": "0.1.0-draft",
+      "label": "Synthetic Australia reference series",
+      "description": "Non-production `.invalid` source fixture used only to validate registry, observation, parser, coverage, monitoring, and replay references.",
+      "meta_ref": "meta.source-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-035"],
+      "contract_refs": ["DIT-SRC-P1-001", "DIT-SRC-P1-002", "DIT-SRC-P1-004"],
+      "attributes": {"jurisdiction_refs": ["jurisdiction.AU"], "authority_tier_ref": "authority-tier.UNAPPROVED_OR_UNKNOWN", "coverage_manifest_refs": ["coverage.synthetic.au.reference-series"], "endpoint_refs": ["endpoint.synthetic.au.reference-series"], "parser_refs": ["parser.synthetic.au.reference-series"], "freshness_policy_ref": "freshness-policy.unset", "source_health_machine_ref": "machine.source-health", "synthetic": true, "non_production": true, "runtime_enabled": false, "arbitrary_web_authority": false, "production_coverage_claim": false}
+    }
+  ],
+  "coverage_manifests": [
+    {
+      "id": "coverage.synthetic.au.reference-series",
+      "version": "0.1.0-draft",
+      "label": "Synthetic reference-series coverage manifest",
+      "description": "Fixture-only bounded topic declaration; it is not complete, official, current, or production coverage.",
+      "meta_ref": "meta.source-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-035"],
+      "contract_refs": ["DIT-SRC-P1-002", "DIT-SRC-P1-010"],
+      "attributes": {"source_ref": "source.synthetic.au.reference-series", "jurisdiction_refs": ["jurisdiction.AU"], "topic_codes": ["SYNTHETIC_REFERENCE_CHANGE_FIXTURE"], "publication_scope": "SYNTHETIC_FIXTURE_ONLY", "runtime_enabled": false, "production_coverage_claim": false}
+    }
+  ],
+  "endpoints": [
+    {
+      "id": "endpoint.synthetic.au.reference-series",
+      "version": "0.1.0-draft",
+      "label": "Synthetic reference-series endpoint",
+      "description": "Reserved `.invalid` endpoint; it must never be treated as reachable or authoritative.",
+      "meta_ref": "meta.source-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-035"],
+      "contract_refs": ["DIT-SRC-P1-005", "AI-TOOL-P1-016"],
+      "attributes": {"source_ref": "source.synthetic.au.reference-series", "coverage_manifest_ref": "coverage.synthetic.au.reference-series", "url": "https://reference-series.example.invalid/australia/synthetic-index", "retrieval_method": "SYNTHETIC_HTTPS_SNAPSHOT", "synthetic": true, "non_production": true, "runtime_enabled": false}
+    }
+  ],
+  "parsers": [
+    {
+      "id": "parser.synthetic.au.reference-series",
+      "version": "0.1.0-draft",
+      "label": "Synthetic reference-series parser contract",
+      "description": "Non-executable parser-version fixture; it cannot publish a rule or establish no change.",
+      "meta_ref": "meta.source-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-035"],
+      "contract_refs": ["DIT-SRC-P1-012", "DIT-SRC-P1-014", "AI-OUT-P1-029"],
+      "attributes": {"source_ref": "source.synthetic.au.reference-series", "input_media_types": ["application/json"], "output_contract_refs": ["DIT-SRC-001", "DIT-MON-001"], "coverage_manifest_ref": "coverage.synthetic.au.reference-series", "synthetic": true, "non_production": true, "runtime_enabled": false}
+    }
+  ]
+}

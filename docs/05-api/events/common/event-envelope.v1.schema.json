@@ -1,0 +1,335 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Phase 1 domain event envelope v1",
+  "description": "Provider-neutral, privacy-safe envelope for immutable Phase 1 domain events.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "event_type",
+    "schema_version",
+    "occurred_at",
+    "recorded_at",
+    "scope_kind",
+    "aggregate_type",
+    "aggregate_id",
+    "aggregate_revision",
+    "aggregate_event_index",
+    "attempt",
+    "producer",
+    "actor",
+    "authorization",
+    "correlation_id",
+    "causation_id",
+    "idempotency_key",
+    "classification",
+    "deletion_fence",
+    "payload"
+  ],
+  "properties": {
+    "event_id": {
+      "$ref": "#/$defs/safeRef"
+    },
+    "event_type": {
+      "type": "string",
+      "pattern": "^EVT-P1-[0-9]{3}$"
+    },
+    "schema_version": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]*\\.[0-9]+\\.[0-9]+$"
+    },
+    "occurred_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "scope_kind": {
+      "type": "string",
+      "enum": [
+        "WORKSPACE",
+        "GLOBAL_REFERENCE",
+        "PLATFORM_CONTROL"
+      ]
+    },
+    "workspace_id": {
+      "$ref": "#/$defs/safeRef"
+    },
+    "aggregate_type": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Za-z0-9]{1,63}$"
+    },
+    "aggregate_id": {
+      "$ref": "#/$defs/safeRef"
+    },
+    "aggregate_revision": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "aggregate_event_index": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "attempt": {
+      "description": "Immutable producing command or workflow attempt; transport delivery attempts are separate metadata.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "producer_id",
+        "operation"
+      ],
+      "properties": {
+        "producer_id": {
+          "$ref": "#/$defs/safeRef"
+        },
+        "operation": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]{2,63}$"
+        }
+      }
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actor_id",
+        "actor_class"
+      ],
+      "properties": {
+        "actor_id": {
+          "$ref": "#/$defs/safeRef"
+        },
+        "actor_class": {
+          "type": "string",
+          "enum": [
+            "HUMAN",
+            "SERVICE",
+            "CONNECTOR",
+            "OPERATOR",
+            "SYSTEM"
+          ]
+        }
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision_ref",
+        "decision",
+        "policy_version",
+        "authorization_epoch"
+      ],
+      "properties": {
+        "decision_ref": {
+          "$ref": "#/$defs/safeRef"
+        },
+        "decision": {
+          "type": "string",
+          "enum": [
+            "ALLOW",
+            "DENY",
+            "REDACT",
+            "MINIMAL_DISCLOSURE"
+          ]
+        },
+        "policy_version": {
+          "$ref": "#/$defs/safeRef"
+        },
+        "authorization_epoch": {
+          "$ref": "#/$defs/safeRef"
+        }
+      }
+    },
+    "correlation_id": {
+      "$ref": "#/$defs/safeRef"
+    },
+    "causation_id": {
+      "$ref": "#/$defs/safeRef"
+    },
+    "idempotency_key": {
+      "$ref": "#/$defs/safeRef"
+    },
+    "classification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "data_class",
+        "purpose_id",
+        "residency_policy_ref",
+        "retention_rule_ref",
+        "deletion_lineage_ref"
+      ],
+      "properties": {
+        "data_class": {
+          "type": "string",
+          "enum": [
+            "P0-PUBLIC",
+            "P1-INTERNAL",
+            "P2-HOUSEHOLD",
+            "P3-SENSITIVE",
+            "P4-RESTRICTED",
+            "P5-EXCLUDED"
+          ]
+        },
+        "purpose_id": {
+          "type": "string",
+          "enum": [
+            "PUR-P1-001",
+            "PUR-P1-002",
+            "PUR-P1-003",
+            "PUR-P1-004",
+            "PUR-P1-005",
+            "PUR-P1-006",
+            "PUR-P1-007",
+            "PUR-P1-008"
+          ]
+        },
+        "residency_policy_ref": {
+          "$ref": "#/$defs/safeRef"
+        },
+        "retention_rule_ref": {
+          "$ref": "#/$defs/safeRef"
+        },
+        "deletion_lineage_ref": {
+          "$ref": "#/$defs/safeRef"
+        }
+      }
+    },
+    "deletion_fence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "state",
+        "generation"
+      ],
+      "properties": {
+        "state": {
+          "type": "string",
+          "enum": [
+            "NOT_FENCED",
+            "FENCED",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "generation": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deletion_case_id": {
+          "$ref": "#/$defs/safeRef"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "state": {
+                "const": "FENCED"
+              }
+            },
+            "required": [
+              "state"
+            ]
+          },
+          "then": {
+            "required": [
+              "deletion_case_id"
+            ]
+          }
+        }
+      ]
+    },
+    "payload": {
+      "type": "object",
+      "maxProperties": 64
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "scope_kind": {
+            "const": "WORKSPACE"
+          }
+        },
+        "required": [
+          "scope_kind"
+        ]
+      },
+      "then": {
+        "required": [
+          "workspace_id"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "scope_kind": {
+            "enum": [
+              "GLOBAL_REFERENCE",
+              "PLATFORM_CONTROL"
+            ]
+          }
+        },
+        "required": [
+          "scope_kind"
+        ]
+      },
+      "then": {
+        "not": {
+          "required": [
+            "workspace_id"
+          ]
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "safeRef": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "safeReasonCode": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 64,
+      "pattern": "^[A-Z][A-Z0-9_]*$"
+    },
+    "safeState": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 64,
+      "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+    },
+    "nullableSafeRef": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/safeRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "nullableSafeState": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/safeState"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}

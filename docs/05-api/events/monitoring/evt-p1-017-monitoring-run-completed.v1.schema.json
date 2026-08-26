@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EVT-P1-017 MonitoringRun completed v1",
+  "allOf": [
+    {
+      "$ref": "../common/event-envelope.v1.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "const": "EVT-P1-017"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "scope_kind": {
+          "const": "WORKSPACE"
+        },
+        "aggregate_type": {
+          "const": "MonitoringRun"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "monitoring_subscription_id",
+            "monitoring_rule_version",
+            "trigger_occurrence_id",
+            "input_watermark_ref",
+            "run_outcome",
+            "replay_generation",
+            "change_case_refs",
+            "failure_reason_code"
+          ],
+          "properties": {
+            "monitoring_subscription_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "monitoring_rule_version": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "trigger_occurrence_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "input_watermark_ref": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "run_outcome": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "replay_generation": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "change_case_refs": {
+              "type": "array",
+              "maxItems": 64,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+              }
+            },
+            "failure_reason_code": {
+              "oneOf": [
+                {
+                  "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeReasonCode"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

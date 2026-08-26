@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EVT-P1-020 ImpactAssessment recorded v1",
+  "allOf": [
+    {
+      "$ref": "../common/event-envelope.v1.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "const": "EVT-P1-020"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "scope_kind": {
+          "const": "WORKSPACE"
+        },
+        "aggregate_type": {
+          "const": "ImpactAssessment"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "change_case_id",
+            "assessment_generation_id",
+            "applicability_outcome",
+            "primary_class",
+            "separated_dimensions_ref",
+            "impact_path_refs",
+            "coverage_state",
+            "review_state"
+          ],
+          "properties": {
+            "change_case_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "assessment_generation_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "applicability_outcome": {
+              "type": "string",
+              "enum": [
+                "APPLICABLE",
+                "NON_APPLICABLE",
+                "INDETERMINATE",
+                "REVIEW_REQUIRED",
+                "RESTRICTED",
+                "UNAVAILABLE"
+              ]
+            },
+            "primary_class": {
+              "type": "string",
+              "enum": [
+                "AUTOMATIC_TECHNICAL_UPDATE_POSSIBLE",
+                "USER_ACTION_REQUIRED",
+                "EXTERNAL_NOTIFICATION_REQUIRED",
+                "REVIEW_REQUIRED",
+                "NO_ACTION"
+              ]
+            },
+            "separated_dimensions_ref": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "impact_path_refs": {
+              "type": "array",
+              "maxItems": 64,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+              }
+            },
+            "coverage_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "review_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

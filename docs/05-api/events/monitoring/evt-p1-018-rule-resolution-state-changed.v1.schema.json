@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EVT-P1-018 RuleResolution state changed v1",
+  "allOf": [
+    {
+      "$ref": "../common/event-envelope.v1.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "const": "EVT-P1-018"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "scope_kind": {
+          "const": "WORKSPACE"
+        },
+        "aggregate_type": {
+          "const": "RuleResolution"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "rule_version",
+            "applicability_evaluation_id",
+            "applicability_outcome",
+            "from_state",
+            "to_state",
+            "limitation_codes"
+          ],
+          "properties": {
+            "rule_version": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "applicability_evaluation_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "applicability_outcome": {
+              "type": "string",
+              "enum": [
+                "APPLICABLE",
+                "NON_APPLICABLE",
+                "INDETERMINATE",
+                "REVIEW_REQUIRED",
+                "RESTRICTED",
+                "UNAVAILABLE"
+              ]
+            },
+            "from_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/nullableSafeState"
+            },
+            "to_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "limitation_codes": {
+              "type": "array",
+              "maxItems": 32,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeReasonCode"
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

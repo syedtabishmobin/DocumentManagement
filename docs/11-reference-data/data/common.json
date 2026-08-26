@@ -1,0 +1,172 @@
+{
+  "$schema": "../schemas/common.schema.json",
+  "pack": {
+    "id": "pack.common.phase1",
+    "version": "0.1.0-draft",
+    "label": "Phase 1 common reference data",
+    "description": "Jurisdiction-neutral identifiers, metadata, effective-period semantics, privacy classes, and purpose identifiers.",
+    "meta_ref": "meta.reference-data-draft",
+    "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+    "decision_refs": ["DEC-035"],
+    "contract_refs": ["ARCH-DATA-001", "SEC-PRIV-001", "SEC-AUD-001"],
+    "attributes": {"scope": "PHASE_1_REFERENCE_DATA", "production_claim": false}
+  },
+  "metadata_profiles": [
+    {
+      "id": "meta.reference-data-draft",
+      "schema_version": "1.0.0",
+      "record_version": "0.1.0-draft",
+      "status": "DRAFT",
+      "enabled": false,
+      "effective_period": {"valid_from": null, "valid_to": null},
+      "owner_ref": "owner.reference-data-governance",
+      "review": {"state": "DRAFT", "reviewer_refs": ["owner.product"], "reviewed_at": null},
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}
+    },
+    {
+      "id": "meta.product-draft",
+      "schema_version": "1.0.0",
+      "record_version": "0.1.0-draft",
+      "status": "DRAFT",
+      "enabled": false,
+      "effective_period": {"valid_from": null, "valid_to": null},
+      "owner_ref": "owner.product",
+      "review": {"state": "DRAFT", "reviewer_refs": ["owner.reference-data-governance"], "reviewed_at": null},
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}
+    },
+    {
+      "id": "meta.security-draft",
+      "schema_version": "1.0.0",
+      "record_version": "0.1.0-draft",
+      "status": "DRAFT",
+      "enabled": false,
+      "effective_period": {"valid_from": null, "valid_to": null},
+      "owner_ref": "owner.security-and-privacy",
+      "review": {"state": "DRAFT", "reviewer_refs": ["owner.product", "owner.reference-data-governance"], "reviewed_at": null},
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}
+    },
+    {
+      "id": "meta.ai-draft",
+      "schema_version": "1.0.0",
+      "record_version": "0.1.0-draft",
+      "status": "DRAFT",
+      "enabled": false,
+      "effective_period": {"valid_from": null, "valid_to": null},
+      "owner_ref": "owner.ai-assurance",
+      "review": {"state": "DRAFT", "reviewer_refs": ["owner.security-and-privacy", "owner.product"], "reviewed_at": null},
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}
+    },
+    {
+      "id": "meta.source-draft",
+      "schema_version": "1.0.0",
+      "record_version": "0.1.0-draft",
+      "status": "DRAFT",
+      "enabled": false,
+      "effective_period": {"valid_from": null, "valid_to": null},
+      "owner_ref": "owner.source-governance",
+      "review": {"state": "DRAFT", "reviewer_refs": ["owner.security-and-privacy", "owner.product"], "reviewed_at": null},
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}
+    }
+  ],
+  "owners": [
+    {
+      "id": "owner.reference-data-governance",
+      "version": "0.1.0-draft",
+      "label": "Reference-data governance owner",
+      "description": "Placeholder accountable function; no person, team structure, or production approval is asserted.",
+      "meta_ref": "meta.reference-data-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": [],
+      "contract_refs": ["REQ-P1-CFG-001"],
+      "attributes": {"owner_kind": "GOVERNANCE_FUNCTION", "production_assignment": false}
+    },
+    {
+      "id": "owner.product",
+      "version": "0.1.0-draft",
+      "label": "Product owner function",
+      "description": "Placeholder product decision function; no named person or delegated authority is asserted.",
+      "meta_ref": "meta.reference-data-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": [],
+      "contract_refs": ["REQ-P1-CFG-002"],
+      "attributes": {"owner_kind": "PRODUCT_FUNCTION", "production_assignment": false}
+    },
+    {
+      "id": "owner.security-and-privacy",
+      "version": "0.1.0-draft",
+      "label": "Security and privacy owner function",
+      "description": "Placeholder control-owner function; it does not create a privileged content-access role.",
+      "meta_ref": "meta.reference-data-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": [],
+      "contract_refs": ["SEC-ARCH-001", "SEC-PRIV-001"],
+      "attributes": {"owner_kind": "CONTROL_FUNCTION", "content_access_granted": false}
+    },
+    {
+      "id": "owner.ai-assurance",
+      "version": "0.1.0-draft",
+      "label": "AI assurance owner function",
+      "description": "Placeholder assurance function; it does not activate a provider, model, calibration, or capability.",
+      "meta_ref": "meta.reference-data-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-035"],
+      "contract_refs": ["AI-CAP-001", "AI-EVAL-001"],
+      "attributes": {"owner_kind": "ASSURANCE_FUNCTION", "production_assignment": false}
+    },
+    {
+      "id": "owner.source-governance",
+      "version": "0.1.0-draft",
+      "label": "Trusted-source governance owner function",
+      "description": "Placeholder source review function; it does not establish source authority or coverage.",
+      "meta_ref": "meta.reference-data-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-035"],
+      "contract_refs": ["DIT-SRC-001"],
+      "attributes": {"owner_kind": "SOURCE_GOVERNANCE_FUNCTION", "production_assignment": false}
+    }
+  ],
+  "identifier_namespaces": [
+    {
+      "id": "identifier.phase1-reference-data",
+      "version": "0.1.0-draft",
+      "label": "Phase 1 reference-data identifier convention",
+      "description": "Stable semantic IDs are never reused; immutable versions carry change and supersession lineage.",
+      "meta_ref": "meta.reference-data-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": [],
+      "contract_refs": ["DATA-P1-002", "DATA-P1-044"],
+      "attributes": {"pattern": "^[A-Za-z][A-Za-z0-9._:-]{2,127}$", "reuse_allowed": false, "versioning": "IMMUTABLE_ADDITIVE"}
+    }
+  ],
+  "effective_period_semantics": [
+    {
+      "id": "effective-period.open-draft",
+      "version": "0.1.0-draft",
+      "label": "Unset draft effective period",
+      "description": "Both bounds are null until an approved publication decision supplies an effective interval; null is not immediately effective.",
+      "meta_ref": "meta.reference-data-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-035"],
+      "contract_refs": ["DATA-P1-010", "AUD-P1-022"],
+      "attributes": {"valid_from": null, "valid_to": null, "null_means": "NOT_ACTIVATED", "known_time_separate": true}
+    }
+  ],
+  "privacy_classes": [
+    {"id": "privacy.P0-PUBLIC", "version": "0.1.0-draft", "label": "P0 public", "description": "Public-data handling class definition.", "meta_ref": "meta.security-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": [], "contract_refs": ["PRIV-P1-003"], "attributes": {"code": "P0-PUBLIC", "runtime_enabled": false}},
+    {"id": "privacy.P1-INTERNAL", "version": "0.1.0-draft", "label": "P1 internal", "description": "Internal-data handling class definition.", "meta_ref": "meta.security-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": [], "contract_refs": ["PRIV-P1-003"], "attributes": {"code": "P1-INTERNAL", "runtime_enabled": false}},
+    {"id": "privacy.P2-HOUSEHOLD", "version": "0.1.0-draft", "label": "P2 household", "description": "Household-data handling class definition.", "meta_ref": "meta.security-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": [], "contract_refs": ["PRIV-P1-003"], "attributes": {"code": "P2-HOUSEHOLD", "runtime_enabled": false}},
+    {"id": "privacy.P3-SENSITIVE", "version": "0.1.0-draft", "label": "P3 sensitive", "description": "Sensitive-data handling class definition.", "meta_ref": "meta.security-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": [], "contract_refs": ["PRIV-P1-003"], "attributes": {"code": "P3-SENSITIVE", "runtime_enabled": false}},
+    {"id": "privacy.P4-RESTRICTED", "version": "0.1.0-draft", "label": "P4 restricted", "description": "Restricted-data handling class definition.", "meta_ref": "meta.security-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": [], "contract_refs": ["PRIV-P1-003"], "attributes": {"code": "P4-RESTRICTED", "runtime_enabled": false}},
+    {"id": "privacy.P5-EXCLUDED", "version": "0.1.0-draft", "label": "P5 excluded", "description": "Excluded-content handling class definition; ordinary processing is not permitted.", "meta_ref": "meta.security-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-036"], "contract_refs": ["PRIV-P1-003", "DIT-ING-P1-009"], "attributes": {"code": "P5-EXCLUDED", "runtime_enabled": false}}
+  ],
+  "purposes": [
+    {"id": "PUR-P1-001", "version": "0.1.0-draft", "label": "Deliver requested workspace or document service", "description": "Purpose identifier only; it grants no access.", "meta_ref": "meta.security-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": [], "contract_refs": ["PRIV-P1-005"], "attributes": {"runtime_enabled": false}},
+    {"id": "PUR-P1-002", "version": "0.1.0-draft", "label": "Secure and operate the service", "description": "Purpose identifier only; it grants no access.", "meta_ref": "meta.security-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": [], "contract_refs": ["PRIV-P1-005"], "attributes": {"runtime_enabled": false}},
+    {"id": "PUR-P1-003", "version": "0.1.0-draft", "label": "Extract classify answer or assess with AI or OCR", "description": "Purpose identifier only; processor and route eligibility remain separately governed.", "meta_ref": "meta.security-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035", "DEC-036"], "contract_refs": ["PRIV-P1-005", "AI-CAP-001"], "attributes": {"runtime_enabled": false}},
+    {"id": "PUR-P1-004", "version": "0.1.0-draft", "label": "Monitor governed sources and household events", "description": "Purpose identifier only; no source or rule is enabled.", "meta_ref": "meta.security-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["PRIV-P1-005", "DIT-MON-001"], "attributes": {"runtime_enabled": false}},
+    {"id": "PUR-P1-005", "version": "0.1.0-draft", "label": "Share delegate or notify", "description": "Purpose identifier only; no channel, recipient, or grant is enabled.", "meta_ref": "meta.security-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-037"], "contract_refs": ["PRIV-P1-005", "AUTH-P1-012"], "attributes": {"runtime_enabled": false}},
+    {"id": "PUR-P1-006", "version": "0.1.0-draft", "label": "Export or portability", "description": "Purpose identifier only; it grants no export authority.", "meta_ref": "meta.security-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": [], "contract_refs": ["PRIV-P1-005", "AUTH-P1-012"], "attributes": {"runtime_enabled": false}},
+    {"id": "PUR-P1-007", "version": "0.1.0-draft", "label": "Product quality and safety measurement", "description": "Purpose identifier only; production content is not approved for evaluation by this seed.", "meta_ref": "meta.security-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["PRIV-P1-005", "AI-EVAL-P1-003"], "attributes": {"runtime_enabled": false}},
+    {"id": "PUR-P1-008", "version": "0.1.0-draft", "label": "Support or incident response", "description": "Purpose identifier only; it creates no standing support content access.", "meta_ref": "meta.security-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": [], "contract_refs": ["PRIV-P1-005", "AUTH-P1-026"], "attributes": {"runtime_enabled": false}}
+  ]
+}

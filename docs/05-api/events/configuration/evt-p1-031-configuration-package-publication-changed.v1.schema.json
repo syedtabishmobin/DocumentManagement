@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EVT-P1-031 ConfigurationPackage publication changed v1",
+  "allOf": [
+    {
+      "$ref": "../common/event-envelope.v1.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "const": "EVT-P1-031"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "scope_kind": {
+          "const": "PLATFORM_CONTROL"
+        },
+        "aggregate_type": {
+          "const": "ConfigurationPackage"
+        },
+        "deletion_fence": {
+          "properties": {
+            "state": {
+              "const": "NOT_APPLICABLE"
+            }
+          }
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "configuration_package_version",
+            "from_publication_state",
+            "to_publication_state",
+            "effective_at",
+            "compatibility_class",
+            "impact_assessment_ref",
+            "approval_ref",
+            "decision_fence_refs",
+            "launch_enablement_state"
+          ],
+          "properties": {
+            "configuration_package_version": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "from_publication_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/nullableSafeState"
+            },
+            "to_publication_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "effective_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "compatibility_class": {
+              "type": "string",
+              "enum": [
+                "ADDITIVE",
+                "CONSUMER_REVIEW_REQUIRED",
+                "REPLAY_REQUIRED",
+                "BREAKING"
+              ]
+            },
+            "impact_assessment_ref": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "approval_ref": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "decision_fence_refs": {
+              "type": "array",
+              "maxItems": 32,
+              "uniqueItems": true,
+              "items": {
+                "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+              }
+            },
+            "launch_enablement_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "$schema": "../schemas/notifications.schema.json",
+  "pack": {
+    "id": "pack.notifications.phase1",
+    "version": "0.1.0-draft",
+    "label": "Phase 1 notification channel and template seed",
+    "description": "Disabled channel and content-free template identifiers. DEC-037 remains open; no external delivery, recipient policy, retention, retry, acknowledgement, or outcome semantics are selected.",
+    "meta_ref": "meta.product-draft",
+    "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+    "decision_refs": ["DEC-037"],
+    "contract_refs": ["ARCH-DATA-001", "DIT-IMP-001", "DIT-HLT-001", "SEC-AUTH-001"],
+    "attributes": {"runtime_enabled": false, "external_channel_selected": false, "delivery_changes_domain_truth": false}
+  },
+  "channels": [
+    {"id": "channel.IN_APP", "version": "0.1.0-draft", "label": "In-app notification channel candidate", "description": "Disabled channel identifier; recipient, delivery, retention, and acknowledgement policy remain unset.", "meta_ref": "meta.product-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-037"], "contract_refs": ["DATA-P1-037", "AUTH-P1-012"], "attributes": {"code": "IN_APP", "external": false, "purpose_ref": "PUR-P1-005", "retention_policy": "UNSET", "recipient_policy_defined": false, "synthetic": true, "non_production": true, "runtime_enabled": false}},
+    {"id": "channel.EMAIL", "version": "0.1.0-draft", "label": "Email notification channel candidate", "description": "Disabled external-channel identifier; no provider, recipient, consent, retention, retry, or delivery guarantee is selected.", "meta_ref": "meta.product-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-037"], "contract_refs": ["DATA-P1-037", "AUTH-P1-012"], "attributes": {"code": "EMAIL", "external": true, "purpose_ref": "PUR-P1-005", "retention_policy": "UNSET", "recipient_policy_defined": false, "synthetic": true, "non_production": true, "runtime_enabled": false}},
+    {"id": "channel.PUSH", "version": "0.1.0-draft", "label": "Push notification channel candidate", "description": "Disabled external-channel identifier; no provider, recipient, consent, retention, retry, or delivery guarantee is selected.", "meta_ref": "meta.product-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-037"], "contract_refs": ["DATA-P1-037", "AUTH-P1-012"], "attributes": {"code": "PUSH", "external": true, "purpose_ref": "PUR-P1-005", "retention_policy": "UNSET", "recipient_policy_defined": false, "synthetic": true, "non_production": true, "runtime_enabled": false}}
+  ],
+  "templates": [
+    {
+      "id": "notification-template.synthetic.requirement-reminder",
+      "version": "0.1.0-draft",
+      "label": "Synthetic requirement reminder template",
+      "description": "Content-free template identifier for a reminder disposition; delivery does not change applicability, health, fulfilment, or closure.",
+      "meta_ref": "meta.product-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-037"],
+      "contract_refs": ["DIT-HLT-P1-014", "DIT-HLT-P1-021"],
+      "attributes": {"template_key": "synthetic.requirement-reminder", "locale": "en-AU", "channel_refs": ["channel.IN_APP", "channel.EMAIL", "channel.PUSH"], "trigger_state_refs": ["state.requirement-disposition.REMINDER_SET"], "permitted_action_refs": ["action.read"], "content_class_ref": "privacy.P1-INTERNAL", "safe_variable_codes": ["CASE_REF", "GENERIC_ACTION_LABEL"], "contains_protected_payload": false, "delivery_changes_domain_truth": false, "synthetic": true, "non_production": true, "runtime_enabled": false}
+    },
+    {
+      "id": "notification-template.synthetic.impact-review",
+      "version": "0.1.0-draft",
+      "label": "Synthetic impact review template",
+      "description": "Content-free template identifier for a review-required impact; no external-notification requirement or action success is implied.",
+      "meta_ref": "meta.product-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-037"],
+      "contract_refs": ["DIT-IMP-P1-009", "DIT-IMP-P1-036"],
+      "attributes": {"template_key": "synthetic.impact-review", "locale": "en-AU", "channel_refs": ["channel.IN_APP", "channel.EMAIL", "channel.PUSH"], "trigger_state_refs": ["state.impact-class.REVIEW_REQUIRED"], "permitted_action_refs": ["action.read"], "content_class_ref": "privacy.P1-INTERNAL", "safe_variable_codes": ["RECOMMENDATION_REF", "GENERIC_REVIEW_LABEL"], "contains_protected_payload": false, "delivery_changes_domain_truth": false, "synthetic": true, "non_production": true, "runtime_enabled": false}
+    }
+  ]
+}

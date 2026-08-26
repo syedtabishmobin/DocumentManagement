@@ -1,0 +1,46 @@
+{
+  "$schema": "../schemas/monitoring-rules.schema.json",
+  "pack": {
+    "id": "pack.monitoring-rules.phase1",
+    "version": "0.1.0-draft",
+    "label": "Phase 1 monitoring strategy and rule seed",
+    "description": "Disabled strategy definitions and synthetic Australia-scoped rule fixtures with no cadence, threshold, authority, or launch claim.",
+    "meta_ref": "meta.product-draft",
+    "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+    "decision_refs": ["DEC-035"],
+    "contract_refs": ["DIT-MON-001", "DIT-SRC-001", "DIT-IMP-001"],
+    "attributes": {"runtime_enabled": false, "operational_schedule_defined": false, "production_coverage_claim": false}
+  },
+  "trigger_strategies": [
+    {"id": "monitoring-strategy.DATE", "version": "0.1.0-draft", "label": "Date trigger", "description": "Exact evidence-bound date occurrence evaluated without fabricated time precision or fulfilment inference.", "meta_ref": "meta.product-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["DIT-MON-P1-001"], "attributes": {"code": "DATE", "input_kind": "EVIDENCE_BOUND_LOCAL_DATE", "schedule_required": false, "runtime_enabled": false}},
+    {"id": "monitoring-strategy.PERIODIC", "version": "0.1.0-draft", "label": "Periodic trigger", "description": "Versioned schedule occurrence; cadence, timezone, catch-up, and overlap policy remain unset.", "meta_ref": "meta.product-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["DIT-MON-P1-001"], "attributes": {"code": "PERIODIC", "input_kind": "SCHEDULE_OCCURRENCE", "schedule_required": true, "runtime_enabled": false}},
+    {"id": "monitoring-strategy.USER_OR_LIFE_EVENT", "version": "0.1.0-draft", "label": "User or life-event trigger", "description": "Evidence-bearing event occurrence that does not resolve the event as canonical fact.", "meta_ref": "meta.product-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["DIT-MON-P1-001", "DIT-FCT-P1-013"], "attributes": {"code": "USER_OR_LIFE_EVENT", "input_kind": "EVENT_OCCURRENCE", "schedule_required": false, "runtime_enabled": false}},
+    {"id": "monitoring-strategy.SOURCE_CHANGE", "version": "0.1.0-draft", "label": "Governed source-change trigger", "description": "Comparison of exact governed observations; retrieval or parser failure is not no change.", "meta_ref": "meta.source-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["DIT-MON-P1-001", "DIT-SRC-P1-011"], "attributes": {"code": "SOURCE_CHANGE", "input_kind": "SOURCE_OBSERVATION_PAIR", "schedule_required": false, "runtime_enabled": false}},
+    {"id": "monitoring-strategy.DEPENDENCY_CHANGE", "version": "0.1.0-draft", "label": "Dependency-change trigger", "description": "Exact dependency transition or bounded traversal result with cycles and truncation explicit.", "meta_ref": "meta.product-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["DIT-MON-P1-001", "DIT-GPH-P1-019"], "attributes": {"code": "DEPENDENCY_CHANGE", "input_kind": "DEPENDENCY_TRANSITION", "schedule_required": false, "runtime_enabled": false}},
+    {"id": "monitoring-strategy.DOCUMENT_VERSION", "version": "0.1.0-draft", "label": "Document-version trigger", "description": "Exact document-version or relationship transition; upload order and digest alone are insufficient.", "meta_ref": "meta.product-draft", "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null}, "decision_refs": ["DEC-035"], "contract_refs": ["DIT-MON-P1-001", "DIT-VER-P1-003"], "attributes": {"code": "DOCUMENT_VERSION", "input_kind": "DOCUMENT_VERSION_TRANSITION", "schedule_required": false, "runtime_enabled": false}}
+  ],
+  "monitoring_rules": [
+    {
+      "id": "monitoring-rule.synthetic.au.generic-policy-date",
+      "version": "0.1.0-draft",
+      "label": "Synthetic generic-record date review rule",
+      "description": "Non-production fixture connecting an evidence-bound local date to applicability and impact review; it defines no due window or legal requirement.",
+      "meta_ref": "meta.product-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-035"],
+      "contract_refs": ["DIT-MON-P1-002", "DIT-MON-P1-021", "DIT-HLT-P1-009"],
+      "attributes": {"strategy_ref": "monitoring-strategy.DATE", "jurisdiction_refs": ["jurisdiction.AU"], "document_type_refs": ["doctype.coverage.generic-policy"], "evidence_field_refs": ["evidence-field.generic-policy.effective-to"], "source_refs": [], "applicability_machine_ref": "machine.applicability", "impact_machine_ref": "machine.impact-class", "purpose_ref": "PUR-P1-004", "schedule_policy": "UNSET_NOT_ACTIVATABLE", "runtime_enabled": false, "synthetic": true, "non_production": true, "production_coverage_claim": false}
+    },
+    {
+      "id": "monitoring-rule.synthetic.au.reference-source-change",
+      "version": "0.1.0-draft",
+      "label": "Synthetic governed-source change review rule",
+      "description": "Non-production fixture connecting exact synthetic observations to review; it cannot establish real authority, applicability, impact, or no-change coverage.",
+      "meta_ref": "meta.source-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-035"],
+      "contract_refs": ["DIT-MON-P1-002", "DIT-SRC-P1-011", "DIT-IMP-P1-003"],
+      "attributes": {"strategy_ref": "monitoring-strategy.SOURCE_CHANGE", "jurisdiction_refs": ["jurisdiction.AU"], "document_type_refs": ["doctype.coverage.generic-policy"], "evidence_field_refs": [], "source_refs": ["source.synthetic.au.reference-series"], "applicability_machine_ref": "machine.applicability", "impact_machine_ref": "machine.impact-class", "purpose_ref": "PUR-P1-004", "schedule_policy": "UNSET_NOT_ACTIVATABLE", "runtime_enabled": false, "synthetic": true, "non_production": true, "production_coverage_claim": false}
+    }
+  ]
+}

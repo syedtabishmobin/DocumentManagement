@@ -1,0 +1,90 @@
+{
+  "$schema": "../schemas/requirement-profiles.schema.json",
+  "pack": {
+    "id": "pack.requirement-profiles.phase1",
+    "version": "0.1.0-draft",
+    "label": "Phase 1 requirement-profile seed",
+    "description": "One disabled synthetic Australia-first expected-evidence fixture with explicit primary, alternative, waiver-review, verification, and fulfilment separation; it is not a legal or compliance claim.",
+    "meta_ref": "meta.product-draft",
+    "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+    "decision_refs": ["DEC-034", "DEC-035"],
+    "contract_refs": ["DIT-HLT-001", "DIT-IMP-001", "DIT-GPH-001"],
+    "attributes": {"runtime_enabled": false, "production_profile_count": 0, "legal_requirement_claim": false, "compliance_claim": false, "aggregate_score_enabled": false}
+  },
+  "evidence_options": [
+    {
+      "id": "evidence-option.synthetic.generic-policy.primary",
+      "version": "0.1.0-draft",
+      "label": "Synthetic generic-record primary evidence option",
+      "description": "Fixture-only document evidence option requiring exact fields and accepted verification; it does not assert real-world sufficiency.",
+      "meta_ref": "meta.product-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-035"],
+      "contract_refs": ["DIT-HLT-P1-001", "DIT-HLT-P1-016", "DIT-HLT-P1-022"],
+      "attributes": {"evidence_kind": "DOCUMENT_EVIDENCE", "document_type_refs": ["doctype.coverage.generic-policy"], "extraction_schema_refs": ["extraction-schema.generic-policy"], "required_field_refs": ["evidence-field.generic-policy.reference"], "source_refs": [], "verification_machine_ref": "machine.evidence-verification", "synthetic": true, "non_production": true, "runtime_enabled": false}
+    },
+    {
+      "id": "evidence-option.synthetic.generic-policy.manual-alternative",
+      "version": "0.1.0-draft",
+      "label": "Synthetic reviewed manual-reference alternative",
+      "description": "Fixture-only alternative requiring separate review and verification; it does not imply the primary document exists or is unnecessary.",
+      "meta_ref": "meta.product-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-035"],
+      "contract_refs": ["DIT-HLT-P1-016", "DIT-EXT-P1-005"],
+      "attributes": {"evidence_kind": "REVIEWED_MANUAL_REFERENCE", "document_type_refs": [], "extraction_schema_refs": [], "required_field_refs": ["evidence-field.generic-policy.reference"], "source_refs": [], "verification_machine_ref": "machine.evidence-verification", "synthetic": true, "non_production": true, "runtime_enabled": false}
+    }
+  ],
+  "alternatives": [
+    {
+      "id": "alternative.synthetic.generic-policy.manual-reference",
+      "version": "0.1.0-draft",
+      "label": "Synthetic manual-reference alternative",
+      "description": "Explicit alternative for the exact synthetic profile only; selection alone never establishes fulfilment.",
+      "meta_ref": "meta.product-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-035"],
+      "contract_refs": ["DIT-HLT-P1-015", "DIT-HLT-P1-016"],
+      "attributes": {"profile_ref": "requirement-profile.synthetic.au.generic-policy-reference", "evidence_option_ref": "evidence-option.synthetic.generic-policy.manual-alternative", "substitution_scope": "SYNTHETIC_PROFILE_ONLY", "primary_document_existence_implied": false, "verification_required": true, "runtime_enabled": false}
+    }
+  ],
+  "waiver_policies": [
+    {
+      "id": "waiver-policy.synthetic.generic-policy.review-only",
+      "version": "0.1.0-draft",
+      "label": "Synthetic waiver review policy",
+      "description": "Allows only a review request for an exact synthetic case; there is no automatic effect, reusable exception, or configured duration.",
+      "meta_ref": "meta.product-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-035"],
+      "contract_refs": ["DIT-HLT-P1-017", "DIT-HLT-P1-018"],
+      "attributes": {"profile_ref": "requirement-profile.synthetic.au.generic-policy-reference", "request_supported": true, "automatic_effect": false, "approval_action_ref": "action.approve", "approved_effect_state_ref": "state.requirement-fulfilment.FULFILLED_BY_APPROVED_EXCEPTION", "duration_defined": false, "runtime_enabled": false}
+    }
+  ],
+  "fulfilment_policies": [
+    {
+      "id": "fulfilment-policy.synthetic.verified-evidence-only",
+      "version": "0.1.0-draft",
+      "label": "Synthetic verified-evidence-only fulfilment policy",
+      "description": "Fulfilment requires accepted verification under the exact option or approved exception; receipt, extraction, tasks, notifications, action success, and elapsed time cannot close the case.",
+      "meta_ref": "meta.product-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-035"],
+      "contract_refs": ["DIT-HLT-P1-020", "DIT-HLT-P1-021", "DIT-HLT-P1-022"],
+      "attributes": {"fulfilment_machine_ref": "machine.requirement-fulfilment", "verification_machine_ref": "machine.evidence-verification", "fulfilled_state_refs": ["state.requirement-fulfilment.FULFILLED_PRIMARY", "state.requirement-fulfilment.FULFILLED_ALTERNATIVE", "state.requirement-fulfilment.FULFILLED_BY_APPROVED_EXCEPTION"], "disallowed_inference_events": ["FILE_RECEIVED", "EXTRACTION_ACCEPTED", "TASK_COMPLETED", "NOTIFICATION_DELIVERED", "ACTION_SUCCEEDED", "TIME_ELAPSED"], "automatic_closure": false, "runtime_enabled": false}
+    }
+  ],
+  "requirement_profiles": [
+    {
+      "id": "requirement-profile.synthetic.au.generic-policy-reference",
+      "version": "0.1.0-draft",
+      "label": "Synthetic Australia generic-record expected-evidence profile",
+      "description": "Non-production fixture for applicability, evidence-option, alternative, waiver, health-signal, verification, and fulfilment tests only; it does not say that a real document is required or sufficient.",
+      "meta_ref": "meta.product-draft",
+      "retirement": {"state": "ACTIVE_DRAFT", "supersedes_ref": null, "replacement_ref": null, "retired_at": null},
+      "decision_refs": ["DEC-034", "DEC-035"],
+      "contract_refs": ["DIT-HLT-P1-001", "DIT-HLT-P1-004", "DIT-HLT-P1-024"],
+      "attributes": {"jurisdiction_refs": ["jurisdiction.AU"], "applicability_machine_ref": "machine.applicability", "primary_evidence_option_refs": ["evidence-option.synthetic.generic-policy.primary"], "alternative_refs": ["alternative.synthetic.generic-policy.manual-reference"], "waiver_policy_refs": ["waiver-policy.synthetic.generic-policy.review-only"], "fulfilment_policy_ref": "fulfilment-policy.synthetic.verified-evidence-only", "health_signal_machine_ref": "machine.health-signal", "monitoring_rule_refs": ["monitoring-rule.synthetic.au.generic-policy-date"], "dependency_edge_type_refs": ["edge-type.profile-expects-document-type"], "legal_requirement_claim": false, "compliance_claim": false, "synthetic": true, "non_production": true, "runtime_enabled": false}
+    }
+  ]
+}

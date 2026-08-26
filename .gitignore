@@ -1,0 +1,6 @@
+.DS_Store
+*.swp
+*.swo
+
+# Generated local delivery archives; publish these as GitHub release assets when needed.
+/artifacts/

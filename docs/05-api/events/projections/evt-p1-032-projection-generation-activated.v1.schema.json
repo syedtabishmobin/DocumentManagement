@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EVT-P1-032 Projection generation activated v1",
+  "allOf": [
+    {
+      "$ref": "../common/event-envelope.v1.schema.json"
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event_type": {
+          "const": "EVT-P1-032"
+        },
+        "schema_version": {
+          "const": "1.0.0"
+        },
+        "scope_kind": {
+          "const": "WORKSPACE"
+        },
+        "aggregate_type": {
+          "const": "ProjectionWatermark"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "projection_kind",
+            "retired_generation_id",
+            "active_generation_id",
+            "source_watermark_ref",
+            "authorization_epoch",
+            "deletion_fence_generation",
+            "validation_state",
+            "cutover_state"
+          ],
+          "properties": {
+            "projection_kind": {
+              "type": "string",
+              "enum": [
+                "FULL_TEXT",
+                "VECTOR",
+                "GRAPH",
+                "CACHE",
+                "CONVERSATION",
+                "COMPARISON"
+              ]
+            },
+            "retired_generation_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/nullableSafeRef"
+            },
+            "active_generation_id": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "source_watermark_ref": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "authorization_epoch": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeRef"
+            },
+            "deletion_fence_generation": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "validation_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            },
+            "cutover_state": {
+              "$ref": "../common/event-envelope.v1.schema.json#/$defs/safeState"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

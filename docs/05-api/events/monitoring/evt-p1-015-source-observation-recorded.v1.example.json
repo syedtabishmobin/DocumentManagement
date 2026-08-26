@@ -1,0 +1,52 @@
+{
+  "event_id": "evt_synthetic_p1_015",
+  "event_type": "EVT-P1-015",
+  "schema_version": "1.0.0",
+  "occurred_at": "2026-08-26T04:00:00Z",
+  "recorded_at": "2026-08-26T04:00:01Z",
+  "scope_kind": "GLOBAL_REFERENCE",
+  "aggregate_type": "SourceObservation",
+  "aggregate_id": "source_observation_synthetic_001",
+  "aggregate_revision": 1,
+  "aggregate_event_index": 0,
+  "attempt": 1,
+  "producer": {
+    "producer_id": "service.source_registry.synthetic",
+    "operation": "RECORD_SOURCE_OBSERVATION"
+  },
+  "actor": {
+    "actor_id": "service.source_registry.synthetic",
+    "actor_class": "SERVICE"
+  },
+  "authorization": {
+    "decision_ref": "authz_synthetic_015",
+    "decision": "ALLOW",
+    "policy_version": "policy.synthetic.v1",
+    "authorization_epoch": "platform_epoch_001"
+  },
+  "correlation_id": "correlation_synthetic_015",
+  "causation_id": "retrieval_attempt_synthetic_001",
+  "idempotency_key": "idempotency_synthetic_015",
+  "classification": {
+    "data_class": "P0-PUBLIC",
+    "purpose_id": "PUR-P1-004",
+    "residency_policy_ref": "residency.unresolved.DEC-040",
+    "retention_rule_ref": "retention.unresolved.DEC-039",
+    "deletion_lineage_ref": "deletion.lineage.synthetic.v1"
+  },
+  "deletion_fence": {
+    "state": "NOT_APPLICABLE",
+    "generation": 0
+  },
+  "payload": {
+    "source_definition_version": "source.definition.synthetic.v1",
+    "endpoint_version": "source.endpoint.synthetic.v1",
+    "coverage_manifest_version": "source.coverage.synthetic.v1",
+    "retrieval_attempt_id": "retrieval_attempt_synthetic_001",
+    "observation_kind": "SNAPSHOT",
+    "prior_observation_id": null,
+    "integrity_evidence_ref": "integrity_evidence_synthetic_015",
+    "observed_at": "2026-08-26T03:59:59Z",
+    "personalization_state": "GLOBAL_NON_PERSONALIZED"
+  }
+}

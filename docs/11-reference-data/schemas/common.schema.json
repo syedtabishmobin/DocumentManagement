@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.document-management.example.invalid/reference-data/v1/common.schema.json",
+  "x-schema-version": "1.0.0",
+  "title": "Phase 1 common reference-data catalogue",
+  "type": "object",
+  "required": [
+    "$schema",
+    "pack",
+    "metadata_profiles",
+    "owners",
+    "identifier_namespaces",
+    "effective_period_semantics",
+    "privacy_classes",
+    "purposes"
+  ],
+  "properties": {
+    "$schema": {"const": "../schemas/common.schema.json"},
+    "pack": {"$ref": "#/$defs/record"},
+    "metadata_profiles": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/metadataProfile"}
+    },
+    "owners": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"allOf": [
+        {"$ref": "#/$defs/record"},
+        {"type": "object", "properties": {"attributes": {
+          "type": "object",
+          "required": ["owner_kind"],
+          "properties": {
+            "owner_kind": {"enum": ["GOVERNANCE_FUNCTION", "PRODUCT_FUNCTION", "CONTROL_FUNCTION", "ASSURANCE_FUNCTION", "SOURCE_GOVERNANCE_FUNCTION"]},
+            "production_assignment": {"type": "boolean"},
+            "content_access_granted": {"type": "boolean"}
+          },
+          "additionalProperties": false
+        }}}
+      ]}
+    },
+    "identifier_namespaces": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"allOf": [
+        {"$ref": "#/$defs/record"},
+        {"type": "object", "properties": {"attributes": {
+          "type": "object",
+          "required": ["pattern", "reuse_allowed", "versioning"],
+          "properties": {
+            "pattern": {"type": "string", "minLength": 1},
+            "reuse_allowed": {"const": false},
+            "versioning": {"const": "IMMUTABLE_ADDITIVE"}
+          },
+          "additionalProperties": false
+        }}}
+      ]}
+    },
+    "effective_period_semantics": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"allOf": [
+        {"$ref": "#/$defs/record"},
+        {"type": "object", "properties": {"attributes": {
+          "type": "object",
+          "required": ["valid_from", "valid_to", "null_means", "known_time_separate"],
+          "properties": {
+            "valid_from": {"const": null},
+            "valid_to": {"const": null},
+            "null_means": {"const": "NOT_ACTIVATED"},
+            "known_time_separate": {"const": true}
+          },
+          "additionalProperties": false
+        }}}
+      ]}
+    },
+    "privacy_classes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"allOf": [
+        {"$ref": "#/$defs/record"},
+        {"type": "object", "properties": {"attributes": {
+          "type": "object",
+          "required": ["code", "runtime_enabled"],
+          "properties": {
+            "code": {"enum": ["P0-PUBLIC", "P1-INTERNAL", "P2-HOUSEHOLD", "P3-SENSITIVE", "P4-RESTRICTED", "P5-EXCLUDED"]},
+            "runtime_enabled": {"const": false}
+          },
+          "additionalProperties": false
+        }}}
+      ]}
+    },
+    "purposes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"allOf": [
+        {"$ref": "#/$defs/record"},
+        {"type": "object", "properties": {"attributes": {
+          "type": "object",
+          "required": ["runtime_enabled"],
+          "properties": {"runtime_enabled": {"const": false}},
+          "additionalProperties": false
+        }}}
+      ]}
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "minLength": 3,
+      "pattern": "^[A-Za-z][A-Za-z0-9._:-]{2,127}$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:-draft)?$"
+    },
+    "nullableTimestamp": {
+      "type": ["string", "null"],
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}(?:T[0-9]{2}:[0-9]{2}:[0-9]{2}Z)?$"
+    },
+    "effectivePeriod": {
+      "type": "object",
+      "required": ["valid_from", "valid_to"],
+      "properties": {
+        "valid_from": {"$ref": "#/$defs/nullableTimestamp"},
+        "valid_to": {"$ref": "#/$defs/nullableTimestamp"}
+      },
+      "additionalProperties": false
+    },
+    "retirement": {
+      "type": "object",
+      "required": ["state", "supersedes_ref", "replacement_ref", "retired_at"],
+      "properties": {
+        "state": {"enum": ["ACTIVE_DRAFT", "RETIRED"]},
+        "supersedes_ref": {"type": ["string", "null"]},
+        "replacement_ref": {"type": ["string", "null"]},
+        "retired_at": {"$ref": "#/$defs/nullableTimestamp"}
+      },
+      "additionalProperties": false
+    },
+    "review": {
+      "type": "object",
+      "required": ["state", "reviewer_refs", "reviewed_at"],
+      "properties": {
+        "state": {"const": "DRAFT"},
+        "reviewer_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/stableId"}
+        },
+        "reviewed_at": {"$ref": "#/$defs/nullableTimestamp"}
+      },
+      "additionalProperties": false
+    },
+    "metadataProfile": {
+      "type": "object",
+      "required": [
+        "id",
+        "schema_version",
+        "record_version",
+        "status",
+        "enabled",
+        "effective_period",
+        "owner_ref",
+        "review",
+        "retirement"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "schema_version": {"$ref": "#/$defs/version"},
+        "record_version": {"$ref": "#/$defs/version"},
+        "status": {"const": "DRAFT"},
+        "enabled": {"const": false},
+        "effective_period": {"$ref": "#/$defs/effectivePeriod"},
+        "owner_ref": {"$ref": "#/$defs/stableId"},
+        "review": {"$ref": "#/$defs/review"},
+        "retirement": {"$ref": "#/$defs/retirement"}
+      },
+      "additionalProperties": false
+    },
+    "record": {
+      "type": "object",
+      "required": [
+        "id",
+        "version",
+        "label",
+        "description",
+        "meta_ref",
+        "retirement",
+        "decision_refs",
+        "contract_refs",
+        "attributes"
+      ],
+      "properties": {
+        "id": {"$ref": "#/$defs/stableId"},
+        "version": {"$ref": "#/$defs/version"},
+        "label": {"type": "string", "minLength": 1},
+        "description": {"type": "string", "minLength": 1},
+        "meta_ref": {"$ref": "#/$defs/stableId"},
+        "retirement": {"$ref": "#/$defs/retirement"},
+        "decision_refs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/stableId"}
+        },
+        "contract_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/stableId"}
+        },
+        "attributes": {"type": "object"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

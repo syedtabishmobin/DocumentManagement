@@ -1,0 +1,489 @@
+{
+  "manifest_id": "fixture-manifest.phase1.synthetic",
+  "version": "0.1.0-draft",
+  "status": "DRAFT",
+  "effective_from": "2026-08-26",
+  "owner": "Quality Engineering",
+  "review": {
+    "state": "REQUIRED",
+    "decision_fences": [
+      "DEC-034",
+      "DEC-035",
+      "DEC-036",
+      "DEC-037",
+      "DEC-038",
+      "DEC-039",
+      "DEC-040"
+    ]
+  },
+  "synthetic_only": true,
+  "privacy_class": "P1-SYNTHETIC-NONPERSONAL",
+  "permitted_environments": [
+    "LOCAL_ISOLATED",
+    "CI_ISOLATED",
+    "PREPROD_ISOLATED"
+  ],
+  "network_policy": "DENY_OUTBOUND",
+  "fixtures": [
+    {
+      "fixture_id": "FIX-P1-001",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Two unrelated synthetic household workspaces",
+      "generator": "fixture-generator.workspace.v1",
+      "seed": "phase1-workspaces-001",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Cross-workspace and ordinary household workflow tests",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [],
+      "labels": [
+        "workspace-alpha-synthetic",
+        "workspace-beta-synthetic"
+      ],
+      "cleanup": "Purge ephemeral namespace and verify no cross-workspace references",
+      "limitations": [
+        "No identity assurance or production tenant-isolation claim"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-002",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Synthetic authority and revocation states",
+      "generator": "fixture-generator.authority.v1",
+      "seed": "phase1-authority-002",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Owner member dependant guest workload grant and stale-policy tests",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [],
+      "labels": [
+        "actor-owner-synthetic",
+        "actor-member-synthetic",
+        "subject-dependant-synthetic",
+        "actor-guest-synthetic",
+        "workload-synthetic"
+      ],
+      "cleanup": "Invalidate all synthetic sessions and grants",
+      "limitations": [
+        "No authentication-factor or recovery assurance"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-003",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Immutable artifacts and logical version lineage",
+      "generator": "fixture-generator.documents.v1",
+      "seed": "phase1-documents-003",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Artifact identity deduplication version supersession and conformed-view tests",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [],
+      "labels": [
+        "artifact-a-synthetic",
+        "artifact-b-byte-equal-synthetic",
+        "logical-document-a-synthetic"
+      ],
+      "cleanup": "Verify ephemeral artifact digests then purge test namespace",
+      "limitations": [
+        "No launch document-type or format coverage claim"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-004",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Ingestion state and job schedule",
+      "generator": "fixture-generator.ingestion.v1",
+      "seed": "phase1-ingestion-004",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Idempotency quarantine cancellation replay and deletion-race tests",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [],
+      "labels": [
+        "ingestion-case-synthetic",
+        "job-order-synthetic"
+      ],
+      "cleanup": "Cancel and reconcile jobs then verify deletion fence",
+      "limitations": [
+        "Scanner parser and OCR are deterministic fakes"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-005",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Synthetic page span and coordinate anchors",
+      "generator": "fixture-generator.evidence.v1",
+      "seed": "phase1-evidence-005",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Typed extraction presence cardinality and exact-anchor tests",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [],
+      "labels": [
+        "evidence-anchor-synthetic",
+        "unreadable-region-synthetic"
+      ],
+      "cleanup": "Remove derived analysis generations after lineage assertions",
+      "limitations": [
+        "Synthetic layouts only; no launch schema accuracy claim"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-006",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Bitemporal occurrences conflicts and entity candidates",
+      "generator": "fixture-generator.facts.v1",
+      "seed": "phase1-facts-006",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Fact resolution correction conflict and knowledge-as-of tests",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [],
+      "labels": [
+        "synthetic-subject-a",
+        "synthetic-location-label-old",
+        "synthetic-location-label-new"
+      ],
+      "cleanup": "Purge ephemeral fact namespace after history export",
+      "limitations": [
+        "Labels are artificial and not real addresses or persons"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-007",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Typed graph with cycle depth bound and restricted bridge",
+      "generator": "fixture-generator.graph.v1",
+      "seed": "phase1-graph-007",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Graph cardinality traversal impact path and minimal-disclosure tests",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [],
+      "labels": [
+        "node-a-synthetic",
+        "node-b-restricted-synthetic",
+        "cycle-edge-synthetic"
+      ],
+      "cleanup": "Drop derived graph generation and verify canonical records remain",
+      "limitations": [
+        "Synthetic fan-out only; not a capacity claim"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-008",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Disabled synthetic trusted-source observations",
+      "generator": "fixture-generator.sources.v1",
+      "seed": "phase1-sources-008",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Retrieval parser freshness health coverage and replay tests",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [
+        "https://source-a.example.invalid/phase1",
+        "https://source-b.example.invalid/phase1"
+      ],
+      "labels": [
+        "source-healthy-synthetic",
+        "source-parser-failed-synthetic"
+      ],
+      "cleanup": "Delete ephemeral observations snapshots and parser outputs",
+      "limitations": [
+        "Sources are disabled and non-authoritative; no launch or legal coverage claim"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-009",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Monitoring trigger and applicability matrix",
+      "generator": "fixture-generator.monitoring.v1",
+      "seed": "phase1-monitoring-009",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Schedule event document dependency source trigger and six-outcome applicability tests",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [],
+      "labels": [
+        "trigger-date-synthetic",
+        "trigger-event-synthetic",
+        "rule-draft-disabled"
+      ],
+      "cleanup": "Cancel schedules and purge replay checkpoints",
+      "limitations": [
+        "Rules are DRAFT and disabled; no jurisdictional claim"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-010",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Impact recommendation approval and action ledger",
+      "generator": "fixture-generator.actions.v1",
+      "seed": "phase1-actions-010",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Typed path impact class approval digest unknown effect reconciliation and evidence closure",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [],
+      "labels": [
+        "recommendation-synthetic",
+        "approval-synthetic",
+        "effect-never-dispatched-synthetic"
+      ],
+      "cleanup": "Reconcile all fake effects and purge temporary artifacts",
+      "limitations": [
+        "No live external effect or notification is possible"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-011",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Disabled expected-evidence profile and fulfilment states",
+      "generator": "fixture-generator.health.v1",
+      "seed": "phase1-health-011",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Health signals alternatives waivers dispositions fulfilment and score-fence tests",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [],
+      "labels": [
+        "requirement-profile-draft-disabled",
+        "alternative-synthetic",
+        "waiver-synthetic"
+      ],
+      "cleanup": "Purge ephemeral requirement cases and findings",
+      "limitations": [
+        "No compliance claim and no aggregate score"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-012",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Authorized conflicting stale and restricted retrieval corpus",
+      "generator": "fixture-generator.retrieval.v1",
+      "seed": "phase1-retrieval-012",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Search cited answer comparison limitation injection and revocation tests",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [],
+      "labels": [
+        "claim-supported-synthetic",
+        "claim-conflicting-synthetic",
+        "evidence-restricted-synthetic"
+      ],
+      "cleanup": "Drop search vector conversation and citation test generations",
+      "limitations": [
+        "No model-quality or launch-language claim"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-013",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Non-executable unsafe-file classification markers",
+      "generator": "fixture-generator.file-safety.v1",
+      "seed": "phase1-file-safety-013",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Containment tests for malformed active encrypted archive and oversize classifications",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [],
+      "labels": [
+        "marker-polyglot-synthetic",
+        "marker-archive-depth-synthetic",
+        "marker-active-content-synthetic"
+      ],
+      "cleanup": "Purge contained markers and verify no downstream derivative",
+      "limitations": [
+        "Markers are inert and contain no exploit payload"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-014",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Synthetic suspected-clinical boundary marker",
+      "generator": "fixture-generator.clinical-boundary.v1",
+      "seed": "phase1-clinical-014",
+      "classification": "P1-SYNTHETIC-SENSITIVE-MARKER",
+      "synthetic": true,
+      "purpose": "Prove POLICY_HOLD and ordinary-route exclusion while DEC-036 is open",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [],
+      "labels": [
+        "suspected-clinical-synthetic"
+      ],
+      "cleanup": "Verify hold then purge under test policy",
+      "limitations": [
+        "Not a real clinical record and does not choose retention or disposition"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-015",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Scoped grant and portable export envelope",
+      "generator": "fixture-generator.sharing-export.v1",
+      "seed": "phase1-sharing-015",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Grant preview expiry revoke asynchronous export partial package and redemption tests",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [],
+      "labels": [
+        "grant-two-resources-synthetic",
+        "export-envelope-draft-synthetic"
+      ],
+      "cleanup": "Revoke grants and purge temporary packages",
+      "limitations": [
+        "No complete portability claim"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-016",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Deletion fence residual and restore generations",
+      "generator": "fixture-generator.deletion.v1",
+      "seed": "phase1-deletion-016",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Per-data-role purge late event rebuild resync backup restore and non-resurrection tests",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [],
+      "labels": [
+        "deletion-fence-synthetic",
+        "backup-generation-synthetic",
+        "late-event-synthetic"
+      ],
+      "cleanup": "Destroy ephemeral backup namespace after fence verification",
+      "limitations": [
+        "No deletion or backup-expiry duration"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-017",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "In-app task and disabled channel states",
+      "generator": "fixture-generator.notifications.v1",
+      "seed": "phase1-notifications-017",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Task reminder snooze dedup stale-source revoke and external-channel fence tests",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [
+        "https://channel.example.invalid/disabled"
+      ],
+      "labels": [
+        "in-app-reminder-synthetic",
+        "external-channel-disabled"
+      ],
+      "cleanup": "Cancel tasks and purge delivery attempts",
+      "limitations": [
+        "No external delivery is enabled or claimed"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-018",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Immutable configuration package lifecycle",
+      "generator": "fixture-generator.configuration.v1",
+      "seed": "phase1-configuration-018",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Validation approval publication acknowledgement activation supersession and repair tests",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [],
+      "labels": [
+        "config-package-draft-disabled",
+        "config-package-incompatible-synthetic"
+      ],
+      "cleanup": "Deactivate all test packages and verify consumer watermarks",
+      "limitations": [
+        "Cannot activate production capability or close a decision"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-019",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Privacy-safe telemetry canary vocabulary",
+      "generator": "fixture-generator.telemetry-canary.v1",
+      "seed": "phase1-telemetry-019",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Verify prohibited content classes are rejected before ordinary telemetry emission",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [
+        "https://telemetry.example.invalid/disabled"
+      ],
+      "labels": [
+        "canary-content-synthetic",
+        "canary-query-synthetic",
+        "canary-provider-payload-synthetic"
+      ],
+      "cleanup": "Scan then purge isolated evidence artifacts",
+      "limitations": [
+        "Canaries are labels, not household content or credentials"
+      ]
+    },
+    {
+      "fixture_id": "FIX-P1-020",
+      "version": "0.1.0-draft",
+      "status": "DRAFT",
+      "title": "Schema migration and projection generations",
+      "generator": "fixture-generator.migrations.v1",
+      "seed": "phase1-migrations-020",
+      "classification": "P1-SYNTHETIC-NONPERSONAL",
+      "synthetic": true,
+      "purpose": "Old-new compatibility interruption rerun cutover rollback rejection and forward repair tests",
+      "contains_personal_data": false,
+      "credential_mode": "NONE",
+      "endpoint_refs": [],
+      "labels": [
+        "schema-old-synthetic",
+        "schema-new-synthetic",
+        "projection-generation-synthetic"
+      ],
+      "cleanup": "Return ephemeral stores to empty validated baseline",
+      "limitations": [
+        "No selected persistence technology"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "event_id": "evt_synthetic_p1_025",
+  "event_type": "EVT-P1-025",
+  "schema_version": "1.0.0",
+  "occurred_at": "2026-08-26T05:05:00Z",
+  "recorded_at": "2026-08-26T05:05:01Z",
+  "scope_kind": "WORKSPACE",
+  "workspace_id": "workspace_synthetic_001",
+  "aggregate_type": "RequirementCase",
+  "aggregate_id": "requirement_case_synthetic_001",
+  "aggregate_revision": 5,
+  "aggregate_event_index": 0,
+  "attempt": 1,
+  "producer": {
+    "producer_id": "service.requirement.synthetic",
+    "operation": "CHANGE_REQUIREMENT_CASE_STATE"
+  },
+  "actor": {
+    "actor_id": "service.requirement.synthetic",
+    "actor_class": "SERVICE"
+  },
+  "authorization": {
+    "decision_ref": "authz_synthetic_025",
+    "decision": "ALLOW",
+    "policy_version": "policy.synthetic.v1",
+    "authorization_epoch": "auth_epoch_004"
+  },
+  "correlation_id": "correlation_synthetic_025",
+  "causation_id": "evidence_verification_synthetic_001",
+  "idempotency_key": "idempotency_synthetic_025",
+  "classification": {
+    "data_class": "P3-SENSITIVE",
+    "purpose_id": "PUR-P1-001",
+    "residency_policy_ref": "residency.unresolved.DEC-040",
+    "retention_rule_ref": "retention.unresolved.DEC-039",
+    "deletion_lineage_ref": "deletion.lineage.synthetic.v1"
+  },
+  "deletion_fence": {
+    "state": "NOT_FENCED",
+    "generation": 0
+  },
+  "payload": {
+    "requirement_profile_version": "requirement.profile.synthetic.v1",
+    "health_evaluation_id": "health_evaluation_synthetic_001",
+    "applicability_outcome": "APPLICABLE",
+    "health_signals": [
+      "INSUFFICIENT"
+    ],
+    "user_disposition": "EVIDENCE_ADDED",
+    "previous_fulfilment_state": "EVIDENCE_PENDING",
+    "fulfilment_state": "VERIFICATION_REQUIRED",
+    "reason_code": "VERIFICATION_INSUFFICIENT"
+  }
+}

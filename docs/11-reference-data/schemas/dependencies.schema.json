@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.document-management.example.invalid/reference-data/v1/dependencies.schema.json",
+  "x-schema-version": "1.0.0",
+  "title": "Phase 1 dependency node and edge type catalogue",
+  "type": "object",
+  "required": ["$schema", "pack", "node_types", "edge_types"],
+  "properties": {
+    "$schema": {"const": "../schemas/dependencies.schema.json"},
+    "pack": {"$ref": "common.schema.json#/$defs/record"},
+    "node_types": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["aggregate_kind", "identity_scope", "sensitivity_ref", "authoritative_record_required", "deletion_behavior", "runtime_enabled"],
+        "properties": {
+          "aggregate_kind": {"type": "string", "minLength": 1},
+          "identity_scope": {"enum": ["WORKSPACE", "GLOBAL_REFERENCE", "WORKSPACE_OR_GLOBAL_REFERENCE"]},
+          "sensitivity_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "authoritative_record_required": {"const": true},
+          "deletion_behavior": {"enum": ["FENCE_AND_REMOVE_PROJECTION", "REMOVE_PROJECTION_WHEN_SOURCE_INELIGIBLE"]},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}},
+    "edge_types": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["source_node_type_refs", "target_node_type_refs", "direction", "cardinality", "temporal_mode", "provenance_required", "evidence_required", "cycle_policy", "max_depth", "max_fanout", "authorization_per_hop", "deletion_behavior", "runtime_enabled"],
+        "properties": {
+          "source_node_type_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "target_node_type_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "direction": {"const": "DIRECTED"},
+          "cardinality": {"enum": ["ONE_TO_ONE", "ONE_TO_MANY", "MANY_TO_ONE", "MANY_TO_MANY"]},
+          "temporal_mode": {"enum": ["BITEMPORAL", "VALID_TIME_AND_RECORDED_TIME", "VERSION_BOUND"]},
+          "provenance_required": {"const": true},
+          "evidence_required": {"type": "boolean"},
+          "cycle_policy": {"enum": ["DENY", "ALLOW_ONLY_WITH_BOUNDED_TRAVERSAL"]},
+          "max_depth": {"const": null},
+          "max_fanout": {"const": null},
+          "authorization_per_hop": {"const": true},
+          "deletion_behavior": {"const": "DELETE_OR_FENCE_AUTHORITATIVE_RECORD_THEN_REBUILD_PROJECTION"},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}}
+  },
+  "additionalProperties": false
+}

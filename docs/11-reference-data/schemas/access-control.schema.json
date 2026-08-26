@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.document-management.example.invalid/reference-data/v1/access-control.schema.json",
+  "x-schema-version": "1.0.0",
+  "title": "Phase 1 roles, permissions, actions, and policy decisions",
+  "type": "object",
+  "required": ["$schema", "pack", "actions", "policy_decisions", "permissions", "roles", "policies"],
+  "properties": {
+    "$schema": {"const": "../schemas/access-control.schema.json"},
+    "pack": {"$ref": "common.schema.json#/$defs/record"},
+    "actions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {"type": "object", "required": ["code", "consequence_class", "runtime_enabled"], "properties": {"code": {"type": "string", "minLength": 1}, "consequence_class": {"enum": ["READ", "WRITE", "APPROVAL", "EXECUTION", "VERIFICATION", "EXPORT", "DELETION", "AUDIT"]}, "runtime_enabled": {"const": false}}, "additionalProperties": false}}}
+    ]}},
+    "policy_decisions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {"type": "object", "required": ["code", "runtime_enabled"], "properties": {"code": {"enum": ["ALLOW", "DENY", "REDACT", "MINIMAL_DISCLOSURE"]}, "runtime_enabled": {"const": false}}, "additionalProperties": false}}}
+    ]}},
+    "permissions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["action_refs", "resource_kinds", "field_policy_required", "purpose_required", "runtime_enabled"],
+        "properties": {
+          "action_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "resource_kinds": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "field_policy_required": {"const": true},
+          "purpose_required": {"const": true},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}},
+    "roles": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["permission_refs", "standing_content_access", "break_glass", "runtime_enabled"],
+        "properties": {
+          "permission_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "standing_content_access": {"const": false},
+          "break_glass": {"const": false},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}},
+    "policies": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["decision_ref", "action_refs", "role_refs", "default_policy", "runtime_enabled"],
+        "properties": {
+          "decision_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "action_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "role_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "default_policy": {"type": "boolean"},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}}
+  },
+  "additionalProperties": false
+}

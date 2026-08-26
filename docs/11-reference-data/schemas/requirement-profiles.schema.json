@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.document-management.example.invalid/reference-data/v1/requirement-profiles.schema.json",
+  "x-schema-version": "1.0.0",
+  "title": "Phase 1 requirement profiles, alternatives, waivers, and fulfilment",
+  "type": "object",
+  "required": ["$schema", "pack", "evidence_options", "alternatives", "waiver_policies", "fulfilment_policies", "requirement_profiles"],
+  "properties": {
+    "$schema": {"const": "../schemas/requirement-profiles.schema.json"},
+    "pack": {"$ref": "common.schema.json#/$defs/record"},
+    "evidence_options": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["evidence_kind", "document_type_refs", "extraction_schema_refs", "required_field_refs", "source_refs", "verification_machine_ref", "synthetic", "non_production", "runtime_enabled"],
+        "properties": {
+          "evidence_kind": {"enum": ["DOCUMENT_EVIDENCE", "REVIEWED_MANUAL_REFERENCE"]},
+          "document_type_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "extraction_schema_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "required_field_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "source_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "verification_machine_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "synthetic": {"const": true},
+          "non_production": {"const": true},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}},
+    "alternatives": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["profile_ref", "evidence_option_ref", "substitution_scope", "primary_document_existence_implied", "verification_required", "runtime_enabled"],
+        "properties": {
+          "profile_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "evidence_option_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "substitution_scope": {"const": "SYNTHETIC_PROFILE_ONLY"},
+          "primary_document_existence_implied": {"const": false},
+          "verification_required": {"const": true},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}},
+    "waiver_policies": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["profile_ref", "request_supported", "automatic_effect", "approval_action_ref", "approved_effect_state_ref", "duration_defined", "runtime_enabled"],
+        "properties": {
+          "profile_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "request_supported": {"const": true},
+          "automatic_effect": {"const": false},
+          "approval_action_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "approved_effect_state_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "duration_defined": {"const": false},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}},
+    "fulfilment_policies": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["fulfilment_machine_ref", "verification_machine_ref", "fulfilled_state_refs", "disallowed_inference_events", "automatic_closure", "runtime_enabled"],
+        "properties": {
+          "fulfilment_machine_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "verification_machine_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "fulfilled_state_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "disallowed_inference_events": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "automatic_closure": {"const": false},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}},
+    "requirement_profiles": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["jurisdiction_refs", "applicability_machine_ref", "primary_evidence_option_refs", "alternative_refs", "waiver_policy_refs", "fulfilment_policy_ref", "health_signal_machine_ref", "monitoring_rule_refs", "dependency_edge_type_refs", "legal_requirement_claim", "compliance_claim", "synthetic", "non_production", "runtime_enabled"],
+        "properties": {
+          "jurisdiction_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "applicability_machine_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "primary_evidence_option_refs": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "alternative_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "waiver_policy_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "fulfilment_policy_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "health_signal_machine_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "monitoring_rule_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "dependency_edge_type_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "legal_requirement_claim": {"const": false},
+          "compliance_claim": {"const": false},
+          "synthetic": {"const": true},
+          "non_production": {"const": true},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}}
+  },
+  "additionalProperties": false
+}

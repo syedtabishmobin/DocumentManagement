@@ -1,0 +1,49 @@
+{
+  "event_id": "evt_synthetic_p1_004",
+  "event_type": "EVT-P1-004",
+  "schema_version": "1.0.0",
+  "occurred_at": "2026-08-26T01:03:00Z",
+  "recorded_at": "2026-08-26T01:03:01Z",
+  "scope_kind": "WORKSPACE",
+  "workspace_id": "workspace_synthetic_001",
+  "aggregate_type": "AccessGrant",
+  "aggregate_id": "grant_synthetic_001",
+  "aggregate_revision": 2,
+  "aggregate_event_index": 0,
+  "attempt": 1,
+  "producer": {
+    "producer_id": "service.grant.synthetic",
+    "operation": "CHANGE_ACCESS_GRANT_STATE"
+  },
+  "actor": {
+    "actor_id": "actor_synthetic_001",
+    "actor_class": "HUMAN"
+  },
+  "authorization": {
+    "decision_ref": "authz_synthetic_004",
+    "decision": "ALLOW",
+    "policy_version": "policy.synthetic.v1",
+    "authorization_epoch": "auth_epoch_004"
+  },
+  "correlation_id": "correlation_synthetic_004",
+  "causation_id": "command_synthetic_004",
+  "idempotency_key": "idempotency_synthetic_004",
+  "classification": {
+    "data_class": "P3-SENSITIVE",
+    "purpose_id": "PUR-P1-005",
+    "residency_policy_ref": "residency.unresolved.DEC-040",
+    "retention_rule_ref": "retention.unresolved.DEC-039",
+    "deletion_lineage_ref": "deletion.lineage.synthetic.v1"
+  },
+  "deletion_fence": {
+    "state": "NOT_FENCED",
+    "generation": 0
+  },
+  "payload": {
+    "from_state": "Active",
+    "to_state": "Revoked",
+    "reason_code": "GRANT_REVOKED",
+    "grant_scope_version": "grant.scope.synthetic.v2",
+    "effective_authorization_epoch": "auth_epoch_004"
+  }
+}

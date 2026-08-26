@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.document-management.example.invalid/reference-data/v1/ai-capabilities.schema.json",
+  "x-schema-version": "1.0.0",
+  "title": "Phase 1 AI capability registry",
+  "type": "object",
+  "required": ["$schema", "pack", "tool_classes", "output_contracts", "capabilities"],
+  "properties": {
+    "$schema": {"const": "../schemas/ai-capabilities.schema.json"},
+    "pack": {"$ref": "common.schema.json#/$defs/record"},
+    "tool_classes": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["code", "effect_class", "model_direct_effect_authority", "runtime_enabled"],
+        "properties": {
+          "code": {"enum": ["READ_EVIDENCE", "READ_DERIVED", "EVALUATE_DETERMINISTIC", "CREATE_PROPOSAL", "PREVIEW_EFFECT", "CONSEQUENTIAL_EFFECT", "EXTERNAL_RETRIEVAL"]},
+          "effect_class": {"enum": ["READ_ONLY", "DETERMINISTIC_EVALUATION", "INERT_PROPOSAL", "PREVIEW_ONLY", "CONSEQUENTIAL", "GOVERNED_RETRIEVAL"]},
+          "model_direct_effect_authority": {"const": false},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}},
+    "output_contracts": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["payload_id", "capability_ref", "output_status_machine_ref", "execution_authority", "additional_properties_allowed", "runtime_enabled"],
+        "properties": {
+          "payload_id": {"type": "string", "pattern": "^ai\\.[a-z0-9_]+$"},
+          "capability_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "output_status_machine_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "execution_authority": {"const": "NONE"},
+          "additional_properties_allowed": {"const": false},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}},
+    "capabilities": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"allOf": [
+      {"$ref": "common.schema.json#/$defs/record"},
+      {"type": "object", "properties": {"attributes": {
+        "type": "object",
+        "required": ["capability_code", "input_scope", "output_contract_ref", "allowed_tool_class_refs", "allowed_action_refs", "review_policy", "proposed_effect_only", "clinical_allowed", "provider_selected", "calibration_selected", "runtime_enabled"],
+        "properties": {
+          "capability_code": {"type": "string", "pattern": "^AI-CAP-P1-[0-9]{3}$"},
+          "input_scope": {"type": "string", "minLength": 1},
+          "output_contract_ref": {"$ref": "common.schema.json#/$defs/stableId"},
+          "allowed_tool_class_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "allowed_action_refs": {"type": "array", "uniqueItems": true, "items": {"$ref": "common.schema.json#/$defs/stableId"}},
+          "review_policy": {"const": "REVIEW_ONLY_OR_DISABLED"},
+          "proposed_effect_only": {"const": true},
+          "clinical_allowed": {"const": false},
+          "provider_selected": {"const": false},
+          "calibration_selected": {"const": false},
+          "runtime_enabled": {"const": false}
+        },
+        "additionalProperties": false
+      }}}
+    ]}}
+  },
+  "additionalProperties": false
+}

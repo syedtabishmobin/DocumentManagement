@@ -1,0 +1,49 @@
+{
+  "event_id": "evt_synthetic_p1_011",
+  "event_type": "EVT-P1-011",
+  "schema_version": "1.0.0",
+  "occurred_at": "2026-08-26T02:05:00Z",
+  "recorded_at": "2026-08-26T02:05:01Z",
+  "scope_kind": "WORKSPACE",
+  "workspace_id": "workspace_synthetic_001",
+  "aggregate_type": "LogicalDocument",
+  "aggregate_id": "logical_document_synthetic_001",
+  "aggregate_revision": 4,
+  "aggregate_event_index": 0,
+  "attempt": 1,
+  "producer": {
+    "producer_id": "service.document.synthetic",
+    "operation": "CHANGE_DOCUMENT_LIFECYCLE"
+  },
+  "actor": {
+    "actor_id": "actor_synthetic_001",
+    "actor_class": "HUMAN"
+  },
+  "authorization": {
+    "decision_ref": "authz_synthetic_011",
+    "decision": "ALLOW",
+    "policy_version": "policy.synthetic.v1",
+    "authorization_epoch": "auth_epoch_004"
+  },
+  "correlation_id": "correlation_synthetic_011",
+  "causation_id": "command_synthetic_011",
+  "idempotency_key": "idempotency_synthetic_011",
+  "classification": {
+    "data_class": "P2-HOUSEHOLD",
+    "purpose_id": "PUR-P1-001",
+    "residency_policy_ref": "residency.unresolved.DEC-040",
+    "retention_rule_ref": "retention.unresolved.DEC-039",
+    "deletion_lineage_ref": "deletion.lineage.synthetic.v1"
+  },
+  "deletion_fence": {
+    "state": "NOT_FENCED",
+    "generation": 0
+  },
+  "payload": {
+    "transition_id": "transition_synthetic_011",
+    "from_availability_state": "Active",
+    "to_availability_state": "Archived",
+    "reason_code": "USER_ARCHIVED",
+    "deletion_case_id": null
+  }
+}
