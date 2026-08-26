@@ -4,7 +4,7 @@
 |---|---|
 | Document ID | `ARCH-ADR-INDEX-001` |
 | Version | `0.1` |
-| Status | **DRAFT index** |
+| Status | **ACTIVE index** |
 | Updated | 26 August 2026 |
 
 ## Purpose and authority
@@ -30,15 +30,16 @@ ADR IDs and filenames are stable. Retired numbers are never reused. A supersedin
 
 ## Current ADR set
 
-All ADRs in this initial set are **PROPOSED**.
+All ADRs in the current Phase 1 implementation set are **ACCEPTED**.
 
 | ADR | Status | Proposed choice | Primary constraints |
 |---|---|---|---|
-| [`ADR-ARCH-001`](ADR-001-bitemporal-fact-and-rule-history.md) | PROPOSED | Append-only bitemporal fact and consequential-rule history with valid-time and transaction-time queries | `DEC-004`, `REQ-P1-FCT-001`–`004`, `DATA-P1-011`–`020` |
-| [`ADR-ARCH-002`](ADR-002-immutable-originals-and-rebuildable-derivatives.md) | PROPOSED | Put-once originals/evidence with versioned, lineage-complete, rebuildable derivatives | `DEC-005`, `REQ-P1-DOC-001`–`008`, `DATA-P1-021`–`030` |
-| [`ADR-ARCH-003`](ADR-003-current-authorization-for-derived-projections.md) | PROPOSED | Projection-time filtering plus mandatory current-policy output enforcement and epoch/fence invalidation | `DEC-003`, `DEC-008`, `REQ-P1-TRUST-002`, `AUTH-P1-019`–`024` |
-| [`ADR-ARCH-004`](ADR-004-durable-commands-events-and-eventual-consistency.md) | PROPOSED | Local authoritative transitions with durable publication, idempotent events, explicit workflows, and eventual cross-aggregate convergence | `DEC-006`, `ARCH-P1-019`–`024`, `DATA-P1-033`–`040` |
-| [`ADR-ARCH-005`](ADR-005-provider-neutral-ports-and-residency-policy.md) | PROPOSED | Versioned provider-neutral ports with capability conformance and policy-enforced processing/residency routes | `DEC-009`, `DEC-022`, `REQ-P1-AI-007`, `REQ-P1-TRUST-005`, `009` |
+| [`ADR-ARCH-001`](ADR-001-bitemporal-fact-and-rule-history.md) | ACCEPTED | Append-only bitemporal fact and consequential-rule history with valid-time and transaction-time queries | `DEC-004`, `REQ-P1-FCT-001`–`004`, `DATA-P1-011`–`020` |
+| [`ADR-ARCH-002`](ADR-002-immutable-originals-and-rebuildable-derivatives.md) | ACCEPTED | Put-once originals/evidence with versioned, lineage-complete, rebuildable derivatives | `DEC-005`, `REQ-P1-DOC-001`–`008`, `DATA-P1-021`–`030` |
+| [`ADR-ARCH-003`](ADR-003-current-authorization-for-derived-projections.md) | ACCEPTED | Projection-time filtering plus mandatory current-policy output enforcement and epoch/fence invalidation | `DEC-003`, `DEC-008`, `REQ-P1-TRUST-002`, `AUTH-P1-019`–`024` |
+| [`ADR-ARCH-004`](ADR-004-durable-commands-events-and-eventual-consistency.md) | ACCEPTED | Local authoritative transitions with durable publication, idempotent events, explicit workflows, and eventual cross-aggregate convergence | `DEC-006`, `ARCH-P1-019`–`024`, `DATA-P1-033`–`040` |
+| [`ADR-ARCH-005`](ADR-005-provider-neutral-ports-and-residency-policy.md) | ACCEPTED | Versioned provider-neutral ports with capability conformance and policy-enforced processing/residency routes | `DEC-009`, `DEC-022`, `REQ-P1-AI-007`, `REQ-P1-TRUST-005`, `009` |
+| [`ADR-ARCH-006`](ADR-006-phase-1-local-first-typescript-stack.md) | ACCEPTED | TypeScript monorepo, responsive React PWA, NestJS API, local adapters, and explicit production adapter gates | `DEC-041`, `DEC-042`, `ENG-STACK-001`, `ENG-REP-001` |
 
 Together these records form a coherent logical baseline: authoritative state and immutable evidence retain history; derivatives remain replaceable; asynchronous work cannot lose triggers or invent completion; every output/effect uses current authorization; and all external/data-placement choices pass replaceable capability and residency policy boundaries.
 

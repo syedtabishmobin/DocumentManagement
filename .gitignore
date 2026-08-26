@@ -4,3 +4,15 @@
 
 # Generated local delivery archives; publish these as GitHub release assets when needed.
 /artifacts/
+node_modules/
+.pnpm-store/
+dist/
+coverage/
+.vite/
+.next/
+.env
+.env.local
+local-data/
+uploads/
+*.log
+*.tsbuildinfo

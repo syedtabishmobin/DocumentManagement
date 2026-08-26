@@ -4,7 +4,7 @@
 |---|---|
 | Document ID | `ENG-IDX-001` |
 | Version | `0.1` |
-| Status | **DRAFT — specification only; not implementation authority** |
+| Status | **APPROVED IMPLEMENTATION CONTRACT — production activation remains gated** |
 | Product phase | Phase 1 — Personal and Family |
 | Updated | 26 August 2026 |
 

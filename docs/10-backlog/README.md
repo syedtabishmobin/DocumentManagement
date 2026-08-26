@@ -24,7 +24,7 @@ The four slices are coherent value increments, not folders or handover chapters:
 | `P1-S3` | Monitor and close the loop | Governed sources/rules, monitoring, applicability, impact, recommendations, approval, action, evidence closure, health findings, and in-app work. |
 | `P1-S4` | Family launch and portability | Scoped sharing, dependant boundaries, disabled connector/channel/score fences, export, deletion, residency, and explicit recovery/continuity absence. |
 
-`DEC-030` remains `PROPOSED`; therefore the sequence and slice contents remain a planning recommendation until approved.
+`DEC-030` and `DEC-041` approve the complete Phase 1 sequence as one continuous implementation program; slices remain evidence and engineering checkpoints rather than separate scope approvals.
 
 ## 2. Reading order
 

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="DocumentManagement">
+  <rect width="512" height="512" rx="112" fill="#163d35"/>
+  <path d="M156 108h132l76 76v220H156z" fill="#fffdfa"/>
+  <path d="M288 108v76h76" fill="#b9dfd1"/>
+  <path d="M208 240h104M208 286h104M208 332h72" fill="none" stroke="#e87342" stroke-linecap="round" stroke-width="22"/>
+</svg>

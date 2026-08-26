@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Document ID | `ADR-ARCH-004` |
-| Status | **PROPOSED — not implementation authority** |
+| Status | **ACCEPTED for Phase 1 implementation** |
 | Date | 26 August 2026 |
 | Decision scope | Synchronous command boundaries, durable publication, asynchronous workflows, idempotency, and external effects |
 | Decision owners | Architecture and domain owners |

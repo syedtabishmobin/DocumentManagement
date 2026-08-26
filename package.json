@@ -1,0 +1,20 @@
+{
+  "name": "document-management",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --stream --filter @document-management/api --filter @document-management/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "verify:spec": "python3 scripts/validate-specifications.py && python3 scripts/validate-api-contracts.py && python3 scripts/validate-reference-data.py && python3 scripts/validate-test-traceability.py",
+    "verify": "pnpm verify:spec && pnpm typecheck && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

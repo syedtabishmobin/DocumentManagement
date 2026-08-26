@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Document ID | `ADR-ARCH-003` |
-| Status | **PROPOSED — not implementation authority** |
+| Status | **ACCEPTED for Phase 1 implementation** |
 | Date | 26 August 2026 |
 | Decision scope | Authorization of search, vector, graph, cache, conversation, notification, export, and other derived reads/effects |
 | Decision owners | Architecture and security/authorization owners |

@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Document ID | `ADR-ARCH-005` |
-| Status | **PROPOSED — not implementation authority** |
+| Status | **ACCEPTED for Phase 1 implementation** |
 | Date | 26 August 2026 |
 | Decision scope | External/provider capabilities, adapters, data placement, processing routes, portability, and Australian-residency enforcement |
 | Decision owners | Architecture and security/privacy owners |

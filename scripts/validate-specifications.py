@@ -40,6 +40,7 @@ REQUIRED_MARKDOWN_FILES = (
     "docs/02-architecture/06-adrs/ADR-003-current-authorization-for-derived-projections.md",
     "docs/02-architecture/06-adrs/ADR-004-durable-commands-events-and-eventual-consistency.md",
     "docs/02-architecture/06-adrs/ADR-005-provider-neutral-ports-and-residency-policy.md",
+    "docs/02-architecture/06-adrs/ADR-006-phase-1-local-first-typescript-stack.md",
     "docs/02-architecture/README.md",
     "docs/03-document-intelligence/01-document-taxonomy.md",
     "docs/03-document-intelligence/02-ingestion-processing.md",
@@ -253,10 +254,11 @@ def read(path: Path) -> str:
 
 
 def markdown_files() -> list[Path]:
+    ignored_directories = {".git", "node_modules", "dist", "coverage", ".next", ".vite"}
     return sorted(
         path
         for path in ROOT.rglob("*.md")
-        if ".git" not in path.parts
+        if not ignored_directories.intersection(path.parts)
     )
 
 

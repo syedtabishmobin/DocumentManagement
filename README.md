@@ -1,16 +1,25 @@
-# DocumentManagement Specification Repository
+# DocumentManagement
 
 This repository is the source of truth for an AI-native personal and family document intelligence and change-monitoring product, designed with explicit enterprise extension points.
 
 ## Current status
 
-The complete Phase 1 specification repository now exists as a coherent **draft review baseline**. It includes the product, architecture, document-intelligence, AI, API/event, security, UX, engineering, operations, backlog, reference-data, and testing packs. The draft PRD defines four proposed vertical slices, seven outcomes, 90 stable requirements, and an explicit disposition for every research `GAP-*` item. The backlog decomposes that baseline into 12 epics and 48 stories with exact acceptance and test mappings.
+The complete Phase 1 specification repository is the approved implementation baseline. It includes the product, architecture, document-intelligence, AI, API/event, security, UX, engineering, operations, backlog, reference-data, and testing packs. The PRD defines four vertical slices, seven outcomes, 90 stable requirements, and an explicit disposition for every research `GAP-*` item. The backlog decomposes that baseline into 12 epics and 48 stories with exact acceptance and test mappings.
 
-The repository's Markdown/link/ID/checksum, API/event, reference-data, and test-traceability validators are the current static quality gates. They establish internal draft consistency; they do not constitute execution evidence, product approval, legal validation, or release authority.
+The repository's Markdown/link/ID/checksum, API/event, reference-data, test-traceability, type, unit, and build validators are quality gates. Static success does not constitute legal validation or production release authority.
 
-The PRD is **not yet approved**. Decisions `DEC-030`–`DEC-040` remain `PROPOSED` or `OPEN`, the five architecture ADRs remain proposed, and test/evaluation cases remain draft and unexecuted. The preserved handover is historical input; only material decisions promoted to `APPROVED` entries in the [decision register](docs/00-context/decision-register.md) are repository constraints.
+The product owner approved full Phase 1 implementation under `DEC-041`. The default application profile is local-only, uses synthetic data and deterministic local assistance, and disables external connectors, notifications, and cloud AI. Production deployment and real personal-data processing remain gated by the [readiness record](SPECIFICATION-READINESS.md).
 
-Application implementation has not started and remains blocked by the [readiness record](SPECIFICATION-READINESS.md).
+## Run locally
+
+From the repository root:
+
+```sh
+chmod +x scripts/local-app.sh
+./scripts/local-app.sh
+```
+
+Open `http://127.0.0.1:4173`. Local state and uploaded files are written beneath ignored `local-data/`. The web client talks only to the API bound to `127.0.0.1`; no cloud AI key is required.
 
 ## Working-folder location
 
@@ -34,7 +43,7 @@ The numbered folders under [`docs/`](docs/README.md) define navigation order, no
 | Path | Purpose |
 |---|---|
 | [`docs/`](docs/README.md) | Numbered Phase 1 specification packs and machine-readable contracts/reference fixtures |
-| `src/` | Reserved for application source after the readiness gate opens; currently intentionally empty |
+| [`src/`](src/README.md) | Phase 1 web, API, domain, and shared-contract source |
 | [`scripts/`](scripts/README.md) | Standard-library validation gates for specifications and contracts |
 | `artifacts/` | Ignored local delivery archives; publish distributable archives as GitHub release assets instead of committing them |
 

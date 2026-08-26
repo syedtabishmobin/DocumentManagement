@@ -4,7 +4,7 @@
 |---|---|
 | Document ID | `PROD-PRD-001` |
 | Version | `0.1` |
-| Status | `DRAFT — candidate implementation baseline; product-owner approval required` |
+| Status | `APPROVED IMPLEMENTATION BASELINE` |
 | Product phase | Phase 1 — Personal and Family |
 | Jurisdiction | Australia first; jurisdiction-neutral core |
 | Updated | 26 August 2026 |
@@ -12,9 +12,9 @@
 
 ## 1. Authority and approval boundary
 
-This PRD translates the approved decisions in `docs/00-context/decision-register.md` and the findings in `docs/01-product/07-competitive-gap-analysis.md` into a candidate Phase 1 product contract. It is deliberately marked **DRAFT**. It does not become the approved implementation baseline until the product owner explicitly approves it and the decision register records that approval.
+This PRD translates the approved decisions in `docs/00-context/decision-register.md` and the findings in `docs/01-product/07-competitive-gap-analysis.md` into the approved Phase 1 implementation contract. Product-owner approval is recorded by `DEC-041`.
 
-The terms **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** are normative only after that approval. Until then, they express the proposed baseline to be reviewed. An `OPEN` decision cannot be closed by implementing whichever option is easiest.
+The terms **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** are normative for Phase 1 implementation. Production deployment and real personal-data processing remain outside this approval and require their own readiness evidence.
 
 When this PRD conflicts with a higher-authority source, the hierarchy in `CODEX.md` applies. In particular:
 
@@ -424,21 +424,21 @@ Phase 1 launch requires all of the following, with exact targets defined in `doc
 
 ## 12. Assumptions and open decisions
 
-The following decisions block portions of the detailed specification or launch profile. They are not permission to assume a vendor or behavior.
+The following approved decisions define local implementation behavior and the production activation fences. They do not select a production vendor.
 
 | Decision | State | Question | Affected requirements |
 |---|---|---|---|
-| `DEC-030` | `PROPOSED` | Approve the four Phase 1 vertical slices and the rule that the overall domain envelope may exceed the first launch profile. | All release mapping. |
-| `DEC-031` | `OPEN` | Which private inbound-email and cloud connector capabilities, if any, are required for each Phase 1 slice beyond upload/camera/manual entry? | `REQ-P1-ING-001`, `009` |
-| `DEC-032` | `OPEN` | Does Phase 1 include automated emergency, incapacity, or after-death release; if so, under what evidence, delay, challenge, consent, revocation, and jurisdiction rules? | `REQ-P1-SHR-004` |
-| `DEC-033` | `PROPOSED` | Approve the complete portability envelope rather than originals-only export. | `REQ-P1-TRUST-006` |
-| `DEC-034` | `PROPOSED` | Permit an explainable document-readiness/content-health score that is never called legal compliance or a risk guarantee. | `REQ-P1-HLT-004` |
-| `DEC-035` | `OPEN` | Which document types, extraction schemas, requirement profiles, and Australian governed sources form the first public launch pack? | `REQ-P1-DOC-006`, `REQ-P1-CFG-003`, monitoring/health requirements |
-| `DEC-036` | `OPEN` | What happens when capture appears to contain an excluded clinical record: block before storage, quarantine for user decision, or retain encrypted original while disabling all processing? | `REQ-P1-DOC-007` |
-| `DEC-037` | `PROPOSED` | Require in-app notifications in Phase 1 and keep email/push sequencing behind a channel adapter until separately approved. | `REQ-P1-NTF-003`, `004` |
-| `DEC-038` | `OPEN` | What account and workspace recovery assurance, delay, challenge, and support process is acceptable for highly sensitive household data? | `REQ-P1-TRUST-001`, `008` |
-| `DEC-039` | `OPEN` | What are the deletion cooling-off period, active purge objective, backup expiry, and retained-audit minimization rules? | `REQ-P1-DOC-003`, `REQ-P1-TRUST-004`, `007` |
-| `DEC-040` | `OPEN` | Which data classes and processors must remain in Australia for the residency option, and what cross-border exceptions or consent are permitted? | `REQ-P1-TRUST-005`, `009` |
+| `DEC-030` | `APPROVED` | Four vertical slices are continuous engineering checkpoints within one authorized Phase 1 build. | All release mapping. |
+| `DEC-031` | `APPROVED` | Enable local upload/capture/manual routes; keep live inbound-email and cloud connectors disabled behind ports. | `REQ-P1-ING-001`, `009` |
+| `DEC-032` | `APPROVED` | Exclude automated emergency, incapacity, and after-death release from Phase 1. | `REQ-P1-SHR-004` |
+| `DEC-033` | `APPROVED` | Implement the complete authorized portability envelope. | `REQ-P1-TRUST-006` |
+| `DEC-034` | `APPROVED` | Present item-level findings only; do not implement an aggregate score or compliance/risk guarantee. | `REQ-P1-HLT-004` |
+| `DEC-035` | `APPROVED` | Use synthetic governed Australian-first fixtures locally; require a later production package for public coverage claims. | `REQ-P1-DOC-006`, `REQ-P1-CFG-003`, monitoring/health requirements |
+| `DEC-036` | `APPROVED` | Isolate suspected clinical records in `POLICY_HOLD`; deny ordinary processing until explicit safe reclassification. | `REQ-P1-DOC-007` |
+| `DEC-037` | `APPROVED` | Require in-app notifications; keep email/push disabled behind a channel adapter. | `REQ-P1-NTF-003`, `004` |
+| `DEC-038` | `APPROVED` | Recovery and ownership transfer are unavailable locally and require a separate production assurance decision. | `REQ-P1-TRUST-001`, `008` |
+| `DEC-039` | `APPROVED` | Local deletion immediately fences and purges active/derived content with no backup and a content-free tombstone. | `REQ-P1-DOC-003`, `REQ-P1-TRUST-004`, `007` |
+| `DEC-040` | `APPROVED` | Use synthetic local-only processing; require a later deployment decision for production data classes, processors, regions, support, backups, and exceptions. | `REQ-P1-TRUST-005`, `009` |
 
 Commercial pricing, storage/AI quotas, issuer partnerships, and exact provider selection remain outside this PRD's technical baseline until separately decided. They MUST NOT be hidden in implementation defaults where they change user-visible retention, quality, privacy, or access.
 

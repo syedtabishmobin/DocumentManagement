@@ -4,7 +4,7 @@
 |---|---|
 | Document ID | `BLG-REL-001` |
 | Version | `0.1` |
-| Status | **DRAFT — planning hypothesis under `DEC-030`; not implementation or launch authorization** |
+| Status | **APPROVED IMPLEMENTATION SEQUENCE — not production launch authorization** |
 | Product phase | Phase 1 — Personal and Family |
 | Updated | 26 August 2026 |
 
@@ -12,7 +12,7 @@
 
 This plan sequences specification-backed vertical slices. It sets no calendar dates, staffing commitments, provider selection, public-launch claim, service-level agreement, or production authorization. Slice completion means its approved scope and evidence gates pass together; it is not the sum of completed technical layers or story status labels.
 
-The release sequence remains provisional because `DEC-030` is `PROPOSED`. `DEC-031`–`040`, DRAFT product/contracts/reference data/testing, PROPOSED ADRs, provisional NFR targets, and absent executed evidence prevent implementation readiness. Historical `TRACE-GAP-P1-TEST-001` is closed by `TST-IDX-001` version `0.1`, but DRAFT/NOT_RUN/INSUFFICIENT cases are not passes. A narrower prototype would require explicit product-owner authority and a safe, documented boundary.
+`DEC-030` and `DEC-041` approve the complete sequence as one continuously authorized implementation program. Slice boundaries remain engineering checkpoints and do not require renewed product scope approval. Tests and evaluation cases move from `NOT_RUN` only when their corresponding implementation evidence exists; production launch remains separately gated.
 
 ## 2. Proposed sequence
 

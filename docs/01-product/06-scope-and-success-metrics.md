@@ -118,24 +118,24 @@ The order of connectors beyond upload, camera, and manual import is deferred in 
 
 | Topic | Review entry | Why a decision is required |
 |---|---|---|
-| Phase 1 vertical slices and public launch profile | `DEC-030` — PROPOSED | “Phase 1” is too broad to treat as one release; sequencing and slice exit conditions require approval. |
-| Initial document-type and governed-source pack | `DEC-035` — OPEN | The broad historical taxonomy is too large to imply one release; Australia-first types, schemas, sources, and unsupported types need explicit prioritisation. |
-| Connector sequence | `DEC-031` — OPEN | Cost, consent, revocation, reliability, and release sequencing differ materially by channel. |
-| Notification channels | `DEC-037` — PROPOSED | Push-ready APIs do not approve push delivery in the first release; channel privacy and escalation behavior differ. |
-| Emergency, after-death, and time-aware access | `DEC-032` — OPEN | Identity, capacity, consent, legal, privacy, recovery, and disclosure consequences require explicit approval. |
+| Phase 1 vertical slices and public launch profile | `DEC-030` — APPROVED | Four engineering checkpoints form one continuously authorized Phase 1 build. |
+| Initial document-type and governed-source pack | `DEC-035` — APPROVED | Synthetic Australian-first local fixtures are enabled; public coverage requires a later production package. |
+| Connector sequence | `DEC-031` — APPROVED | Upload/capture/manual routes are local; live inbound email/cloud connectors remain disabled. |
+| Notification channels | `DEC-037` — APPROVED | In-app notifications are enabled; external channels remain disabled. |
+| Emergency, after-death, and time-aware access | `DEC-032` — APPROVED | Automated release is excluded from Phase 1. |
 | Offline or curated emergency packs | No approved decision | Local storage, revocation, device loss, freshness, and encryption create a separate risk model; curated export must remain separate from automated release. |
-| Export and portability envelope | `DEC-033` — PROPOSED | The included originals, versions, facts, relationships, tasks, reminders, audit, format, SLA, and deleted-state behavior must be selected. |
-| Readiness or document-health score | `DEC-034` — PROPOSED | The experience must not imply legal compliance, certainty, or complete source coverage. The components and explanations require approval. |
-| Unsupported clinical-content handling | `DEC-036` — OPEN | Reject, quarantine, user-directed removal, false-positive review, and prohibited processing behavior must be defined. |
+| Export and portability envelope | `DEC-033` — APPROVED | Complete authorized originals, versions, derivatives, facts, relationships, rules, work, grants, and audit envelope. |
+| Readiness or document-health score | `DEC-034` — APPROVED | Item-level explainable findings only; aggregate/hidden scoring prohibited. |
+| Unsupported clinical-content handling | `DEC-036` — APPROVED | Suspected clinical material enters isolated `POLICY_HOLD`. |
 | Agentic and bulk actions | No separate approved decision; proposed in the draft PRD | Approval granularity, policy gates, reversibility, rate limits, and completion evidence materially affect safety. |
 | Family subject, dependant, and guest lifecycle | `DEC-032` and draft PRD approval | Age/capacity, account transition, delegation, access expiry, and resource privacy need product and authorization decisions. |
-| Account and workspace recovery | `DEC-038` — OPEN | Recovery assurance, delay, challenges, ownership, private-resource handling, and support access cannot be hidden implementation defaults. |
-| Deletion and purge timing | `DEC-039` — OPEN | Cooling-off, active purge, backup expiry, and audit minimisation define the user promise and recovery boundary. |
-| Australian residency envelope | `DEC-040` — OPEN | In-scope data classes, processors, cross-border exceptions, consent, support, analytics, and disaster recovery must be explicit. |
+| Account and workspace recovery | `DEC-038` — APPROVED | Recovery/ownership transfer is unavailable locally and separately production-gated. |
+| Deletion and purge timing | `DEC-039` — APPROVED | Immediate local fence/purge, no production backup, and content-free tombstone. |
+| Australian residency envelope | `DEC-040` — APPROVED | Synthetic local processing enabled; production processor/region choices remain deployment-gated. |
 
 ### 5.4 Research recommendations and draft PRD disposition
 
-The draft PRD proposes the following dispositions. None converts a research `GAP-*` recommendation into an approved requirement until the PRD is explicitly approved.
+The approved PRD records the following Phase 1 dispositions. Production claims remain limited by the deployment and evidence gates.
 
 | Research item | Draft PRD disposition | Scope interpretation pending approval |
 |---|---|---|

@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Document ID | `ADR-ARCH-002` |
-| Status | **PROPOSED — not implementation authority** |
+| Status | **ACCEPTED for Phase 1 implementation** |
 | Date | 26 August 2026 |
 | Decision scope | Original artifacts, evidence versions, derived results, projections, lineage, rebuild, and purge |
 | Decision owners | Architecture and data/document owners |

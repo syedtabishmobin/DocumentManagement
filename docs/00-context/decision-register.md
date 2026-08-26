@@ -4,7 +4,7 @@
 |---|---|
 | Document ID | `CTX-DEC-001` |
 | Status | Active |
-| Updated | 26 August 2026 |
+| Updated | 26 August 2026 — Phase 1 implementation approval recorded |
 
 ## Decision states
 
@@ -40,23 +40,30 @@
 | `DEC-023` | APPROVED | Phase 1 targets household owners and family administrators first; advisers receive limited guest/delegated access rather than a separate adviser product. | Keeps onboarding and workflows coherent while preserving professional collaboration. | Adviser-led B2B2C launch; estate-only launch; property-only vertical launch. |
 | `DEC-024` | APPROVED | Treat health and clinical records as out of initial scope; include health-insurance and general coverage documents only. | Clinical data materially expands safety, privacy, consent, terminology, and regulatory obligations. | Include personal medical records in Phase 1; exclude all health-related documents. |
 
-## Phase 1 baseline decisions awaiting product-owner review
+## Phase 1 baseline decisions approved for implementation
 
-These entries make unresolved product boundaries visible. `PROPOSED` and `OPEN` entries are not implementation authority, and their appearance in the draft PRD does not imply approval.
+The product owner approved the complete Phase 1 implementation on 26 August 2026. The approval authorizes a continuous local-first build across all four slices using synthetic data and local/mock adapters. It does not authorize production deployment or processing of real personal documents. Decisions whose production values remain intentionally deferred have an explicit disabled local boundary below.
 
 | Decision ID | State | Decision or question | Consequence if unresolved | Primary specification |
 |---|---|---|---|---|
-| `DEC-030` | PROPOSED | Deliver Phase 1 as four vertical product slices—secure household vault, understand/retrieve, monitor/close, and family launch/portability—while allowing the overall Phase 1 domain envelope to exceed the first public launch profile. | Backlog sequencing and launch claims cannot be frozen. | `PROD-PRD-001` §6.2 |
-| `DEC-031` | OPEN | Which private inbound-email and cloud connector capabilities, if any, are required in each Phase 1 slice beyond upload, camera capture, and manual entry? | Connector stories, consent UX, retention behavior, and adapter acceptance tests remain conditional. | `PROD-PRD-001` §7.3 |
-| `DEC-032` | OPEN | Whether Phase 1 includes automated emergency, incapacity, or after-death release, and which evidence, delay, challenge, consent, revocation, and jurisdiction rules govern it. | Automated release cannot be specified or implemented safely; curated exports and ordinary time-limited grants may be specified separately. | `PROD-PRD-001` §7.11 |
-| `DEC-033` | PROPOSED | A complete portability export includes authorized originals, versions, derived data, facts, relationships, applicable rules, tasks, reminders, grants, and audit history in documented formats, subject to third-party rights. | Export architecture and acceptance criteria otherwise risk becoming originals-only and non-portable. | `PROD-PRD-001` §7.13 |
-| `DEC-034` | PROPOSED | Phase 1 may show an explainable document-readiness/content-health score only if it is decomposable, permission-safe, and never represented as legal compliance or a risk guarantee. | Health dashboards must omit aggregate scoring until terminology, privacy, and validation are approved. | `PROD-PRD-001` §7.8 |
-| `DEC-035` | OPEN | Which document types, extraction schemas, requirement profiles, and Australian governed sources form the first public launch pack? | Initial reference data, source monitors, evaluation fixtures, and launch positioning cannot be finalized. | `PROD-PRD-001` §6.3 |
-| `DEC-036` | OPEN | When capture appears to contain an excluded clinical record, should the service block before storage, quarantine for user decision, or retain only an encrypted original while disabling processing? | Clinical exclusion cannot be enforced consistently across ingestion, search, AI, export, and deletion. | `PROD-PRD-001` §7.2 |
-| `DEC-037` | PROPOSED | In-app notifications are required in Phase 1; email and push sequencing remain behind a channel-neutral adapter until separately approved. | Detailed notification delivery, consent, privacy, and escalation tests beyond in-app remain conditional. | `PROD-PRD-001` §7.10 |
-| `DEC-038` | OPEN | Which account and workspace recovery assurance, delay, challenge, and support process is acceptable for highly sensitive household data? | Authentication, key recovery, ownership transfer, and support-access architecture cannot be approved. | `PROD-PRD-001` §7.13 |
-| `DEC-039` | OPEN | What are the deletion cooling-off period, active-data purge objective, backup expiry, and retained-audit minimization rules? | Privacy, backup, restore, audit, and user-facing deletion promises remain unsafe to implement. | `PROD-PRD-001` §7.13 |
-| `DEC-040` | OPEN | Which data classes and processors must remain in Australia for the residency option, and which cross-border exceptions or consent mechanisms are permitted? | Deployment topology, provider selection, AI/OCR use, support, analytics, failover, and backup cannot be approved. | `PROD-PRD-001` §7.13 |
+| `DEC-030` | APPROVED | Implement the complete Phase 1 through four coherent vertical slices—secure household vault, understand/retrieve, monitor/close, and family launch/portability—but treat them as engineering checkpoints within one continuously authorized build. | Enables full Phase 1 delivery without renewed scope approval at each slice. | Product-owner approval, 26 August 2026 |
+| `DEC-031` | APPROVED | Phase 1 local development enables upload, camera-compatible capture, bulk upload, and manual entry. Inbound email and live cloud connectors remain disabled behind provider-neutral ports until separately activated for production. | Preserves complete connector architecture without external transfer during local testing. | Product-owner approval, 26 August 2026 |
+| `DEC-032` | APPROVED | Automated emergency, incapacity, and after-death release is excluded from Phase 1. Ordinary scoped grants and curated portability exports remain in scope. | Removes an unsafe automatic-release path while preserving family collaboration. | Product-owner approval, 26 August 2026 |
+| `DEC-033` | APPROVED | A complete portability export includes authorized originals, versions, derived data, facts, relationships, applicable rules, tasks, reminders, grants, and audit history in documented formats, subject to third-party rights. | Establishes the full Phase 1 portability contract. | Product-owner approval, 26 August 2026 |
+| `DEC-034` | APPROVED | Phase 1 presents decomposable item-level readiness findings only. It does not calculate or display an aggregate score, rank, traffic light, compliance claim, or risk guarantee. | Prevents a misleading summary while retaining explainable assistance. | Product-owner approval, 26 August 2026 |
+| `DEC-035` | APPROVED | Local implementation uses governed synthetic Australian-first document, schema, requirement, and source fixtures. Public launch coverage claims require a later reviewed production package and are not implied by local fixtures. | Allows complete implementation and testing without fabricating public coverage. | Product-owner approval, 26 August 2026 |
+| `DEC-036` | APPROVED | Suspected clinical records enter isolated `POLICY_HOLD` quarantine. Preview, extraction, search, graph, AI, sharing, and export are denied; deletion is allowed; ordinary processing requires explicit safe reclassification. | Provides a consistent fail-closed clinical boundary. | Product-owner approval, 26 August 2026 |
+| `DEC-037` | APPROVED | In-app notifications are required in Phase 1. Email and push remain disabled behind a channel-neutral adapter until separately approved and configured. | Delivers the workflow without external data transfer. | Product-owner approval, 26 August 2026 |
+| `DEC-038` | APPROVED | Recovery and ownership-transfer routes are unavailable in the local Phase 1 profile. Production recovery requires a separate assurance decision and cannot silently activate. | Avoids insecure placeholder recovery while allowing other identity workflows to be built. | Product-owner approval, 26 August 2026 |
+| `DEC-039` | APPROVED | The local profile immediately fences deletion, purges active and derived local content, creates no production backup, and retains only a content-free audit tombstone. Production cooling-off, backup-expiry, and statutory audit-retention values require a later deployment decision. | Makes local deletion deterministic without inventing production promises. | Product-owner approval, 26 August 2026 |
+| `DEC-040` | APPROVED | The default Phase 1 development route is synthetic, local-only, outbound-denied processing with no cloud processor or residency claim. Production data-class, processor, region, support, backup, and exception routes require a later deployment decision. | Enables safe local testing and preserves an Australian-residency production option. | Product-owner approval, 26 August 2026 |
+
+## Implementation authorization
+
+| Decision ID | State | Decision | Source |
+|---|---|---|---|
+| `DEC-041` | APPROVED | `PROD-PRD-001` version `0.1` is the approved Phase 1 implementation baseline. Codex is authorized to implement all Phase 1 slices as one continuous program, using synthetic data and local-only defaults, and to commit and push completed increments. Production deployment and real personal-data processing remain outside this authority. | Product-owner instruction, 26 August 2026 |
+| `DEC-042` | APPROVED | Use a TypeScript modular monorepo with a responsive installable web/PWA client, structured API/domain boundaries, PostgreSQL-compatible persistence ports, local filesystem artifact storage, local/mock AI adapters, OpenAPI contracts, deterministic tests, and optional container packaging. Provider activation remains configuration-gated. | Product-owner approval of recommended implementation stack, 26 August 2026 |
 
 ## Deferred implementation choices
 

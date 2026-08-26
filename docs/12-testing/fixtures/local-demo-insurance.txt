@@ -1,0 +1,7 @@
+SYNTHETIC TEST DOCUMENT — NOT A REAL POLICY
+
+Household home insurance policy number: SYNTH-HP-2048.
+The policy covers the synthetic property at 42 Example Street, Exampleville NSW 2000.
+The current policy period ends on 30 June 2027.
+The synthetic annual premium is AUD 1,240.
+Review the sum insured before the renewal date.

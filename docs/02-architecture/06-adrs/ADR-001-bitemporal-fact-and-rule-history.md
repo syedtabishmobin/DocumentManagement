@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Document ID | `ADR-ARCH-001` |
-| Status | **PROPOSED — not implementation authority** |
+| Status | **ACCEPTED for Phase 1 implementation** |
 | Date | 26 August 2026 |
 | Decision scope | Logical representation and query semantics for canonical facts and consequential rules |
 | Decision owners | Architecture and domain/data owners |

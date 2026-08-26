@@ -16,7 +16,7 @@ This matrix shows which backlog candidate carries each Phase 1 requirement, feat
 |---|---|
 | `APPROVED CONSTRAINT` | `DEC-001`–`011`, `DEC-020`–`024`; normative for every story. |
 | `DRAFT` | Product requirements/catalogues, architecture, DIT, AI, API/event, security, UX, engineering, operations, reference-data pack, backlog, and their acceptance/evidence plans require approval. |
-| `PROPOSED` | `DEC-030`, `DEC-033`, `DEC-034`, `DEC-037`; recommended but not implementation authority. All five ADRs are also `PROPOSED`. |
+| `APPROVED` | `DEC-030`–`DEC-042` define the local Phase 1 implementation baseline and production fences. ADRs `ADR-ARCH-001`–`006` are accepted for implementation. |
 | `OPEN` | `DEC-031`, `032`, `035`, `036`, `038`, `039`, `040`; no safe default may be inferred. |
 | `DISABLED / CATALOGUE-ONLY` | Contract shape or absence boundary is documented, but the user capability is not implementation-ready or enabled. |
 | `MISSING` | Required owning contract/evidence does not exist; a named `TRACE-GAP-P1-*` must close before readiness. |
@@ -170,17 +170,17 @@ No existing reference record is an implementation orphan: all packs are used by 
 | Decision | State | Affected stories | Readiness consequence |
 |---|---|---|---|
 | `DEC-001`–`011`, `020`–`024` | `APPROVED` | All as applicable | Normative constraints; cannot be weakened by backlog. |
-| `DEC-030` | `PROPOSED` | All | Slice/order/release plan remains DRAFT. |
-| `DEC-031` | `OPEN` | `004`, `033`, `041` | Only upload/camera/manual required; connector ingestion/action disabled. |
-| `DEC-032` | `OPEN` | `039`, `040`, `048` | Ordinary grants/export remain separate; automatic continuity disabled. |
-| `DEC-033` | `PROPOSED` | `044` | Export declares exact enabled envelope; no completeness claim. |
-| `DEC-034` | `PROPOSED` | `034`, `035`, `043` | Item-level findings only; aggregate/hidden score disabled. |
-| `DEC-035` | `OPEN` | `004`, `010`, `013`, `027`, `028`, `034`, `037` | No launch type/schema/profile/source/coverage activation or claim. |
-| `DEC-036` | `OPEN` | `005` | Ordinary processing blocked; no disposition/timing promise. |
-| `DEC-037` | `PROPOSED` | `036`, `042` | In-app state proposed; external channels disabled. |
-| `DEC-038` | `OPEN` | `001`, `008`, `040`, `047` | No recovery/factor/ownership/private-resource/support bypass. |
-| `DEC-039` | `OPEN` | `007`, `009`, `011`, `044`, `045` | No deletion/backup/audit timing; exact state/residual evidence only. |
-| `DEC-040` | `OPEN` | Every processor route; especially `005`, `013`, `015`, `022`, `024`, `025`, `027`, `028`, `033`, `041`, `042`, `044`–`046` | Unknown/ineligible processing/support/telemetry/export/backup/failover route blocks. |
+| `DEC-030` | `APPROVED` | All | Full Phase 1 authorized; slices are continuous checkpoints. |
+| `DEC-031` | `APPROVED` | `004`, `033`, `041` | Upload/camera/manual enabled locally; live connectors disabled. |
+| `DEC-032` | `APPROVED` | `039`, `040`, `048` | Ordinary grants/export remain; automatic continuity excluded. |
+| `DEC-033` | `APPROVED` | `044` | Complete authorized portability envelope required. |
+| `DEC-034` | `APPROVED` | `034`, `035`, `043` | Item-level findings only; aggregate/hidden score prohibited. |
+| `DEC-035` | `APPROVED` | `004`, `010`, `013`, `027`, `028`, `034`, `037` | Synthetic local package enabled; public coverage claims remain production-gated. |
+| `DEC-036` | `APPROVED` | `005` | Suspected clinical material isolated in `POLICY_HOLD`. |
+| `DEC-037` | `APPROVED` | `036`, `042` | In-app state enabled; external channels disabled. |
+| `DEC-038` | `APPROVED` | `001`, `008`, `040`, `047` | Recovery/ownership transfer absent locally and production-gated. |
+| `DEC-039` | `APPROVED` | `007`, `009`, `011`, `044`, `045` | Immediate local fence/purge; no production backup; content-free tombstone. |
+| `DEC-040` | `APPROVED` | Every processor route; especially `005`, `013`, `015`, `022`, `024`, `025`, `027`, `028`, `033`, `041`, `042`, `044`–`046` | Synthetic local route enabled; every production processing/support/telemetry/export/backup/failover route remains separately gated. |
 
 ## 10. Current orphan and drift findings
 

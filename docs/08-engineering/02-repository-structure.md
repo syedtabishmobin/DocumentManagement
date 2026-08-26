@@ -4,7 +4,7 @@
 |---|---|
 | Document ID | `ENG-REP-001` |
 | Version | `0.1` |
-| Status | **DRAFT — current documentation layout and future logical code layout; no application implementation authorized** |
+| Status | **APPROVED IMPLEMENTATION STRUCTURE under `DEC-041` and `ADR-ARCH-006`** |
 | Product phase | Phase 1 — Personal and Family |
 | Updated | 26 August 2026 |
 | Current repository | Specifications under `docs/`, machine-readable contracts/reference data, validators, and an empty tracked `src/` reservation only |
@@ -13,7 +13,7 @@
 
 This document defines future ownership boundaries, dependency direction, generated-contract handling, migrations, test placement, and repository hygiene. It does not decide whether implementation eventually uses one repository or several, a modular monolith or multiple deployables, a language, framework, build tool, package manager, database, cloud, or deployment topology.
 
-The current numbered specification directories under `docs/` remain authoritative according to [`CODEX.md`](../../CODEX.md). The `src/` directory exists only so the future code boundary is visible and trackable; it contains no application implementation. The layout below is a logical target to be populated only after implementation readiness and technology decisions. Directory names may be adapted by an accepted repository ADR if ownership and dependency rules remain provably equivalent.
+The current numbered specification directories under `docs/` remain authoritative according to [`CODEX.md`](../../CODEX.md). The `src/` directory now contains the Phase 1 modular application authorized by `DEC-041`. Accepted `ADR-ARCH-006` maps the logical boundaries below into workspace packages; future adaptations require an accepted repository ADR with equivalent ownership and dependency enforcement.
 
 ## 2. Current immutable specification boundary
 
@@ -156,7 +156,7 @@ Migration code is versioned and retained for the applicable supported history. I
 
 | Rule ID | Draft normative rule |
 |---|---|
-| `ENG-REP-P1-001` | This document defines future logical boundaries and MUST NOT be used to begin implementation or create scaffolding before the readiness gate. |
+| `ENG-REP-P1-001` | The implementation MUST preserve these logical boundaries and the authorization recorded by `DEC-041`; production activation remains separately gated. |
 | `ENG-REP-P1-002` | Repository count, deployable count, service topology, language, framework, package manager, and build tool remain undecided. |
 | `ENG-REP-P1-003` | Current numbered specification, API/event, reference-data, and validator sources MUST retain their authority and review history. |
 | `ENG-REP-P1-004` | The domain boundary MUST depend on no interface, provider, persistence, deployment, telemetry, or generated transport implementation. |

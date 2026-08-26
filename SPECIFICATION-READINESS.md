@@ -4,7 +4,7 @@
 |---|---|
 | Document ID | `GOV-READY-001` |
 | Status | Active gate record |
-| Current verdict | **NOT READY FOR APPLICATION IMPLEMENTATION** |
+| Current verdict | **READY FOR LOCAL PHASE 1 IMPLEMENTATION — NOT PRODUCTION AUTHORIZED** |
 | Updated | 26 August 2026 |
 | Governing contract | [`CODEX.md`](CODEX.md#specification-readiness-gate) |
 
@@ -16,22 +16,16 @@ A file's existence is not evidence that its contract is approved, complete, inte
 
 ## 2. Current verdict
 
-Application implementation is blocked because:
+The product owner explicitly approved `PROD-PRD-001` version `0.1`, resolved `DEC-030`–`DEC-040` for local implementation, accepted the provider-neutral architecture, and authorized the complete Phase 1 build in `DEC-041`–`042`.
 
-- `PROD-PRD-001` is a draft candidate baseline, not product-owner approved;
-- `DEC-030`–`DEC-040` include material proposed and open product, privacy, recovery, deletion, residency, and launch-pack choices;
-- all five architecture ADRs remain proposed and draft contracts have not received their required product, architecture, security/privacy, accessibility, quality, or operations approvals;
-- the static specification, API/event, reference-data, and traceability gates pass, but the mapped test/evaluation cases are unexecuted and therefore provide no implementation or release evidence; and
-- no formal cross-functional readiness-review record authorizes a bounded implementation slice.
-
-Repository validation tooling and draft specifications may continue. Application scaffolding, provider selection, database schema implementation, UI implementation, or production integration may not begin unless the product owner explicitly changes the governing instruction.
+Application implementation may therefore proceed across `P1-S1`–`P1-S4` as one continuous program. The default profile MUST use synthetic data, local storage, local/mock AI, disabled external connectors/channels, and deny-by-default egress. This verdict does not authorize production deployment, public coverage claims, or processing of real personal documents. Those actions still require cross-functional security, privacy, accessibility, operations, recovery, residency, retention, and release evidence.
 
 ## 3. Gate criteria
 
 | Readiness ID | Criterion | Current state | Required evidence |
 |---|---|---|---|
-| `RDY-P1-001` | The Phase 1 PRD is approved or explicitly marked as an approved implementation baseline. | `BLOCKED` | Product-owner approval of a named PRD version and a corresponding `APPROVED` decision-register entry. |
-| `RDY-P1-002` | High-impact product and architecture decisions are approved or safely deferred behind documented abstractions. | `BLOCKED` | Resolution or safe contractual deferral of every material `OPEN`/`PROPOSED` decision; accepted ADR set; no hidden provider commitment. |
+| `RDY-P1-001` | The Phase 1 PRD is approved or explicitly marked as an approved implementation baseline. | `SATISFIED` | `DEC-041` approves `PROD-PRD-001` version `0.1`. |
+| `RDY-P1-002` | High-impact product and architecture decisions are approved or safely deferred behind documented abstractions. | `SATISFIED` | `DEC-030`–`042` define approved local behavior and production fences; ADRs `001`–`006` are accepted. |
 | `RDY-P1-003` | Domain/data, tenancy, authorization, security, privacy, deletion, audit, and residency models are complete and mutually consistent. | `IN PROGRESS` | Approved specifications, state/invariant matrices, threat mitigations, negative tests, deletion/residency matrices, and accepted ADRs. |
 | `RDY-P1-004` | Document-intelligence, monitoring, trusted-source, evidence, fact, graph, impact, health, and version contracts exist. | `IN PROGRESS` | Normative specifications, machine-readable schemas/data, examples that validate, failure/replay behavior, and traceability. |
 | `RDY-P1-005` | AI capability, RAG, structured-output, prompt/tool, guardrail, and evaluation contracts exist. | `IN PROGRESS` | Draft contracts and synthetic evaluation manifests exist; provider/processor decisions, thresholds, review approval, execution, and regression evidence remain outstanding. |
@@ -40,7 +34,7 @@ Repository validation tooling and draft specifications may continue. Application
 | `RDY-P1-008` | Engineering and operational delivery contracts include measurable NFRs, environments, migrations, CI/CD, deployment, recovery, and observability. | `IN PROGRESS` | Draft provider-neutral contracts exist; stack/ADR approval, numeric-target approval, environment selection, and executed migration/restore/failover evidence remain outstanding. |
 | `RDY-P1-009` | Every implementation epic has stable traceability and testable acceptance criteria. | `IN PROGRESS` | Twelve draft epics and 48 stories link 90 requirements, 96 story acceptance criteria, and exact test IDs; approvals and passing execution evidence remain outstanding. |
 | `RDY-P1-010` | Initial reference data and all required test/evaluation strategies, fixtures, and quality gates exist and pass. | `IN PROGRESS` | Twelve DRAFT/disabled reference catalogues and deterministic synthetic test fixtures validate; the launch pack is unresolved under `DEC-035`, and all test/evaluation evidence remains unexecuted. |
-| `RDY-P1-011` | No open decision makes the proposed implementation unsafe or substantially disposable. | `BLOCKED` | Formal cross-functional readiness review showing all remaining open items are outside the slice or safely abstracted. |
+| `RDY-P1-011` | No open decision makes the proposed implementation unsafe or substantially disposable. | `SATISFIED` | `DEC-031`–`040` close the local behavior and explicitly deny production/provider activation; provider-neutral ports preserve replacement. |
 | `RDY-P1-012` | The complete repository is coherent, reviewable, and protected against drift. | `IN PROGRESS` | Passing link/ID/schema/semantic/traceability/privacy validators, preserved-source checks, change review, and zero unresolved source conflict. |
 
 Allowed states are `MISSING`, `IN PROGRESS`, `BLOCKED`, `SATISFIED`, and `NOT APPLICABLE` with an approved rationale. `IN PROGRESS` never opens the implementation gate.
@@ -64,21 +58,21 @@ Allowed states are `MISSING`, `IN PROGRESS`, `BLOCKED`, `SATISFIED`, and `NOT AP
 | Testing/evaluation | Test strategy, AI evaluation, security, integration/E2E, performance/resilience, fixtures/evidence | [`docs/12-testing/README.md`](docs/12-testing/README.md) | `IN PROGRESS` — draft cases and deterministic fixtures exist; execution evidence is `NOT_RUN`/insufficient |
 | Repository validation | ID/link integrity, checksums, schemas, semantics, traceability, fixture privacy | [`scripts/README.md`](scripts/README.md) | `IN PROGRESS` — four static validators pass; formal review and executed quality evidence remain |
 
-## 5. Material decisions blocking scope or architecture
+## 5. Material decisions resolved for local implementation
 
 | Decision | State | Readiness effect |
 |---|---|---|
-| `DEC-030` | `PROPOSED` | Release-slice and launch-profile planning remains provisional. |
-| `DEC-031` | `OPEN` | Connector ingestion/action scope and consent/deletion behavior cannot be frozen. |
-| `DEC-032` | `OPEN` | Automated emergency/incapacity/after-death release remains unavailable. |
-| `DEC-033` | `PROPOSED` | Complete export envelope is not yet an approved product promise. |
-| `DEC-034` | `PROPOSED` | Aggregate readiness scoring remains conditional and may be omitted. |
-| `DEC-035` | `OPEN` | First public document-type, requirement-profile, extraction, and Australian source pack is unknown. |
-| `DEC-036` | `OPEN` | Clinical-record containment, retention, and recovery behavior is not safe to implement. |
-| `DEC-037` | `PROPOSED` | External notification channel scope remains conditional; only draft in-app scope exists. |
-| `DEC-038` | `OPEN` | Authentication/account/workspace recovery architecture cannot be approved. |
-| `DEC-039` | `OPEN` | Deletion timing, backup expiry, and retained-audit minimization are unresolved. |
-| `DEC-040` | `OPEN` | Australian-residency data-class and processor boundary is unresolved. |
+| `DEC-030` | `APPROVED` | Four slices are continuous engineering checkpoints within the full Phase 1 build. |
+| `DEC-031` | `APPROVED` | Local upload/capture/manual routes enabled; live external connectors disabled. |
+| `DEC-032` | `APPROVED` | Automated emergency/incapacity/after-death release excluded from Phase 1. |
+| `DEC-033` | `APPROVED` | Complete authorized portability envelope is a Phase 1 requirement. |
+| `DEC-034` | `APPROVED` | Item-level explainable findings only; aggregate scoring prohibited. |
+| `DEC-035` | `APPROVED` | Synthetic governed Australian-first local package; public coverage package remains a production gate. |
+| `DEC-036` | `APPROVED` | Suspected clinical records enter isolated `POLICY_HOLD`. |
+| `DEC-037` | `APPROVED` | In-app notifications enabled; external channels disabled. |
+| `DEC-038` | `APPROVED` | Recovery and ownership transfer absent from the local profile and separately gated for production. |
+| `DEC-039` | `APPROVED` | Immediate local fence/purge, no production backup, content-free audit tombstone. |
+| `DEC-040` | `APPROVED` | Synthetic local-only processing; production processors and placement separately gated. |
 
 Deferred provider decisions in the decision register are acceptable only after provider-neutral ports, data-processing constraints, conformance tests, and failure behavior are documented.
 
@@ -106,4 +100,4 @@ A future approval record must state:
 - authorized implementation slice and explicit exclusions; and
 - rollback of readiness approval if a material contract or decision changes.
 
-Until such a record exists, this file's verdict remains **NOT READY FOR APPLICATION IMPLEMENTATION**.
+`DEC-041` is the product-owner readiness record for local Phase 1 implementation. A separate cross-functional record satisfying the remaining production evidence above is required before the verdict can become production-ready.

@@ -4,7 +4,7 @@
 |---|---|
 | Document ID | `ENG-STACK-001` |
 | Version | `0.1` |
-| Status | **DRAFT — no technology or provider selected** |
+| Status | **APPROVED CONSTRAINTS — implementation selection in `ADR-ARCH-006`; production providers unselected** |
 | Product phase | Phase 1 — Personal and Family |
 | Updated | 26 August 2026 |
 | Architecture inputs | `ARCH-SOL-001`, `ARCH-DATA-001`, `ARCH-NFR-001`, proposed `ADR-ARCH-001`–`005` |
@@ -12,7 +12,7 @@
 
 ## 1. Purpose and non-selection statement
 
-This document defines what a future technology stack must prove. It does **not** choose an application language, framework, browser framework, cloud, hosting model, identity system, database, object store, event/workflow system, search/vector/graph engine, OCR/parser/model, malware scanner, notification service, connector, analytics platform, observability product, secret/key product, build system, infrastructure tool, or test product.
+This document defines what every implementation and future production technology must prove. Accepted `ADR-ARCH-006` selects the Phase 1 local application language, modular repository, client/API frameworks, local adapters, and test toolchain. It does **not** select a cloud, production hosting model, identity provider, managed database, object store, queue, search/vector/graph engine, OCR/model provider, notification service, connector, analytics platform, observability product, or production key/secrets product.
 
 Approved `DEC-009` requires provider-specific choices behind abstractions. Approved `DEC-021` requires a responsive web app/PWA product surface, and `DEC-022` requires strict multi-tenant workspace isolation with an Australian-residency option. Those decisions constrain capabilities, not products. Proposed ADRs are evaluation inputs until accepted. `DEC-031`–`DEC-040` continue to fence conditional connectors, continuity, scoring, launch profiles, clinical handling, channels, recovery, deletion timing, and residency routes.
 
@@ -178,4 +178,4 @@ No stack choice is valid until the decision states:
 6. residual risks, owners, evidence expiry, activation and rollback/forward-repair gates; and
 7. review/replacement triggers.
 
-Until those outputs and the repository implementation gate are approved, the stack remains deliberately undecided.
+`ADR-ARCH-006` supplies the approved local implementation output. Each production provider remains deliberately undecided until it supplies the evidence and decision output above.

@@ -14,7 +14,7 @@
 
 This catalogue groups the independently traceable requirements in `docs/01-product/02-phase-1-prd.md` into user- and service-facing features. It introduces no product scope independently of that PRD or the `APPROVED` decisions in `docs/00-context/decision-register.md`.
 
-The PRD and this catalogue are both `DRAFT`. A feature marked required here is a proposed Phase 1 feature, not implementation authority. Product-owner approval of the PRD and the readiness gate in `CODEX.md` remain mandatory. The release-slice mapping is also contingent on `DEC-030`; an `OPEN` or `PROPOSED` decision is always shown as a dependency and is never silently resolved by this catalogue.
+The PRD is the approved Phase 1 implementation baseline under `DEC-041`. This catalogue remains a derived planning view: implementation authority and decision boundaries come from the PRD, approved decision register, accepted ADRs, and normative contracts. The four release slices are continuous engineering checkpoints under approved `DEC-030`.
 
 Feature IDs are stable. A retired ID must not be reused. Detailed use cases, contracts, tests, reference data, and backlog items must link to both the applicable `FEAT-P1-*` and `REQ-P1-*` IDs.
 
