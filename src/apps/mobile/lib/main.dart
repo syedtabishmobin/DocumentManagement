@@ -652,7 +652,8 @@ class _VaultShellState extends State<VaultShell> {
         ],
       ),
     );
-    if (syntheticConfirmed != true || !mounted) return;
+    final confirmed = syntheticConfirmed ?? false;
+    if (!confirmed || !mounted) return;
     try {
       if (route == 'FILE') {
         final files = await FilePicker.pickFiles();
@@ -662,7 +663,7 @@ class _VaultShellState extends State<VaultShell> {
               File(file.path!),
               [person.id],
               'FILE',
-              syntheticConfirmed,
+              confirmed,
             );
           }
         }
@@ -676,7 +677,7 @@ class _VaultShellState extends State<VaultShell> {
             File(image.path),
             [person.id],
             'CAMERA',
-            syntheticConfirmed,
+            confirmed,
           );
         }
       } else {
@@ -686,7 +687,7 @@ class _VaultShellState extends State<VaultShell> {
           builder: (context) => ManualDocumentDialog(
             api: widget.api,
             person: person,
-            syntheticConfirmed: syntheticConfirmed,
+            syntheticConfirmed: confirmed,
           ),
         );
       }

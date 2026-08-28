@@ -6,7 +6,7 @@ This record contains content-free infrastructure evidence only. It contains no t
 
 | Environment | Deployment | Result | Customer-data policy | Applications |
 |---|---|---|---|---|
-| `dev` | `doculyra-dev-preview-copy-20260828` | `Succeeded` | `synthetic-only` | React web and NestJS API deployed from `b972b0265d84e35afdf268b31c2006ad95664050` |
+| `dev` | `doculyra-dev-preview-auth-20260829` | `Succeeded` | `synthetic-only` | React web and NestJS API deployed from `a9b5b5cad10d2a21afd95902058cbe816f06e723` |
 | `stage` | `doculyra-stage-foundation-refresh-20260829` | `Succeeded` | `synthetic-only` | Not deployed |
 | `prod` | Parameterized only | Not provisioned | `production-gated` | Not deployed |
 
