@@ -31,8 +31,8 @@ The user interface includes purpose- and permission-specific consent before each
 
 Current provider-console actions are limited to:
 
-- updating Google Branding to the new `/privacy` and `/terms` pages, adding the logo, and saving/verifying the identity/Drive/Gmail scopes; the development test user is configured;
-- disabling Dropbox implicit/public-client grant, removing unnecessary OIDC scopes, and rotating the reviewed app secret; and
+- updating Google Branding to the deployed `/privacy` and `/terms` pages, adding the logo, deciding whether restricted `drive.readonly` is justified instead of selected-file `drive.file`, and adding `gmail.readonly` only when the Gmail adapter is ready; the three identity scopes and development test user are configured;
+- disabling Dropbox implicit/public-client grant if it remains enabled, confirming its least-permissive content-access mode, and rotating the reviewed app secret; the unnecessary OIDC scopes have been removed;
 - retaining the verified Box read-only scope and production activation gate.
 
 Remaining owner-controlled launch inputs include:
@@ -42,7 +42,7 @@ Remaining owner-controlled launch inputs include:
 - an Apple Developer team, primary App ID, Services ID, verified domain, key ID and Sign in with Apple private key;
 - a private inbound-email domain/provider and verified webhook secret;
 - an approved SMS provider/number if SMS is retained, plus production sender identities and recipient controls; and
-- approval of the proposed secure invitation design in `DEC-046`: a short-lived single-use link plus optional one-time code, followed by invitee-created password/passkey, instead of transmitting a reusable temporary password.
+- implementation and conformance evidence for the approved secure invitation design in `DEC-046`: a short-lived single-use link plus optional one-time code, followed by invitee-created password/passkey, instead of transmitting a reusable temporary password.
 
 Configuration names are documented without secrets in [`.env.example`](.env.example). Real secrets belong in an environment-specific secret store and must never be committed.
 
