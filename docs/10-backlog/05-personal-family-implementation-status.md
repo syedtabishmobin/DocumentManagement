@@ -144,9 +144,11 @@ All Phase 1 remains one continuous program under `DEC-054`; this order is for de
 
 ## 7. Immediate external-provider blockers
 
-- Google: incomplete Branding, no test user, and no configured Data Access scopes.
-- Dropbox: implicit grant enabled and unnecessary OIDC scopes selected.
-- Box: write scope selected despite the read-only import contract.
+- Google: one test user is verified, but the Data Access tables show no saved scopes; distinct `/privacy` and `/terms` URLs plus the logo must replace the current homepage placeholders after deployment.
+- Dropbox: implicit/public-client grant remains enabled and unnecessary `openid`, `profile`, and `email` scopes remain selected; rotate the reviewed app secret and update Key Vault.
+- Box: the earlier write-scope blocker is closed; read-only access is verified.
 - All providers: runtime adapters, token custody, callbacks, consent persistence, disconnect/deletion, audit, and conformance tests are not implemented.
 
 Until those conditions are closed, the truthful application state is `CONFIGURED_DISABLED`.
+
+The prioritised, implementation-ready list of missing and incomplete items is maintained in [`BLG-REMAIN-001`](06-personal-family-remaining-work.md).

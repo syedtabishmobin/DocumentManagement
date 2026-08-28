@@ -45,9 +45,9 @@ The following is a read-only verification snapshot, not an activation approval.
 | Provider | Verified state | Remaining provider-console work |
 |---|---|---|
 | Microsoft Entra / Graph | Application `Doculyra Dev`; multi-tenant Entra plus personal Microsoft accounts; both exact callbacks present; delegated `openid`, `profile`, `email`, `offline_access`, `User.Read`, `Files.Read`, and `Mail.Read`; Key Vault secret metadata present and enabled. | Registration is ready for adapter development. Do not grant application-wide Graph permissions or write scopes. |
-| Google Auth / Drive / Gmail | Project `doculyra-dev`; Gmail API, Google Drive API, and Google Picker API are enabled; all three exact callbacks and the web origin are present; app name, support email, homepage, and authorized domain are present; Key Vault secret metadata is present and enabled. | **Incomplete:** publishing status is `Testing`, test-user count is `0`, OAuth Branding reports incomplete, and Data Access lists no scopes. Complete sections 4.2–4.4 before adapter testing. |
-| Dropbox | Exact callback present; development app; `account_info.read`, `files.metadata.read`, and `files.content.read` are selected; Key Vault secret metadata is present and enabled. | Disable implicit grant for the server-mediated code flow. Remove `openid`, `profile`, and `email` unless Dropbox is separately approved as an identity provider. Confirm the minimum content-access mode. |
-| Box | Enabled OAuth application; exact callback present; read scope present; Key Vault secret metadata is present and enabled. | **Blocker:** remove `Read and write all files and folders`; retain read-only access. Use downscoping when the selected-file flow permits it. |
+| Google Auth / Drive / Gmail | Project `doculyra-dev`; Gmail API, Google Drive API, and Google Picker API are enabled; all three exact callbacks and the web origin are present; app name, support email, homepage, authorized domain, and one development test user are present; Key Vault secret metadata is present and enabled. The privacy and terms fields currently point to the homepage. | **Incomplete:** the Data Access page still shows no saved scopes. After this change is deployed, set the distinct `/privacy` and `/terms` URLs, add the approved logo, and save the minimum identity/Drive/Gmail scope set. |
+| Dropbox | Exact callback present; development app; `account_info.read`, `files.metadata.read`, and `files.content.read` are selected; Key Vault secret metadata is present and enabled. | Disable implicit/public-client grant for the server-mediated code flow. `openid`, `profile`, and `email` remain selected and should be removed because Dropbox is not an approved Doculyra identity provider. Rotate the app secret and update its Key Vault reference after the configuration review. |
+| Box | Enabled OAuth application; exact callback present; `Read all files and folders` is selected and write access is no longer selected; Key Vault secret metadata is present and enabled. | Read-only scope correction is complete. Use downscoping when the selected-file flow permits it and retain the production activation gate. |
 | Azure Communication Services Email | `acs-doculyra-dev` is linked to `ecs-doculyra-dev/AzureManagedDomain`; data location is Australia; Domain, SPF, DKIM, DKIM2, and DMARC are verified; sender is configured; runtime managed identity has `Communication and Email Service Owner`. | Provider resources are ready for a synthetic delivery adapter and test-recipient controls. The application email adapter is not implemented or enabled. |
 
 ## 4. Google setup
@@ -70,25 +70,27 @@ In Google Auth Platform → Branding:
 
 1. Set the app name, user-support email, developer contact, homepage, and authorized domain.
 2. Add a Doculyra logo that matches the public website.
-3. Add public privacy-policy and terms-of-service URLs before production verification. The current website explicitly states that these routes are not yet published, so this remains a production blocker.
-4. Save and confirm the overview no longer reports incomplete branding.
+3. Use the public, distinct development URLs after deployment:
+   - `https://ca-doculyra-dev-web.ashystone-3c89dc27.australiaeast.azurecontainerapps.io/privacy`
+   - `https://ca-doculyra-dev-web.ashystone-3c89dc27.australiaeast.azurecontainerapps.io/terms`
+4. Add the approved Doculyra logo and save. Final production legal pages still require legal/privacy review, the production operator identity, domain, contact details, and release approval.
 
 ### 4.3 Test audience
 
 In Google Auth Platform → Audience:
 
 1. Keep the development project in `Testing`.
-2. Add the product owner's Google account as a test user.
+2. Add the product owner's Google account as a test user. **Verified complete: one named development test user is present.**
 3. Add only named developers/testers who need the integration.
 4. Expect testing authorizations to expire according to Google's test-mode policy; do not treat test tokens as production-ready.
 
 ### 4.4 Data Access and runtime scopes
 
-Add only the scopes the implementation actually requests:
+Add only the scopes the implementation actually requests. As verified on 29 August 2026, the Data Access tables still show no saved scopes even though the owner attempted to add them; reopen **Add or remove scopes**, select the exact rows, choose **Update**, then choose **Save** on the Data Access page and verify that the rows remain visible after reload.
 
 | Capability | Scope set | Notes |
 |---|---|---|
-| Google sign-in | `openid`, `email`, `profile` | Identity only; do not combine document access into initial sign-in consent. |
+| Google sign-in | `openid`, `https://www.googleapis.com/auth/userinfo.email`, `https://www.googleapis.com/auth/userinfo.profile` | Identity only; do not combine document access into initial sign-in consent. |
 | Google Drive selected-file import | `https://www.googleapis.com/auth/drive.file` | Prefer Google Picker and per-file access. Do not request full-drive write access. |
 | Gmail attachment import | `https://www.googleapis.com/auth/gmail.readonly` | Restricted scope; production use requires Google's applicable verification and possibly an independent security assessment. No send, edit, or delete permission. |
 
@@ -227,8 +229,8 @@ A provider remains `CONFIGURED_DISABLED` until all applicable evidence is presen
 
 No new IDs or secret values are needed now. The remaining console actions are:
 
-1. Google: complete Branding, add the owner as a test user, and add the exact identity/Drive/Gmail scopes.
-2. Dropbox: disable implicit grant, remove the three OIDC scopes, and confirm the least-permissive content-access mode.
-3. Box: remove the read/write scope and retain read-only scope.
+1. Google: after deployment, replace the homepage placeholders with the distinct `/privacy` and `/terms` URLs, add the logo, and save/verify the exact identity/Drive/Gmail scopes. The development test user is complete.
+2. Dropbox: disable implicit/public-client grant, remove the three OIDC scopes, confirm the least-permissive content-access mode, and rotate the app secret/update Key Vault after this review.
+3. Box: no immediate scope correction remains; read-only is verified. Keep the app development-gated.
 
 Apple, permanent domains, production OAuth verification, provider production reviews, public email/SMS delivery, and store publication remain later owner-controlled gates.

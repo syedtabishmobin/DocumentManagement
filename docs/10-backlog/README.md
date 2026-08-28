@@ -33,6 +33,7 @@ The four slices are coherent value increments, not folders or handover chapters:
 3. [`03-release-plan.md`](03-release-plan.md) — proposed slice entry/exit gates, dependency order, evidence, stop-ship rules, and approval boundary.
 4. [`04-traceability-matrix.md`](04-traceability-matrix.md) — coverage across requirements, features, use cases, downstream contracts, decisions, and absent test cases.
 5. [`05-personal-family-implementation-status.md`](05-personal-family-implementation-status.md) — evidence-based comparison of the current application against all 48 stories and the remaining personal/family work.
+6. [`06-personal-family-remaining-work.md`](06-personal-family-remaining-work.md) — prioritised checklist of every missing, incomplete, or intentionally unavailable personal/family workstream.
 
 Before acting on any item, also read the [decision register](../00-context/decision-register.md), [Phase 1 PRD](../01-product/02-phase-1-prd.md), [feature catalogue](../01-product/03-feature-catalogue.md), [use-case catalogue](../01-product/04-use-case-catalogue.md), [architecture index](../02-architecture/README.md), [document-intelligence index](../03-document-intelligence/README.md), [AI index](../04-ai/README.md), [API index](../05-api/README.md), [security index](../06-security/README.md), [UX index](../07-ux/README.md), [engineering index](../08-engineering/README.md), [operations index](../09-devops/README.md), and [reference-data index](../11-reference-data/README.md).
 

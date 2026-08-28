@@ -31,9 +31,9 @@ The user interface includes purpose- and permission-specific consent before each
 
 Current provider-console actions are limited to:
 
-- completing Google OAuth Branding, adding a development test user, and adding identity/Drive/Gmail scopes;
-- disabling Dropbox implicit grant and removing unnecessary OIDC scopes; and
-- removing Box write access so the application is read-only.
+- updating Google Branding to the new `/privacy` and `/terms` pages, adding the logo, and saving/verifying the identity/Drive/Gmail scopes; the development test user is configured;
+- disabling Dropbox implicit/public-client grant, removing unnecessary OIDC scopes, and rotating the reviewed app secret; and
+- retaining the verified Box read-only scope and production activation gate.
 
 Remaining owner-controlled launch inputs include:
 

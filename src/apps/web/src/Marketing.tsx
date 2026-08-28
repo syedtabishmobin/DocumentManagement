@@ -71,7 +71,7 @@ export function MarketingSite() {
 
       <section className="contact-section" id="contact"><div><span className="eyebrow light">Contact</span><h2>Interested in early access?</h2><p>Talk to us about household use, future business workspaces, security review or the product roadmap.</p></div>{contactEmail ? <a className="contact-button" href={`mailto:${contactEmail}`}>Contact us <ArrowRight /></a> : <span className="contact-pending">Contact delivery will be enabled with the production Doculyra email domain.</span>}</section>
     </main>
-    <footer className="marketing-footer"><div className="wordmark inverse"><BrandMark /><BrandName /></div><p>Organised records. Evidence-aware intelligence. Explicit control.</p><div>{links.map(([label, href]) => <a key={href} href={href}>{label}</a>)}<a href="/app?mode=login">Sign in</a></div><small>© {new Date().getFullYear()} Doculyra. Production legal and privacy links will be activated before launch.</small></footer>
+    <footer className="marketing-footer"><div className="wordmark inverse"><BrandMark /><BrandName /></div><p>Organised records. Evidence-aware intelligence. Explicit control.</p><div>{links.map(([label, href]) => <a key={href} href={href}>{label}</a>)}<a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/app?mode=login">Sign in</a></div><small>© {new Date().getFullYear()} Doculyra. Development preview · synthetic data only.</small></footer>
   </div>;
 }
 

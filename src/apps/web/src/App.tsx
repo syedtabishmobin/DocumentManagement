@@ -10,6 +10,7 @@ import { ActivityView } from "./Activity.js";
 import { BrandMark, BrandName } from "./Brand.js";
 import { DocumentDossier } from "./DocumentDossier.js";
 import { ProfileView } from "./Profile.js";
+import { LegalPage } from "./Legal.js";
 
 type View = "home" | "documents" | "profile" | "assistant" | "attention" | "family" | "activity" | "trash";
 const nav: Array<{ id: View; label: string; icon: typeof Home }> = [
@@ -44,9 +45,13 @@ export function App() {
     window.addEventListener("popstate", updateRoute);
     return () => window.removeEventListener("popstate", updateRoute);
   }, []);
-  useEffect(() => { void loadSession(); }, []);
+  useEffect(() => {
+    if (!["/", "/privacy", "/terms"].includes(window.location.pathname)) void loadSession();
+  }, []);
 
   const routeUrl = new URL(route, window.location.origin);
+  if (routeUrl.pathname === "/privacy") return <LegalPage kind="privacy" />;
+  if (routeUrl.pathname === "/terms") return <LegalPage kind="terms" />;
   if (routeUrl.pathname === "/") return <MarketingSite />;
   if (!session) return <Startup message={error || "Opening your private workspace…"} retry={() => void loadSession()} />;
   if (!session.authenticated) return <AuthScreen initialMode={routeUrl.searchParams.get("mode") === "login" ? "login" : "register"} onModeChange={(mode) => navigate(`/app?mode=${mode}`, true)} onAuthenticated={async (current) => { setSession(current); if (current.onboardingComplete) await refresh(); navigate("/app", true); }} />;
