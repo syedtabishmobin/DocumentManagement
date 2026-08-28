@@ -6,7 +6,9 @@ plugins {
 
 android {
     namespace = "com.doculyra.doculyra_mobile"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_secure_storage 11 requires API 37 at compile time. This does not
+    // change minSdk or opt the app into target-SDK runtime behavior.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
