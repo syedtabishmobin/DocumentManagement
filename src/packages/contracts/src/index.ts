@@ -187,11 +187,40 @@ export interface FactRecord {
   id: string;
   workspaceId: string;
   documentId: string;
+  subjectIds: string[];
+  definitionId: string;
   name: string;
   value: string;
   confidence: number;
+  reviewState: "PROPOSED" | "REVIEWED" | "CONFLICT";
+  evidenceExcerpt: string;
   validFrom: string;
   recordedAt: string;
+}
+
+export interface DependencyRecord {
+  id: string;
+  workspaceId: string;
+  fromType: "SUBJECT" | "DOCUMENT" | "FACT" | "CATEGORY";
+  fromId: string;
+  toType: "SUBJECT" | "DOCUMENT" | "FACT" | "CATEGORY";
+  toId: string;
+  kind: "DOCUMENT_SUBJECT" | "DOCUMENT_CONTAINS_FACT" | "DOCUMENT_CATEGORY";
+  label: string;
+  evidenceDocumentId: string;
+  createdAt: string;
+}
+
+export interface DocumentDetail {
+  document: DocumentRecord;
+  facts: FactRecord[];
+  dependencies: DependencyRecord[];
+  preview: {
+    kind: "TEXT" | "IMAGE" | "PDF" | "UNAVAILABLE";
+    text?: string;
+    artifactUrl?: string;
+    message?: string;
+  };
 }
 
 export interface TaskRecord {
@@ -237,5 +266,6 @@ export interface DashboardSnapshot {
   members: Member[];
   subjects: SubjectRecord[];
   audit: AuditRecord[];
+  dependencies: DependencyRecord[];
   localMode: true;
 }

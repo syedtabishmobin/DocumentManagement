@@ -8,6 +8,8 @@ import type {
   ConnectorDescriptor,
   CreateSubjectInput,
   DashboardSnapshot,
+  DependencyRecord,
+  DocumentDetail,
   DocumentRecord,
   FactRecord,
   FilePermissions,
@@ -18,7 +20,7 @@ import type {
   TaskRecord,
   Workspace,
 } from "@document-management/contracts";
-import { classifyDocument, normalizeQuestion } from "@document-management/domain";
+import { classifyDocument, extractProfileFacts, normalizeQuestion } from "@document-management/domain";
 
 interface LocalState {
   workspace: Workspace;
@@ -29,10 +31,12 @@ interface LocalState {
   members: Member[];
   subjects: SubjectRecord[];
   audit: AuditRecord[];
+  dependencies: DependencyRecord[];
 }
 
 const now = (): string => new Date().toISOString();
 const defaultPermissions = (owner = false): FilePermissions => ({ view: true, add: owner, edit: owner, delete: owner });
+const stableId = (prefix: string, ...parts: string[]): string => `${prefix}_${createHash("sha256").update(parts.join("\u001f")).digest("hex").slice(0, 24)}`;
 
 function auditRecord(workspaceId: string, type: string, resourceType: AuditRecord["resourceType"], detail: string, resourceId?: string): AuditRecord {
   return { id: randomUUID(), workspaceId, type, resourceType, ...(resourceId ? { resourceId } : {}), actor: "Local owner", detail, at: now() };
@@ -80,6 +84,74 @@ function initialState(): LocalState {
       },
     ],
     audit: [{ id: randomUUID(), workspaceId, type: "WORKSPACE_CREATED", resourceType: "WORKSPACE", resourceId: workspaceId, actor: "Local owner", detail: "Created the local workspace", at: createdAt }],
+    dependencies: [],
+  };
+}
+
+function ensureDocumentIntelligence(state: LocalState): boolean {
+  let changed = false;
+  state.facts ??= [];
+  state.dependencies ??= [];
+  const activeDocuments = state.documents.filter((document) => document.status !== "DELETED" && document.status !== "POLICY_HOLD");
+
+  for (const document of activeDocuments) {
+    if (document.status === "READY" && document.extractedText) {
+      for (const proposal of extractProfileFacts(document.extractedText)) {
+        const id = stableId("fact", document.id, proposal.definitionId, proposal.value);
+        if (state.facts.some((fact) => fact.id === id)) continue;
+        state.facts.push({
+          id,
+          workspaceId: state.workspace.id,
+          documentId: document.id,
+          subjectIds: [...document.subjectIds],
+          definitionId: proposal.definitionId,
+          name: proposal.name,
+          value: proposal.value,
+          confidence: proposal.confidence,
+          reviewState: "PROPOSED",
+          evidenceExcerpt: proposal.evidenceExcerpt,
+          validFrom: document.createdAt,
+          recordedAt: document.updatedAt,
+        });
+        changed = true;
+      }
+    }
+
+    const categoryId = stableId("category", document.category.toLowerCase());
+    const categoryEdgeId = stableId("dependency", categoryId, document.id, "DOCUMENT_CATEGORY");
+    if (!state.dependencies.some((edge) => edge.id === categoryEdgeId)) {
+      state.dependencies.push({ id: categoryEdgeId, workspaceId: state.workspace.id, fromType: "CATEGORY", fromId: categoryId, toType: "DOCUMENT", toId: document.id, kind: "DOCUMENT_CATEGORY", label: `Groups under ${document.category}`, evidenceDocumentId: document.id, createdAt: document.createdAt });
+      changed = true;
+    }
+    for (const subjectId of document.subjectIds) {
+      const edgeId = stableId("dependency", subjectId, document.id, "DOCUMENT_SUBJECT");
+      if (state.dependencies.some((edge) => edge.id === edgeId)) continue;
+      state.dependencies.push({ id: edgeId, workspaceId: state.workspace.id, fromType: "SUBJECT", fromId: subjectId, toType: "DOCUMENT", toId: document.id, kind: "DOCUMENT_SUBJECT", label: "Document belongs to", evidenceDocumentId: document.id, createdAt: document.createdAt });
+      changed = true;
+    }
+  }
+
+  for (const fact of state.facts.filter((item) => activeDocuments.some((document) => document.id === item.documentId))) {
+    const edgeId = stableId("dependency", fact.documentId, fact.id, "DOCUMENT_CONTAINS_FACT");
+    if (state.dependencies.some((edge) => edge.id === edgeId)) continue;
+    state.dependencies.push({ id: edgeId, workspaceId: state.workspace.id, fromType: "DOCUMENT", fromId: fact.documentId, toType: "FACT", toId: fact.id, kind: "DOCUMENT_CONTAINS_FACT", label: "Provides evidence for", evidenceDocumentId: fact.documentId, createdAt: fact.recordedAt });
+    changed = true;
+  }
+  return changed;
+}
+
+function documentSummary(document: DocumentRecord): DocumentRecord {
+  const { extractedText: _content, ...summary } = document;
+  if (document.status !== "POLICY_HOLD") return summary;
+  return {
+    ...summary,
+    name: "Restricted document",
+    category: "Policy hold",
+    mediaType: "application/octet-stream",
+    size: 0,
+    sha256: "restricted",
+    subjectIds: [],
+    reviewReason: "This item is isolated and unavailable to ordinary preview, extraction, search and connections.",
   };
 }
 
@@ -106,6 +178,16 @@ export class LocalStore {
         subjectIds: document.subjectIds?.length ? document.subjectIds : [state.subjects[0]!.id],
         captureRoute: document.captureRoute ?? "FILE",
       }));
+      state.facts = (state.facts ?? []).map((fact) => {
+        const source = state.documents.find((document) => document.id === fact.documentId);
+        return {
+          ...fact,
+          subjectIds: fact.subjectIds?.length ? fact.subjectIds : source?.subjectIds ?? [],
+          definitionId: fact.definitionId ?? `fact.legacy.${fact.name.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`,
+          reviewState: fact.reviewState ?? "PROPOSED",
+          evidenceExcerpt: fact.evidenceExcerpt ?? "Legacy extracted proposal; open the source document for evidence.",
+        };
+      });
       state.audit = state.audit.map((entry) => ({
         ...entry,
         workspaceId: entry.workspaceId ?? state.workspace.id,
@@ -113,6 +195,7 @@ export class LocalStore {
         actor: entry.actor ?? "Local owner",
         detail: entry.detail ?? entry.type.replaceAll("_", " ").toLowerCase(),
       }));
+      if (ensureDocumentIntelligence(state)) await this.save(state);
       return state;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
@@ -133,8 +216,20 @@ export class LocalStore {
   }
 
   async dashboard(): Promise<DashboardSnapshot> {
-    const { workspace, documents, facts, tasks, notifications, members, subjects, audit } = await this.load();
-    return { workspace, documents, facts, tasks, notifications, members, subjects, audit: [...audit].reverse(), localMode: true };
+    const { workspace, documents, facts, tasks, notifications, members, subjects, audit, dependencies } = await this.load();
+    const activeIds = new Set(documents.filter((document) => document.status !== "DELETED" && document.status !== "POLICY_HOLD").map((document) => document.id));
+    return {
+      workspace,
+      documents: documents.map(documentSummary),
+      facts: facts.filter((fact) => activeIds.has(fact.documentId)),
+      tasks,
+      notifications,
+      members,
+      subjects,
+      audit: [...audit].reverse(),
+      dependencies: dependencies.filter((edge) => activeIds.has(edge.evidenceDocumentId)),
+      localMode: true,
+    };
   }
 
   async configureWorkspace(name: string, type: Workspace["type"], ownerName: string): Promise<Workspace> {
@@ -186,6 +281,7 @@ export class LocalStore {
     await mkdir(this.artifactRoot, { recursive: true, mode: 0o700 });
     await writeFile(join(this.artifactRoot, id), file.buffer, { mode: 0o600, flag: "wx" });
     state.documents.push(document);
+    ensureDocumentIntelligence(state);
     state.notifications.unshift({
       id: randomUUID(),
       workspaceId: state.workspace.id,
@@ -198,6 +294,48 @@ export class LocalStore {
     state.audit.push(auditRecord(state.workspace.id, "DOCUMENT_INGESTED", "DOCUMENT", `Added a document using ${captureRoute.toLowerCase()} capture`, id));
     await this.save(state);
     return document;
+  }
+
+  async documentDetail(id: string): Promise<DocumentDetail> {
+    const state = await this.load();
+    const document = state.documents.find((item) => item.id === id);
+    if (!document || document.status === "DELETED") throw new NotFoundException("Document not found");
+    if (document.status === "POLICY_HOLD") throw new BadRequestException("This item is isolated and cannot be previewed in the ordinary document view");
+    const artifactUrl = `/api/documents/${document.id}/artifact`;
+    const preview: DocumentDetail["preview"] = document.extractedText
+      ? { kind: "TEXT", text: document.extractedText.slice(0, 100_000), artifactUrl }
+      : document.mediaType.startsWith("image/")
+        ? { kind: "IMAGE", artifactUrl }
+        : document.mediaType === "application/pdf"
+          ? { kind: "PDF", artifactUrl }
+          : { kind: "UNAVAILABLE", artifactUrl, message: "A safe inline preview is not available for this format. You can open the exact local original." };
+    return {
+      document: documentSummary(document),
+      facts: state.facts.filter((fact) => fact.documentId === document.id),
+      dependencies: state.dependencies.filter((edge) => edge.evidenceDocumentId === document.id),
+      preview,
+    };
+  }
+
+  async documentArtifact(id: string): Promise<{ buffer: Buffer; mediaType: string; name: string }> {
+    const state = await this.load();
+    const document = state.documents.find((item) => item.id === id);
+    if (!document || document.status === "DELETED") throw new NotFoundException("Document not found");
+    if (document.status === "POLICY_HOLD") throw new BadRequestException("This item is isolated and cannot be opened");
+    return { buffer: await readFile(join(this.artifactRoot, id)), mediaType: document.mediaType, name: document.name };
+  }
+
+  async reviewFact(id: string): Promise<FactRecord> {
+    const state = await this.load();
+    const fact = state.facts.find((item) => item.id === id);
+    if (!fact) throw new NotFoundException("Extracted detail not found");
+    const document = state.documents.find((item) => item.id === fact.documentId);
+    if (!document || document.status !== "READY") throw new BadRequestException("The source document is not available for fact review");
+    fact.reviewState = "REVIEWED";
+    fact.recordedAt = now();
+    state.audit.push(auditRecord(state.workspace.id, "FACT_REVIEWED", "DOCUMENT", "Reviewed an evidence-linked profile detail", fact.documentId));
+    await this.save(state);
+    return fact;
   }
 
   async addManualDocument(input: { name: string; content: string; subjectIds: string[] }): Promise<DocumentRecord> {
@@ -370,6 +508,7 @@ export class LocalStore {
     delete document.extractedText;
     document.updatedAt = now();
     state.facts = state.facts.filter((fact) => fact.documentId !== id);
+    state.dependencies = state.dependencies.filter((edge) => edge.evidenceDocumentId !== id);
     state.tasks = state.tasks.filter((task) => task.documentId !== id);
     state.audit.push(auditRecord(state.workspace.id, "DOCUMENT_PURGED", "DOCUMENT", "Deleted the original and derived local document data", id));
     try { await unlink(join(this.artifactRoot, id)); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }

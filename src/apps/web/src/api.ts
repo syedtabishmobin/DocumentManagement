@@ -1,4 +1,4 @@
-import type { Answer, AuthSession, ConnectorDescriptor, DashboardSnapshot, DocumentRecord, ManagePersonInput, Member, SubjectRecord, TaskRecord, Workspace, WorkspaceRole } from "@document-management/contracts";
+import type { Answer, AuthSession, ConnectorDescriptor, DashboardSnapshot, DocumentDetail, DocumentRecord, FactRecord, ManagePersonInput, Member, SubjectRecord, TaskRecord, Workspace, WorkspaceRole } from "@document-management/contracts";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api${path}`, { credentials: "same-origin", ...init });
@@ -19,6 +19,9 @@ export const api = {
   dashboard: () => request<DashboardSnapshot>("/dashboard"),
   upload: (file: File, subjectIds: string[], captureRoute: "FILE" | "CAMERA" | "BULK") => { const body = new FormData(); body.set("file", file); body.set("subjectIds", subjectIds.join(",")); body.set("captureRoute", captureRoute); return request<DocumentRecord>("/documents", { method: "POST", body }); },
   manualDocument: (input: { name: string; content: string; subjectIds: string[] }) => request<DocumentRecord>("/documents/manual", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }),
+  documentDetail: (id: string) => request<DocumentDetail>(`/documents/${id}`),
+  documentArtifactUrl: (id: string) => `/api/documents/${id}/artifact`,
+  reviewFact: (id: string) => request<FactRecord>(`/facts/${id}/review`, { method: "PATCH" }),
   addSubject: (input: { displayName: string; kind: SubjectRecord["kind"]; relationship: string; dateOfBirth?: string }) => request<SubjectRecord>("/subjects", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }),
   createPerson: (input: ManagePersonInput) => request<SubjectRecord>("/people", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }),
   updatePerson: (id: string, input: ManagePersonInput) => request<SubjectRecord>(`/people/${id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }),

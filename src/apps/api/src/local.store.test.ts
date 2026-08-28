@@ -20,7 +20,7 @@ describe("LocalStore", () => {
   });
 
   it("stores, retrieves, cites, and purges a local text document", async () => {
-    const text = "Home insurance policy expires on 30 June 2027.";
+    const text = "Home insurance policy expires on 30 June 2027.\nPolicy number: SYN-12345";
     const uploaded = await store.addDocument({
       fieldname: "file",
       originalname: "home-insurance.txt",
@@ -38,12 +38,27 @@ describe("LocalStore", () => {
     expect(uploaded.category).toBe("Insurance");
 
     const answer = await store.ask("When does the home insurance policy expire?");
-    expect(answer.citations).toHaveLength(1);
+    expect(answer.citations.length).toBeGreaterThan(0);
     expect(answer.answer).toContain("30 June 2027");
 
+    let dashboard = await store.dashboard();
+    expect(dashboard.documents.find((document) => document.id === uploaded.id)?.extractedText).toBeUndefined();
+    expect(dashboard.facts).toEqual(expect.arrayContaining([expect.objectContaining({ documentId: uploaded.id, definitionId: "fact.policy.number", value: "SYN-12345", reviewState: "PROPOSED" })]));
+    expect(dashboard.dependencies).toEqual(expect.arrayContaining([
+      expect.objectContaining({ evidenceDocumentId: uploaded.id, kind: "DOCUMENT_SUBJECT" }),
+      expect.objectContaining({ evidenceDocumentId: uploaded.id, kind: "DOCUMENT_CONTAINS_FACT" }),
+      expect.objectContaining({ evidenceDocumentId: uploaded.id, kind: "DOCUMENT_CATEGORY" }),
+    ]));
+    expect(await store.documentDetail(uploaded.id)).toMatchObject({ preview: { kind: "TEXT", text }, facts: [expect.objectContaining({ name: "Expiry date" }), expect.objectContaining({ name: "Policy number" })] });
+    expect((await store.documentArtifact(uploaded.id)).buffer.toString("utf8")).toBe(text);
+    const reviewed = await store.reviewFact(dashboard.facts.find((fact) => fact.definitionId === "fact.policy.number")!.id);
+    expect(reviewed.reviewState).toBe("REVIEWED");
+    expect((await store.dashboard()).audit.some((entry) => entry.type === "FACT_REVIEWED")).toBe(true);
+
     await store.deleteDocument(uploaded.id);
-    const dashboard = await store.dashboard();
+    dashboard = await store.dashboard();
     expect(dashboard.documents.find((document) => document.id === uploaded.id)?.status).toBe("DELETED");
+    expect(dashboard.dependencies.some((edge) => edge.evidenceDocumentId === uploaded.id)).toBe(false);
     expect(await store.ask("When does the home insurance policy expire?")).toMatchObject({ confidence: "LOW", citations: [] });
   });
 
@@ -57,6 +72,8 @@ describe("LocalStore", () => {
     } as Express.Multer.File, ["sub_local_owner"], "FILE");
     expect(uploaded.status).toBe("POLICY_HOLD");
     expect((await store.ask("What is the diagnosis?")).citations).toEqual([]);
+    await expect(store.documentDetail(uploaded.id)).rejects.toThrow("isolated");
+    await expect(store.documentArtifact(uploaded.id)).rejects.toThrow("isolated");
   });
 
   it("keeps one household person linked to explicit login and file permissions", async () => {

@@ -1,6 +1,6 @@
-import { BadRequestException, Body, Controller, Delete, Get, Inject, Param, Patch, Post, Req, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Inject, Param, Patch, Post, Req, Res, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import type { Request } from "express";
+import type { Request, Response } from "express";
 import { askQuestionSchema, configureWorkspaceSchema, createMemberSchema, createSubjectSchema, createTaskSchema, managePersonSchema, manualDocumentSchema } from "@document-management/contracts";
 import { LocalStore } from "./local.store.js";
 import { IdentityStore } from "./identity.store.js";
@@ -16,7 +16,10 @@ export class LocalController {
   }
 
   @Get("dashboard")
-  dashboard() { return this.store.dashboard(); }
+  async dashboard(@Req() request: Request) {
+    await this.identities.requireSession(sessionToken(request));
+    return this.store.dashboard();
+  }
 
   @Patch("workspace")
   async configureWorkspace(@Body() body: unknown, @Req() request: Request) {
@@ -38,6 +41,28 @@ export class LocalController {
 
   @Post("documents/manual")
   manualDocument(@Body() body: unknown) { return this.store.addManualDocument(manualDocumentSchema.parse(body)); }
+
+  @Get("documents/:id")
+  async documentDetail(@Param("id") id: string, @Req() request: Request) {
+    await this.identities.requireSession(sessionToken(request));
+    return this.store.documentDetail(id);
+  }
+
+  @Get("documents/:id/artifact")
+  async documentArtifact(@Param("id") id: string, @Req() request: Request, @Res() response: Response) {
+    await this.identities.requireSession(sessionToken(request));
+    const artifact = await this.store.documentArtifact(id);
+    response.setHeader("Content-Type", artifact.mediaType);
+    response.setHeader("Content-Disposition", `inline; filename*=UTF-8''${encodeURIComponent(artifact.name)}`);
+    response.setHeader("Cache-Control", "private, no-store");
+    response.send(artifact.buffer);
+  }
+
+  @Patch("facts/:id/review")
+  async reviewFact(@Param("id") id: string, @Req() request: Request) {
+    await this.identities.requireSession(sessionToken(request));
+    return this.store.reviewFact(id);
+  }
 
   @Post("subjects")
   addSubject(@Body() body: unknown) { return this.store.addSubject(createSubjectSchema.parse(body)); }
