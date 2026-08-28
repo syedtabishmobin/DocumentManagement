@@ -1,4 +1,4 @@
-# Azure foundation deployment evidence — 28 August 2026
+# Azure foundation and preview deployment evidence — 28–29 August 2026
 
 This record contains content-free infrastructure evidence only. It contains no tenant ID, subscription ID, credentials, personal notification address, customer data, or application secret.
 
@@ -6,7 +6,7 @@ This record contains content-free infrastructure evidence only. It contains no t
 
 | Environment | Deployment | Result | Customer-data policy | Applications |
 |---|---|---|---|---|
-| `dev` | `doculyra-dev-preview-auth-20260829` | `Succeeded` | `synthetic-only` | React web and NestJS API deployed from `a9b5b5cad10d2a21afd95902058cbe816f06e723` |
+| `dev` | Foundation plus immutable application revisions | `Succeeded` | `synthetic-only` | React web `b5720beedd6afa908a823775efeab88b4d47968a`; NestJS API `65cc3b62d104ba7faa880e89e0f24880483521ec` |
 | `stage` | `doculyra-stage-foundation-refresh-20260829` | `Succeeded` | `synthetic-only` | Not deployed |
 | `prod` | Parameterized only | Not provisioned | `production-gated` | Not deployed |
 
@@ -26,6 +26,7 @@ The following properties were queried from the deployed resources after successf
 - Dev web: `https://ca-doculyra-dev-web.ashystone-3c89dc27.australiaeast.azurecontainerapps.io`.
 - Dev API: `https://ca-doculyra-dev-api.ashystone-3c89dc27.australiaeast.azurecontainerapps.io`.
 - Web root, direct API health, proxied API health, and proxied unauthenticated-session checks returned HTTP 200 after deployment.
+- Public `/privacy` and `/terms` routes returned HTTP 200 from healthy web revision `ca-doculyra-dev-web--0000005`; browser verification confirmed the correct page headings, titles, legal-page navigation, synthetic-only boundary, and no horizontal overflow.
 - The dev API reports `synthetic-only`, outbound network denied, external AI disabled, and external connectors disabled.
 - Synthetic preview state is persisted on a dedicated 5 GiB Azure Files share; it is not the production customer artifact route.
 - Immutable web/API images were built and pushed by GitHub-hosted runners using a repository/branch-bound Azure OIDC identity with ACR push only. The registry admin account remains disabled.
