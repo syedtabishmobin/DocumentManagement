@@ -3,16 +3,16 @@
 | Field | Value |
 |---|---|
 | Document ID | `GOV-TRACE-001` |
-| Version | `0.2` |
-| Status | `DRAFT — complete static traceability baseline; approvals and executed evidence pending` |
-| Updated | 26 August 2026 |
+| Version | `0.3` |
+| Status | `ACTIVE — static traceability complete; implementation and executed release evidence incomplete` |
+| Updated | 29 August 2026 |
 | Readiness record | [`GOV-READY-001`](SPECIFICATION-READINESS.md) |
 
 ## 1. Purpose
 
 This index traces the Phase 1 product baseline from decisions and research gaps through outcomes, requirements, features, use cases, journeys, and measures. Exact story-level links across architecture, document intelligence, AI, API/event, security, UX/accessibility, NFR, engineering, operations, reference data, and tests are owned by the [backlog traceability matrix](docs/10-backlog/04-traceability-matrix.md). Machine-checked test-to-upstream mappings are owned by the [test scenario manifest](docs/12-testing/fixtures/test-scenarios.v1.json).
 
-Static traceability is complete for the current draft namespaces. That does not make a story implementation-ready: approvals, decision closure, accepted ADRs, representative environments, executed tests/evaluations, and formal readiness authorization remain required.
+Static traceability is complete for the current namespaces. `DEC-041` and `DEC-054` authorize all four implementation slices as one continuous program, but authorization is not completion. The [personal/family implementation status](docs/10-backlog/05-personal-family-implementation-status.md) records current code evidence and remaining work; no story currently meets its complete release gate.
 
 ## 2. Traceability rules
 
@@ -49,12 +49,12 @@ Static traceability is complete for the current draft namespaces. That does not 
 | `DEC-007` — configuration-driven and jurisdiction-aware | `REQ-P1-MON-002`–`003`, `REQ-P1-HLT-001`, `REQ-P1-CFG-001`–`004` | `UC-P1-006`, `UC-P1-008`, `UC-P1-018`; `MET-P1-004`, `MET-P1-015` | DRAFT machine-readable contracts validate; runtime seeds remain disabled |
 | `DEC-008` — permission-aware retrieval/graph/AI | `REQ-P1-FCT-006`, `REQ-P1-GPH-002`–`004`, `REQ-P1-SRCH-002`–`004`, `REQ-P1-AI-002`, `REQ-P1-TRUST-002` | `AC-P1-SEC-001`, `AC-P1-RAG-001`, `UC-P1-005`, `UC-P1-013`; `MET-P1-018` | `IN PROGRESS` |
 | `DEC-009` — vendor-neutral core | `REQ-P1-ING-009`, `REQ-P1-AI-007`, `REQ-P1-CFG-001` | Provider-conformance acceptance remains to be defined | `IN PROGRESS` |
-| `DEC-010` — full specifications before implementation | All requirements and `RDY-P1-*` criteria | `GOV-READY-001` verdict | `BLOCKED` |
+| `DEC-010` — full specifications before implementation | All requirements and `RDY-P1-*` criteria | `GOV-READY-001` verdict | `SATISFIED FOR DEV/STAGE IMPLEMENTATION`; production remains gated |
 | `DEC-020` — Australia first | `REQ-P1-MON-002`–`003`, `REQ-P1-CFG-002`–`003`, `REQ-P1-TRUST-005` | Australian pack and applicability tests | DRAFT jurisdiction-neutral seed exists; public launch pack/residency remain blocked by `DEC-035`/`040` |
-| `DEC-021` — responsive PWA first | `REQ-P1-ING-001`, `REQ-P1-NTF-003`; all critical UX | `AC-P1-A11Y-001`, `JRN-P1-002` | DRAFT UX/accessibility contracts and tests exist; target matrix/evidence pending |
-| `DEC-022` — multi-tenant SaaS/Australian residency option | `REQ-P1-TRUST-001`–`005`, `REQ-P1-TRUST-009` | `AC-P1-SEC-001`, residency/restore tests | `IN PROGRESS`; `DEC-040` open |
+| `DEC-021` — responsive PWA first | `REQ-P1-ING-001`, `REQ-P1-NTF-003`; all critical UX | `AC-P1-A11Y-001`, `JRN-P1-002` | `SUPERSEDED` by concurrent React web and Flutter mobile in `DEC-052` |
+| `DEC-022` — multi-tenant SaaS/Australian residency option | `REQ-P1-TRUST-001`–`005`, `REQ-P1-TRUST-009` | `AC-P1-SEC-001`, residency/restore tests | Provider selection `SUPERSEDED` by Azure in `DEC-049`; isolation/residency implementation remains incomplete |
 | `DEC-023` — household owner/admin and limited adviser | `REQ-P1-WS-002`, `REQ-P1-WS-004`, `REQ-P1-WS-006`, `REQ-P1-SHR-*` | `UC-P1-001`, `UC-P1-009`, `JRN-P1-006` | `IN PROGRESS` |
-| `DEC-024` — no clinical records | `REQ-P1-DOC-007`, `REQ-P1-ING-003`, `REQ-P1-TRUST-003`, `REQ-P1-TRUST-007` | `JRN-P1-009`, `MET-P1-020` | `BLOCKED` by `DEC-036` |
+| `DEC-024` — no clinical records | `REQ-P1-DOC-007`, `REQ-P1-ING-003`, `REQ-P1-TRUST-003`, `REQ-P1-TRUST-007` | `JRN-P1-009`, `MET-P1-020` | Heuristic `POLICY_HOLD` preview exists under approved `DEC-036`; production content-safety evidence incomplete |
 
 ## 5. Research-gap disposition traceability
 
@@ -92,15 +92,13 @@ Static traceability is complete for the current draft namespaces. That does not 
 
 ## 7. Detailed traceability and remaining readiness gaps
 
-The static owner namespaces now exist. The detailed [backlog matrix](docs/10-backlog/04-traceability-matrix.md) records 12 epics, 48 stories, 96 story acceptance criteria, all 90 requirements, and exact downstream/test mappings. The [test traceability validator](scripts/validate-test-traceability.py) rejects dangling IDs and incomplete requirement/story coverage.
+The static owner namespaces now exist. The detailed [backlog matrix](docs/10-backlog/04-traceability-matrix.md) records 12 epics, 48 stories, 96 story acceptance criteria, all 100 requirements, and 101 exact downstream test mappings. The [test traceability validator](scripts/validate-test-traceability.py) rejects dangling IDs and incomplete requirement/story coverage.
 
-Remaining gaps are authority and evidence gaps, not missing ID families:
+Remaining gaps are implementation and evidence gaps, not missing ID families:
 
-- product-owner approval of `PROD-PRD-001` and the proposed slice plan;
-- resolution or safe approved deferral of `DEC-030`–`DEC-040`;
-- acceptance of the five proposed architecture ADRs and approval of provisional NFR/operational targets;
-- approval of the launch reference pack, processors, residency routes, recovery, deletion, and external-channel boundaries;
+- full implementation of the 48 authorized stories and correction of the gaps in `BLG-STATUS-001`;
+- approved production reference packs, processors, identity/recovery, residency routes, external providers/channels, and operational targets;
 - execution and review of mapped security, privacy, authorization, accessibility, AI, integration, migration, performance, resilience, restore, and disaster-recovery evidence; and
-- a formal readiness record naming the exact authorized revision and implementation slice.
+- a formal production readiness record naming the exact release revision and evidence set.
 
-The repository readiness gate therefore remains closed despite complete draft static traceability.
+The implementation gate is open for synthetic dev/stage work. The production and real-customer-data gates remain closed.

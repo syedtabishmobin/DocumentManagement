@@ -596,7 +596,7 @@ Record requirement-profile/rule/version, applicability inputs and rationale, sou
 
 `AC-UC-P1-008-04` — **Given** restricted evidence would improve a shared readiness signal, **when** another member views health findings, **then** neither item-level detail nor count/score arithmetic reveals the protected evidence or subject.
 
-`AC-UC-P1-008-05` — **Given** `DEC-034` remains unapproved, **when** the user opens readiness, **then** explainable signals may be shown but no aggregate score or legal-compliance/risk guarantee is presented.
+`AC-UC-P1-008-05` — **Given** approved `DEC-034`, **when** the user opens readiness, **then** explainable item-level signals may be shown but no aggregate score or legal-compliance/risk guarantee is presented.
 
 ### `UC-P1-009` — Share, delegate, expire, and revoke access
 
@@ -631,7 +631,7 @@ Record requirement-profile/rule/version, applicability inputs and rationale, sou
 - **Expired, guessed, reused, or revoked guest link:** fail safely, rate-limit abuse, and reveal no workspace enumeration.
 - **Revocation during active search/conversation/export/action:** stop future access, invalidate cached context, cancel or quarantine pending work where safe, and reconcile any completed effect visibly.
 - **Grantor later loses authority:** reevaluate whether issued grants remain valid under policy; never assume perpetual delegation.
-- **Automated continuity trigger:** reject/hold as unavailable while `DEC-032` is open.
+- **Automated continuity trigger:** reject as intentionally unavailable under approved `DEC-032`.
 
 #### Authorization and privacy invariants
 
@@ -660,7 +660,7 @@ Record grantor/recipient or token identity, exact scope and exclusions, purpose,
 
 `AC-UC-P1-009-04` — **Given** a family administrator without private-resource delegation authority, **when** the administrator attempts to share another member's private document, **then** the grant is rejected without confirming protected metadata.
 
-`AC-UC-P1-009-05` — **Given** `DEC-032` is open, **when** an event purporting to prove incapacity or death arrives, **then** no restricted content is automatically released.
+`AC-UC-P1-009-05` — **Given** approved `DEC-032`, **when** an event purporting to prove incapacity or death arrives, **then** no restricted content is automatically released.
 
 ### `UC-P1-010` — Manage a task, reminder, and notification
 
@@ -859,7 +859,7 @@ Record requester, exact scope and resource versions, strong-auth/approval refere
 
 `AC-UC-P1-012-04` — **Given** an allowed cooling-off cancellation, **when** the authorized requester cancels before destructive execution, **then** the permitted state is restored without losing request/cancellation history or widening access.
 
-`AC-UC-P1-012-05` — **Given** `DEC-039` is open, **when** product copy or an API requests a completion deadline, **then** no invented cooling-off, purge, backup-expiry, or retained-audit promise is returned.
+`AC-UC-P1-012-05` — **Given** approved `DEC-053`, **when** product copy or an API requests a completion deadline, **then** it states the 30-calendar-day document Trash boundary accurately and does not invent a separate account-deletion, legal-retention, backup-expiry, or audit-retention promise.
 
 ### `UC-P1-013` — Enforce workspace and derivative isolation across a workflow
 
@@ -928,46 +928,46 @@ The following entries are intentionally not implementation-ready and require a f
 
 | Use case | Required boundary before detail/implementation |
 |---|---|
-| `UC-P1-014` | `DEC-031` must define enabled connector routes by slice; consent, external identity/version, permission preservation, sync cursors, revocation, deletion, retention, and provider-neutral conformance must then be specified. |
+| `UC-P1-014` | `DEC-031`/`045`/`055` allow disabled-first adapters; consent, external identity/version, permission preservation, sync cursors, revocation, deletion, retention, and provider-neutral conformance must be specified and tested before live activation. |
 | `UC-P1-015` | The consent, guardianship/authority, age/eligibility, challenge, privacy, field/resource reassignment, and audit rules for managed-dependant transition must be approved; existing evidence and history may not be recreated. |
-| `UC-P1-016` | `DEC-032` must approve trigger evidence, delay, challenge, notification, consent, revocation, jurisdiction, false-trigger recovery, and disclosure scope. Ordinary grants cannot be repurposed as automatic release. |
-| `UC-P1-017` | `DEC-038` must approve recovery assurance, MFA/key implications, delays/challenges, ownership transfer, support involvement, private-resource treatment, and attack-abuse controls. Recovery cannot be a weaker authorization path. |
+| `UC-P1-016` | Automatic emergency/incapacity/after-death release is intentionally unavailable under `DEC-032`. Ordinary grants cannot be repurposed as automatic release. |
+| `UC-P1-017` | Account/workspace recovery and ownership transfer are intentionally unavailable under `DEC-038`. No support, key, family, or evidence-upload path may weaken authentication or authorization. |
 | `UC-P1-018` | Reference-data schemas, publication authority, validation, effective dating, approval, impact preview, deterministic replay, rollback/forward repair, and affected-finding treatment must be normative. |
 | `UC-P1-019` | Audit schema, tamper evidence, event coverage, safe provenance, tenant scope, access control, retention/minimization, export treatment, and incident-use policy must be normative. |
 
-## 7. Open-decision impact matrix
+## 7. Approved-decision impact matrix
 
-| Decision | Affected use cases | Required behaviour while unresolved |
+| Decision | Affected use cases | Approved Phase 1 behaviour |
 |---|---|---|
 | `DEC-030` — release slices | All | Slice labels are planning metadata, not implementation authority. |
-| `DEC-031` — connectors | `UC-P1-002`, `UC-P1-006`, `UC-P1-007`, `UC-P1-014` | Upload, camera, and manual entry remain the only required capture routes; connector ingestion/action is conditional. |
+| `DEC-031` — connectors | `UC-P1-002`, `UC-P1-006`, `UC-P1-007`, `UC-P1-014` | Upload, camera, and manual entry are required; connector adapters may be implemented disabled-first and require live-activation evidence. |
 | `DEC-032` — emergency/after-death release | `UC-P1-009`, `UC-P1-016` | No automated release; ordinary explicit grants and curated exports remain separate. |
 | `DEC-033` — complete export envelope | `UC-P1-011` | Export declares its exact versioned envelope and cannot claim completeness beyond it. |
 | `DEC-034` — readiness score | `UC-P1-008` | Show explainable item-level signals only; no aggregate score or compliance/risk guarantee. |
 | `DEC-035` — launch document/source pack | `UC-P1-002`, `UC-P1-003`, `UC-P1-006`, `UC-P1-008` | Configuration may represent the domain envelope, but enabled formats/types/profiles/sources and coverage claims remain explicit. |
-| `DEC-036` — suspected clinical capture | `UC-P1-002` | Block ordinary extraction, graph, search, and AI; do not select reject/quarantine/retain disposition silently. |
-| `DEC-037` — notification channels | `UC-P1-010` | Use a channel-neutral contract; do not promise email/push sequencing or content policy. |
-| `DEC-038` — recovery assurance | `UC-P1-001`, `UC-P1-009`, `UC-P1-017` | No unapproved recovery/ownership-transfer path may weaken authentication, private-resource policy, or grant controls. |
-| `DEC-039` — deletion timing/audit | `UC-P1-003`, `UC-P1-011`, `UC-P1-012`, `UC-P1-019` | Define states and coverage but do not promise cooling-off, purge, backup-expiry, or retained-audit durations. |
-| `DEC-040` — residency scope | All processing/export/deletion use cases | Block or disclose unsupported processing according to the future residency matrix; do not assume an external adapter is eligible. |
+| `DEC-036` — suspected clinical capture | `UC-P1-002` | Isolate in `POLICY_HOLD`; block ordinary extraction, graph, search, and AI. |
+| `DEC-037`/`045` — notification channels | `UC-P1-010` | Use a channel-neutral contract; in-app is required and external delivery remains activation-gated. |
+| `DEC-038` — recovery assurance | `UC-P1-001`, `UC-P1-009`, `UC-P1-017` | Recovery and ownership transfer are unavailable; no weaker path may bypass authentication, private-resource policy, or grants. |
+| `DEC-039`/`053` — document deletion | `UC-P1-003`, `UC-P1-011`, `UC-P1-012`, `UC-P1-019` | Fence immediately, retain recoverable Trash for 30 calendar days, then coordinate purge/non-resurrection and content-minimized evidence. |
+| `DEC-040`/`049` — residency scope | All processing/export/deletion use cases | Use the approved Azure Australian baseline and block unknown or ineligible external routes. |
 
 ## 8. Requirement coverage summary
 
 | Requirement family | Covered by detailed use cases | Remaining catalogue-only or specialist refinement |
 |---|---|---|
 | `REQ-P1-WS-*` | `UC-P1-001`, `009`, `013` | Managed-dependant transition in `UC-P1-015` |
-| `REQ-P1-DOC-*` | `UC-P1-002`, `003`, `012` | Launch format/clinical policy depends on `DEC-035`/`036` |
+| `REQ-P1-DOC-*` | `UC-P1-002`, `003`, `012` | Synthetic dev formats and clinical hold are approved; public coverage and runtime evidence remain gated |
 | `REQ-P1-ING-*` | `UC-P1-002`, `003`, `012` | Connector ingestion in `UC-P1-014` |
 | `REQ-P1-FCT-*` | `UC-P1-004`, `007`, `013` | Data-model and bitemporal schemas remain specialist contracts |
 | `REQ-P1-GPH-*` | `UC-P1-004`–`007`, `013` | Graph catalogue, traversal limits, and storage-neutral contracts remain specialist detail |
 | `REQ-P1-SRCH-*` | `UC-P1-003`, `005`, `013` | Retrieval/evaluation contracts remain specialist detail |
-| `REQ-P1-MON-*` | `UC-P1-006`–`008`, `010` | Initial source pack depends on `DEC-035` |
-| `REQ-P1-HLT-*` | `UC-P1-008` | Aggregate scoring depends on `DEC-034` |
-| `REQ-P1-ACT-*` | `UC-P1-004`, `007`, `008`, `010` | External connector execution depends on `DEC-031` |
-| `REQ-P1-NTF-*` | `UC-P1-010` | External channels depend on `DEC-037` |
-| `REQ-P1-SHR-*` | `UC-P1-009`, `013` | Automated continuity in `UC-P1-016` depends on `DEC-032` |
+| `REQ-P1-MON-*` | `UC-P1-006`–`008`, `010` | Synthetic dev sources are approved; public source pack remains release-gated |
+| `REQ-P1-HLT-*` | `UC-P1-008` | Explainable item-level findings required; aggregate scoring prohibited by `DEC-034` |
+| `REQ-P1-ACT-*` | `UC-P1-004`, `007`, `008`, `010` | External connector effects remain activation-gated under `DEC-031`/`045` |
+| `REQ-P1-NTF-*` | `UC-P1-010` | In-app required; external channels remain activation-gated under `DEC-037`/`045` |
+| `REQ-P1-SHR-*` | `UC-P1-009`, `013` | Automated continuity in `UC-P1-016` is intentionally unavailable under `DEC-032` |
 | `REQ-P1-AI-*` | `UC-P1-002`, `004`–`008`, `013` | Capability schemas and evaluations remain specialist contracts |
-| `REQ-P1-TRUST-*` | All detailed use cases, especially `UC-P1-011`–`013` | Recovery/audit detail in `UC-P1-017`/`019`; `DEC-038`–`040` remain blocking |
+| `REQ-P1-TRUST-*` | All detailed use cases, especially `UC-P1-011`–`013` | Recovery remains unavailable; audit, deletion, residency, and production assurance evidence remain incomplete |
 | `REQ-P1-CFG-*` | Cross-cutting in `UC-P1-001`, `002`, `006`, `008`; publication in `UC-P1-018` | Reference schemas and publication contract remain required |
 
 ## 9. Validation and handoff requirements

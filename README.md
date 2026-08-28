@@ -4,11 +4,13 @@ This repository is the source of truth for an AI-native personal and family docu
 
 ## Current status
 
-The complete Phase 1 specification repository is the approved implementation baseline. It includes the product, architecture, document-intelligence, AI, API/event, security, UX, engineering, operations, backlog, reference-data, and testing packs. The PRD defines four vertical slices, seven outcomes, 90 stable requirements, and an explicit disposition for every research `GAP-*` item. The backlog decomposes that baseline into 12 epics and 48 stories with exact acceptance and test mappings.
+The complete Phase 1 specification repository is the approved implementation baseline. It includes the product, architecture, document-intelligence, AI, API/event, security, UX, engineering, operations, backlog, reference-data, and testing packs. The PRD defines four vertical slices, seven outcomes, 100 stable requirements, and an explicit disposition for every research `GAP-*` item. The backlog decomposes that baseline into 12 epics and 48 stories with exact acceptance and test mappings.
 
 The repository's Markdown/link/ID/checksum, API/event, reference-data, test-traceability, type, unit, and build validators are quality gates. Static success does not constitute legal validation or production release authority.
 
-The product owner approved full Phase 1 implementation under `DEC-041`. The default application profile is local-only, uses synthetic data and deterministic local assistance, and disables external connectors, notifications, and cloud AI. Production deployment and real personal-data processing remain gated by the [readiness record](SPECIFICATION-READINESS.md).
+The product owner approved full Phase 1 implementation under `DEC-041` and the production-oriented Azure development program under `DEC-054`–`055`. The default local profile and deployed Azure development preview accept synthetic data only and keep external connectors, notifications, and hosted AI disabled. Production deployment and real personal-data processing remain gated by the [readiness record](SPECIFICATION-READINESS.md).
+
+The current Azure development website is [Doculyra dev](https://ca-doculyra-dev-web.ashystone-3c89dc27.australiaeast.azurecontainerapps.io). It is a synthetic preview, not a production service. The evidence-based [personal/family implementation status](docs/10-backlog/05-personal-family-implementation-status.md) identifies the remaining work across all 48 stories.
 
 ## Run locally
 
@@ -21,20 +23,25 @@ chmod +x scripts/local-app.sh
 
 Open `http://127.0.0.1:4173`. Local state and uploaded files are written beneath ignored `local-data/`. The web client talks only to the API bound to `127.0.0.1`; no cloud AI key is required.
 
-The first run now starts at account registration and a two-step local privacy/workspace setup. Choose a personal or family workspace, add the people whose records you manage, and then add documents through drag-and-drop, multi-file/folder selection, device camera/scan, or a manual record. Every document must be assigned to one or more people. Google, Apple, Microsoft, passkey, private-email, Gmail, Google Drive, OneDrive, Dropbox, and Box ports are visible but deliberately disconnected until production credentials and explicit consent are configured.
+The first run now starts at account registration and a two-step local privacy/workspace setup. Choose a personal or family workspace, add the people whose records you manage, and then add documents through drag-and-drop, multi-file/folder selection, device camera/scan, or a manual record. Every document must be assigned to one or more people. Google, Apple, Microsoft, passkey, private-email, Gmail, Google Drive, OneDrive, Dropbox, and Box ports are visible but deliberately disconnected until their adapters, credentials, explicit consent, security controls, and conformance evidence are complete.
 
-## External integration prerequisites
+## External integration status
 
-The user interface includes purpose- and permission-specific consent before each external connection. Live adapters cannot be completed safely from invented credentials. The product owner must provide or approve:
+The user interface includes purpose- and permission-specific consent before each external connection. Microsoft, Google, Dropbox, Box, and Azure Communication Services development registrations have been prepared, but the application adapters are not implemented or enabled. The detailed, secret-free setup and verification record is [`OPS-PROVIDER-001`](docs/09-devops/08-external-provider-setup.md).
 
-- the production/staging domain, exact callback base URL, customer-facing contact email, company/legal name, privacy URL and terms URL;
-- a managed identity choice (Auth0 is the current recommendation) and its tenant/domain, client ID, client secret and API audience;
-- Google Cloud OAuth credentials with approved origins/redirects and separately approved Gmail/Drive scopes;
+Current provider-console actions are limited to:
+
+- completing Google OAuth Branding, adding a development test user, and adding identity/Drive/Gmail scopes;
+- disabling Dropbox implicit grant and removing unnecessary OIDC scopes; and
+- removing Box write access so the application is read-only.
+
+Remaining owner-controlled launch inputs include:
+
+- production/staging domains, customer-facing contact email, company/legal name, privacy URL and terms URL;
+- Microsoft Entra External ID tenant/application configuration for production customer identity;
 - an Apple Developer team, primary App ID, Services ID, verified domain, key ID and Sign in with Apple private key;
-- a Microsoft Entra app registration, supported account/tenant choice, client ID/secret and delegated Microsoft Graph scopes;
-- Dropbox and Box developer applications with exact redirect URLs and least-privileged read scopes;
 - a private inbound-email domain/provider and verified webhook secret;
-- email and SMS delivery providers, verified sender identities and test-only recipient routing; and
+- an approved SMS provider/number if SMS is retained, plus production sender identities and recipient controls; and
 - approval of the proposed secure invitation design in `DEC-046`: a short-lived single-use link plus optional one-time code, followed by invitee-created password/passkey, instead of transmitting a reusable temporary password.
 
 Configuration names are documented without secrets in [`.env.example`](.env.example). Real secrets belong in an environment-specific secret store and must never be committed.
@@ -70,18 +77,18 @@ The numbered folders under [`docs/`](docs/README.md) define navigation order, no
 | Folder | Purpose | Current state |
 |---|---|---|
 | `docs/00-context` | Preserved historical handover, decisions, research provenance, and change history | Active decision/research foundation |
-| `docs/01-product` | Vision, PRD, scope, use cases, personas, journeys, metrics, and competitor analysis | Draft product baseline complete; approval pending |
-| `docs/02-architecture` | Solution/domain/data architecture, workspace model, NFRs, and ADRs | Draft pack complete; ADR acceptance pending |
+| `docs/01-product` | Vision, PRD, scope, use cases, personas, journeys, metrics, and competitor analysis | Approved PRD baseline; detailed release evidence pending |
+| `docs/02-architecture` | Solution/domain/data architecture, workspace model, NFRs, and ADRs | Architecture baseline and Azure/client decisions approved; implementation evidence incomplete |
 | `docs/03-document-intelligence` | Taxonomy, ingestion, extraction, facts, graph, monitoring, impact, document health, and versioning | Draft pack complete |
 | `docs/04-ai` | AI capabilities, RAG, output contracts, prompts/tools, guardrails, and evaluations | Draft pack complete; evaluation execution pending |
 | `docs/05-api` | API standards, OpenAPI, events, and connector contracts | Draft pack complete; contracts validate |
 | `docs/06-security` | Security, authorization, privacy, audit, and threat model | Draft pack complete; review/evidence pending |
 | `docs/07-ux` | Information architecture, flows, screen specifications, design system, and accessibility | Draft pack complete; research/conformance evidence pending |
-| `docs/08-engineering` | Stack decisions, repository shape, standards, resilience, local development, and testing standards | Draft pack complete; stack approval pending |
-| `docs/09-devops` | Environments, delivery, infrastructure, secrets, rollback, recovery, and observability | Draft pack complete; targets/provider approval pending |
-| `docs/10-backlog` | Epics, features, stories, acceptance criteria, dependencies, release slices, and traceability | Draft pack complete; no story authorized |
+| `docs/08-engineering` | Stack decisions, repository shape, standards, resilience, local development, and testing standards | React/TypeScript, Flutter, and Azure implementation active |
+| `docs/09-devops` | Environments, delivery, infrastructure, secrets, providers, rollback, recovery, and observability | Azure dev foundations and synthetic app deployed; production and provider activation gated |
+| `docs/10-backlog` | Epics, features, stories, acceptance criteria, dependencies, release slices, traceability, and implementation status | All 48 stories authorized as one program; 0 complete against full gates |
 | `docs/11-reference-data` | Machine-readable document types, rules, jurisdictions, sources, roles, permissions, and statuses | Draft synthetic seed complete; runtime activation prohibited |
-| `docs/12-testing` | Test strategy, AI/security/integration/E2E/performance scenarios and synthetic fixtures | Draft pack complete; cases not executed |
+| `docs/12-testing` | Test strategy, AI/security/integration/E2E/performance scenarios and synthetic fixtures | Static/unit/build evidence exists; full mapped release suites remain incomplete |
 
 ## Validation
 

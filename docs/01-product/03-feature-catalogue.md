@@ -334,7 +334,7 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Linked requirements | `REQ-P1-NTF-001`, `REQ-P1-NTF-002`, `REQ-P1-NTF-003` |
 | Primary users | Household owner; family administrator; assigned adult member; scoped guest/delegated adviser; workspace service. |
 | Capabilities | Create causally linked tasks with owner, status, due date, source, evidence requirement, and history; acknowledge, snooze, reassign, complete, reopen, or dismiss according to workflow; deliver through a channel-neutral contract, with in-app proposed as required. |
-| Explicit exclusions and decision dependencies | Email and push are not committed before `DEC-037`; unapproved channels cannot receive sensitive content. Consequential notification follows `DEC-006`; workflows are configured under `DEC-007`; slice sequencing requires `DEC-030`. |
+| Explicit exclusions and decision dependencies | In-app delivery is required; email/SMS adapters may be implemented but live delivery remains gated by `DEC-037`/`045`. Unapproved channels cannot receive sensitive content. Consequential notification follows `DEC-006`; workflows are configured under `DEC-007`; sequencing follows approved `DEC-030`. |
 | Failure or degraded behavior | Invalid actors and state transitions fail; delivery retries remain idempotent; channel failure leaves task state available and truthfully reports notification status; completion does not discard required evidence. |
 | Product-level acceptance summary | Task causality and history are preserved; authorized transitions behave deterministically; duplicate delivery does not duplicate tasks; channel content obeys the resource privacy policy. |
 
@@ -420,7 +420,7 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Linked requirements | `REQ-P1-NTF-004` |
 | Primary users | Household owner; family administrator; assigned adult member; scoped guest/delegated adviser. |
 | Capabilities | Configure preferences and quiet periods; deduplicate, escalate, acknowledge, and degrade or suppress notifications based on stale-source policy; keep notification state consistent across retries and supported channels. |
-| Explicit exclusions and decision dependencies | Email/push delivery and their escalation/consent details are not approved until `DEC-037`. Notifications cannot reveal sensitive content on an unapproved device/channel or bypass current grants under `DEC-008`. |
+| Explicit exclusions and decision dependencies | External delivery is permitted only after the `DEC-037`/`045` consent, configuration, minimization, and conformance gates pass. Notifications cannot reveal sensitive content on an unapproved device/channel or bypass current grants under `DEC-008`. |
 | Failure or degraded behavior | Duplicate triggers do not spam; channel failure does not falsely mark delivery; stale or failed sources suppress or visibly qualify dependent messages; urgent handling still obeys approved privacy exceptions. |
 | Product-level acceptance summary | Preference, quiet-period, deduplication, escalation, acknowledgement, and stale-source cases pass without unauthorized content exposure or divergence between task and notification state. |
 

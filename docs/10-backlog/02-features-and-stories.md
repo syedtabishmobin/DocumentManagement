@@ -30,7 +30,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | Security | `AUTH-P1-001`–`006`, `012`, `021`, `025`, `035`; `SEC-P1-001`–`004`, `006`–`011`, `017`, `018`; `PRIV-P1-001`–`003`, `020`, `022`; `AUD-P1-001`–`010`, `027`; `THR-P1-001`, `003`–`007`, `009`, `011`, `019` |
 | NFR / DIT / AI | `NFR-P1-001`–`008`, `013`, `016`, `022`–`029`, `033`, `036`, `041`; no DIT/AI-owned state—`AI-CAP-P1-001`–`030` cannot supply workspace authority |
 | Reference data | `data/jurisdictions.json`: `jurisdiction.core.neutral`, `jurisdiction.AU`; `data/access-control.json`: `policy.default-deny`, `role.workspace-member`; `data/common.json`: `PUR-P1-001` |
-| Dependencies / fences | One idempotent aggregate workflow creates workspace, owner membership, and owner subject; `ORGANISATION` remains reserved; `DEC-030` sequence is proposed; `DEC-038` creates no recovery path. |
+| Dependencies / fences | One idempotent aggregate workflow creates workspace, owner membership, and owner subject; `ORGANISATION` remains reserved; `DEC-030` approves the continuous sequence; `DEC-038` creates no recovery path. |
 | Migration / rollback / repair | Expand/validate/migrate owner cardinality and opaque IDs before cutover; an interrupted creation reconciles or removes inaccessible provisional state; never roll back by orphaning an owner/resource. |
 | Negative, failure, audit | Deny ineligible type, mismatched scope, duplicate-key fingerprint, cross-actor replay, audit/config failure, and inaccessible-workspace probing; same key returns the same logical result; audit owner/workspace/config/policy IDs without profile values. |
 | Future TEST | `TEST-UNIT-P1-002`, `TEST-CON-P1-001`, `TEST-SEC-P1-001`, `TEST-SEC-P1-007`, `TEST-SEC-P1-008`, `TEST-E2E-P1-001`, `TEST-E2E-P1-013`, `TEST-PERF-P1-001`, `TEST-PERF-P1-002`, `TEST-DR-P1-001`, `TEST-DR-P1-002`, `TEST-DR-P1-007`, `TEST-DR-P1-008`; DRAFT cases require execution/accessibility evidence. |
@@ -112,7 +112,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | Future TEST | `TEST-UNIT-P1-004`, `TEST-CON-P1-002`, `TEST-AI-P1-001`, `TEST-SEC-P1-009`, `TEST-SEC-P1-010`, `TEST-SEC-P1-012`, `TEST-E2E-P1-002`, `TEST-PERF-P1-001`, `TEST-PERF-P1-005`, `TEST-DR-P1-008`; DRAFT cases require execution/accessibility evidence. |
 
 - `AC-STORY-P1-005-01` — **Given** a malicious, scanner-indeterminate, or synthetic suspected-clinical fixture, **when** safety checks run, **then** it cannot reach any ordinary content/derivative route and the case exposes a truthful contained state.
-- `AC-STORY-P1-005-02` — **Given** `DEC-036` remains open, **when** a user or operator asks what will be stored, released, exported, recovered, or purged, **then** no unapproved disposition or duration is promised and no ordinary/admin role can override containment.
+- `AC-STORY-P1-005-02` — **Given** suspected clinical material enters approved `POLICY_HOLD` under `DEC-036`, **when** a user or operator asks what will be stored, released, exported, recovered, or purged, **then** only the approved containment behavior is stated and no ordinary/admin role can override it.
 
 ### `STORY-P1-006` — Retry durable ingestion stages without duplicate logical effects
 
@@ -169,7 +169,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | Future TEST | `TEST-UNIT-P1-002`, `TEST-CON-P1-001`, `TEST-SEC-P1-001`, `TEST-SEC-P1-008`, `TEST-SEC-P1-011`, `TEST-E2E-P1-001`, `TEST-E2E-P1-013`, `TEST-E2E-P1-017`, `TEST-PERF-P1-001`, `TEST-PERF-P1-006`, `TEST-PERF-P1-009`, `TEST-DR-P1-004`, `TEST-DR-P1-007`, `TEST-DR-P1-008`; DRAFT cases require execution/accessibility evidence. |
 
 - `AC-STORY-P1-008-01` — **Given** an authenticated actor, **when** session/privilege/security state changes, **then** sessions and downstream authorization are rotated/revoked within the owning control while secrets/keys/content never enter ordinary telemetry.
-- `AC-STORY-P1-008-02` — **Given** lost factor, alleged ownership, family/support assertion, or unavailable identity dependency while `DEC-038` is open, **when** access is attempted, **then** no weaker recovery/transfer route or workspace-existence disclosure is available.
+- `AC-STORY-P1-008-02` — **Given** lost factor, alleged ownership, family/support assertion, or unavailable identity dependency under the `DEC-038` no-recovery boundary, **when** access is attempted, **then** no weaker recovery/transfer route or workspace-existence disclosure is available.
 
 ### `STORY-P1-009` — Emit privacy-safe telemetry and immutable consequential audit
 
@@ -266,7 +266,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | Future TEST | `TEST-UNIT-P1-001`, `TEST-UNIT-P1-005`, `TEST-CON-P1-010`, `TEST-CON-P1-011`, `TEST-AI-P1-001`, `TEST-AI-P1-002`, `TEST-AI-P1-004`, `TEST-AI-P1-015`, `TEST-SEC-P1-004`, `TEST-SEC-P1-009`, `TEST-SEC-P1-010`, `TEST-SEC-P1-015`, `TEST-E2E-P1-002`, `TEST-PERF-P1-004`, `TEST-PERF-P1-005`, `TEST-PERF-P1-010`, `TEST-DR-P1-005`; DRAFT cases require execution/accessibility evidence. |
 
 - `AC-STORY-P1-013-01` — **Given** an approved enabled type/schema version and supported synthetic document, **when** classification completes, **then** the proposal records exact taxonomy/schema/evidence/model/rule versions and never becomes accepted fact by itself.
-- `AC-STORY-P1-013-02` — **Given** `DEC-035` is open or the input is unknown, clinical, incompatible, or insufficient, **when** classification runs, **then** no launch coverage or forced type is claimed and the case remains blocked/review/degraded with evidence.
+- `AC-STORY-P1-013-02` — **Given** the public launch pack is not approved or the input is unknown, clinical, incompatible, or insufficient, **when** classification runs, **then** no launch coverage or forced type is claimed and the case remains blocked/review/degraded with evidence.
 
 ### `STORY-P1-014` — Review and correct extraction without collapsing domain states
 
@@ -547,7 +547,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | Security | `AUTH-P1-001`–`008`, `021`–`025`, `029`, `034`, `035`; `SEC-P1-017`–`019`, `023`, `028`, `029`; `PRIV-P1-001`, `004`, `008`, `020`, `022`, `027`, `028`; `AUD-P1-001`–`008`, `013`, `015`, `027`, `029`; `THR-P1-005`–`007`, `009`, `017`, `019`, `024`, `026`, `027`, `030` |
 | NFR / DIT / AI | `NFR-P1-004`–`006`, `013`–`021`, `022`–`030`, `033`, `036`, `039`–`043`; `DIT-SRC-P1-001`–`032`, `DIT-MON-P1-017`, `025`–`034`; parser/AI output cannot publish authority under `AI-GRD-P1-001`–`035` |
 | Reference data | `data/trusted-sources.json`: all `authority-tier.*`, `freshness-policy.unset`, `source/coverage/endpoint/parser.synthetic.au.reference-series`; all are DRAFT/disabled/`.invalid`. |
-| Dependencies / fences | Depends on `STORY-P1-010`, `027`, `037`; source authority, health, freshness, coverage, parser success, applicability, and evidence strength stay separate; no public coverage while `DEC-035` open. |
+| Dependencies / fences | Depends on `STORY-P1-010`, `027`, `037`; source authority, health, freshness, coverage, parser success, applicability, and evidence strength stay separate; `DEC-035` permits synthetic dev fixtures but public coverage remains release-gated. |
 | Migration / rollback / repair | Snapshot/endpoint/parser/publication versions immutable; source health history never reset by deployment; parser repair creates new observation; source-package rollback preserves failed/current health and prior snapshots. |
 | Negative, failure, audit | SSRF/DNS/redirect, poisoned/oversize content, bad signature/schema, parser failure, schedule miss, partial coverage, stale/disabled source, ineligible route; last success never masks failure; audit endpoint by governed ID, not unrestricted URL/content. |
 | Future TEST | `TEST-UNIT-P1-008`, `TEST-CON-P1-004`, `TEST-CON-P1-007`, `TEST-CON-P1-012`, `TEST-AI-P1-014`, `TEST-SEC-P1-010`, `TEST-SEC-P1-012`, `TEST-SEC-P1-015`, `TEST-E2E-P1-006`, `TEST-PERF-P1-007`, `TEST-DR-P1-002`, `TEST-DR-P1-005`, `TEST-DR-P1-008`; DRAFT cases require execution/accessibility evidence. |
@@ -661,7 +661,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | Security | `AUTH-P1-001`–`011`, `019`–`025`, `035`; `SEC-P1-017`–`019`, `023`, `029`; `PRIV-P1-001`, `004`, `020`, `022`; `AUD-P1-001`–`008`, `013`, `015`, `016`, `019`, `027`; `THR-P1-005`–`007`, `009`, `017`, `019`, `026`, `027`, `030` |
 | NFR / DIT / AI | `NFR-P1-004`–`006`, `007`, `008`, `013`, `016`–`021`, `022`–`030`, `033`, `036`, `041`–`045`; `DIT-HLT-P1-001`–`006`; `AI-CAP-P1-010`, `AI-GRD-P1-001`–`035` |
 | Reference data | `data/requirement-profiles.json`: all `evidence-option.*`, `alternative.*`, `waiver-policy.*`, `fulfilment-policy.*`, `requirement-profile.synthetic.au.generic-policy-reference`; all DRAFT/disabled |
-| Dependencies / fences | Depends on `STORY-P1-010`, `016`, `028`, `037`; profile/rule/source/jurisdiction/applicability/effective versions exact; expected is not legal obligation or fulfilment; no public profile coverage while `DEC-035` open. |
+| Dependencies / fences | Depends on `STORY-P1-010`, `016`, `028`, `037`; profile/rule/source/jurisdiction/applicability/effective versions exact; expected is not legal obligation or fulfilment; `DEC-035` permits synthetic dev profiles but public profile coverage remains release-gated. |
 | Migration / rollback / repair | Profile versions immutable/effective-dated; re-evaluation creates new requirement-case/finding generation; rollback selects prior approved profile and preserves old findings/dispositions/evidence; consumer compatibility required. |
 | Negative, failure, audit | Missing/inactive/incompatible profile, stale/unhealthy source/rule, restricted evidence, unsupported alternative/waiver, jurisdiction/time ambiguity; no authoritative finding on invalid input; audit safe profile/input/outcome refs. |
 | Future TEST | `TEST-UNIT-P1-008`, `TEST-UNIT-P1-009`, `TEST-CON-P1-004`, `TEST-CON-P1-008`, `TEST-CON-P1-009`, `TEST-AI-P1-014`, `TEST-SEC-P1-002`, `TEST-SEC-P1-004`, `TEST-E2E-P1-008`, `TEST-PERF-P1-007`, `TEST-DR-P1-005`, `TEST-DR-P1-008`; DRAFT cases require execution/accessibility evidence. |
@@ -795,7 +795,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | API / events | `API-P1-177`–`180` are disabled; no connector event family exists: **`TRACE-GAP-P1-EVT-001`**; API fence rules `API-P1-046`–`052` |
 | Security | `AUTH-P1-001`–`007`, `019`–`025`, `029`, `034`, `035`; `SEC-P1-001`, `002`, `006`, `007`, `017`–`019`, `022`, `027`–`029`; `PRIV-P1-001`, `004`, `005`–`009`, `011`–`017`, `020`, `022`, `027`, `028`; `AUD-P1-001`–`008`, `023`, `027`, `029`; `THR-P1-003`, `005`–`007`, `009`, `011`, `018`, `019`, `023`, `024`, `026`, `027` |
 | NFR / DIT / AI | `NFR-P1-004`–`006`, `013`–`018`, `022`–`030`, `033`, `036`, `039`, `041`–`043`; no owning DIT/AI rule; connector behavior is governed by `CON-P1-001`–`035` and provider-neutral port/residency contracts |
-| Reference data | No connector-profile catalogue exists while `DEC-031` is open: **`TRACE-GAP-P1-REF-002`**; no adapter/endpoint/token seed may be inferred from other packs. |
+| Reference data | No connector-profile catalogue exists: **`TRACE-GAP-P1-REF-002`**; `DEC-031`/`045`/`055` permit disabled-first adapters and registrations, but no endpoint/token seed may be inferred from other packs. |
 | Dependencies / fences | Requires approved connector routes/scope, purpose/consent, external identity/version/permissions, cursor, callback, retention/deletion, revocation/disconnect, residency/processor, action semantics, notification, conformance, and tests; documentation is not enablement. |
 | Migration / rollback / repair | Future connector versions/cursors/external IDs immutable/namespaced; disconnect fences new work; resync/replay creates attempt lineage and honors tombstones; token/consent rotation cannot resurrect deleted/revoked scope. |
 | Negative, failure, audit | Today every create/sync/disconnect route is disabled. Future suite covers token theft, over-scope, permission drift, spoof/replay, partial sync, cursor rollback, withdraw mid-job, late callback, deletion/resync resurrection, ineligible route; safe audit by references. |
@@ -839,7 +839,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | Negative, failure, audit | Search/UI/API/analytics/notification/a11y/source code scan for hidden score/rank; mixed permissions cannot alter disclosed denominator; item states remain separate; audit no score. |
 | Future TEST | `TEST-UNIT-P1-009`, `TEST-UNIT-P1-010`, `TEST-CON-P1-005`, `TEST-CON-P1-008`, `TEST-CON-P1-009`, `TEST-AI-P1-004`, `TEST-AI-P1-014`, `TEST-AI-P1-015`, `TEST-SEC-P1-002`, `TEST-SEC-P1-004`, `TEST-SEC-P1-012`, `TEST-E2E-P1-008`, `TEST-PERF-P1-007`, `TEST-PERF-P1-010`, `TEST-DR-P1-005`, `TEST-DR-P1-008`; DRAFT disabled-boundary cases require execution/accessibility evidence. |
 
-- `AC-STORY-P1-043-01` — **Given** `DEC-034` is unapproved, **when** health is displayed or used downstream, **then** only authorized explainable item-level signals appear and no aggregate/hidden score or compliance/risk guarantee exists.
+- `AC-STORY-P1-043-01` — **Given** approved `DEC-034`, **when** health is displayed or used downstream, **then** only authorized explainable item-level signals appear and no aggregate/hidden score or compliance/risk guarantee exists.
 - `AC-STORY-P1-043-02` — **Given** a request to enable, order, notify, segment, style, or label by readiness, **when** no approved scoring contract exists, **then** the operation remains disabled and produces no score derivative.
 
 ### `STORY-P1-044` — Export a declared authorized versioned envelope
@@ -878,7 +878,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | Future TEST | `TEST-UNIT-P1-004`, `TEST-UNIT-P1-010`, `TEST-CON-P1-005`, `TEST-CON-P1-007`, `TEST-CON-P1-008`, `TEST-SEC-P1-001`, `TEST-SEC-P1-002`, `TEST-SEC-P1-007`, `TEST-SEC-P1-012`, `TEST-SEC-P1-014`, `TEST-SEC-P1-015`, `TEST-E2E-P1-012`, `TEST-PERF-P1-001`, `TEST-PERF-P1-006`, `TEST-PERF-P1-008`, `TEST-PERF-P1-009`, `TEST-DR-P1-001`–`TEST-DR-P1-006`, `TEST-DR-P1-008`; DRAFT cases require execution/accessibility evidence. |
 
 - `AC-STORY-P1-045-01` — **Given** an authorized exact deletion target, **when** the case is accepted, **then** a durable fence immediately denies access/work and per-class execution/verification/residual states are reconstructable.
-- `AC-STORY-P1-045-02` — **Given** partial failure, late event/callback, rebuild/resync/restore, or `DEC-039` timing request, **when** deletion status is evaluated, **then** data remains inaccessible/non-resurrected, repair remains explicit, and no unapproved completion duration is claimed.
+- `AC-STORY-P1-045-02` — **Given** partial failure, late event/callback, rebuild/resync/restore, or an overdue `DEC-053` purge, **when** deletion status is evaluated, **then** data remains inaccessible/non-resurrected, repair remains explicit, and the 30-calendar-day Trash boundary is reported truthfully.
 
 ### `STORY-P1-046` — Enforce the Australian-residency option at every processing route
 
@@ -915,7 +915,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | Negative, failure, audit | Lost factor/device, alleged family/owner, identity lookup, evidence upload, support override, email/relationship bypass, factor/key transfer, enumeration/timing; all denied generically and audited without soliciting sensitive proof. |
 | Future TEST | `TEST-UNIT-P1-002`, `TEST-CON-P1-005`, `TEST-SEC-P1-001`, `TEST-SEC-P1-007`, `TEST-SEC-P1-008`, `TEST-SEC-P1-011`, `TEST-E2E-P1-017`, `TEST-PERF-P1-001`, `TEST-PERF-P1-006`, `TEST-DR-P1-004`, `TEST-DR-P1-007`, `TEST-DR-P1-008`; DRAFT disabled-boundary cases require execution/accessibility evidence. |
 
-- `AC-STORY-P1-047-01` — **Given** `DEC-038` is open, **when** a user/support/family actor attempts recovery, factor/key reset, ownership transfer, or private-resource reassignment, **then** no success or evidence-upload route exists and workspace/account existence remains protected.
+- `AC-STORY-P1-047-01` — **Given** the approved `DEC-038` no-recovery boundary, **when** a user/support/family actor attempts recovery, factor/key reset, ownership transfer, or private-resource reassignment, **then** no success or evidence-upload route exists and workspace/account existence remains protected.
 - `AC-STORY-P1-047-02` — **Given** the safe unavailable screen, **when** it is used by keyboard/screen reader or under repeated abuse, **then** approved sign-in/support guidance remains accessible without leaking state, soliciting sensitive proof, or weakening rate/security controls.
 
 ### `STORY-P1-048` — Keep automated emergency/incapacity/after-death release unavailable
@@ -934,7 +934,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | Negative, failure, audit | Alleged death/incapacity/emergency, forged source/event, family/support/nominee role, old consent/grant, hidden trigger route, timer, notification, automatic export; all produce no release and no affected-workspace/content disclosure. |
 | Future TEST | `TEST-UNIT-P1-002`, `TEST-CON-P1-005`, `TEST-SEC-P1-001`, `TEST-SEC-P1-002`, `TEST-SEC-P1-006`, `TEST-SEC-P1-007`, `TEST-SEC-P1-008`, `TEST-SEC-P1-013`, `TEST-E2E-P1-009`, `TEST-E2E-P1-016`, `TEST-PERF-P1-001`, `TEST-PERF-P1-006`, `TEST-DR-P1-007`, `TEST-DR-P1-008`; DRAFT disabled-boundary cases require execution/accessibility evidence. |
 
-- `AC-STORY-P1-048-01` — **Given** `DEC-032` is open, **when** any event/actor asserts emergency, incapacity, or death, **then** no enrolment, nominee, timer, export, grant change, notification, or protected-content release is created.
+- `AC-STORY-P1-048-01` — **Given** approved `DEC-032`, **when** any event/actor asserts emergency, incapacity, or death, **then** no enrolment, nominee, timer, export, grant change, notification, or protected-content release is created.
 - `AC-STORY-P1-048-02` — **Given** the continuity information screen, **when** an authorized current user views it, **then** it explains the unavailable boundary and ordinary sharing/export alternatives without implying a trigger, guarantee, or future automatic release.
 
 ## 6. Cross-story implementation rules

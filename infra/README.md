@@ -14,8 +14,12 @@ The notification address is read from the process environment and MUST NOT be co
 
 The dev parameter file contains only public provider identifiers, the connected Azure Communication Services sender, and boolean secret-presence markers. OAuth client secrets stay in Key Vault. The application deployment deliberately sets `DM_EXTERNAL_CONNECTORS=disabled`, `DM_CONNECTOR_ADAPTERS_READY=false`, and `DM_EXTERNAL_NOTIFICATIONS=disabled`; it does not mount those secrets into the container until callback-state, minimal-scope, token-protection, disconnect/revocation, deletion, audit, and delivery tests satisfy `DEC-045` and `DEC-054`.
 
+The provider-console setup, exact permissions, Key Vault secret references, verified development state, remaining corrections, and activation checklist are maintained in [`OPS-PROVIDER-001`](../docs/09-devops/08-external-provider-setup.md). As verified on 29 August 2026, Microsoft registration and ACS Email foundations are prepared; Google still needs branding/test-user/scopes, Dropbox needs an implicit/OIDC scope correction, and Box must have write access removed. Registration metadata must not be interpreted as a working adapter.
+
 Prepared dev callback URLs use the generated web origin because the web container reverse-proxies `/api` to the API:
 
+- `/api/auth/google/callback`
+- `/api/auth/microsoft/callback`
 - `/api/connectors/gmail/callback`
 - `/api/connectors/google-drive/callback`
 - `/api/connectors/onedrive/callback`

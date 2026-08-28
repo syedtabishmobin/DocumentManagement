@@ -3,8 +3,8 @@
 | Field | Value |
 |---|---|
 | Document ID | `API-IDX-001` |
-| Status | Active navigation aid; all linked contracts remain DRAFT |
-| Updated | 26 August 2026 |
+| Status | Active navigation aid; contracts validate but production/provider conformance is incomplete |
+| Updated | 29 August 2026 |
 
 ## Reading order
 
@@ -12,6 +12,7 @@
 2. [`API-OAS-001` — OpenAPI 3.1 Contract](02-openapi.json)
 3. [`API-EVT-001` — Event Catalogue](03-event-catalogue.md)
 4. [`API-CON-001` — Connector and Adapter Contracts](04-connector-contracts.md)
+5. [`OPS-PROVIDER-001` — External Provider Setup Runbook](../09-devops/08-external-provider-setup.md) for provider-specific operational configuration and verification
 
 ## Contract ownership
 

@@ -4,8 +4,8 @@
 |---|---|
 | Document ID | `GOV-READY-001` |
 | Status | Active gate record |
-| Current verdict | **READY FOR LOCAL PHASE 1 IMPLEMENTATION — NOT PRODUCTION AUTHORIZED** |
-| Updated | 26 August 2026 |
+| Current verdict | **READY FOR FULL PHASE 1 DEV/STAGE IMPLEMENTATION — SYNTHETIC DEV DEPLOYED — NOT PRODUCTION AUTHORIZED** |
+| Updated | 29 August 2026 |
 | Governing contract | [`CODEX.md`](CODEX.md#specification-readiness-gate) |
 
 ## 1. Purpose
@@ -16,23 +16,23 @@ A file's existence is not evidence that its contract is approved, complete, inte
 
 ## 2. Current verdict
 
-The product owner explicitly approved `PROD-PRD-001` version `0.1`, resolved `DEC-030`–`DEC-040` for local implementation, accepted the provider-neutral architecture, and authorized the complete Phase 1 build in `DEC-041`–`042`.
+The product owner explicitly approved the Phase 1 PRD, resolved `DEC-030`–`040` for safe local behavior, and authorized the complete personal/family build in `DEC-041`. `DEC-049`–`055` select Azure/Bicep, two-layer customer-controlled encryption, React web plus Flutter mobile, 30-day document Trash, and complete synthetic dev/stage implementation and deployment.
 
-Application implementation may therefore proceed across `P1-S1`–`P1-S4` as one continuous program. The default profile MUST use synthetic data, local storage, local/mock AI, disabled external connectors/channels, and deny-by-default egress. This verdict does not authorize production deployment, public coverage claims, or processing of real personal documents. Those actions still require cross-functional security, privacy, accessibility, operations, recovery, residency, retention, and release evidence.
+Application implementation may proceed across `P1-S1`–`P1-S4` as one continuous program. Local and Azure dev/stage profiles MUST use synthetic data; external providers and channels remain disabled until their exact activation gates pass; hosted models receive no plaintext by implication. Azure dev foundations and a synthetic web/API preview are deployed. This verdict does not authorize production provisioning, public launch, provider activation, store publication, or processing of real personal documents. Those actions still require cross-functional security, privacy, accessibility, operations, recovery, residency, retention, and release evidence.
 
 ## 3. Gate criteria
 
 | Readiness ID | Criterion | Current state | Required evidence |
 |---|---|---|---|
 | `RDY-P1-001` | The Phase 1 PRD is approved or explicitly marked as an approved implementation baseline. | `SATISFIED` | `DEC-041` approves `PROD-PRD-001` version `0.1`. |
-| `RDY-P1-002` | High-impact product and architecture decisions are approved or safely deferred behind documented abstractions. | `SATISFIED` | `DEC-030`–`042` define approved local behavior and production fences; ADRs `001`–`006` are accepted. |
+| `RDY-P1-002` | High-impact product and architecture decisions are approved or safely deferred behind documented abstractions. | `SATISFIED` | `DEC-030`–`055` define local/dev behavior, Azure/client/encryption/deletion choices, and production/provider fences; applicable ADRs are accepted or superseded. |
 | `RDY-P1-003` | Domain/data, tenancy, authorization, security, privacy, deletion, audit, and residency models are complete and mutually consistent. | `IN PROGRESS` | Approved specifications, state/invariant matrices, threat mitigations, negative tests, deletion/residency matrices, and accepted ADRs. |
 | `RDY-P1-004` | Document-intelligence, monitoring, trusted-source, evidence, fact, graph, impact, health, and version contracts exist. | `IN PROGRESS` | Normative specifications, machine-readable schemas/data, examples that validate, failure/replay behavior, and traceability. |
 | `RDY-P1-005` | AI capability, RAG, structured-output, prompt/tool, guardrail, and evaluation contracts exist. | `IN PROGRESS` | Draft contracts and synthetic evaluation manifests exist; provider/processor decisions, thresholds, review approval, execution, and regression evidence remain outstanding. |
 | `RDY-P1-006` | API, event, async-job, upload/artifact, connector, export, deletion, and action contracts exist and validate. | `IN PROGRESS` | The draft OpenAPI/event/connector contracts pass static validation; approved baselines and executed compatibility, authorization, replay, migration, and conformance tests remain outstanding. |
 | `RDY-P1-007` | Critical responsive UX flows, states, screens, design system, and accessibility behavior are specified. | `IN PROGRESS` | Draft linked IA, flows, screen/state specs, design rules, and accessibility criteria exist; target browser/assistive-technology approval and research/conformance evidence remain outstanding. |
-| `RDY-P1-008` | Engineering and operational delivery contracts include measurable NFRs, environments, migrations, CI/CD, deployment, recovery, and observability. | `IN PROGRESS` | Draft provider-neutral contracts exist; stack/ADR approval, numeric-target approval, environment selection, and executed migration/restore/failover evidence remain outstanding. |
-| `RDY-P1-009` | Every implementation epic has stable traceability and testable acceptance criteria. | `IN PROGRESS` | Twelve draft epics and 48 stories link 90 requirements, 96 story acceptance criteria, and exact test IDs; approvals and passing execution evidence remain outstanding. |
+| `RDY-P1-008` | Engineering and operational delivery contracts include measurable NFRs, environments, migrations, CI/CD, deployment, recovery, and observability. | `IN PROGRESS` | Azure/Bicep, React/TypeScript, Flutter, CI, dev foundations, immutable images, and synthetic deployment exist; numeric-target, migration/restore/failover, observability, and production evidence remain outstanding. |
+| `RDY-P1-009` | Every implementation epic has stable traceability and testable acceptance criteria. | `IN PROGRESS` | Twelve epics and 48 authorized stories link 100 requirements, 96 story acceptance criteria, and 101 exact test IDs; no story has complete passing release evidence. |
 | `RDY-P1-010` | Initial reference data and all required test/evaluation strategies, fixtures, and quality gates exist and pass. | `IN PROGRESS` | Twelve DRAFT/disabled reference catalogues and deterministic synthetic test fixtures validate; the launch pack is unresolved under `DEC-035`, and all test/evaluation evidence remains unexecuted. |
 | `RDY-P1-011` | No open decision makes the proposed implementation unsafe or substantially disposable. | `SATISFIED` | `DEC-031`–`040` close the local behavior and explicitly deny production/provider activation; provider-neutral ports preserve replacement. |
 | `RDY-P1-012` | The complete repository is coherent, reviewable, and protected against drift. | `IN PROGRESS` | Passing link/ID/schema/semantic/traceability/privacy validators, preserved-source checks, change review, and zero unresolved source conflict. |
@@ -43,20 +43,22 @@ Allowed states are `MISSING`, `IN PROGRESS`, `BLOCKED`, `SATISFIED`, and `NOT AP
 
 | Area | Required baseline | Current evidence | State |
 |---|---|---|---|
-| Governance/context | Working agreement, source hierarchy, preserved handover, decisions, research provenance, readiness record | `AGENTS.md`, `CODEX.md`, `docs/00-context/`, this file | `IN PROGRESS` — open decisions and formal approval record remain |
-| Product | Vision, PRD, feature catalogue, use cases, personas/journeys, scope/metrics, research | [`docs/01-product/README.md`](docs/01-product/README.md) | `IN PROGRESS` — draft set exists; owner approval and open decisions remain |
-| Architecture | Solution, domain, data, workspace/family, NFRs, ADRs | [`docs/02-architecture/README.md`](docs/02-architecture/README.md) | `IN PROGRESS` — draft pack complete; five ADRs and targets remain proposed |
+| Governance/context | Working agreement, source hierarchy, preserved handover, decisions, research provenance, readiness record | `AGENTS.md`, `CODEX.md`, `docs/00-context/`, this file | `IN PROGRESS` — implementation authority is recorded; specialist review and production release evidence remain |
+| Product | Vision, PRD, feature catalogue, use cases, personas/journeys, scope/metrics, research | [`docs/01-product/README.md`](docs/01-product/README.md) | `IN PROGRESS` — approved implementation baseline; catalogue-only detail and release evidence remain |
+| Architecture | Solution, domain, data, workspace/family, NFRs, ADRs | [`docs/02-architecture/README.md`](docs/02-architecture/README.md) | `IN PROGRESS` — architecture baseline and platform/cloud/client choices approved; numeric targets and runtime evidence remain |
 | Document intelligence | Taxonomy, ingestion, extraction/evidence, facts/entities, graph, monitoring, impact, sources, health, versioning | [`docs/03-document-intelligence/README.md`](docs/03-document-intelligence/README.md) | `IN PROGRESS` — draft pack complete; approvals and executed conformance evidence remain |
 | AI | Capability architecture, RAG, outputs, prompts/tools, guardrails, evaluations | [`docs/04-ai/README.md`](docs/04-ai/README.md) | `IN PROGRESS` — draft pack complete; thresholds, approvals, and evaluation evidence remain |
 | API/integration | API standards, OpenAPI, event catalogue/schemas, connector contracts | [`docs/05-api/README.md`](docs/05-api/README.md) | `IN PROGRESS` — draft contracts validate; approval and executed contract/conformance evidence remain |
 | Security/privacy | Architecture, authorization, privacy/governance, audit/provenance, threat model | [`docs/06-security/README.md`](docs/06-security/README.md) | `IN PROGRESS` — draft pack complete; decisions, review, and executed security/privacy evidence remain |
 | UX | Information architecture, flows, screens/states, design system, accessibility | [`docs/07-ux/README.md`](docs/07-ux/README.md) | `IN PROGRESS` — draft pack complete; target matrix and research/conformance evidence remain |
-| Engineering | Stack/ADRs, repository structure, coding, errors/resilience, local development, testing standards | [`docs/08-engineering/README.md`](docs/08-engineering/README.md) | `IN PROGRESS` — draft pack complete; stack/ADR approval and implementation evidence remain |
-| Operations | Environments, CI/CD, IaC, secrets, deployment/repair, backup/DR, observability | [`docs/09-devops/README.md`](docs/09-devops/README.md) | `IN PROGRESS` — draft pack complete; providers, numeric targets, and operational evidence remain |
+| Engineering | Stack/ADRs, repository structure, coding, errors/resilience, local development, testing standards | [`docs/08-engineering/README.md`](docs/08-engineering/README.md) | `IN PROGRESS` — React/TypeScript, Flutter, Azure, and IaC choices approved; full implementation and evidence remain |
+| Operations | Environments, CI/CD, IaC, secrets, deployment/repair, backup/DR, observability | [`docs/09-devops/README.md`](docs/09-devops/README.md) | `IN PROGRESS` — Azure dev foundations and provider registrations exist; adapters, numeric targets, production controls, and operational evidence remain |
 | Backlog/traceability | Epics, features, stories, acceptance, dependencies, release slices, matrix | [`docs/10-backlog/README.md`](docs/10-backlog/README.md) | `IN PROGRESS` — 12 epics/48 stories mapped; none approved or implementation-ready |
 | Reference data | Versioned schemas plus document types, rules, jurisdictions, sources, roles, permissions, statuses/severities | [`docs/11-reference-data/README.md`](docs/11-reference-data/README.md) | `IN PROGRESS` — draft synthetic seed validates; all runtime entries remain disabled and launch pack unresolved |
 | Testing/evaluation | Test strategy, AI evaluation, security, integration/E2E, performance/resilience, fixtures/evidence | [`docs/12-testing/README.md`](docs/12-testing/README.md) | `IN PROGRESS` — draft cases and deterministic fixtures exist; execution evidence is `NOT_RUN`/insufficient |
 | Repository validation | ID/link integrity, checksums, schemas, semantics, traceability, fixture privacy | [`scripts/README.md`](scripts/README.md) | `IN PROGRESS` — four static validators pass; formal review and executed quality evidence remain |
+
+The evidence-based story and architecture comparison is maintained in [`BLG-STATUS-001`](docs/10-backlog/05-personal-family-implementation-status.md). As assessed on 29 August 2026, 28 stories have partial preview evidence, 18 are not implemented, 2 are intentionally unavailable safety boundaries, and 0 meet the complete story exit gate.
 
 ## 5. Material decisions resolved for local implementation
 

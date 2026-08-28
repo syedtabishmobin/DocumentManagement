@@ -3,8 +3,8 @@
 | Field | Value |
 |---|---|
 | Document ID | `GOV-DOCS-001` |
-| Status | `DRAFT index` |
-| Updated | 26 August 2026 |
+| Status | `Active index` |
+| Updated | 29 August 2026 |
 
 The numbered directories preserve the specification reading order while keeping repository governance, validation commands, and future application source clearly separated. Authority remains defined by [`CODEX.md`](../CODEX.md), not by directory order.
 
@@ -24,4 +24,4 @@ The numbered directories preserve the specification reading order while keeping 
 | Reference data | [`11-reference-data/`](11-reference-data/README.md) |
 | Testing and evaluation | [`12-testing/`](12-testing/README.md) |
 
-The repository remains specification-only. The root `src/` directory is a tracked reservation and MUST remain empty until the readiness gate opens or the product owner explicitly authorizes a narrower prototype.
+The specification readiness gate is open for the complete Phase 1 personal/family implementation under `DEC-041` and `DEC-054`. Application source now lives under [`src/`](../src/README.md); Azure `dev` hosts a synthetic preview. Production, real customer data, external-provider activation, public DNS, and app-store publication remain separately gated. See the [current implementation status](10-backlog/05-personal-family-implementation-status.md).

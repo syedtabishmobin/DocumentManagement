@@ -3,10 +3,10 @@
 | Field | Value |
 |---|---|
 | Document ID | `OPS-SEC-001` |
-| Version | `0.1` |
+| Version | `0.2` |
 | Status | **DRAFT — security, privacy, architecture, operations, and configuration-owner approval required** |
 | Product phase | Phase 1 — Personal and Family |
-| Updated | 26 August 2026 |
+| Updated | 29 August 2026 |
 | Primary trace | `ARCH-P1-005`, `017`, `044`, `SEC-P1-007`–`011`, `025`–`030`, `AUD-P1-022`–`024`, `THR-P1-021`, `028`–`029` |
 
 ## 1. Purpose and separation
@@ -63,7 +63,7 @@ Key domains remain separated for transport, session/signing, primary records, im
 | `OPS-SEC-P1-027` | A rollback MAY reactivate only a retained compatible and currently eligible configuration version. If it would restore a vulnerability, stale authorization, deleted route/data, incompatible schema, or ineligible placement, the capability remains disabled and uses forward repair. |
 | `OPS-SEC-P1-028` | Every secret/key/configuration operation MUST produce safe evidence with exact references, versions, actors/workloads, approvals, policy/compatibility outcome, effective time, affected consumers, and repair state, without protected values. |
 | `OPS-SEC-P1-029` | Configuration and secret/key inventory drift MUST be detected and reconciled. Unknown active versions, orphaned credentials, over-broad policy, missing owner, unapproved route, or expired evidence blocks affected release/capability. |
-| `OPS-SEC-P1-030` | Retention, backup, recovery, and destruction behavior for secrets/keys/configuration MUST remain explicit but duration-neutral while `DEC-039` is open, route-ineligible while `DEC-040` is open, and unable to transfer user/workspace authority while `DEC-038` is open. |
+| `OPS-SEC-P1-030` | Retention, backup, recovery, and destruction behavior for secrets/keys/configuration MUST implement the `DEC-053` 30-calendar-day document Trash boundary, follow the `DEC-049` eligible-route policy, and remain unable to transfer user/workspace authority under `DEC-038`. |
 
 ## 4. Configuration activation and repair sequence
 
@@ -76,6 +76,23 @@ Key domains remain separated for transport, session/signing, primary records, im
 
 No step permits secret values in the configuration package. Production configuration export for diagnosis is minimized, authorized, and reference-only; it cannot be copied to a lower environment.
 
-## 5. Decision fences
+## 5. Decision outcomes and remaining fences
 
-Recovery credentials/keys cannot implement ownership recovery while `DEC-038` is open. Key destruction and backup residuals cannot imply deletion completion while `DEC-039` is open. A key location or encrypted payload does not prove the processor/support/telemetry/backup route is eligible under `DEC-040`.
+`DEC-038` keeps recovery and ownership transfer unavailable in local/dev and requires a separate production assurance decision. `DEC-053` requires a 30-calendar-day document Trash window followed by coordinated purge, key-envelope destruction, minimized evidence, and non-resurrection; key destruction or Blob soft delete alone cannot prove cross-store completion. `DEC-049` selects the Azure Australian placement baseline, but a key location or encrypted payload still does not prove that every processor, connector, support, telemetry, backup, or failover route is eligible.
+
+## 6. Azure development secret references
+
+Azure is the approved implementation provider under `DEC-049`; the provider-neutral rules above remain authoritative. The exact Microsoft, Google, Dropbox, Box, and Azure Communication Services setup is maintained in [`OPS-PROVIDER-001`](08-external-provider-setup.md).
+
+The development Key Vault inventory uses reference names only:
+
+| Secret reference | Purpose |
+|---|---|
+| `microsoft-documents-client-secret` | Microsoft identity, OneDrive, and Outlook delegated OAuth exchange |
+| `google-documents-client-secret` | Google identity, Drive, and Gmail delegated OAuth exchange |
+| `dropbox-connector-app-secret` | Dropbox delegated OAuth exchange |
+| `box-connector-client-secret` | Box delegated OAuth exchange |
+
+All four references were verified as enabled on 29 August 2026 without reading their values. Public client IDs and secret-presence markers live in the development Bicep parameters. The runtime has `Key Vault Secrets User` at the development vault, but provider secrets remain unmounted while the corresponding adapters are absent and activation gates are false.
+
+Azure Communication Services Email uses the Doculyra runtime managed identity and a scoped ACS role assignment instead of an exported ACS connection string. This avoids adding another long-lived application secret.

@@ -23,7 +23,7 @@ The reading order does not change the authority hierarchy in [`CODEX.md`](../../
 | Document | Current role | Approval effect |
 |---|---|---|
 | `PROD-VIS-001` | Draft strategy and positioning | Does not authorize implementation. |
-| `PROD-PRD-001` | Draft candidate implementation baseline with 90 stable `REQ-P1-*` requirements | Requires explicit product-owner approval and decision-register update. Even then, the full repository readiness gate still applies. |
+| `PROD-PRD-001` | Approved implementation baseline with 100 stable `REQ-P1-*` requirements | Development is authorized by `DEC-041` and `DEC-054`; production and real-customer-data processing remain release-gated. |
 | `PROD-FEAT-001` | Draft feature decomposition of every PRD requirement | Derivative; cannot add or weaken PRD scope. |
 | `PROD-UC-001` | Draft observable actor/system flows and acceptance seeds | Derivative; detailed UX, API, security, and tests remain required. |
 | `PROD-PER-001` | Draft persona hypotheses and journeys | Requires product research; personas are not roles. |
@@ -50,9 +50,9 @@ IDs are never recycled. Retirement and replacement must remain traceable.
 
 - Four proposed vertical slices: `P1-S1` secure household vault, `P1-S2` understand/retrieve, `P1-S3` monitor/close, and `P1-S4` family launch/portability.
 - Seven outcomes: `OUT-P1-001`–`OUT-P1-007`.
-- Ninety product requirements across workspace, documents, ingestion, facts, graph, search, monitoring, health, action, notification, sharing, AI, trust, and configuration.
+- One hundred product requirements across workspace, documents, ingestion, facts, graph, search, monitoring, health, action, notification, sharing, AI, trust, configuration, platform, cryptography, deletion, operations, and assurance.
 - Thirty feature records: `FEAT-P1-001`–`FEAT-P1-030`.
-- Open or proposed scope decisions: `DEC-030`–`DEC-040`.
+- Approved dev/stage and production-fence decisions: `DEC-030`–`DEC-055`.
 - Research gaps `GAP-001`–`GAP-010` explicitly dispositioned in the draft PRD.
 
 ## Handoff rules
@@ -63,5 +63,5 @@ Downstream specifications and backlog items must:
 2. distinguish approved decisions from draft proposals and open decisions;
 3. preserve every privacy, evidence, current-authorization, approval, history, and visible-failure invariant;
 4. map behavior to objective tests and evaluation evidence;
-5. avoid provider-specific assumptions while the relevant decision is deferred; and
+5. keep the core provider-neutral while implementing the Azure and external-provider adapters selected by approved decisions; and
 6. report any conflict instead of resolving it by silently changing a lower-authority artifact.

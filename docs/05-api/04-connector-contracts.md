@@ -16,9 +16,11 @@
 
 This document defines provider-neutral contracts for import connectors, external action connectors, notification-channel adapters, governed-source retrieval/parser adapters, and external processing adapters. It covers capability declaration, consent, external identities and versions, cursors, permission mapping, idempotency, callbacks, revocation, deletion, residency, partial failure, reconciliation, and conformance. Stable draft rules use `CON-P1-*` IDs.
 
+The provider-specific development registrations, exact callbacks/scopes, Key Vault references, and current verification status are operational evidence in [`OPS-PROVIDER-001`](../09-devops/08-external-provider-setup.md). That runbook cannot weaken this contract or activate an adapter.
+
 The source-of-truth hierarchy in [`CODEX.md`](../../CODEX.md) applies. Approved decisions constrain this draft. The contract refines the provider-neutral ports in [`ARCH-SOL-001`](../02-architecture/01-solution-architecture.md), the `Integration`, `ConsentRecord`, `SourceObservation`, `ActionExecution`, and `NotificationDelivery` records in [`ARCH-DATA-001`](../02-architecture/03-logical-data-model.md), and `SEC-P1-020`–`024`, `AUTH-P1-020`–`021`, `029`, `PRIV-P1-006`–`009`, `027`–`028`, and `AUD-P1-023`.
 
-No private inbound-email or cloud import connector is selected while `DEC-031` is open. No external email or push channel is activated while `DEC-037` is unapproved. No connector or processor route is eligible for the Australian residency option until the `DEC-040` matrix proves it. No deletion/retained-data duration is inferred while `DEC-039` is open. A manifest, schema, OpenAPI operation, or passing synthetic test is not product activation.
+`DEC-031`, `DEC-045`, and `DEC-055` authorize provider-neutral adapter implementation and development registration while keeping live inbound-email and cloud import disabled until exact activation evidence passes. `DEC-037` requires in-app notifications and keeps external delivery disabled until separately configured and approved. `DEC-049` selects the Azure Australian placement baseline, but every connector/processor route still requires enforceable eligibility evidence. `DEC-053` sets the document Trash period without allowing any connector to claim cross-store purge completion by itself. A registration, secret, manifest, schema, OpenAPI operation, or passing synthetic test is not product activation.
 
 ## 2. Adapter classes and owning boundaries
 
@@ -147,7 +149,7 @@ Exact product status IDs ultimately belong in versioned reference data. The conn
 | `DRAFT` | Configuration exists with no credential, consent, call, callback, or data route. |
 | `CONSENT_PENDING` | Notice/authorization is incomplete; no external processing. |
 | `POLICY_BLOCKED` | Consent may exist, but product, permission, security, residency, deletion, or decision policy blocks activation. |
-| `ACTIVE` | Exact adapter kind/version/capabilities and route are approved; calls may occur under current policy. This state is unreachable for private connectors while `DEC-031` is open and for an unproved route while `DEC-040` is open. |
+| `ACTIVE` | Exact adapter kind/version/capabilities, consent, credentials, route, and conformance evidence are approved; calls may occur under current policy. This state remains unreachable for an adapter or route that has not passed the activation checklist, regardless of registration or secret presence. |
 | `SUSPENDED` | Calls are blocked pending safe review/repair; credentials remain protected and cannot be used by queued jobs. |
 | `REVOCATION_PENDING` | Authoritative revocation is accepted; in-flight/callback/credential cleanup is being reconciled, and no new call is allowed. |
 | `DISCONNECTED` | Future calls and callbacks are denied; retained platform/provider data consequences remain explicit. |

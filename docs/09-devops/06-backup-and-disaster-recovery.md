@@ -27,7 +27,7 @@ Infrastructure restore follows [`OPS-IAC-001`](03-infrastructure-as-code.md), se
 | `NFR-P1-029` | Authorization/deletion enforcement `≤1 hour`; authenticated core read/write and original access `≤4 hours` | RTO ends only after integrity, policy, deletion, audit, schema, key, and residency service gates pass |
 | `NFR-P1-030` | Metadata/full-text search `≤8 hours`; semantic/vector, graph, comparison, readiness, and conversation projections `≤24 hours` | Rebuild into new validated generations; canonical fallback remains truthful while derivatives are unavailable/stale |
 | `NFR-P1-031` | Backup control checks daily, sampled restore monthly, full DR quarterly; `100%` of scheduled exercises completed or escalated | Cadence and threshold remain provisional and require owners to approve population, evidence, and release consequence |
-| `NFR-P1-032` | `100%` of unapproved recovery/owner-transfer routes denied while `DEC-038` is open | Infrastructure/data restore never transfers human identity, workspace ownership, factors, keys, grants, or private-resource authority |
+| `NFR-P1-032` | `100%` of recovery/owner-transfer routes denied under approved `DEC-038` | Infrastructure/data restore never transfers human identity, workspace ownership, factors, keys, grants, or private-resource authority |
 
 No RPO/RTO target permits unsafe restore, stale authorization, missing audit, deletion resurrection, or ineligible placement. If a target cannot be met safely, the service/capability remains unavailable or explicitly degraded.
 

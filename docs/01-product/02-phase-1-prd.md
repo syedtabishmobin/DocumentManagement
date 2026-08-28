@@ -113,7 +113,7 @@ These are product slices, not permission to start implementation before the repo
 
 ### 6.3 Document-domain envelope
 
-Phase 1's configuration model MUST be able to represent the following household domains. `DEC-035` remains open on which document types and governed source monitors are enabled in the first public launch profile.
+Phase 1's configuration model MUST be able to represent the following household domains. `DEC-035` approves governed synthetic Australian-first fixtures for development; the reviewed document types and governed source monitors enabled in the first public production launch profile remain a later release package.
 
 | Domain | Representative in-scope records | Boundary |
 |---|---|---|
@@ -134,7 +134,7 @@ Phase 1's configuration model MUST be able to represent the following household 
 - Automatic legal, financial, tax, immigration, insurance, or medical advice.
 - Silent edits to consequential documents, facts, rules, or external systems.
 - Unbounded autonomous agents, arbitrary web browsing as authority, or uncited consequential claims.
-- Native iOS, Android, or desktop applications in Phase 1.
+- Native desktop applications in Phase 1. Dedicated Flutter iOS and Android applications are required by `DEC-052`; platform-specific Swift/Kotlin remains limited to capabilities Flutter cannot safely provide.
 - Guaranteed completeness of external-source monitoring.
 - A public marketplace, provider-specific lock-in, or an adviser-specific standalone product.
 - Shared editing of arbitrary office-document contents; the product may prepare controlled drafts or replacement versions after approval.

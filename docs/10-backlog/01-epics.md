@@ -83,7 +83,7 @@ All epics are `DRAFT`. The sequence is contingent on `DEC-030`, the Phase 1 PRD 
 
 ### `EPIC-P1-009` — Explain evidence health and coordinate work
 
-- **Entry:** enabled profiles and in-app notification policy approved; aggregate score and external channels stay disabled while `DEC-034`/`037` remain unapproved.
+- **Entry:** enabled profiles and in-app notification policy approved; aggregate score stays intentionally absent under `DEC-034`, while external channels remain disabled until the `DEC-037`/`045` activation evidence passes.
 - **Exit:** findings disclose profile/evidence/source freshness and alternatives; task and notification state remain separate; accessibility and privacy-safe badge/status behavior pass.
 - **Stop-ship:** hidden aggregate score/ranking, unsupported fulfilment, protected badge/notification leak, or external delivery activation.
 

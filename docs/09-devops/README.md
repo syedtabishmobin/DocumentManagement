@@ -3,15 +3,15 @@
 | Field | Value |
 |---|---|
 | Document ID | `OPS-IDX-001` |
-| Version | `0.1` |
+| Version | `0.2` |
 | Status | **DRAFT — product-owner, architecture, security, privacy, operations, and quality approval required** |
 | Product phase | Phase 1 — Personal and Family |
 | Jurisdiction | Australia first; jurisdiction-neutral core |
-| Updated | 26 August 2026 |
+| Updated | 29 August 2026 |
 
 ## Purpose and authority
 
-This directory defines the provider-neutral Phase 1 operating contract for environments, delivery, infrastructure, secrets/configuration, deployment repair, backup/recovery, and observability. It is specification material only. It does not open the implementation gate in [`CODEX.md`](../../CODEX.md), select a provider or product, create deployment configuration, or assert that a production environment exists.
+This directory defines the provider-neutral Phase 1 operating contract and its approved Azure implementation for environments, delivery, infrastructure, secrets/configuration, external-provider registration, deployment repair, backup/recovery, and observability. Azure `dev` foundations and a synthetic application preview exist; production and external-provider activation remain gated by `DEC-054`–`055`.
 
 The source-of-truth hierarchy in `CODEX.md` applies. Approved decisions and accepted ADRs outrank this draft. The primary inputs are [`ARCH-SOL-001`](../02-architecture/01-solution-architecture.md), [`ARCH-NFR-001`](../02-architecture/05-non-functional-requirements.md), the [ADR set](../02-architecture/06-adrs/README.md), [`API-STD-001`](../05-api/01-api-standards.md), [`API-EVT-001`](../05-api/03-event-catalogue.md), the [security pack](../06-security/README.md), [`ENG-DEV-001`](../08-engineering/05-local-development.md), and [`ENG-TST-001`](../08-engineering/06-testing-standards.md). Every numeric target repeated here remains **PROVISIONAL** exactly as labelled in `ARCH-NFR-001`; it is not a customer SLA or implementation approval.
 
@@ -26,12 +26,13 @@ The source-of-truth hierarchy in `CODEX.md` applies. Approved decisions and acce
 | 5 | [`05-deployment-rollback-and-repair.md`](05-deployment-rollback-and-repair.md) | `OPS-DEP-P1-001`–`OPS-DEP-P1-032` | Release manifests, compatible deployment, migrations, rollback versus forward repair, and containment |
 | 6 | [`06-backup-and-disaster-recovery.md`](06-backup-and-disaster-recovery.md) | `OPS-DR-P1-001`–`OPS-DR-P1-032` | Backup classes, recovery objectives, restore gates, deletion/residency safety, and exercises |
 | 7 | [`07-observability.md`](07-observability.md) | `OPS-OBS-P1-001`–`OPS-OBS-P1-032` | Content-free telemetry, SLIs, alerts, runbooks, incidents, control evidence, and cost |
+| 8 | [`08-external-provider-setup.md`](08-external-provider-setup.md) | `OPS-PROVIDER-001` | Microsoft, Google, Dropbox, Box, ACS Email, callbacks, scopes, secret references, verification, and activation gates |
 
 Stable rule IDs are never recycled. Wording may evolve additively; retired rules retain their IDs and point to replacements.
 
 ## Shared operating invariants
 
-- Provider-specific cloud, CI, infrastructure-as-code, secret, key, scanning, storage, database, event, monitoring, analytics, backup, deployment, and incident products remain undecided.
+- Azure, Bicep, React/TypeScript, and Flutter are approved by `DEC-049`–`052`; core capability and adapter contracts remain provider-neutral, and no Azure resource or provider registration alone activates a product route.
 - Build once and promote the same verified immutable artifact and manifest; environment-specific behavior comes only from approved versioned configuration and policy.
 - Lower environments contain deterministic synthetic data only. Production household content, production-derived copies, production credentials, production backups, and unrestricted production telemetry never flow downward.
 - Workspace, purpose, classification, authorization epoch, residency/processing policy, retention/deletion lineage, and configuration version remain explicit across deployment and operational data paths.
@@ -40,15 +41,15 @@ Stable rule IDs are never recycled. Wording may evolve additively; retired rules
 - Ordinary operational telemetry is schema allow-listed and contains no raw document content, filenames, protected values, evidence passages, prompts, queries, answers, tool/provider payloads, unrestricted URLs, tokens, secrets, or key material.
 - Audit, domain events, and operational telemetry remain distinct contracts. One cannot silently substitute for another.
 
-## Open-decision fences
+## Approved decision outcomes and release fences
 
-| Decision | Operations consequence while open |
+| Decision | Current operations consequence |
 |---|---|
-| `DEC-038` | No account/workspace recovery, ownership transfer, key-release, or support bypass route is activated. Infrastructure recovery cannot create user authority. |
-| `DEC-039` | Backup expiry, deletion cooling-off, active-purge, event/dead-letter retention, and retained-audit minimization durations remain unset. Operations report pending/residual states truthfully. |
-| `DEC-040` | No physical region, cross-border exception, processor, support, telemetry, backup, failover, or disaster-recovery route is presumed eligible. Unknown routes block. |
+| `DEC-038` | Recovery and ownership transfer remain unavailable in local/dev; production recovery needs a separate assurance decision. Infrastructure recovery cannot create user authority. |
+| `DEC-039` / `DEC-053` | `DEC-053` establishes immediate document deletion fencing, 30-calendar-day Trash/restore, then coordinated purge and non-resurrection. Account deletion and lawful-retention exceptions remain separate. |
+| `DEC-040` / `DEC-049` | Azure Australia East with explicitly documented Australian paired-region routes is selected. Every content, processor, support, telemetry, backup, failover, and external-provider route still needs enforceable eligibility evidence; unknown routes block. |
 
-The other `DEC-031`–`DEC-037` feature fences continue to apply: an environment, deployment variable, infrastructure module, secret, or configuration flag cannot enable a connector, external notification channel, continuity release, readiness score, launch source/profile, or clinical-content disposition that has not been approved.
+`DEC-031`–`037` define the approved disabled/default behavior. An environment, deployment variable, infrastructure module, secret, or configuration flag still cannot activate a connector or external notification channel, automated continuity release, aggregate score, unreviewed launch pack, or unsafe clinical-content route. Provider implementation/configuration is authorized by `DEC-045` and `DEC-055`; exact activation remains a release gate.
 
 ## Pack conformance
 
