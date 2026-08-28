@@ -11,7 +11,9 @@ param location string = 'australiaeast'
 param pairedLocation string = 'australiasoutheast'
 @minLength(5)
 param resourcePrefix string = 'doculyra'
-param githubRepository string = 'syedtabishmobin/DocumentManagement'
+// GitHub's OIDC subject includes immutable account/repository IDs so a rename or
+// transfer cannot silently inherit this Azure trust relationship.
+param githubRepository string = 'syedtabishmobin@212241246/DocumentManagement@1347196921'
 param deployApplications bool = false
 param apiImage string = ''
 param webImage string = ''
