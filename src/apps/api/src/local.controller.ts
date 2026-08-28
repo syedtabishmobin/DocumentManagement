@@ -39,7 +39,8 @@ export class LocalController {
 
   @Post("documents")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: 25 * 1024 * 1024, files: 1 } }))
-  upload(@UploadedFile() file: Express.Multer.File | undefined, @Body() body: { subjectIds?: string; captureRoute?: string; syntheticConfirmed?: string }) {
+  async upload(@UploadedFile() file: Express.Multer.File | undefined, @Body() body: { subjectIds?: string; captureRoute?: string; syntheticConfirmed?: string }, @Req() request: Request) {
+    await this.identities.requireSession(sessionToken(request));
     if (!file) throw new BadRequestException("Choose a file to add");
     if ((process.env.DM_CUSTOMER_DATA_POLICY ?? "synthetic-only") === "synthetic-only" && body.syntheticConfirmed !== "true") {
       throw new BadRequestException("This environment accepts synthetic test documents only. Confirm the document is synthetic before adding it.");
@@ -50,7 +51,8 @@ export class LocalController {
   }
 
   @Post("documents/manual")
-  manualDocument(@Body() body: unknown) {
+  async manualDocument(@Body() body: unknown, @Req() request: Request) {
+    await this.identities.requireSession(sessionToken(request));
     if ((process.env.DM_CUSTOMER_DATA_POLICY ?? "synthetic-only") === "synthetic-only" && (body as { syntheticConfirmed?: boolean } | null)?.syntheticConfirmed !== true) {
       throw new BadRequestException("This environment accepts synthetic test records only. Confirm the record is synthetic before adding it.");
     }
@@ -80,19 +82,19 @@ export class LocalController {
   }
 
   @Post("subjects")
-  addSubject(@Body() body: unknown) { return this.store.addSubject(createSubjectSchema.parse(body)); }
+  async addSubject(@Body() body: unknown, @Req() request: Request) { await this.identities.requireSession(sessionToken(request)); return this.store.addSubject(createSubjectSchema.parse(body)); }
 
   @Post("people")
-  createPerson(@Body() body: unknown) { return this.store.createPerson(managePersonSchema.parse(body)); }
+  async createPerson(@Body() body: unknown, @Req() request: Request) { await this.identities.requireSession(sessionToken(request)); return this.store.createPerson(managePersonSchema.parse(body)); }
 
   @Patch("people/:id")
-  updatePerson(@Param("id") id: string, @Body() body: unknown) { return this.store.updatePerson(id, managePersonSchema.parse(body)); }
+  async updatePerson(@Param("id") id: string, @Body() body: unknown, @Req() request: Request) { await this.identities.requireSession(sessionToken(request)); return this.store.updatePerson(id, managePersonSchema.parse(body)); }
 
   @Delete("people/:id")
-  async deletePerson(@Param("id") id: string) { await this.store.deletePerson(id); return { deleted: true }; }
+  async deletePerson(@Param("id") id: string, @Req() request: Request) { await this.identities.requireSession(sessionToken(request)); await this.store.deletePerson(id); return { deleted: true }; }
 
   @Get("connectors")
-  connectors() { return this.store.connectorCatalogue(); }
+  async connectors(@Req() request: Request) { await this.identities.requireSession(sessionToken(request)); return this.store.connectorCatalogue(); }
 
   @Delete("documents/:id")
   async remove(@Param("id") id: string, @Req() request: Request) {
@@ -107,17 +109,17 @@ export class LocalController {
   }
 
   @Post("assistant/questions")
-  ask(@Body() body: unknown) { const input = askQuestionSchema.parse(body); return this.store.ask(input.question, input.documentIds); }
+  async ask(@Body() body: unknown, @Req() request: Request) { await this.identities.requireSession(sessionToken(request)); const input = askQuestionSchema.parse(body); return this.store.ask(input.question, input.documentIds); }
 
   @Post("members")
-  addMember(@Body() body: unknown) { const input = createMemberSchema.parse(body); return this.store.addMember(input.displayName, input.role); }
+  async addMember(@Body() body: unknown, @Req() request: Request) { await this.identities.requireSession(sessionToken(request)); const input = createMemberSchema.parse(body); return this.store.addMember(input.displayName, input.role); }
 
   @Post("tasks")
-  addTask(@Body() body: unknown) { const input = createTaskSchema.parse(body); return this.store.addTask(input); }
+  async addTask(@Body() body: unknown, @Req() request: Request) { await this.identities.requireSession(sessionToken(request)); const input = createTaskSchema.parse(body); return this.store.addTask(input); }
 
   @Patch("tasks/:id/complete")
-  completeTask(@Param("id") id: string) { return this.store.completeTask(id); }
+  async completeTask(@Param("id") id: string, @Req() request: Request) { await this.identities.requireSession(sessionToken(request)); return this.store.completeTask(id); }
 
   @Get("exports/current")
-  exportWorkspace() { return this.store.exportWorkspace(); }
+  async exportWorkspace(@Req() request: Request) { await this.identities.requireSession(sessionToken(request)); return this.store.exportWorkspace(); }
 }

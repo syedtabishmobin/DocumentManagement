@@ -1,0 +1,36 @@
+name: Build Android synthetic preview
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  android-preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: src/apps/mobile
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - name: Build development APK against the Azure synthetic preview
+        run: >-
+          flutter build apk --debug
+          --dart-define=DOCULYRA_API_URL=https://ca-doculyra-dev-api.ashystone-3c89dc27.australiaeast.azurecontainerapps.io/api
+      - name: Upload installable Android preview
+        uses: actions/upload-artifact@v6
+        with:
+          name: doculyra-android-synthetic-preview-${{ github.sha }}
+          path: src/apps/mobile/build/app/outputs/flutter-apk/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7

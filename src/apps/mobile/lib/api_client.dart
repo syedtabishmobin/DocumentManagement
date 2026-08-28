@@ -100,21 +100,29 @@ class DoculyraApi {
     String name,
     String content,
     List<String> subjectIds,
+    bool syntheticConfirmed,
   ) => _json(
     '/documents/manual',
     method: 'POST',
-    body: {'name': name, 'content': content, 'subjectIds': subjectIds},
+    body: {
+      'name': name,
+      'content': content,
+      'subjectIds': subjectIds,
+      'syntheticConfirmed': syntheticConfirmed,
+    },
   );
 
   Future<Map<String, dynamic>> upload(
     File file,
     List<String> subjectIds,
     String captureRoute,
+    bool syntheticConfirmed,
   ) async {
     final request = http.MultipartRequest('POST', _uri('/documents'))
       ..headers.addAll(_headers())
       ..fields['subjectIds'] = subjectIds.join(',')
       ..fields['captureRoute'] = captureRoute
+      ..fields['syntheticConfirmed'] = syntheticConfirmed.toString()
       ..files.add(await http.MultipartFile.fromPath('file', file.path));
     final streamed = await _client.send(request);
     return _decode(await http.Response.fromStream(streamed));

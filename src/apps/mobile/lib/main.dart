@@ -633,12 +633,37 @@ class _VaultShellState extends State<VaultShell> {
       ),
     );
     if (route == null || !mounted) return;
+    final syntheticConfirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Synthetic test data only'),
+        content: const Text(
+          'This Azure development preview is not approved for real personal, family, customer or confidential documents. Confirm that the item you are about to add is entirely synthetic test data.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('I confirm'),
+          ),
+        ],
+      ),
+    );
+    if (syntheticConfirmed != true || !mounted) return;
     try {
       if (route == 'FILE') {
         final files = await FilePicker.pickFiles();
         for (final file in files) {
           if (file.path != null) {
-            await widget.api.upload(File(file.path!), [person.id], 'FILE');
+            await widget.api.upload(
+              File(file.path!),
+              [person.id],
+              'FILE',
+              syntheticConfirmed,
+            );
           }
         }
       } else if (route == 'CAMERA') {
@@ -647,14 +672,22 @@ class _VaultShellState extends State<VaultShell> {
           imageQuality: 92,
         );
         if (image != null) {
-          await widget.api.upload(File(image.path), [person.id], 'CAMERA');
+          await widget.api.upload(
+            File(image.path),
+            [person.id],
+            'CAMERA',
+            syntheticConfirmed,
+          );
         }
       } else {
         if (!mounted) return;
         await showDialog<void>(
           context: context,
-          builder: (context) =>
-              ManualDocumentDialog(api: widget.api, person: person),
+          builder: (context) => ManualDocumentDialog(
+            api: widget.api,
+            person: person,
+            syntheticConfirmed: syntheticConfirmed,
+          ),
         );
       }
       await refresh();
@@ -1044,9 +1077,11 @@ class ManualDocumentDialog extends StatefulWidget {
     super.key,
     required this.api,
     required this.person,
+    required this.syntheticConfirmed,
   });
   final DoculyraApi api;
   final HouseholdPerson person;
+  final bool syntheticConfirmed;
   @override
   State<ManualDocumentDialog> createState() => _ManualDocumentDialogState();
 }
@@ -1088,9 +1123,12 @@ class _ManualDocumentDialogState extends State<ManualDocumentDialog> {
             ? null
             : () async {
                 setState(() => busy = true);
-                await widget.api.addManual(name.text, content.text, [
-                  widget.person.id,
-                ]);
+                await widget.api.addManual(
+                  name.text,
+                  content.text,
+                  [widget.person.id],
+                  widget.syntheticConfirmed,
+                );
                 if (context.mounted) Navigator.pop(context);
               },
         child: Text(busy ? 'Adding…' : 'Add record'),
