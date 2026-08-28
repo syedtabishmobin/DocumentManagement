@@ -1,6 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="DocumentManagement">
-  <rect width="512" height="512" rx="112" fill="#163d35"/>
-  <path d="M156 108h132l76 76v220H156z" fill="#fffdfa"/>
-  <path d="M288 108v76h76" fill="#b9dfd1"/>
-  <path d="M208 240h104M208 286h104M208 332h72" fill="none" stroke="#e87342" stroke-linecap="round" stroke-width="22"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Doculyra">
+  <rect width="512" height="512" rx="112" fill="#000"/>
+  <g transform="translate(24 22) scale(7.2)" fill="none" stroke="#fff">
+    <path d="M13 10h19c13 0 21 8 21 22s-8 22-21 22H13V10Z" stroke-width="6"/>
+    <path d="M35 20v8M31 24h8" stroke-width="4" stroke-linecap="round"/>
+    <path d="M24 21v22h8c7 0 11-4 11-11" stroke-width="5" stroke-linecap="round"/>
+  </g>
 </svg>

@@ -1,5 +1,5 @@
-const cacheName = "document-management-shell-v1";
-const shell = ["/", "/manifest.webmanifest", "/app-icon.svg"];
+const cacheName = "doculyra-shell-v2";
+const shell = ["/", "/manifest.webmanifest", "/app-icon.svg", "/favicon.svg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(cacheName).then((cache) => cache.addAll(shell)));

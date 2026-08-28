@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Doculyra">
+  <rect width="64" height="64" rx="14" fill="#000"/>
+  <path d="M13 10h19c13 0 21 8 21 22s-8 22-21 22H13V10Z" fill="none" stroke="#fff" stroke-width="6"/>
+  <path d="M35 20v8M31 24h8" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+  <path d="M24 21v22h8c7 0 11-4 11-11" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+</svg>

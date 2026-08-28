@@ -1,11 +1,11 @@
 {
-  "name": "DocumentManagement",
-  "short_name": "Documents",
-  "description": "Private household document intelligence",
+  "name": "Doculyra Home",
+  "short_name": "Doculyra",
+  "description": "Private document organisation with evidence-aware intelligence",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f5f3ed",
-  "theme_color": "#163d35",
+  "background_color": "#f5f5f7",
+  "theme_color": "#000000",
   "icons": [
     {
       "src": "/app-icon.svg",

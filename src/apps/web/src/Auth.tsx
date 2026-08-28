@@ -1,19 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { AuthSession } from "@document-management/contracts";
 import { Apple, Check, KeyRound, Laptop, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import { api } from "./api.js";
+import { BrandMark, BrandName } from "./Brand.js";
 
 export function Startup({ message, retry }: { message: string; retry: () => void }) {
-  return <div className="startup"><div className="brand-mark">D</div><h1>DocumentManagement</h1><p>{message}</p><button onClick={retry}>Try again</button></div>;
+  return <div className="startup"><div className="brand-mark"><BrandMark /></div><h1>Doculyra</h1><p>{message}</p><button onClick={retry}>Try again</button></div>;
 }
 
-export function AuthScreen({ onAuthenticated, initialMode = "register" }: { onAuthenticated: (session: AuthSession) => void | Promise<void>; initialMode?: "register" | "login" }) {
+export function AuthScreen({ onAuthenticated, onModeChange, initialMode = "register" }: { onAuthenticated: (session: AuthSession) => void | Promise<void>; onModeChange?: (mode: "register" | "login") => void; initialMode?: "register" | "login" }) {
   const [mode, setMode] = useState<"register" | "login">(initialMode);
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => { setMode(initialMode); }, [initialMode]);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setError("");
@@ -29,8 +32,8 @@ export function AuthScreen({ onAuthenticated, initialMode = "register" }: { onAu
 
   return <div className="auth-layout">
     <section className="auth-story">
-      <a className="wordmark inverse" href="/"><span className="brand-mark small">D</span><span>DocumentManagement</span></a>
-      <div><span className="eyebrow light">Private by default</span><h1>Your family records.<br />One trusted place.</h1><p>Create a household, connect documents to the people they belong to, and get evidence-backed answers without sending files to a cloud service.</p><ul><li><Check /> Local document storage</li><li><Check /> Clear family access boundaries</li><li><Check /> No silent external transfers</li></ul></div>
+      <a className="wordmark inverse" href="/"><span className="brand-mark small"><BrandMark /></span><BrandName /></a>
+      <div><span className="eyebrow light">Private organisation · grounded intelligence</span><h1>Your records.<br />Clear, connected, understood.</h1><p>Organise important records around the people and things they belong to, then ask questions with evidence—without silently sending files to a cloud service.</p><ul><li><Check /> Local-first document organisation</li><li><Check /> Answers linked to source evidence</li><li><Check /> Clear access and activity history</li></ul></div>
       <small><ShieldCheck size={15} /> Local development profile</small>
     </section>
     <main className="auth-panel">
@@ -39,11 +42,12 @@ export function AuthScreen({ onAuthenticated, initialMode = "register" }: { onAu
         <h2>{mode === "register" ? "Create an account" : "Sign in"}</h2>
         <p>{mode === "register" ? "Start with a local account. You will create your personal or family workspace next." : "Open your local household workspace."}</p>
         <div className="provider-grid" aria-label="Alternative sign-in options">
-          <button disabled title="Requires production identity configuration"><span className="provider-g">G</span> Google</button>
-          <button disabled title="Requires production identity configuration"><Apple size={18} /> Apple</button>
-          <button disabled title="Requires production identity configuration"><span className="provider-ms">⊞</span> Microsoft</button>
+          <button disabled title="Available after identity integrations are configured"><span className="provider-g">G</span> Google</button>
+          <button disabled title="Available after identity integrations are configured"><Apple size={18} /> Apple</button>
+          <button disabled title="Available after identity integrations are configured"><span className="provider-ms">⊞</span> Microsoft</button>
           {mode === "login" ? <button disabled title="Enroll a passkey from account security first"><KeyRound size={18} /> Use a passkey</button> : null}
         </div>
+        <p className="integration-note">External identity options are intentionally inactive while the core product experience is being finalised.</p>
         <div className="divider"><span>or use email locally</span></div>
         <form className="auth-form" onSubmit={(event) => void submit(event)}>
           {mode === "register" ? <label>Full name<input autoComplete="name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} required placeholder="Your name" /></label> : null}
@@ -52,8 +56,8 @@ export function AuthScreen({ onAuthenticated, initialMode = "register" }: { onAu
           {error ? <div className="form-error">{error}</div> : null}
           <button className="primary wide" disabled={busy}>{busy ? "Please wait…" : mode === "register" ? "Create local account" : "Sign in"}</button>
         </form>
-        <button className="auth-switch" onClick={() => { setMode(mode === "register" ? "login" : "register"); setError(""); }}>{mode === "register" ? "Already have an account? Sign in" : "New here? Create an account"}</button>
-        <div className="local-explainer"><LockKeyhole size={18} /><span><strong>Nothing leaves this device.</strong><small>Google, Apple and Microsoft require configured identity applications. Passkeys are enrolled after account creation and then used to sign in.</small></span></div>
+        <button className="auth-switch" onClick={() => { const next = mode === "register" ? "login" : "register"; setMode(next); onModeChange?.(next); setError(""); }}>{mode === "register" ? "Already have an account? Sign in" : "New here? Create an account"}</button>
+        <div className="local-explainer"><LockKeyhole size={18} /><span><strong>Nothing leaves this device.</strong><small>External identity providers will require configured applications and consent. Passkeys are enrolled after account creation and then used to sign in.</small></span></div>
         <a className="back-to-site" href="/">← Back to website</a>
       </div>
     </main>
@@ -78,7 +82,7 @@ export function Onboarding({ session, onComplete }: { session: AuthSession; onCo
   }
 
   return <div className="onboarding">
-    <header><div className="wordmark"><span className="brand-mark small">D</span><span>DocumentManagement</span></div><span>Step {step} of 2</span></header>
+    <header><div className="wordmark"><span className="brand-mark small"><BrandMark /></span><BrandName edition="Home" /></div><span>Step {step} of 2</span></header>
     <main className="onboarding-card">
       {step === 1 ? <>
         <span className="onboarding-icon"><ShieldCheck /></span><span className="eyebrow">Before you begin</span><h1>Your records stay under your control.</h1><p>In this local profile, uploaded files, extracted text, account credentials and document answers are stored and processed on this machine. External connections are off.</p>

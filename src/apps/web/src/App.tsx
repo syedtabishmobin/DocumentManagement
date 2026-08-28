@@ -7,6 +7,7 @@ import { CaptureModal } from "./CaptureModal.js";
 import { MarketingSite } from "./Marketing.js";
 import { FamilyView } from "./Family.js";
 import { ActivityView } from "./Activity.js";
+import { BrandMark, BrandName } from "./Brand.js";
 
 type View = "home" | "documents" | "assistant" | "attention" | "family" | "activity";
 const nav: Array<{ id: View; label: string; icon: typeof Home }> = [
@@ -19,6 +20,7 @@ const nav: Array<{ id: View; label: string; icon: typeof Home }> = [
 ];
 
 export function App() {
+  const [route, setRoute] = useState(() => `${window.location.pathname}${window.location.search}`);
   const [session, setSession] = useState<AuthSession>();
   const [data, setData] = useState<DashboardSnapshot>();
   const [view, setView] = useState<View>("home");
@@ -33,12 +35,18 @@ export function App() {
       if (current.authenticated && current.onboardingComplete) await refresh();
     } catch { setError("The local API is not available. Start it with pnpm dev."); }
   }
+  useEffect(() => {
+    const updateRoute = () => setRoute(`${window.location.pathname}${window.location.search}`);
+    window.addEventListener("popstate", updateRoute);
+    return () => window.removeEventListener("popstate", updateRoute);
+  }, []);
   useEffect(() => { void loadSession(); }, []);
 
-  if (window.location.pathname === "/") return <MarketingSite />;
+  const routeUrl = new URL(route, window.location.origin);
+  if (routeUrl.pathname === "/") return <MarketingSite />;
   if (!session) return <Startup message={error || "Opening your private workspace…"} retry={() => void loadSession()} />;
-  if (!session.authenticated) return <AuthScreen initialMode={new URLSearchParams(window.location.search).get("mode") === "login" ? "login" : "register"} onAuthenticated={async (current) => { setSession(current); if (current.onboardingComplete) await refresh(); }} />;
-  if (!session.onboardingComplete) return <Onboarding session={session} onComplete={async () => { const current = await api.session(); setSession(current); await refresh(); }} />;
+  if (!session.authenticated) return <AuthScreen initialMode={routeUrl.searchParams.get("mode") === "login" ? "login" : "register"} onModeChange={(mode) => navigate(`/app?mode=${mode}`, true)} onAuthenticated={async (current) => { setSession(current); if (current.onboardingComplete) await refresh(); navigate("/app", true); }} />;
+  if (!session.onboardingComplete) return <Onboarding session={session} onComplete={async () => { const current = await api.session(); setSession(current); await refresh(); navigate("/app", true); }} />;
   if (!data) return <Startup message={error || "Opening your household workspace…"} retry={() => void refresh()} />;
 
   const activeDocuments = data.documents.filter((document) => document.status !== "DELETED");
@@ -47,10 +55,21 @@ export function App() {
   return <div className="shell">
     <header className="topbar">
       <button className="icon-button mobile-only" aria-label="Open menu" onClick={() => setMenu(true)}><Menu /></button>
-      <div className="wordmark"><span className="brand-mark small">D</span><span>DocumentManagement</span></div>
+      <div className="wordmark"><span className="brand-mark small"><BrandMark /></span><BrandName edition="Home" /></div>
       <div className="local-pill"><ShieldCheck size={15} /> Local only</div>
-      <button className="avatar" aria-label="Sign out" title="Sign out" onClick={async () => { await api.logout(); setData(undefined); setSession({ authenticated: false, onboardingComplete: false }); }}>LO</button>
+      <button className="avatar" aria-label="Sign out" title="Sign out" onClick={async () => {
+        try {
+          await api.logout();
+          setData(undefined);
+          setSession({ authenticated: false, onboardingComplete: false });
+          setView("home");
+          navigate("/", true);
+        } catch (cause) {
+          setError(cause instanceof Error ? cause.message : "We could not sign you out");
+        }
+      }}>{initials(session.account?.displayName)}</button>
     </header>
+    {menu ? <button className="sidebar-backdrop" aria-label="Close menu" onClick={() => setMenu(false)} /> : null}
     <aside className={menu ? "sidebar open" : "sidebar"}>
       <div className="mobile-menu-head"><strong>Menu</strong><button className="icon-button" onClick={() => setMenu(false)}><X /></button></div>
       <div className="workspace-switch"><span className="workspace-icon"><Home size={18} /></span><span><small>Family workspace</small><strong>{data.workspace.name}</strong></span><ChevronRight size={16} /></div>
@@ -116,3 +135,8 @@ function Attention({ data, refresh }: { data: DashboardSnapshot; refresh: () => 
 function Empty({ icon: Icon, title, copy, action }: { icon: typeof Home; title: string; copy: string; action?: React.ReactNode }) { return <div className="empty"><Icon /><h3>{title}</h3><p>{copy}</p>{action}</div>; }
 function formatBytes(value: number) { return value < 1024 ? `${value} B` : value < 1024 * 1024 ? `${(value / 1024).toFixed(1)} KB` : `${(value / 1024 / 1024).toFixed(1)} MB`; }
 function formatDate(value: string) { return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(value)); }
+function initials(value?: string) { return value?.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "ME"; }
+function navigate(href: string, replace = false) {
+  window.history[replace ? "replaceState" : "pushState"]({}, "", href);
+  window.dispatchEvent(new PopStateEvent("popstate"));
+}
