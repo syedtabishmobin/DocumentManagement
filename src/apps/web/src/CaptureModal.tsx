@@ -15,6 +15,7 @@ export function CaptureModal({ subjects, onClose, onAdded }: { subjects: Subject
   const [connectorConsent, setConnectorConsent] = useState(false);
   const [manualName, setManualName] = useState("");
   const [manualContent, setManualContent] = useState("");
+  const [syntheticConfirmed, setSyntheticConfirmed] = useState(false);
   const browser = useRef<HTMLInputElement>(null);
   const camera = useRef<HTMLInputElement>(null);
 
@@ -24,10 +25,11 @@ export function CaptureModal({ subjects, onClose, onAdded }: { subjects: Subject
 
   async function addFiles(files: FileList | File[], route: "FILE" | "CAMERA" | "BULK") {
     if (!selected.length) { setError("Choose at least one person for these documents"); return; }
+    if (!syntheticConfirmed) { setError("Confirm that every selected document contains synthetic test data only"); return; }
     const list = Array.from(files); if (!list.length) return;
     setBusy(true); setError("");
     try {
-      for (const file of list) await api.upload(file, selected, list.length > 1 && route === "FILE" ? "BULK" : route);
+      for (const file of list) await api.upload(file, selected, list.length > 1 && route === "FILE" ? "BULK" : route, syntheticConfirmed);
       await onAdded(); onClose();
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Document capture failed"); }
     finally { setBusy(false); }
@@ -36,8 +38,9 @@ export function CaptureModal({ subjects, onClose, onAdded }: { subjects: Subject
   async function addManual(event: React.FormEvent) {
     event.preventDefault();
     if (!selected.length) { setError("Choose at least one person for this record"); return; }
+    if (!syntheticConfirmed) { setError("Confirm that this record contains synthetic test data only"); return; }
     setBusy(true); setError("");
-    try { await api.manualDocument({ name: manualName, content: manualContent, subjectIds: selected }); await onAdded(); onClose(); }
+    try { await api.manualDocument({ name: manualName, content: manualContent, subjectIds: selected, syntheticConfirmed }); await onAdded(); onClose(); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "Manual record could not be saved"); }
     finally { setBusy(false); }
   }
@@ -56,6 +59,7 @@ export function CaptureModal({ subjects, onClose, onAdded }: { subjects: Subject
         </div>
       </> : null}
       {mode !== "choose" && mode !== "connect" ? <SubjectPicker subjects={subjects} selected={selected} toggle={toggleSubject} /> : null}
+      {mode !== "choose" && mode !== "connect" ? <label className="synthetic-confirmation"><input type="checkbox" checked={syntheticConfirmed} onChange={(event) => setSyntheticConfirmed(event.target.checked)} /><span><strong>Synthetic test data only</strong><small>I confirm these files or details contain no real personal, family, customer or confidential information.</small></span></label> : null}
       {mode === "file" ? <div className="capture-body">
         <div className="dropzone" onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); void addFiles(event.dataTransfer.files, "FILE"); }}><FolderUp /><h3>Drop documents here</h3><p>PDF, images, text and office files up to 25 MB each</p><button className="secondary" onClick={() => browser.current?.click()}>Browse files</button><input ref={browser} hidden type="file" multiple onChange={(event) => event.target.files && void addFiles(event.target.files, "FILE")} /></div>
         <label className="folder-choice"><FolderUp /><span><strong>Add an entire folder</strong><small>Files are uploaded one-by-one and linked to the selected people.</small></span><input hidden type="file" multiple {...({ webkitdirectory: "" } as React.InputHTMLAttributes<HTMLInputElement>)} onChange={(event) => event.target.files && void addFiles(event.target.files, "BULK")} /></label>

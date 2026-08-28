@@ -12,7 +12,14 @@ export class LocalController {
 
   @Get("health")
   health() {
-    return { status: "ok", profile: "local", outboundNetwork: "denied", externalAI: false, externalConnectors: false };
+    return {
+      status: "ok",
+      profile: process.env.DM_PROFILE ?? "local",
+      customerDataPolicy: process.env.DM_CUSTOMER_DATA_POLICY ?? "synthetic-only",
+      outboundNetwork: (process.env.DM_OUTBOUND_NETWORK ?? "deny") === "deny" ? "denied" : "configured",
+      externalAI: false,
+      externalConnectors: false,
+    };
   }
 
   @Get("dashboard")
@@ -32,15 +39,23 @@ export class LocalController {
 
   @Post("documents")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: 25 * 1024 * 1024, files: 1 } }))
-  upload(@UploadedFile() file: Express.Multer.File | undefined, @Body() body: { subjectIds?: string; captureRoute?: string }) {
+  upload(@UploadedFile() file: Express.Multer.File | undefined, @Body() body: { subjectIds?: string; captureRoute?: string; syntheticConfirmed?: string }) {
     if (!file) throw new BadRequestException("Choose a file to add");
+    if ((process.env.DM_CUSTOMER_DATA_POLICY ?? "synthetic-only") === "synthetic-only" && body.syntheticConfirmed !== "true") {
+      throw new BadRequestException("This environment accepts synthetic test documents only. Confirm the document is synthetic before adding it.");
+    }
     const subjectIds = body.subjectIds ? body.subjectIds.split(",").filter(Boolean) : [];
     const captureRoute = ["FILE", "CAMERA", "BULK"].includes(body.captureRoute ?? "") ? body.captureRoute as "FILE" | "CAMERA" | "BULK" : "FILE";
     return this.store.addDocument(file, subjectIds, captureRoute);
   }
 
   @Post("documents/manual")
-  manualDocument(@Body() body: unknown) { return this.store.addManualDocument(manualDocumentSchema.parse(body)); }
+  manualDocument(@Body() body: unknown) {
+    if ((process.env.DM_CUSTOMER_DATA_POLICY ?? "synthetic-only") === "synthetic-only" && (body as { syntheticConfirmed?: boolean } | null)?.syntheticConfirmed !== true) {
+      throw new BadRequestException("This environment accepts synthetic test records only. Confirm the record is synthetic before adding it.");
+    }
+    return this.store.addManualDocument(manualDocumentSchema.parse(body));
+  }
 
   @Get("documents/:id")
   async documentDetail(@Param("id") id: string, @Req() request: Request) {

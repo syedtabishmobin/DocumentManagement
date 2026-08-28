@@ -282,5 +282,6 @@ export interface DashboardSnapshot {
   subjects: SubjectRecord[];
   audit: AuditRecord[];
   dependencies: DependencyRecord[];
-  localMode: true;
+  localMode: boolean;
+  customerDataPolicy: "synthetic-only" | "production-gated";
 }

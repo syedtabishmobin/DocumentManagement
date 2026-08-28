@@ -6,6 +6,7 @@ param webImage string
 param logAnalyticsName string
 param registryName string
 param ciphertextStorageName string
+param syntheticPreviewShareName string
 param keyVaultName string
 param tags object
 
@@ -77,6 +78,19 @@ resource managedEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
   }
 }
 
+resource syntheticPreviewStorage 'Microsoft.App/managedEnvironments/storages@2024-03-01' = {
+  parent: managedEnvironment
+  name: 'synthetic-preview'
+  properties: {
+    azureFile: {
+      accountName: ciphertextStorage.name
+      accountKey: ciphertextStorage.listKeys().keys[0].value
+      shareName: syntheticPreviewShareName
+      accessMode: 'ReadWrite'
+    }
+  }
+}
+
 resource api 'Microsoft.App/containerApps@2024-03-01' = {
   name: 'ca-${resourcePrefix}-${environment}-api'
   location: location
@@ -111,6 +125,10 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
           image: apiImage
           env: [
             { name: 'DM_PROFILE', value: environment }
+            { name: 'DM_API_PORT', value: '3000' }
+            { name: 'DM_BIND_HOST', value: '0.0.0.0' }
+            { name: 'DM_DATA_DIR', value: '/data' }
+            { name: 'DM_OUTBOUND_NETWORK', value: 'deny' }
             { name: 'DM_AZURE_STORAGE_ACCOUNT', value: ciphertextStorageName }
             { name: 'DM_AZURE_KEY_VAULT', value: keyVaultName }
             { name: 'DM_CUSTOMER_DATA_POLICY', value: environment == 'prod' ? 'production-gated' : 'synthetic-only' }
@@ -119,12 +137,25 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
             cpu: json('0.5')
             memory: '1Gi'
           }
+          volumeMounts: [
+            {
+              volumeName: 'synthetic-preview-data'
+              mountPath: '/data'
+            }
+          ]
         }
       ]
       scale: {
         minReplicas: environment == 'prod' ? 1 : 0
         maxReplicas: environment == 'prod' ? 10 : 2
       }
+      volumes: [
+        {
+          name: 'synthetic-preview-data'
+          storageName: syntheticPreviewStorage.name
+          storageType: 'AzureFile'
+        }
+      ]
     }
   }
   dependsOn: [acrPull, blobContributor, keyVaultSecretsUser]

@@ -11,6 +11,7 @@ param location string = 'australiaeast'
 param pairedLocation string = 'australiasoutheast'
 @minLength(5)
 param resourcePrefix string = 'doculyra'
+param githubRepository string = 'syedtabishmobin/DocumentManagement'
 param deployApplications bool = false
 param apiImage string = ''
 param webImage string = ''
@@ -43,6 +44,7 @@ module foundation './modules/foundation.bicep' = {
     pairedLocation: pairedLocation
     resourcePrefix: resourcePrefix
     suffix: suffix
+    githubRepository: githubRepository
     tags: commonTags
   }
 }
@@ -59,6 +61,7 @@ module applications './modules/applications.bicep' = if (deployApplications) {
     logAnalyticsName: foundation.outputs.logAnalyticsName
     registryName: foundation.outputs.registryName
     ciphertextStorageName: foundation.outputs.ciphertextStorageName
+    syntheticPreviewShareName: foundation.outputs.syntheticPreviewShareName
     keyVaultName: foundation.outputs.keyVaultName
     tags: commonTags
   }
@@ -106,3 +109,4 @@ output applicationsDeployed bool = deployApplications
 output apiUrl string = deployApplications ? applications!.outputs.apiUrl : ''
 output webUrl string = deployApplications ? applications!.outputs.webUrl : ''
 output customerDataPolicy string = commonTags.customerData
+output ciClientId string = foundation.outputs.ciClientId

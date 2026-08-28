@@ -5,6 +5,7 @@ param pairedLocation string
 param resourcePrefix string
 @minLength(5)
 param suffix string
+param githubRepository string
 param tags object
 
 var compactPrefix = replace(resourcePrefix, '-', '')
@@ -49,6 +50,36 @@ resource registry 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = 
     anonymousPullEnabled: false
     publicNetworkAccess: 'Enabled'
     zoneRedundancy: environment == 'prod' ? 'Enabled' : 'Disabled'
+  }
+}
+
+resource ciIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: 'id-${resourcePrefix}-${environment}-github'
+  location: location
+  tags: tags
+}
+
+resource githubFederatedCredential 'Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials@2024-11-30' = {
+  parent: ciIdentity
+  name: environment == 'dev' ? 'github-main' : 'github-${environment}'
+  properties: {
+    issuer: 'https://token.actions.githubusercontent.com'
+    subject: environment == 'dev'
+      ? 'repo:${githubRepository}:ref:refs/heads/main'
+      : 'repo:${githubRepository}:environment:${environment}'
+    audiences: [
+      'api://AzureADTokenExchange'
+    ]
+  }
+}
+
+resource ciRegistryPush 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(registry.id, ciIdentity.id, 'AcrPush')
+  scope: registry
+  properties: {
+    principalId: ciIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '8311e382-0749-4cb8-b61a-304f252e45ec')
   }
 }
 
@@ -107,6 +138,23 @@ resource ciphertextContainer 'Microsoft.Storage/storageAccounts/blobServices/con
     immutableStorageWithVersioning: {
       enabled: false
     }
+  }
+}
+
+resource fileService 'Microsoft.Storage/storageAccounts/fileServices@2023-05-01' = {
+  parent: storage
+  name: 'default'
+}
+
+// Restricted to synthetic dev/stage preview state. Customer artifacts use the
+// ciphertext container and customer-controlled client envelopes.
+resource syntheticPreviewShare 'Microsoft.Storage/storageAccounts/fileServices/shares@2023-05-01' = {
+  parent: fileService
+  name: 'synthetic-preview'
+  properties: {
+    accessTier: 'Hot'
+    shareQuota: 5
+    enabledProtocols: 'SMB'
   }
 }
 
@@ -195,6 +243,8 @@ resource records 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@
 output logAnalyticsName string = logs.name
 output registryName string = registry.name
 output ciphertextStorageName string = storage.name
+output syntheticPreviewShareName string = syntheticPreviewShare.name
 output keyVaultName string = keyVault.name
 output cosmosAccountName string = cosmos.name
 output pairedRecoveryLocation string = pairedLocation
+output ciClientId string = ciIdentity.properties.clientId

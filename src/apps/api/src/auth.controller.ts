@@ -9,7 +9,8 @@ export function sessionToken(request: Request): string | undefined {
 }
 
 function setSessionCookie(response: Response, token: string): void {
-  response.setHeader("set-cookie", `dm_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800`);
+  const secure = (process.env.DM_PROFILE ?? "local") === "local" ? "" : "; Secure";
+  response.setHeader("set-cookie", `dm_session=${encodeURIComponent(token)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=604800${secure}`);
 }
 
 @Controller("auth")
@@ -36,7 +37,8 @@ export class AuthController {
   @Post("logout")
   async logout(@Req() request: Request, @Res({ passthrough: true }) response: Response) {
     await this.identities.logout(sessionToken(request));
-    response.setHeader("set-cookie", "dm_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0");
+    const secure = (process.env.DM_PROFILE ?? "local") === "local" ? "" : "; Secure";
+    response.setHeader("set-cookie", `dm_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${secure}`);
     return { signedOut: true };
   }
 }

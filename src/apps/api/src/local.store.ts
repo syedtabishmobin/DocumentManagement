@@ -234,7 +234,8 @@ export class LocalStore {
       subjects,
       audit: [...audit].reverse(),
       dependencies: dependencies.filter((edge) => activeIds.has(edge.evidenceDocumentId)),
-      localMode: true,
+      localMode: (process.env.DM_PROFILE ?? "local") === "local",
+      customerDataPolicy: (process.env.DM_CUSTOMER_DATA_POLICY ?? "synthetic-only") === "production-gated" ? "production-gated" : "synthetic-only",
     };
   }
 

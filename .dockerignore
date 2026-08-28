@@ -1,0 +1,11 @@
+.git
+.github
+.pnpm-store
+**/node_modules
+**/dist
+**/.dart_tool
+**/build
+**/local-data
+src/apps/mobile
+docs
+infra
