@@ -28,14 +28,14 @@ var publicBaseUrl = 'https://${webAppName}.${managedEnvironment.properties.defau
 var providerRegistrationEnvironment = configureProviderRegistrations ? [
   { name: 'DM_PUBLIC_BASE_URL', value: publicBaseUrl }
   { name: 'DM_GOOGLE_CLIENT_ID', value: googleClientId }
-  { name: 'DM_GOOGLE_CLIENT_SECRET_CONFIGURED', value: string(googleClientSecretConfigured) }
+  { name: 'DM_GOOGLE_CLIENT_SECRET_CONFIGURED', value: googleClientSecretConfigured ? 'true' : 'false' }
   { name: 'DM_MICROSOFT_CLIENT_ID', value: microsoftClientId }
   { name: 'DM_MICROSOFT_TENANT', value: microsoftTenantId }
-  { name: 'DM_MICROSOFT_CLIENT_SECRET_CONFIGURED', value: string(microsoftClientSecretConfigured) }
+  { name: 'DM_MICROSOFT_CLIENT_SECRET_CONFIGURED', value: microsoftClientSecretConfigured ? 'true' : 'false' }
   { name: 'DM_DROPBOX_APP_KEY', value: dropboxAppKey }
-  { name: 'DM_DROPBOX_APP_SECRET_CONFIGURED', value: string(dropboxAppSecretConfigured) }
+  { name: 'DM_DROPBOX_APP_SECRET_CONFIGURED', value: dropboxAppSecretConfigured ? 'true' : 'false' }
   { name: 'DM_BOX_CLIENT_ID', value: boxClientId }
-  { name: 'DM_BOX_CLIENT_SECRET_CONFIGURED', value: string(boxClientSecretConfigured) }
+  { name: 'DM_BOX_CLIENT_SECRET_CONFIGURED', value: boxClientSecretConfigured ? 'true' : 'false' }
   { name: 'DM_AZURE_COMMUNICATION_SERVICE', value: azureCommunicationServiceName }
   { name: 'DM_AZURE_COMMUNICATION_ENDPOINT', value: azureCommunicationEndpoint }
   { name: 'DM_EMAIL_FROM', value: emailFromAddress }
