@@ -22,11 +22,11 @@ export function DocumentDossier({ id, data, onClose, onUpdated }: { id: string; 
         <button className="icon-button" aria-label="Close document" onClick={onClose}><X /></button>
       </header>
       {error ? <div className="form-error">{error}</div> : null}
-      {!detail && !error ? <div className="dossier-loading">Loading the authorized local version…</div> : null}
+      {!detail && !error ? <div className="dossier-loading">Loading the authorised version…</div> : null}
       {detail ? <>
         <div className="document-state-row" aria-label="Document states">
           <span><small>Processing</small><strong>{humanState(detail.document.status)}</strong></span>
-          <span><small>Availability</small><strong>Local original available</strong></span>
+          <span><small>Availability</small><strong>Authorised original available</strong></span>
           <span><small>Review</small><strong>{detail.facts.length ? "Extracted details proposed" : "No extracted proposals"}</strong></span>
           <span><small>Version</small><strong>Version {detail.document.version} · immutable</strong></span>
         </div>
@@ -36,19 +36,19 @@ export function DocumentDossier({ id, data, onClose, onUpdated }: { id: string; 
           <button className={section === "connections" ? "active" : ""} onClick={() => setSection("connections")}><Network /> Connections <b>{detail.dependencies.length}</b></button>
         </nav>
         {section === "preview" ? <section className="dossier-section">
-          <div className="section-title"><div><span className="eyebrow">Exact local version</span><h3>Document preview</h3></div><a className="secondary button-link" href={api.documentArtifactUrl(detail.document.id)} target="_blank" rel="noreferrer"><ExternalLink size={16} /> Open original</a></div>
+          <div className="section-title"><div><span className="eyebrow">Exact authorised version</span><h3>Document preview</h3></div><a className="secondary button-link" href={api.documentArtifactUrl(detail.document.id)} target="_blank" rel="noreferrer"><ExternalLink size={16} /> Open original</a></div>
           <Preview detail={detail} />
-          <div className="integrity-strip"><Fingerprint /><span><strong>Immutable local original</strong><small>SHA-256 {detail.document.sha256.slice(0, 16)}… · {formatBytes(detail.document.size)} · added {formatDate(detail.document.createdAt)}</small></span></div>
+          <div className="integrity-strip"><Fingerprint /><span><strong>Immutable authorised original</strong><small>SHA-256 {detail.document.sha256.slice(0, 16)}… · {formatBytes(detail.document.size)} · added {formatDate(detail.document.createdAt)}</small></span></div>
         </section> : null}
         {section === "details" ? <section className="dossier-section">
           <div className="section-title"><div><span className="eyebrow">Evidence-linked proposals</span><h3>Extracted details</h3><p>These details build the profile only as proposals. Review is required before treating them as canonical information.</p></div></div>
-          {detail.facts.length ? <div className="extracted-fact-list">{detail.facts.map((fact) => <article key={fact.id}><div><span>{fact.name}</span><strong>{fact.value}</strong></div><span className="proposal-pill">{fact.reviewState === "REVIEWED" ? "Reviewed" : "Review needed"}</span><blockquote><FileText /><span><small>Evidence from this version</small>{fact.evidenceExcerpt}</span></blockquote>{fact.reviewState !== "REVIEWED" ? <button className="review-fact" onClick={async () => { const reviewed = await api.reviewFact(fact.id); setDetail({ ...detail, facts: detail.facts.map((item) => item.id === reviewed.id ? reviewed : item) }); await onUpdated?.(); }}>Accept as reviewed profile detail</button> : <div className="reviewed-fact"><ShieldCheck /> Reviewed against this source version</div>}</article>)}</div> : <div className="dossier-empty"><Sparkles /><strong>No structured details were proposed</strong><p>The original remains viewable. This local extractor currently recognises a bounded set of common profile fields in text records.</p></div>}
+          {detail.facts.length ? <div className="extracted-fact-list">{detail.facts.map((fact) => <article key={fact.id}><div><span>{fact.name}</span><strong>{fact.value}</strong></div><span className="proposal-pill">{fact.reviewState === "REVIEWED" ? "Reviewed" : "Review needed"}</span><blockquote><FileText /><span><small>Evidence from this version</small>{fact.evidenceExcerpt}</span></blockquote>{fact.reviewState !== "REVIEWED" ? <button className="review-fact" onClick={async () => { const reviewed = await api.reviewFact(fact.id); setDetail({ ...detail, facts: detail.facts.map((item) => item.id === reviewed.id ? reviewed : item) }); await onUpdated?.(); }}>Accept as reviewed profile detail</button> : <div className="reviewed-fact"><ShieldCheck /> Reviewed against this source version</div>}</article>)}</div> : <div className="dossier-empty"><Sparkles /><strong>No structured details were proposed</strong><p>The original remains viewable. This bounded development extractor currently recognises a limited set of common profile fields in text records.</p></div>}
         </section> : null}
         {section === "connections" ? <section className="dossier-section">
           <div className="section-title"><div><span className="eyebrow">Typed relationships</span><h3>Where this document connects</h3><p>This list is the accessible equivalent of the relationship map. Every connection remains tied to this document.</p></div></div>
           <div className="connection-list">{detail.dependencies.map((edge) => <article key={edge.id}><Link2 /><span><strong>{edge.label}</strong><small>{connectionTarget(edge, data)}</small></span><code>{edge.kind.replaceAll("_", " → ").toLowerCase()}</code></article>)}</div>
         </section> : null}
-        <footer><span><ShieldCheck /> Stored and processed in the local development profile</span><a href={api.documentArtifactUrl(detail.document.id)} download><Download /> Download exact original</a></footer>
+        <footer><span><ShieldCheck /> {data.localMode ? "Stored and processed in the local development profile" : "Stored in the synthetic Azure development preview"}</span><a href={api.documentArtifactUrl(detail.document.id)} download><Download /> Download exact original</a></footer>
       </> : null}
     </section>
   </div>;
