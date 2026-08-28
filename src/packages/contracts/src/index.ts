@@ -42,6 +42,36 @@ export const createMemberSchema = z.object({
   role: workspaceRoleSchema,
 });
 
+export const registerSchema = z.object({
+  displayName: z.string().trim().min(1).max(120),
+  email: z.string().trim().toLowerCase().email().max(254),
+  password: z.string().min(10).max(200),
+});
+
+export const loginSchema = z.object({
+  email: z.string().trim().toLowerCase().email().max(254),
+  password: z.string().min(1).max(200),
+});
+
+export const configureWorkspaceSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  type: z.enum(["PERSONAL", "FAMILY"]),
+});
+
+export const createSubjectSchema = z.object({
+  displayName: z.string().trim().min(1).max(120),
+  kind: z.enum(["OWNER", "ADULT", "CHILD", "DEPENDANT", "OTHER"]),
+  relationship: z.string().trim().min(1).max(80),
+  dateOfBirth: z.string().date().optional(),
+});
+
+export const manualDocumentSchema = z.object({
+  name: z.string().trim().min(1).max(240),
+  content: z.string().trim().min(1).max(500_000),
+  category: z.string().trim().min(1).max(120).optional(),
+  subjectIds: z.array(z.string()).min(1).max(20),
+});
+
 export type WorkspaceRole = z.infer<typeof workspaceRoleSchema>;
 export type DocumentStatus = z.infer<typeof documentStatusSchema>;
 export type Severity = z.infer<typeof severitySchema>;
@@ -49,6 +79,17 @@ export type CreateWorkspaceInput = z.infer<typeof createWorkspaceSchema>;
 export type AskQuestionInput = z.infer<typeof askQuestionSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type CreateMemberInput = z.infer<typeof createMemberSchema>;
+export type RegisterInput = z.infer<typeof registerSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;
+export type ConfigureWorkspaceInput = z.infer<typeof configureWorkspaceSchema>;
+export type CreateSubjectInput = z.infer<typeof createSubjectSchema>;
+export type ManualDocumentInput = z.infer<typeof manualDocumentSchema>;
+
+export interface AuthSession {
+  authenticated: boolean;
+  account?: { id: string; displayName: string; email: string };
+  onboardingComplete: boolean;
+}
 
 export interface Workspace {
   id: string;
@@ -78,8 +119,20 @@ export interface DocumentRecord {
   version: number;
   createdAt: string;
   updatedAt: string;
+  subjectIds: string[];
+  captureRoute: "FILE" | "CAMERA" | "MANUAL" | "BULK" | "CONNECTOR";
   extractedText?: string;
   reviewReason?: string;
+}
+
+export interface SubjectRecord {
+  id: string;
+  workspaceId: string;
+  displayName: string;
+  kind: "OWNER" | "ADULT" | "CHILD" | "DEPENDANT" | "OTHER";
+  relationship: string;
+  dateOfBirth?: string;
+  createdAt: string;
 }
 
 export interface FactRecord {
@@ -134,5 +187,6 @@ export interface DashboardSnapshot {
   tasks: TaskRecord[];
   notifications: NotificationRecord[];
   members: Member[];
+  subjects: SubjectRecord[];
   localMode: true;
 }

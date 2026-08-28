@@ -1,14 +1,16 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import type {
   Answer,
+  CreateSubjectInput,
   DashboardSnapshot,
   DocumentRecord,
   FactRecord,
   Member,
   NotificationRecord,
+  SubjectRecord,
   TaskRecord,
   Workspace,
 } from "@document-management/contracts";
@@ -21,6 +23,7 @@ interface LocalState {
   tasks: TaskRecord[];
   notifications: NotificationRecord[];
   members: Member[];
+  subjects: SubjectRecord[];
   audit: Array<{ id: string; type: string; resourceId?: string; at: string }>;
 }
 
@@ -54,6 +57,16 @@ function initialState(): LocalState {
         createdAt,
       },
     ],
+    subjects: [
+      {
+        id: "sub_local_owner",
+        workspaceId,
+        displayName: "Local owner",
+        kind: "OWNER",
+        relationship: "Self",
+        createdAt,
+      },
+    ],
     audit: [{ id: randomUUID(), type: "WORKSPACE_CREATED", resourceId: workspaceId, at: createdAt }],
   };
 }
@@ -67,7 +80,14 @@ export class LocalStore {
 
   private async load(): Promise<LocalState> {
     try {
-      return JSON.parse(await readFile(this.statePath, "utf8")) as LocalState;
+      const state = JSON.parse(await readFile(this.statePath, "utf8")) as LocalState;
+      state.subjects ??= [{ id: "sub_local_owner", workspaceId: state.workspace.id, displayName: state.members[0]?.displayName ?? "Local owner", kind: "OWNER", relationship: "Self", createdAt: state.workspace.createdAt }];
+      state.documents = state.documents.map((document) => ({
+        ...document,
+        subjectIds: document.subjectIds?.length ? document.subjectIds : [state.subjects[0]!.id],
+        captureRoute: document.captureRoute ?? "FILE",
+      }));
+      return state;
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
       const state = initialState();
@@ -87,12 +107,28 @@ export class LocalStore {
   }
 
   async dashboard(): Promise<DashboardSnapshot> {
-    const { workspace, documents, facts, tasks, notifications, members } = await this.load();
-    return { workspace, documents, facts, tasks, notifications, members, localMode: true };
+    const { workspace, documents, facts, tasks, notifications, members, subjects } = await this.load();
+    return { workspace, documents, facts, tasks, notifications, members, subjects, localMode: true };
   }
 
-  async addDocument(file: Express.Multer.File): Promise<DocumentRecord> {
+  async configureWorkspace(name: string, type: Workspace["type"], ownerName: string): Promise<Workspace> {
     const state = await this.load();
+    state.workspace.name = name;
+    state.workspace.type = type;
+    const ownerMember = state.members.find((member) => member.role === "OWNER");
+    if (ownerMember) ownerMember.displayName = ownerName;
+    const ownerSubject = state.subjects.find((subject) => subject.kind === "OWNER");
+    if (ownerSubject) ownerSubject.displayName = ownerName;
+    state.audit.push({ id: randomUUID(), type: "WORKSPACE_CONFIGURED", resourceId: state.workspace.id, at: now() });
+    await this.save(state);
+    return state.workspace;
+  }
+
+  async addDocument(file: Express.Multer.File, subjectIds: string[], captureRoute: DocumentRecord["captureRoute"]): Promise<DocumentRecord> {
+    const state = await this.load();
+    if (!subjectIds.length || subjectIds.some((subjectId) => !state.subjects.some((subject) => subject.id === subjectId))) {
+      throw new BadRequestException("Select at least one valid household person for this document");
+    }
     const id = randomUUID();
     const digest = createHash("sha256").update(file.buffer).digest("hex");
     const duplicate = state.documents.find((item) => item.sha256 === digest && item.status !== "DELETED");
@@ -114,6 +150,8 @@ export class LocalStore {
       version: 1,
       createdAt,
       updatedAt: createdAt,
+      subjectIds,
+      captureRoute,
       ...(extractedText ? { extractedText } : {}),
       ...(!textual && !classification.policyHold ? { reviewReason: "Local text extraction is not yet available for this format." } : {}),
       ...(classification.policyHold ? { reviewReason: "Suspected clinical content is isolated by policy." } : {}),
@@ -134,6 +172,39 @@ export class LocalStore {
     state.audit.push({ id: randomUUID(), type: "DOCUMENT_INGESTED", resourceId: id, at: createdAt });
     await this.save(state);
     return document;
+  }
+
+  async addManualDocument(input: { name: string; content: string; subjectIds: string[] }): Promise<DocumentRecord> {
+    const buffer = Buffer.from(input.content, "utf8");
+    return this.addDocument({ originalname: `${input.name}.txt`, mimetype: "text/plain", size: buffer.byteLength, buffer } as Express.Multer.File, input.subjectIds, "MANUAL");
+  }
+
+  async addSubject(input: CreateSubjectInput): Promise<SubjectRecord> {
+    const state = await this.load();
+    const subject: SubjectRecord = {
+      id: randomUUID(),
+      workspaceId: state.workspace.id,
+      displayName: input.displayName,
+      kind: input.kind,
+      relationship: input.relationship,
+      ...(input.dateOfBirth ? { dateOfBirth: input.dateOfBirth } : {}),
+      createdAt: now(),
+    };
+    state.subjects.push(subject);
+    state.audit.push({ id: randomUUID(), type: "SUBJECT_CREATED", resourceId: subject.id, at: now() });
+    await this.save(state);
+    return subject;
+  }
+
+  connectorCatalogue() {
+    return [
+      { id: "EMAIL_FORWARDING", name: "Private email address", status: "REQUIRES_CONFIGURATION" },
+      { id: "GMAIL", name: "Gmail", status: "REQUIRES_CONFIGURATION" },
+      { id: "GOOGLE_DRIVE", name: "Google Drive", status: "REQUIRES_CONFIGURATION" },
+      { id: "ONEDRIVE", name: "Microsoft OneDrive", status: "REQUIRES_CONFIGURATION" },
+      { id: "DROPBOX", name: "Dropbox", status: "REQUIRES_CONFIGURATION" },
+      { id: "BOX", name: "Box", status: "REQUIRES_CONFIGURATION" },
+    ];
   }
 
   async ask(question: string, documentIds?: string[]): Promise<Answer> {

@@ -32,7 +32,7 @@ describe("LocalStore", () => {
       destination: undefined,
       filename: undefined,
       path: undefined,
-    } as unknown as Express.Multer.File);
+    } as unknown as Express.Multer.File, ["sub_local_owner"], "FILE");
 
     expect(uploaded.status).toBe("READY");
     expect(uploaded.category).toBe("Insurance");
@@ -54,7 +54,7 @@ describe("LocalStore", () => {
       mimetype: "text/plain",
       size: Buffer.byteLength(text),
       buffer: Buffer.from(text),
-    } as Express.Multer.File);
+    } as Express.Multer.File, ["sub_local_owner"], "FILE");
     expect(uploaded.status).toBe("POLICY_HOLD");
     expect((await store.ask("What is the diagnosis?")).citations).toEqual([]);
   });

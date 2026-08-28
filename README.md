@@ -21,6 +21,8 @@ chmod +x scripts/local-app.sh
 
 Open `http://127.0.0.1:4173`. Local state and uploaded files are written beneath ignored `local-data/`. The web client talks only to the API bound to `127.0.0.1`; no cloud AI key is required.
 
+The first run now starts at account registration and a two-step local privacy/workspace setup. Choose a personal or family workspace, add the people whose records you manage, and then add documents through drag-and-drop, multi-file/folder selection, device camera/scan, or a manual record. Every document must be assigned to one or more people. Google, Apple, Microsoft, passkey, private-email, Gmail, Google Drive, OneDrive, Dropbox, and Box ports are visible but deliberately disconnected until production credentials and explicit consent are configured.
+
 ## Working-folder location
 
 `/Users/syedtabishmobin/Documents/Work/Techafide/Codex/Projects/DocumentManagement`
@@ -78,6 +80,6 @@ python3 scripts/validate-test-traceability.py
 
 See [`scripts/README.md`](scripts/README.md) for scope and limitations.
 
-## Implementation gate
+## Implementation authority
 
-Application implementation remains prohibited until the [specification readiness gate](CODEX.md#specification-readiness-gate) is satisfied or the product owner explicitly authorizes a narrower prototype. A directory or draft file existing is not sufficient: contracts must be approved, traceable, testable, privacy-safe, and free of unresolved decisions that would make implementation unsafe or substantially disposable.
+The product owner authorized full Phase 1 implementation in `DEC-041`. `DEC-043` corrects the onboarding and acquisition baseline to require consumer-parity surfaces while preserving the no-silent-transfer local profile. Production deployment, real personal data, live external identities, connectors, messages, and hosted AI remain subject to their documented readiness gates.
