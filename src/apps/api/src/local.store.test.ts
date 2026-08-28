@@ -58,4 +58,44 @@ describe("LocalStore", () => {
     expect(uploaded.status).toBe("POLICY_HOLD");
     expect((await store.ask("What is the diagnosis?")).citations).toEqual([]);
   });
+
+  it("keeps one household person linked to explicit login and file permissions", async () => {
+    const person = await store.createPerson({
+      displayName: "Synthetic Adult",
+      kind: "ADULT",
+      relationship: "Partner",
+      loginEnabled: true,
+      email: "adult@example.test",
+      role: "ADULT_MEMBER",
+      permissions: { view: true, add: true, edit: false, delete: false },
+    });
+    let dashboard = await store.dashboard();
+    expect(dashboard.members.find((member) => member.subjectId === person.id)).toMatchObject({ invitationState: "PENDING", permissions: { add: true, edit: false } });
+
+    await store.updatePerson(person.id, {
+      displayName: "Synthetic Adult Updated",
+      kind: "ADULT",
+      relationship: "Partner",
+      loginEnabled: true,
+      mobile: "+61400000000",
+      role: "FAMILY_ADMIN",
+      permissions: { view: true, add: true, edit: true, delete: true },
+    });
+    dashboard = await store.dashboard();
+    expect(dashboard.subjects.find((item) => item.id === person.id)?.displayName).toBe("Synthetic Adult Updated");
+    expect(dashboard.members.find((member) => member.subjectId === person.id)).toMatchObject({ role: "FAMILY_ADMIN", mobile: "+61400000000", permissions: { delete: true } });
+    expect(dashboard.audit.some((entry) => entry.type === "PERSON_UPDATED")).toBe(true);
+  });
+
+  it("blocks removal while documents are assigned, then records safe removal", async () => {
+    const person = await store.createPerson({ displayName: "Synthetic Child", kind: "CHILD", relationship: "Child", loginEnabled: false, role: "ADULT_MEMBER", permissions: { view: true, add: false, edit: false, delete: false } });
+    const text = "Synthetic school document.";
+    const document = await store.addDocument({ originalname: "school.txt", mimetype: "text/plain", size: Buffer.byteLength(text), buffer: Buffer.from(text) } as Express.Multer.File, [person.id], "FILE");
+    await expect(store.deletePerson(person.id)).rejects.toThrow("Reassign or delete");
+    await store.deleteDocument(document.id);
+    await store.deletePerson(person.id);
+    const dashboard = await store.dashboard();
+    expect(dashboard.subjects.some((item) => item.id === person.id)).toBe(false);
+    expect(dashboard.audit[0]?.type).toBe("PERSON_REMOVED");
+  });
 });

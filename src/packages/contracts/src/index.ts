@@ -65,6 +65,27 @@ export const createSubjectSchema = z.object({
   dateOfBirth: z.string().date().optional(),
 });
 
+export const filePermissionsSchema = z.object({
+  view: z.boolean().default(true),
+  add: z.boolean().default(false),
+  edit: z.boolean().default(false),
+  delete: z.boolean().default(false),
+});
+
+export const managePersonSchema = z.object({
+  displayName: z.string().trim().min(1).max(120),
+  kind: z.enum(["OWNER", "ADULT", "CHILD", "DEPENDANT", "OTHER"]),
+  relationship: z.string().trim().min(1).max(80),
+  dateOfBirth: z.string().date().optional(),
+  loginEnabled: z.boolean().default(false),
+  email: z.string().trim().toLowerCase().email().max(254).optional(),
+  mobile: z.string().trim().min(7).max(32).optional(),
+  role: workspaceRoleSchema.exclude(["OWNER"]).default("ADULT_MEMBER"),
+  permissions: filePermissionsSchema.default({ view: true, add: false, edit: false, delete: false }),
+}).superRefine((value, context) => {
+  if (value.loginEnabled && !value.email && !value.mobile) context.addIssue({ code: "custom", path: ["email"], message: "An email address or mobile number is required when login is enabled" });
+});
+
 export const manualDocumentSchema = z.object({
   name: z.string().trim().min(1).max(240),
   content: z.string().trim().min(1).max(500_000),
@@ -83,6 +104,8 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ConfigureWorkspaceInput = z.infer<typeof configureWorkspaceSchema>;
 export type CreateSubjectInput = z.infer<typeof createSubjectSchema>;
+export type FilePermissions = z.infer<typeof filePermissionsSchema>;
+export type ManagePersonInput = z.infer<typeof managePersonSchema>;
 export type ManualDocumentInput = z.infer<typeof manualDocumentSchema>;
 
 export interface AuthSession {
@@ -104,6 +127,11 @@ export interface Member {
   displayName: string;
   role: WorkspaceRole;
   state: "ACTIVE" | "REVOKED";
+  subjectId: string;
+  invitationState: "NOT_INVITED" | "PENDING" | "ACTIVE" | "SUSPENDED";
+  permissions: FilePermissions;
+  email?: string;
+  mobile?: string;
   createdAt: string;
 }
 
@@ -133,6 +161,26 @@ export interface SubjectRecord {
   relationship: string;
   dateOfBirth?: string;
   createdAt: string;
+}
+
+export interface AuditRecord {
+  id: string;
+  workspaceId: string;
+  type: string;
+  resourceType: "WORKSPACE" | "PERSON" | "MEMBERSHIP" | "DOCUMENT" | "TASK" | "CONNECTOR";
+  resourceId?: string;
+  actor: string;
+  detail: string;
+  at: string;
+}
+
+export interface ConnectorDescriptor {
+  id: "EMAIL_FORWARDING" | "GMAIL" | "GOOGLE_DRIVE" | "ONEDRIVE" | "DROPBOX" | "BOX";
+  name: string;
+  status: "REQUIRES_CONFIGURATION" | "READY_TO_CONNECT";
+  consentPurpose: string;
+  permissionSummary: string;
+  requiredConfiguration: string[];
 }
 
 export interface FactRecord {
@@ -188,5 +236,6 @@ export interface DashboardSnapshot {
   notifications: NotificationRecord[];
   members: Member[];
   subjects: SubjectRecord[];
+  audit: AuditRecord[];
   localMode: true;
 }

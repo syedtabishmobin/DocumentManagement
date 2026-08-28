@@ -23,6 +23,22 @@ Open `http://127.0.0.1:4173`. Local state and uploaded files are written beneath
 
 The first run now starts at account registration and a two-step local privacy/workspace setup. Choose a personal or family workspace, add the people whose records you manage, and then add documents through drag-and-drop, multi-file/folder selection, device camera/scan, or a manual record. Every document must be assigned to one or more people. Google, Apple, Microsoft, passkey, private-email, Gmail, Google Drive, OneDrive, Dropbox, and Box ports are visible but deliberately disconnected until production credentials and explicit consent are configured.
 
+## External integration prerequisites
+
+The user interface includes purpose- and permission-specific consent before each external connection. Live adapters cannot be completed safely from invented credentials. The product owner must provide or approve:
+
+- the production/staging domain, exact callback base URL, customer-facing contact email, company/legal name, privacy URL and terms URL;
+- a managed identity choice (Auth0 is the current recommendation) and its tenant/domain, client ID, client secret and API audience;
+- Google Cloud OAuth credentials with approved origins/redirects and separately approved Gmail/Drive scopes;
+- an Apple Developer team, primary App ID, Services ID, verified domain, key ID and Sign in with Apple private key;
+- a Microsoft Entra app registration, supported account/tenant choice, client ID/secret and delegated Microsoft Graph scopes;
+- Dropbox and Box developer applications with exact redirect URLs and least-privileged read scopes;
+- a private inbound-email domain/provider and verified webhook secret;
+- email and SMS delivery providers, verified sender identities and test-only recipient routing; and
+- approval of the proposed secure invitation design in `DEC-046`: a short-lived single-use link plus optional one-time code, followed by invitee-created password/passkey, instead of transmitting a reusable temporary password.
+
+Configuration names are documented without secrets in [`.env.example`](.env.example). Real secrets belong in an environment-specific secret store and must never be committed.
+
 ## Working-folder location
 
 `/Users/syedtabishmobin/Documents/Work/Techafide/Codex/Projects/DocumentManagement`

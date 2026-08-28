@@ -4,10 +4,14 @@ import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import type {
   Answer,
+  AuditRecord,
+  ConnectorDescriptor,
   CreateSubjectInput,
   DashboardSnapshot,
   DocumentRecord,
   FactRecord,
+  FilePermissions,
+  ManagePersonInput,
   Member,
   NotificationRecord,
   SubjectRecord,
@@ -24,10 +28,15 @@ interface LocalState {
   notifications: NotificationRecord[];
   members: Member[];
   subjects: SubjectRecord[];
-  audit: Array<{ id: string; type: string; resourceId?: string; at: string }>;
+  audit: AuditRecord[];
 }
 
 const now = (): string => new Date().toISOString();
+const defaultPermissions = (owner = false): FilePermissions => ({ view: true, add: owner, edit: owner, delete: owner });
+
+function auditRecord(workspaceId: string, type: string, resourceType: AuditRecord["resourceType"], detail: string, resourceId?: string): AuditRecord {
+  return { id: randomUUID(), workspaceId, type, resourceType, ...(resourceId ? { resourceId } : {}), actor: "Local owner", detail, at: now() };
+}
 
 function initialState(): LocalState {
   const createdAt = now();
@@ -54,6 +63,9 @@ function initialState(): LocalState {
         displayName: "Local owner",
         role: "OWNER",
         state: "ACTIVE",
+        subjectId: "sub_local_owner",
+        invitationState: "ACTIVE",
+        permissions: defaultPermissions(true),
         createdAt,
       },
     ],
@@ -67,7 +79,7 @@ function initialState(): LocalState {
         createdAt,
       },
     ],
-    audit: [{ id: randomUUID(), type: "WORKSPACE_CREATED", resourceId: workspaceId, at: createdAt }],
+    audit: [{ id: randomUUID(), workspaceId, type: "WORKSPACE_CREATED", resourceType: "WORKSPACE", resourceId: workspaceId, actor: "Local owner", detail: "Created the local workspace", at: createdAt }],
   };
 }
 
@@ -82,10 +94,24 @@ export class LocalStore {
     try {
       const state = JSON.parse(await readFile(this.statePath, "utf8")) as LocalState;
       state.subjects ??= [{ id: "sub_local_owner", workspaceId: state.workspace.id, displayName: state.members[0]?.displayName ?? "Local owner", kind: "OWNER", relationship: "Self", createdAt: state.workspace.createdAt }];
+      for (const member of state.members) {
+        const fallbackSubjectId = member.role === "OWNER" ? state.subjects.find((subject) => subject.kind === "OWNER")?.id ?? "sub_local_owner" : `sub_member_${member.id}`;
+        member.subjectId ??= fallbackSubjectId;
+        member.invitationState ??= member.state === "ACTIVE" ? "ACTIVE" : "SUSPENDED";
+        member.permissions ??= defaultPermissions(member.role === "OWNER");
+        if (!state.subjects.some((subject) => subject.id === member.subjectId)) state.subjects.push({ id: member.subjectId, workspaceId: state.workspace.id, displayName: member.displayName, kind: member.role === "MANAGED_DEPENDANT" ? "DEPENDANT" : "ADULT", relationship: member.role === "GUEST" ? "Guest" : "Family member", createdAt: member.createdAt });
+      }
       state.documents = state.documents.map((document) => ({
         ...document,
         subjectIds: document.subjectIds?.length ? document.subjectIds : [state.subjects[0]!.id],
         captureRoute: document.captureRoute ?? "FILE",
+      }));
+      state.audit = state.audit.map((entry) => ({
+        ...entry,
+        workspaceId: entry.workspaceId ?? state.workspace.id,
+        resourceType: entry.resourceType ?? (entry.type.startsWith("DOCUMENT") ? "DOCUMENT" : entry.type.startsWith("MEMBER") ? "MEMBERSHIP" : entry.type.startsWith("SUBJECT") ? "PERSON" : "WORKSPACE"),
+        actor: entry.actor ?? "Local owner",
+        detail: entry.detail ?? entry.type.replaceAll("_", " ").toLowerCase(),
       }));
       return state;
     } catch (error) {
@@ -107,8 +133,8 @@ export class LocalStore {
   }
 
   async dashboard(): Promise<DashboardSnapshot> {
-    const { workspace, documents, facts, tasks, notifications, members, subjects } = await this.load();
-    return { workspace, documents, facts, tasks, notifications, members, subjects, localMode: true };
+    const { workspace, documents, facts, tasks, notifications, members, subjects, audit } = await this.load();
+    return { workspace, documents, facts, tasks, notifications, members, subjects, audit: [...audit].reverse(), localMode: true };
   }
 
   async configureWorkspace(name: string, type: Workspace["type"], ownerName: string): Promise<Workspace> {
@@ -119,7 +145,7 @@ export class LocalStore {
     if (ownerMember) ownerMember.displayName = ownerName;
     const ownerSubject = state.subjects.find((subject) => subject.kind === "OWNER");
     if (ownerSubject) ownerSubject.displayName = ownerName;
-    state.audit.push({ id: randomUUID(), type: "WORKSPACE_CONFIGURED", resourceId: state.workspace.id, at: now() });
+    state.audit.push(auditRecord(state.workspace.id, "WORKSPACE_CONFIGURED", "WORKSPACE", `Configured a ${type.toLowerCase()} workspace`, state.workspace.id));
     await this.save(state);
     return state.workspace;
   }
@@ -169,7 +195,7 @@ export class LocalStore {
       read: false,
       createdAt,
     });
-    state.audit.push({ id: randomUUID(), type: "DOCUMENT_INGESTED", resourceId: id, at: createdAt });
+    state.audit.push(auditRecord(state.workspace.id, "DOCUMENT_INGESTED", "DOCUMENT", `Added a document using ${captureRoute.toLowerCase()} capture`, id));
     await this.save(state);
     return document;
   }
@@ -191,19 +217,21 @@ export class LocalStore {
       createdAt: now(),
     };
     state.subjects.push(subject);
-    state.audit.push({ id: randomUUID(), type: "SUBJECT_CREATED", resourceId: subject.id, at: now() });
+    state.audit.push(auditRecord(state.workspace.id, "SUBJECT_CREATED", "PERSON", "Added a person to the household", subject.id));
     await this.save(state);
     return subject;
   }
 
-  connectorCatalogue() {
+  connectorCatalogue(): ConnectorDescriptor[] {
+    const enabled = process.env.DM_EXTERNAL_CONNECTORS === "enabled" && process.env.DM_CONNECTOR_ADAPTERS_READY === "true";
+    const descriptor = (item: Omit<ConnectorDescriptor, "status">, configured: boolean): ConnectorDescriptor => ({ ...item, status: enabled && configured ? "READY_TO_CONNECT" : "REQUIRES_CONFIGURATION" });
     return [
-      { id: "EMAIL_FORWARDING", name: "Private email address", status: "REQUIRES_CONFIGURATION" },
-      { id: "GMAIL", name: "Gmail", status: "REQUIRES_CONFIGURATION" },
-      { id: "GOOGLE_DRIVE", name: "Google Drive", status: "REQUIRES_CONFIGURATION" },
-      { id: "ONEDRIVE", name: "Microsoft OneDrive", status: "REQUIRES_CONFIGURATION" },
-      { id: "DROPBOX", name: "Dropbox", status: "REQUIRES_CONFIGURATION" },
-      { id: "BOX", name: "Box", status: "REQUIRES_CONFIGURATION" },
+      descriptor({ id: "EMAIL_FORWARDING", name: "Private email address", consentPurpose: "Receive documents sent to a unique household ingestion address.", permissionSummary: "Inbound messages and attachments only; no mailbox access.", requiredConfiguration: ["DM_INBOUND_EMAIL_DOMAIN", "DM_EMAIL_WEBHOOK_SECRET"] }, Boolean(process.env.DM_INBOUND_EMAIL_DOMAIN && process.env.DM_EMAIL_WEBHOOK_SECRET)),
+      descriptor({ id: "GMAIL", name: "Gmail", consentPurpose: "Let you select email attachments to import into your household vault.", permissionSummary: "Read-only Gmail access with user selection; no send, edit or delete permission.", requiredConfiguration: ["DM_GOOGLE_CLIENT_ID", "DM_GOOGLE_CLIENT_SECRET", "DM_PUBLIC_BASE_URL"] }, Boolean(process.env.DM_GOOGLE_CLIENT_ID && process.env.DM_GOOGLE_CLIENT_SECRET && process.env.DM_PUBLIC_BASE_URL)),
+      descriptor({ id: "GOOGLE_DRIVE", name: "Google Drive", consentPurpose: "Let you choose specific Drive files to import.", permissionSummary: "Per-file selection using the narrowest supported Drive scope.", requiredConfiguration: ["DM_GOOGLE_CLIENT_ID", "DM_GOOGLE_CLIENT_SECRET", "DM_PUBLIC_BASE_URL"] }, Boolean(process.env.DM_GOOGLE_CLIENT_ID && process.env.DM_GOOGLE_CLIENT_SECRET && process.env.DM_PUBLIC_BASE_URL)),
+      descriptor({ id: "ONEDRIVE", name: "Microsoft OneDrive", consentPurpose: "Let you select OneDrive documents to import.", permissionSummary: "Delegated, read-only file access with explicit Microsoft consent.", requiredConfiguration: ["DM_MICROSOFT_CLIENT_ID", "DM_MICROSOFT_CLIENT_SECRET", "DM_MICROSOFT_TENANT", "DM_PUBLIC_BASE_URL"] }, Boolean(process.env.DM_MICROSOFT_CLIENT_ID && process.env.DM_MICROSOFT_CLIENT_SECRET && process.env.DM_MICROSOFT_TENANT && process.env.DM_PUBLIC_BASE_URL)),
+      descriptor({ id: "DROPBOX", name: "Dropbox", consentPurpose: "Let you choose Dropbox files to import.", permissionSummary: "Scoped read access; tokens can be revoked by disconnecting.", requiredConfiguration: ["DM_DROPBOX_APP_KEY", "DM_DROPBOX_APP_SECRET", "DM_PUBLIC_BASE_URL"] }, Boolean(process.env.DM_DROPBOX_APP_KEY && process.env.DM_DROPBOX_APP_SECRET && process.env.DM_PUBLIC_BASE_URL)),
+      descriptor({ id: "BOX", name: "Box", consentPurpose: "Let you choose Box files to import.", permissionSummary: "User-authorized read access with an exact callback URL.", requiredConfiguration: ["DM_BOX_CLIENT_ID", "DM_BOX_CLIENT_SECRET", "DM_PUBLIC_BASE_URL"] }, Boolean(process.env.DM_BOX_CLIENT_ID && process.env.DM_BOX_CLIENT_SECRET && process.env.DM_PUBLIC_BASE_URL)),
     ];
   }
 
@@ -252,11 +280,64 @@ export class LocalStore {
 
   async addMember(displayName: string, role: Member["role"]): Promise<Member> {
     const state = await this.load();
-    const member: Member = { id: randomUUID(), workspaceId: state.workspace.id, displayName, role, state: "ACTIVE", createdAt: now() };
+    const subject: SubjectRecord = { id: randomUUID(), workspaceId: state.workspace.id, displayName, kind: role === "MANAGED_DEPENDANT" ? "DEPENDANT" : "ADULT", relationship: "Family member", createdAt: now() };
+    state.subjects.push(subject);
+    const member: Member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName, role, state: "ACTIVE", invitationState: "ACTIVE", permissions: defaultPermissions(), createdAt: now() };
     state.members.push(member);
-    state.audit.push({ id: randomUUID(), type: "MEMBERSHIP_CREATED", resourceId: member.id, at: now() });
+    state.audit.push(auditRecord(state.workspace.id, "MEMBERSHIP_CREATED", "MEMBERSHIP", "Added local workspace access", member.id));
     await this.save(state);
     return member;
+  }
+
+  async createPerson(input: ManagePersonInput): Promise<SubjectRecord> {
+    const state = await this.load();
+    const subject: SubjectRecord = { id: randomUUID(), workspaceId: state.workspace.id, displayName: input.displayName, kind: input.kind, relationship: input.relationship, ...(input.dateOfBirth ? { dateOfBirth: input.dateOfBirth } : {}), createdAt: now() };
+    state.subjects.push(subject);
+    state.audit.push(auditRecord(state.workspace.id, "PERSON_CREATED", "PERSON", "Added a person to the household", subject.id));
+    if (input.loginEnabled) {
+      const member: Member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName: input.displayName, role: input.role, state: "ACTIVE", invitationState: "PENDING", permissions: input.permissions, ...(input.email ? { email: input.email } : {}), ...(input.mobile ? { mobile: input.mobile } : {}), createdAt: now() };
+      state.members.push(member);
+      state.audit.push(auditRecord(state.workspace.id, "INVITATION_PREPARED", "MEMBERSHIP", "Prepared a time-limited login invitation; external delivery awaits configuration", member.id));
+    }
+    await this.save(state);
+    return subject;
+  }
+
+  async updatePerson(id: string, input: ManagePersonInput): Promise<SubjectRecord> {
+    const state = await this.load();
+    const subject = state.subjects.find((item) => item.id === id);
+    if (!subject) throw new NotFoundException("Person not found");
+    if (subject.kind === "OWNER" && input.kind !== "OWNER") throw new BadRequestException("The local owner cannot be changed to another person type");
+    subject.displayName = input.displayName; subject.kind = input.kind; subject.relationship = input.relationship;
+    if (input.dateOfBirth) subject.dateOfBirth = input.dateOfBirth; else delete subject.dateOfBirth;
+    let member = state.members.find((item) => item.subjectId === subject.id);
+    if (input.loginEnabled) {
+      if (!member) {
+        member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName: input.displayName, role: input.role, state: "ACTIVE", invitationState: "PENDING", permissions: input.permissions, createdAt: now() };
+        state.members.push(member);
+      }
+      member.displayName = input.displayName; member.role = subject.kind === "OWNER" ? "OWNER" : input.role; member.state = "ACTIVE"; member.permissions = subject.kind === "OWNER" ? defaultPermissions(true) : input.permissions;
+      if (member.invitationState === "SUSPENDED" || member.invitationState === "NOT_INVITED") member.invitationState = "PENDING";
+      if (input.email) member.email = input.email; else delete member.email;
+      if (input.mobile) member.mobile = input.mobile; else delete member.mobile;
+    } else if (member && member.role !== "OWNER") {
+      member.state = "REVOKED"; member.invitationState = "SUSPENDED";
+    }
+    state.audit.push(auditRecord(state.workspace.id, "PERSON_UPDATED", "PERSON", input.loginEnabled ? "Updated person details, login access or file permissions" : "Updated person details and disabled login access", subject.id));
+    await this.save(state);
+    return subject;
+  }
+
+  async deletePerson(id: string): Promise<void> {
+    const state = await this.load();
+    const subject = state.subjects.find((item) => item.id === id);
+    if (!subject) throw new NotFoundException("Person not found");
+    if (subject.kind === "OWNER") throw new BadRequestException("The workspace owner cannot be removed");
+    if (state.documents.some((document) => document.status !== "DELETED" && document.subjectIds.includes(id))) throw new BadRequestException("Reassign or delete this person's documents before removing them");
+    state.subjects = state.subjects.filter((item) => item.id !== id);
+    state.members = state.members.filter((item) => item.subjectId !== id);
+    state.audit.push(auditRecord(state.workspace.id, "PERSON_REMOVED", "PERSON", "Removed a person with no remaining document assignments", id));
+    await this.save(state);
   }
 
   async addTask(input: { title: string; severity: TaskRecord["severity"]; dueAt?: string | undefined; documentId?: string | undefined }): Promise<TaskRecord> {
@@ -266,6 +347,7 @@ export class LocalStore {
       ...(input.dueAt ? { dueAt: input.dueAt } : {}), ...(input.documentId ? { documentId: input.documentId } : {}),
     };
     state.tasks.unshift(task);
+    state.audit.push(auditRecord(state.workspace.id, "TASK_CREATED", "TASK", "Created a household task", task.id));
     await this.save(state);
     return task;
   }
@@ -275,6 +357,7 @@ export class LocalStore {
     const task = state.tasks.find((item) => item.id === id);
     if (!task) throw new NotFoundException("Task not found");
     task.state = "DONE";
+    state.audit.push(auditRecord(state.workspace.id, "TASK_COMPLETED", "TASK", "Completed a household task", task.id));
     await this.save(state);
     return task;
   }
@@ -288,7 +371,7 @@ export class LocalStore {
     document.updatedAt = now();
     state.facts = state.facts.filter((fact) => fact.documentId !== id);
     state.tasks = state.tasks.filter((task) => task.documentId !== id);
-    state.audit.push({ id: randomUUID(), type: "DOCUMENT_PURGED", resourceId: id, at: now() });
+    state.audit.push(auditRecord(state.workspace.id, "DOCUMENT_PURGED", "DOCUMENT", "Deleted the original and derived local document data", id));
     try { await unlink(join(this.artifactRoot, id)); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
     await this.save(state);
   }

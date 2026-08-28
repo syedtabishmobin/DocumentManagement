@@ -7,8 +7,8 @@ export function Startup({ message, retry }: { message: string; retry: () => void
   return <div className="startup"><div className="brand-mark">D</div><h1>DocumentManagement</h1><p>{message}</p><button onClick={retry}>Try again</button></div>;
 }
 
-export function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: AuthSession) => void | Promise<void> }) {
-  const [mode, setMode] = useState<"register" | "login">("register");
+export function AuthScreen({ onAuthenticated, initialMode = "register" }: { onAuthenticated: (session: AuthSession) => void | Promise<void>; initialMode?: "register" | "login" }) {
+  const [mode, setMode] = useState<"register" | "login">(initialMode);
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -29,7 +29,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: Aut
 
   return <div className="auth-layout">
     <section className="auth-story">
-      <div className="wordmark inverse"><span className="brand-mark small">D</span><span>DocumentManagement</span></div>
+      <a className="wordmark inverse" href="/"><span className="brand-mark small">D</span><span>DocumentManagement</span></a>
       <div><span className="eyebrow light">Private by default</span><h1>Your family records.<br />One trusted place.</h1><p>Create a household, connect documents to the people they belong to, and get evidence-backed answers without sending files to a cloud service.</p><ul><li><Check /> Local document storage</li><li><Check /> Clear family access boundaries</li><li><Check /> No silent external transfers</li></ul></div>
       <small><ShieldCheck size={15} /> Local development profile</small>
     </section>
@@ -42,7 +42,7 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: Aut
           <button disabled title="Requires production identity configuration"><span className="provider-g">G</span> Google</button>
           <button disabled title="Requires production identity configuration"><Apple size={18} /> Apple</button>
           <button disabled title="Requires production identity configuration"><span className="provider-ms">⊞</span> Microsoft</button>
-          <button disabled title="Requires device passkey configuration"><KeyRound size={18} /> Passkey</button>
+          {mode === "login" ? <button disabled title="Enroll a passkey from account security first"><KeyRound size={18} /> Use a passkey</button> : null}
         </div>
         <div className="divider"><span>or use email locally</span></div>
         <form className="auth-form" onSubmit={(event) => void submit(event)}>
@@ -53,7 +53,8 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: Aut
           <button className="primary wide" disabled={busy}>{busy ? "Please wait…" : mode === "register" ? "Create local account" : "Sign in"}</button>
         </form>
         <button className="auth-switch" onClick={() => { setMode(mode === "register" ? "login" : "register"); setError(""); }}>{mode === "register" ? "Already have an account? Sign in" : "New here? Create an account"}</button>
-        <div className="local-explainer"><LockKeyhole size={18} /><span><strong>Nothing leaves this device.</strong><small>Google, Apple, Microsoft and passkey buttons are product-ready ports. They remain disconnected until you explicitly configure a production identity provider.</small></span></div>
+        <div className="local-explainer"><LockKeyhole size={18} /><span><strong>Nothing leaves this device.</strong><small>Google, Apple and Microsoft require configured identity applications. Passkeys are enrolled after account creation and then used to sign in.</small></span></div>
+        <a className="back-to-site" href="/">← Back to website</a>
       </div>
     </main>
   </div>;
@@ -62,7 +63,9 @@ export function AuthScreen({ onAuthenticated }: { onAuthenticated: (session: Aut
 export function Onboarding({ session, onComplete }: { session: AuthSession; onComplete: () => Promise<void> }) {
   const [step, setStep] = useState<1 | 2>(1);
   const [type, setType] = useState<"PERSONAL" | "FAMILY">("FAMILY");
-  const [name, setName] = useState(`${session.account?.displayName?.split(" ")[0] ?? "My"}'s household`);
+  const owner = session.account?.displayName?.split(" ")[0] ?? "My";
+  const suggestedName = (choice: "PERSONAL" | "FAMILY") => choice === "FAMILY" ? `${owner}'s household` : `${owner}'s private vault`;
+  const [name, setName] = useState(suggestedName("FAMILY"));
   const [consent, setConsent] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -84,7 +87,7 @@ export function Onboarding({ session, onComplete }: { session: AuthSession; onCo
         <div className="onboarding-actions"><button className="primary" disabled={!consent} onClick={() => setStep(2)}>Continue</button></div>
       </> : <form onSubmit={(event) => void finish(event)}>
         <span className="onboarding-icon"><Laptop /></span><span className="eyebrow">Your first workspace</span><h1>Who are you organising for?</h1><p>A personal workspace is just for you. A family workspace lets you add partners, children, dependants and other people, then assign each document to the right person.</p>
-        <div className="workspace-options"><label className={type === "PERSONAL" ? "selected" : ""}><input type="radio" name="type" checked={type === "PERSONAL"} onChange={() => setType("PERSONAL")} /><CircleIcon type="personal" /><strong>Just me</strong><span>A private personal vault</span></label><label className={type === "FAMILY" ? "selected" : ""}><input type="radio" name="type" checked={type === "FAMILY"} onChange={() => setType("FAMILY")} /><CircleIcon type="family" /><strong>My family</strong><span>People, relationships and scoped access</span></label></div>
+        <div className="workspace-options"><label className={type === "PERSONAL" ? "selected" : ""}><input type="radio" name="type" checked={type === "PERSONAL"} onChange={() => { setType("PERSONAL"); setName(suggestedName("PERSONAL")); }} /><CircleIcon type="personal" /><strong>Just me</strong><span>A private personal vault</span></label><label className={type === "FAMILY" ? "selected" : ""}><input type="radio" name="type" checked={type === "FAMILY"} onChange={() => { setType("FAMILY"); setName(suggestedName("FAMILY")); }} /><CircleIcon type="family" /><strong>My family</strong><span>People, relationships and scoped access</span></label></div>
         <label className="wide-field">Workspace name<input value={name} onChange={(event) => setName(event.target.value)} required maxLength={120} /></label>
         {error ? <div className="form-error">{error}</div> : null}
         <div className="onboarding-actions"><button type="button" className="secondary" onClick={() => setStep(1)}>Back</button><button className="primary" disabled={busy}>{busy ? "Creating…" : "Create workspace"}</button></div>

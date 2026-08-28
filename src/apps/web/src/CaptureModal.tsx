@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { SubjectRecord } from "@document-management/contracts";
+import type { ConnectorDescriptor, SubjectRecord } from "@document-management/contracts";
 import { Camera, Cloud, FilePenLine, FolderUp, Mail, ScanLine, ShieldCheck, Upload, X } from "lucide-react";
 import { api } from "./api.js";
 
@@ -10,7 +10,9 @@ export function CaptureModal({ subjects, onClose, onAdded }: { subjects: Subject
   const [selected, setSelected] = useState<string[]>(subjects[0] ? [subjects[0].id] : []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [connectors, setConnectors] = useState<Array<{ id: string; name: string; status: string }>>([]);
+  const [connectors, setConnectors] = useState<ConnectorDescriptor[]>([]);
+  const [selectedConnector, setSelectedConnector] = useState<ConnectorDescriptor>();
+  const [connectorConsent, setConnectorConsent] = useState(false);
   const [manualName, setManualName] = useState("");
   const [manualContent, setManualContent] = useState("");
   const browser = useRef<HTMLInputElement>(null);
@@ -60,7 +62,7 @@ export function CaptureModal({ subjects, onClose, onAdded }: { subjects: Subject
       </div> : null}
       {mode === "camera" ? <div className="capture-body"><div className="camera-choice"><ScanLine /><h3>Scan a document</h3><p>Your browser opens the device camera when supported. The captured image is stored locally and linked to the selected people.</p><button className="primary" onClick={() => camera.current?.click()}><Camera size={18} /> Open camera</button><input ref={camera} hidden type="file" accept="image/*" capture="environment" onChange={(event) => event.target.files && void addFiles(event.target.files, "CAMERA")} /></div></div> : null}
       {mode === "manual" ? <form className="manual-form" onSubmit={(event) => void addManual(event)}><label>Record name<input value={manualName} onChange={(event) => setManualName(event.target.value)} required placeholder="e.g. Medicare member number" /></label><label>Details<textarea value={manualContent} onChange={(event) => setManualContent(event.target.value)} required rows={8} placeholder="Enter the details you want to store and search…" /></label><button className="primary" disabled={busy}>{busy ? "Saving…" : "Save local record"}</button></form> : null}
-      {mode === "connect" ? <div className="connector-body"><div className="connector-note"><ShieldCheck /><span><strong>External connections are off.</strong><small>Nothing will be sent or imported unless you configure credentials and approve the connection. These options are shown now so the product flow is complete.</small></span></div><div className="connector-grid">{connectors.map((connector) => <button key={connector.id} disabled title="Requires explicit connector configuration">{connector.id.includes("MAIL") || connector.id.includes("EMAIL") ? <Mail /> : <Cloud />}<span><strong>{connector.name}</strong><small>Configure in production</small></span></button>)}</div></div> : null}
+      {mode === "connect" ? <div className="connector-body"><div className="connector-note"><ShieldCheck /><span><strong>Consent comes before connection.</strong><small>Select a source to see exactly why it is needed, what permission it requests, and whether its provider application has been configured.</small></span></div><div className="connector-grid">{connectors.map((connector) => <button key={connector.id} className={selectedConnector?.id === connector.id ? "selected" : ""} onClick={() => { setSelectedConnector(connector); setConnectorConsent(false); }}>{connector.id.includes("MAIL") || connector.id.includes("EMAIL") ? <Mail /> : <Cloud />}<span><strong>{connector.name}</strong><small>{connector.status === "READY_TO_CONNECT" ? "Ready for consent" : "Configuration required"}</small></span></button>)}</div>{selectedConnector ? <section className="connector-consent"><span className="eyebrow">Connection consent</span><h3>{selectedConnector.name}</h3><p>{selectedConnector.consentPurpose}</p><dl><div><dt>Requested access</dt><dd>{selectedConnector.permissionSummary}</dd></div><div><dt>Current status</dt><dd>{selectedConnector.status === "READY_TO_CONNECT" ? "Provider application configured" : "Missing provider application credentials"}</dd></div></dl>{selectedConnector.status === "REQUIRES_CONFIGURATION" ? <details><summary>Configuration still needed</summary><code>{selectedConnector.requiredConfiguration.join("\n")}</code></details> : null}<label><input type="checkbox" checked={connectorConsent} onChange={(event) => setConnectorConsent(event.target.checked)} /> I consent to this source accessing only the permissions described above.</label><button className="primary" disabled={!connectorConsent || selectedConnector.status !== "READY_TO_CONNECT"}>{selectedConnector.status === "READY_TO_CONNECT" ? "Continue to provider" : "Configure provider first"}</button></section> : null}</div> : null}
       {error ? <div className="form-error">{error}</div> : null}
       {busy ? <div className="busy-line">Adding document securely…</div> : null}
     </section>

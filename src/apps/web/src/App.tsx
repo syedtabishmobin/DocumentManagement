@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import type { Answer, AuthSession, DashboardSnapshot, SubjectRecord, WorkspaceRole } from "@document-management/contracts";
-import { Archive, Bell, Bot, CalendarClock, Check, ChevronRight, CircleUserRound, Download, FileLock2, FileText, FolderSearch2, Home, ListChecks, Menu, Plus, Search, ShieldCheck, Sparkles, Trash2, Upload, UserPlus, Users, X } from "lucide-react";
+import type { Answer, AuthSession, DashboardSnapshot } from "@document-management/contracts";
+import { Archive, Bell, Bot, CalendarClock, Check, ChevronRight, FileLock2, FileText, FolderSearch2, Home, ListChecks, Menu, Plus, Search, ShieldCheck, Sparkles, Trash2, Upload, Users, X } from "lucide-react";
 import { api } from "./api.js";
 import { AuthScreen, Onboarding, Startup } from "./Auth.js";
 import { CaptureModal } from "./CaptureModal.js";
+import { MarketingSite } from "./Marketing.js";
+import { FamilyView } from "./Family.js";
+import { ActivityView } from "./Activity.js";
 
 type View = "home" | "documents" | "assistant" | "attention" | "family" | "activity";
 const nav: Array<{ id: View; label: string; icon: typeof Home }> = [
@@ -32,8 +35,9 @@ export function App() {
   }
   useEffect(() => { void loadSession(); }, []);
 
+  if (window.location.pathname === "/") return <MarketingSite />;
   if (!session) return <Startup message={error || "Opening your private workspace…"} retry={() => void loadSession()} />;
-  if (!session.authenticated) return <AuthScreen onAuthenticated={async (current) => { setSession(current); if (current.onboardingComplete) await refresh(); }} />;
+  if (!session.authenticated) return <AuthScreen initialMode={new URLSearchParams(window.location.search).get("mode") === "login" ? "login" : "register"} onAuthenticated={async (current) => { setSession(current); if (current.onboardingComplete) await refresh(); }} />;
   if (!session.onboardingComplete) return <Onboarding session={session} onComplete={async () => { const current = await api.session(); setSession(current); await refresh(); }} />;
   if (!data) return <Startup message={error || "Opening your household workspace…"} retry={() => void refresh()} />;
 
@@ -59,8 +63,8 @@ export function App() {
       {view === "documents" && <Documents data={data} onUpload={() => setCapture(true)} onDelete={async (id) => { if (!confirm("Delete this local document and its derived content?")) return; await api.deleteDocument(id); await refresh(); }} />}
       {view === "assistant" && <Assistant documentCount={activeDocuments.filter((document) => document.status === "READY").length} />}
       {view === "attention" && <Attention data={data} refresh={refresh} />}
-      {view === "family" && <Family data={data} refresh={refresh} />}
-      {view === "activity" && <Activity data={data} />}
+      {view === "family" && <FamilyView data={data} refresh={refresh} />}
+      {view === "activity" && <ActivityView data={data} />}
     </main>
     {capture ? <CaptureModal subjects={data.subjects} onClose={() => setCapture(false)} onAdded={async () => { await refresh(); setView("documents"); }} /> : null}
   </div>;
@@ -109,27 +113,6 @@ function Attention({ data, refresh }: { data: DashboardSnapshot; refresh: () => 
   return <><PageHead eyebrow="Monitor and close" title="Needs attention" copy="Explainable findings and human-approved actions—without a misleading aggregate score." /><div className="task-create"><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Add a household task" /><button className="primary" onClick={async () => { if (!title.trim()) return; await api.addTask(title); setTitle(""); await refresh(); }}><Plus size={17} /> Add task</button></div><div className="task-list">{tasks.map((task) => <article key={task.id} className={task.state === "DONE" ? "done" : ""}><button aria-label="Complete task" disabled={task.state === "DONE"} onClick={async () => { await api.completeTask(task.id); await refresh(); }}>{task.state === "DONE" ? <Check /> : null}</button><span><strong>{task.title}</strong><small>{task.severity.toLowerCase()} · {task.dueAt ? formatDate(task.dueAt) : "No due date"}</small></span></article>)}</div></>;
 }
 
-function Family({ data, refresh }: { data: DashboardSnapshot; refresh: () => Promise<void> }) {
-  const [subjectName, setSubjectName] = useState("");
-  const [kind, setKind] = useState<SubjectRecord["kind"]>("ADULT");
-  const [relationship, setRelationship] = useState("Partner");
-  const [memberName, setMemberName] = useState("");
-  const [role, setRole] = useState<WorkspaceRole>("ADULT_MEMBER");
-  return <><PageHead eyebrow="People and access" title="Your family" copy="First add the people whose records you manage. Login access is separate and can be granted only when someone needs it." action={<a className="secondary button-link" href={api.exportUrl} download="document-management-export.json"><Download size={17} /> Export workspace</a>} />
-    <div className="people-columns">
-      <section className="people-panel"><div className="section-title"><div><span className="eyebrow">Document subjects</span><h2>People you organise for</h2></div><span className="document-count">{data.subjects.length}</span></div><p className="section-copy">Children and dependants can have documents without having a login.</p><div className="subject-list">{data.subjects.map((subject) => { const count = data.documents.filter((document) => document.status !== "DELETED" && document.subjectIds.includes(subject.id)).length; return <article key={subject.id}><span className="person">{initials(subject.displayName)}</span><span><strong>{subject.displayName}</strong><small>{subject.relationship} · {subject.kind.toLowerCase()}</small></span><b>{count} document{count === 1 ? "" : "s"}</b></article>; })}</div>
-        <form className="inline-form" onSubmit={(event) => { event.preventDefault(); void (async () => { await api.addSubject({ displayName: subjectName, kind, relationship }); setSubjectName(""); await refresh(); })(); }}><h3><UserPlus size={18} /> Add a person</h3><input value={subjectName} onChange={(event) => setSubjectName(event.target.value)} required placeholder="Full name" /><select value={kind} onChange={(event) => setKind(event.target.value as SubjectRecord["kind"])}><option value="ADULT">Adult</option><option value="CHILD">Child</option><option value="DEPENDANT">Dependant</option><option value="OTHER">Other</option></select><input value={relationship} onChange={(event) => setRelationship(event.target.value)} required placeholder="Relationship, e.g. daughter" /><button className="primary"><Plus size={17} /> Add person</button></form>
-      </section>
-      <section className="people-panel"><div className="section-title"><div><span className="eyebrow">Workspace access</span><h2>People who can sign in</h2></div><span className="document-count">{data.members.length}</span></div><p className="section-copy">Membership never means unrestricted access to every document.</p><div className="member-list">{data.members.map((member) => <article key={member.id}><span className="person"><CircleUserRound /></span><span><strong>{member.displayName}</strong><small>{member.role.replaceAll("_", " ").toLowerCase()}</small></span><span className="status ready">{member.state}</span></article>)}</div>
-        <form className="inline-form" onSubmit={(event) => { event.preventDefault(); void (async () => { await api.addMember(memberName, role); setMemberName(""); await refresh(); })(); }}><h3><Users size={18} /> Add local access fixture</h3><p>This does not send an invitation yet.</p><input value={memberName} onChange={(event) => setMemberName(event.target.value)} required placeholder="Display name" /><select value={role} onChange={(event) => setRole(event.target.value as WorkspaceRole)}><option value="ADULT_MEMBER">Adult member</option><option value="FAMILY_ADMIN">Family administrator</option><option value="MANAGED_DEPENDANT">Managed dependant</option><option value="GUEST">Guest</option></select><button className="secondary"><Plus size={17} /> Add locally</button></form>
-      </section>
-    </div>
-  </>;
-}
-
-function Activity({ data }: { data: DashboardSnapshot }) { return <><PageHead eyebrow="In-app notifications" title="Activity" copy="Local, content-minimized updates about your workspace." />{data.notifications.length ? <div className="notification-list">{data.notifications.map((item) => <article key={item.id}><span className={`notice-dot ${item.severity.toLowerCase()}`} /><span><strong>{item.title}</strong><p>{item.detail}</p><small>{formatDate(item.createdAt)}</small></span></article>)}</div> : <Empty icon={Bell} title="No activity yet" copy="Document and task activity will appear here." />}</>; }
-
 function Empty({ icon: Icon, title, copy, action }: { icon: typeof Home; title: string; copy: string; action?: React.ReactNode }) { return <div className="empty"><Icon /><h3>{title}</h3><p>{copy}</p>{action}</div>; }
-function initials(name: string) { return name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(); }
 function formatBytes(value: number) { return value < 1024 ? `${value} B` : value < 1024 * 1024 ? `${(value / 1024).toFixed(1)} KB` : `${(value / 1024 / 1024).toFixed(1)} MB`; }
 function formatDate(value: string) { return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(value)); }

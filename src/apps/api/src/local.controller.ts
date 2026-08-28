@@ -1,7 +1,7 @@
 import { BadRequestException, Body, Controller, Delete, Get, Inject, Param, Patch, Post, Req, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Request } from "express";
-import { askQuestionSchema, configureWorkspaceSchema, createMemberSchema, createSubjectSchema, createTaskSchema, manualDocumentSchema } from "@document-management/contracts";
+import { askQuestionSchema, configureWorkspaceSchema, createMemberSchema, createSubjectSchema, createTaskSchema, managePersonSchema, manualDocumentSchema } from "@document-management/contracts";
 import { LocalStore } from "./local.store.js";
 import { IdentityStore } from "./identity.store.js";
 import { sessionToken } from "./auth.controller.js";
@@ -41,6 +41,15 @@ export class LocalController {
 
   @Post("subjects")
   addSubject(@Body() body: unknown) { return this.store.addSubject(createSubjectSchema.parse(body)); }
+
+  @Post("people")
+  createPerson(@Body() body: unknown) { return this.store.createPerson(managePersonSchema.parse(body)); }
+
+  @Patch("people/:id")
+  updatePerson(@Param("id") id: string, @Body() body: unknown) { return this.store.updatePerson(id, managePersonSchema.parse(body)); }
+
+  @Delete("people/:id")
+  async deletePerson(@Param("id") id: string) { await this.store.deletePerson(id); return { deleted: true }; }
 
   @Get("connectors")
   connectors() { return this.store.connectorCatalogue(); }

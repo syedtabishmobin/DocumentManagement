@@ -1,4 +1,4 @@
-import type { Answer, AuthSession, DashboardSnapshot, DocumentRecord, Member, SubjectRecord, TaskRecord, Workspace, WorkspaceRole } from "@document-management/contracts";
+import type { Answer, AuthSession, ConnectorDescriptor, DashboardSnapshot, DocumentRecord, ManagePersonInput, Member, SubjectRecord, TaskRecord, Workspace, WorkspaceRole } from "@document-management/contracts";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api${path}`, { credentials: "same-origin", ...init });
@@ -20,7 +20,10 @@ export const api = {
   upload: (file: File, subjectIds: string[], captureRoute: "FILE" | "CAMERA" | "BULK") => { const body = new FormData(); body.set("file", file); body.set("subjectIds", subjectIds.join(",")); body.set("captureRoute", captureRoute); return request<DocumentRecord>("/documents", { method: "POST", body }); },
   manualDocument: (input: { name: string; content: string; subjectIds: string[] }) => request<DocumentRecord>("/documents/manual", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }),
   addSubject: (input: { displayName: string; kind: SubjectRecord["kind"]; relationship: string; dateOfBirth?: string }) => request<SubjectRecord>("/subjects", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }),
-  connectors: () => request<Array<{ id: string; name: string; status: string }>>("/connectors"),
+  createPerson: (input: ManagePersonInput) => request<SubjectRecord>("/people", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }),
+  updatePerson: (id: string, input: ManagePersonInput) => request<SubjectRecord>(`/people/${id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }),
+  deletePerson: (id: string) => request<{ deleted: true }>(`/people/${id}`, { method: "DELETE" }),
+  connectors: () => request<ConnectorDescriptor[]>("/connectors"),
   deleteDocument: (id: string) => request<{ deleted: true }>(`/documents/${id}`, { method: "DELETE" }),
   ask: (question: string) => request<Answer>("/assistant/questions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ question }) }),
   addMember: (displayName: string, role: WorkspaceRole) => request<Member>("/members", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ displayName, role }) }),
