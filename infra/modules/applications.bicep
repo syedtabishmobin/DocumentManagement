@@ -8,7 +8,38 @@ param registryName string
 param ciphertextStorageName string
 param syntheticPreviewShareName string
 param keyVaultName string
+param configureProviderRegistrations bool
+param microsoftClientId string
+param microsoftTenantId string
+param microsoftClientSecretConfigured bool
+param googleClientId string
+param googleClientSecretConfigured bool
+param dropboxAppKey string
+param dropboxAppSecretConfigured bool
+param boxClientId string
+param boxClientSecretConfigured bool
+param azureCommunicationServiceName string
+param azureCommunicationEndpoint string
+param emailFromAddress string
 param tags object
+
+var webAppName = 'ca-${resourcePrefix}-${environment}-web'
+var publicBaseUrl = 'https://${webAppName}.${managedEnvironment.properties.defaultDomain}'
+var providerRegistrationEnvironment = configureProviderRegistrations ? [
+  { name: 'DM_PUBLIC_BASE_URL', value: publicBaseUrl }
+  { name: 'DM_GOOGLE_CLIENT_ID', value: googleClientId }
+  { name: 'DM_GOOGLE_CLIENT_SECRET_CONFIGURED', value: string(googleClientSecretConfigured) }
+  { name: 'DM_MICROSOFT_CLIENT_ID', value: microsoftClientId }
+  { name: 'DM_MICROSOFT_TENANT', value: microsoftTenantId }
+  { name: 'DM_MICROSOFT_CLIENT_SECRET_CONFIGURED', value: string(microsoftClientSecretConfigured) }
+  { name: 'DM_DROPBOX_APP_KEY', value: dropboxAppKey }
+  { name: 'DM_DROPBOX_APP_SECRET_CONFIGURED', value: string(dropboxAppSecretConfigured) }
+  { name: 'DM_BOX_CLIENT_ID', value: boxClientId }
+  { name: 'DM_BOX_CLIENT_SECRET_CONFIGURED', value: string(boxClientSecretConfigured) }
+  { name: 'DM_AZURE_COMMUNICATION_SERVICE', value: azureCommunicationServiceName }
+  { name: 'DM_AZURE_COMMUNICATION_ENDPOINT', value: azureCommunicationEndpoint }
+  { name: 'DM_EMAIL_FROM', value: emailFromAddress }
+] : []
 
 resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {
   name: logAnalyticsName
@@ -123,16 +154,19 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
         {
           name: 'api'
           image: apiImage
-          env: [
+          env: concat([
             { name: 'DM_PROFILE', value: environment }
             { name: 'DM_API_PORT', value: '3000' }
             { name: 'DM_BIND_HOST', value: '0.0.0.0' }
             { name: 'DM_DATA_DIR', value: '/data' }
             { name: 'DM_OUTBOUND_NETWORK', value: 'deny' }
+            { name: 'DM_EXTERNAL_CONNECTORS', value: 'disabled' }
+            { name: 'DM_CONNECTOR_ADAPTERS_READY', value: 'false' }
+            { name: 'DM_EXTERNAL_NOTIFICATIONS', value: 'disabled' }
             { name: 'DM_AZURE_STORAGE_ACCOUNT', value: ciphertextStorageName }
             { name: 'DM_AZURE_KEY_VAULT', value: keyVaultName }
             { name: 'DM_CUSTOMER_DATA_POLICY', value: environment == 'prod' ? 'production-gated' : 'synthetic-only' }
-          ]
+          ], providerRegistrationEnvironment)
           resources: {
             cpu: json('0.5')
             memory: '1Gi'
@@ -162,7 +196,7 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
 }
 
 resource web 'Microsoft.App/containerApps@2024-03-01' = {
-  name: 'ca-${resourcePrefix}-${environment}-web'
+  name: webAppName
   location: location
   tags: tags
   identity: {

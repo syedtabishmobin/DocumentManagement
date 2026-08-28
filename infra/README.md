@@ -12,6 +12,16 @@ az deployment sub create --location australiaeast --template-file infra/main.bic
 
 The notification address is read from the process environment and MUST NOT be committed. If it is absent, the budget resource is intentionally omitted instead of creating an alert with an invalid recipient.
 
+The dev parameter file contains only public provider identifiers, the connected Azure Communication Services sender, and boolean secret-presence markers. OAuth client secrets stay in Key Vault. The application deployment deliberately sets `DM_EXTERNAL_CONNECTORS=disabled`, `DM_CONNECTOR_ADAPTERS_READY=false`, and `DM_EXTERNAL_NOTIFICATIONS=disabled`; it does not mount those secrets into the container until callback-state, minimal-scope, token-protection, disconnect/revocation, deletion, audit, and delivery tests satisfy `DEC-045` and `DEC-054`.
+
+Prepared dev callback URLs use the generated web origin because the web container reverse-proxies `/api` to the API:
+
+- `/api/connectors/gmail/callback`
+- `/api/connectors/google-drive/callback`
+- `/api/connectors/onedrive/callback`
+- `/api/connectors/dropbox/callback`
+- `/api/connectors/box/callback`
+
 Do not pass `deployApplications=true` with mutable image tags. Do not deploy `prod.bicepparam` in the dev/stage subscription. Mobile binaries are built and signed in CI and distributed through Apple/Google test channels; they are not hosted as Azure compute resources.
 
 ACR Tasks are not available on the current subscription. `.github/workflows/container-images.yml` therefore uses GitHub-hosted Docker Buildx and passwordless Azure OIDC to push immutable, provenance-attested images. The dev managed identity is limited to ACR push/pull for the dev registry; deployment remains a separately reviewed Bicep action.

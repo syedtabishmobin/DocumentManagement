@@ -17,6 +17,22 @@ param githubRepository string = 'syedtabishmobin@212241246/DocumentManagement@13
 param deployApplications bool = false
 param apiImage string = ''
 param webImage string = ''
+// Public provider identifiers and secret-presence markers are safe deployment
+// metadata. Secret values remain in Key Vault and are not bound to the app until
+// the corresponding adapter passes its activation gate.
+param configureProviderRegistrations bool = false
+param microsoftClientId string = ''
+param microsoftTenantId string = ''
+param microsoftClientSecretConfigured bool = false
+param googleClientId string = ''
+param googleClientSecretConfigured bool = false
+param dropboxAppKey string = ''
+param dropboxAppSecretConfigured bool = false
+param boxClientId string = ''
+param boxClientSecretConfigured bool = false
+param azureCommunicationServiceName string = ''
+param azureCommunicationEndpoint string = ''
+param emailFromAddress string = ''
 param monthlyBudgetAud int = environment == 'dev' ? 25 : environment == 'stage' ? 75 : 500
 param alertEmail string = ''
 param budgetStartDate string = utcNow('yyyy-MM-dd')
@@ -65,6 +81,19 @@ module applications './modules/applications.bicep' = if (deployApplications) {
     ciphertextStorageName: foundation.outputs.ciphertextStorageName
     syntheticPreviewShareName: foundation.outputs.syntheticPreviewShareName
     keyVaultName: foundation.outputs.keyVaultName
+    configureProviderRegistrations: configureProviderRegistrations
+    microsoftClientId: microsoftClientId
+    microsoftTenantId: microsoftTenantId
+    microsoftClientSecretConfigured: microsoftClientSecretConfigured
+    googleClientId: googleClientId
+    googleClientSecretConfigured: googleClientSecretConfigured
+    dropboxAppKey: dropboxAppKey
+    dropboxAppSecretConfigured: dropboxAppSecretConfigured
+    boxClientId: boxClientId
+    boxClientSecretConfigured: boxClientSecretConfigured
+    azureCommunicationServiceName: azureCommunicationServiceName
+    azureCommunicationEndpoint: azureCommunicationEndpoint
+    emailFromAddress: emailFromAddress
     tags: commonTags
   }
 }
@@ -112,3 +141,4 @@ output apiUrl string = deployApplications ? applications!.outputs.apiUrl : ''
 output webUrl string = deployApplications ? applications!.outputs.webUrl : ''
 output customerDataPolicy string = commonTags.customerData
 output ciClientId string = foundation.outputs.ciClientId
+output providerRegistrationMetadataConfigured bool = configureProviderRegistrations

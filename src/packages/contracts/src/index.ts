@@ -192,10 +192,11 @@ export interface AuditRecord {
 export interface ConnectorDescriptor {
   id: "EMAIL_FORWARDING" | "GMAIL" | "GOOGLE_DRIVE" | "ONEDRIVE" | "DROPBOX" | "BOX";
   name: string;
-  status: "REQUIRES_CONFIGURATION" | "READY_TO_CONNECT";
+  status: "REQUIRES_CONFIGURATION" | "CONFIGURED_DISABLED" | "READY_TO_CONNECT";
   consentPurpose: string;
   permissionSummary: string;
   requiredConfiguration: string[];
+  callbackUrl?: string | undefined;
 }
 
 export interface FactRecord {

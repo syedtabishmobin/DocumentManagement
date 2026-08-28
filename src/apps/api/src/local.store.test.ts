@@ -128,4 +128,30 @@ describe("LocalStore", () => {
     expect(dashboard.subjects.some((item) => item.id === person.id)).toBe(false);
     expect(dashboard.audit[0]?.type).toBe("PERSON_REMOVED");
   });
+
+  it("distinguishes prepared connector registrations from activated adapters without loading secrets", () => {
+    const variables = {
+      DM_PUBLIC_BASE_URL: "https://doculyra.example.test",
+      DM_GOOGLE_CLIENT_ID: "public-google-client-id",
+      DM_GOOGLE_CLIENT_SECRET_CONFIGURED: "true",
+      DM_MICROSOFT_CLIENT_ID: "public-microsoft-client-id",
+      DM_MICROSOFT_CLIENT_SECRET_CONFIGURED: "true",
+      DM_MICROSOFT_TENANT: "test-tenant",
+      DM_DROPBOX_APP_KEY: "public-dropbox-app-key",
+      DM_DROPBOX_APP_SECRET_CONFIGURED: "true",
+      DM_BOX_CLIENT_ID: "public-box-client-id",
+      DM_BOX_CLIENT_SECRET_CONFIGURED: "true",
+      DM_EXTERNAL_CONNECTORS: "disabled",
+      DM_CONNECTOR_ADAPTERS_READY: "false",
+    } as const;
+    Object.assign(process.env, variables);
+    try {
+      const connectors = store.connectorCatalogue();
+      expect(connectors.filter((connector) => connector.id !== "EMAIL_FORWARDING").every((connector) => connector.status === "CONFIGURED_DISABLED")).toBe(true);
+      expect(connectors.find((connector) => connector.id === "GOOGLE_DRIVE")?.callbackUrl).toBe("https://doculyra.example.test/api/connectors/google-drive/callback");
+      expect(connectors.find((connector) => connector.id === "ONEDRIVE")?.requiredConfiguration).toContain("microsoft-documents-client-secret");
+    } finally {
+      for (const variable of Object.keys(variables)) delete process.env[variable];
+    }
+  });
 });
