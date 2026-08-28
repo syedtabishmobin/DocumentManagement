@@ -3,27 +3,27 @@
 | Field | Value |
 |---|---|
 | Document ID | `SEC-ARCH-001` |
-| Version | `0.1` |
-| Status | `DRAFT — product-owner and security approval required` |
+| Version | `0.2` |
+| Status | `APPROVED IMPLEMENTATION BASELINE — independent production assurance still required` |
 | Product phase | Phase 1 — Personal and Family |
 | Jurisdiction | Australia first; jurisdiction-neutral core |
-| Updated | 26 August 2026 |
+| Updated | 28 August 2026 |
 | Companion contracts | `ARCH-SOL-001`, `ARCH-DOM-001`, `SEC-AUTH-001`, `SEC-PRIV-001`, `SEC-AUD-001`, `SEC-THR-001` |
 
 ## 1. Authority and scope
 
-This document defines provider-neutral security boundaries and minimum controls for the draft Phase 1 product. It refines `REQ-P1-TRUST-001`–`REQ-P1-TRUST-009` and the security invariants embedded throughout `PROD-PRD-001` and `PROD-UC-001`. It does not approve the draft PRD, select a provider, close an open decision, or open the implementation gate.
+This document defines security boundaries and minimum controls for the approved Phase 1 product. It refines `REQ-P1-TRUST-001`–`009`, `REQ-P1-CRYPTO-001`–`003`, `REQ-P1-DEL-001`–`002`, and the security invariants embedded throughout `PROD-PRD-001` and `PROD-UC-001`. `DEC-049`–`054` select Azure adapters, client-controlled encryption, the assurance baseline, React/Flutter clients, and the document-deletion lifecycle; unnamed external routes remain disabled.
 
 It is reconciled with `ARCH-SOL-001` rules `ARCH-P1-001`–`ARCH-P1-045` and `ARCH-DOM-001` rules `DOM-P1-001`–`DOM-P1-057`. Architecture/domain documents own logical component and aggregate boundaries; this pack owns their security, authorization, privacy, audit, and threat-control detail. No unresolved conflict was found at version `0.1`.
 
-The security architecture covers the responsive web/PWA, APIs, asynchronous workers, immutable artifact storage, operational records, search/vector/graph derivatives, AI/OCR/malware/notification adapters, trusted-source and user connectors, exports, backups, observability, support, and administration. Phase 2 enterprise controls remain reserved; their absence must not weaken Phase 1 isolation.
+The security architecture covers the React web/PWA, Flutter iOS/Android clients, customer-device cryptography and intelligence, APIs, asynchronous workers, encrypted immutable artifact storage, operational records, encrypted search/vector/graph derivatives, AI/OCR/malware/notification adapters, trusted-source and user connectors, exports, backups, observability, support, and administration. Phase 2 enterprise controls remain reserved; their absence must not weaken Phase 1 isolation.
 
 Normative priorities are:
 
 1. `DEC-003`, `DEC-006`, `DEC-008`, and `DEC-022`: workspace/resource isolation, evidence-bound approval, current authorization, and multi-tenant separation.
 2. `DEC-005`: immutable originals and controlled lifecycle.
 3. `DEC-007`, `DEC-009`, and `DEC-020`: governed configuration, vendor-neutral controls, and an Australia-first jurisdiction pack.
-4. Explicit fences for `DEC-032`, `DEC-036`, `DEC-038`, `DEC-039`, and `DEC-040` in section 10.
+4. Customer-controlled encryption and 30-day deletion controls in `DEC-050` and `DEC-053`, with the remaining `DEC-032`, `DEC-036`, `DEC-038`, and `DEC-054` release fences in section 10.
 
 ## 2. Security objectives
 
@@ -153,14 +153,14 @@ IDs are stable. Each rule requires an owning implementation contract, automated 
 | `SEC-P1-010` | Key administration MUST separate use, management, recovery, rotation, and destruction duties; key identifiers/versions MUST be auditable without logging key material. | `REQ-P1-TRUST-001`, `004` | Rotation/disable/recovery evidence and dual-control tests. |
 | `SEC-P1-011` | Secrets MUST use an approved secret store, scoped identities, rotation, revocation, scanning, and zero ordinary-log exposure; source control and static configuration MUST contain no production secret. | `REQ-P1-TRUST-003` | Secret scanning and canary credential revocation drills. |
 | `SEC-P1-012` | Accepted originals MUST be immutable and integrity-checked from acquisition hash through retrieval, reprocessing, export, backup, and restore. | `REQ-P1-DOC-001`, `MET-P1-019`, `UC-P1-003` | Mutation attempt and scheduled integrity verification. |
-| `SEC-P1-013` | Uploads MUST remain non-public and non-processable until server-side validation and malware policy complete; scanner timeout/unavailability MUST remain contained. | `REQ-P1-ING-002`–`004`, `AC-P1-ING-001` | Malicious, polyglot, timeout, bypass, and race fixtures. |
+| `SEC-P1-013` | Uploads MUST remain non-public and non-processable until the authorized client completes approved type/size/content-policy checks and encryption and the server validates the cryptographic envelope, limits, authorization, and integrity. No server-side plaintext malware inspection is implied; unavailable local validation remains contained or unsupported. | `REQ-P1-ING-002`–`004`, `REQ-P1-CRYPTO-001`, `AC-P1-ING-001` | Malicious, polyglot, timeout, bypass, envelope-tamper, and race fixtures. |
 | `SEC-P1-014` | Quarantined content MUST be isolated from preview, download, parsers, AI, indexes, graph, notifications, and ordinary support; release/delete requires distinct authority and audit. | `REQ-P1-ING-003`, `UC-P1-002` | Route-by-route quarantine denial tests. |
 | `SEC-P1-015` | Artifact and export access MUST use short-lived, audience/actor/request/workspace/version-scoped grants, reauthorized on redemption, never permanent public URLs. | `REQ-P1-DOC-004`, `REQ-P1-SHR-002`, `REQ-P1-TRUST-006` | Expired, revoked, guessed, wrong-workspace/version tests. |
 | `SEC-P1-016` | Browser/PWA controls MUST constrain XSS, CSRF, clickjacking, injection, unsafe MIME rendering, service-worker scope, local persistence, clipboard/download leakage, and device loss. | `DEC-021`, `REQ-P1-DOC-004`, `AC-P1-A11Y-001` | Browser security headers, storage, offline, and malicious preview tests. |
 | `SEC-P1-017` | Raw documents, evidence passages, queries, generated answers, sensitive values, filenames, tokens, and unrestricted URLs MUST NOT enter ordinary logs, traces, metrics, analytics, errors, screenshots, or fixtures. | `REQ-P1-TRUST-003`, `MET-P1-021` | Continuous schema allow-listing and content canary scanning. |
 | `SEC-P1-018` | Audit/provenance MUST follow `SEC-AUD-001`; required audit failure MUST block or leave the consequential operation explicitly incomplete. | `REQ-P1-TRUST-004`, `MET-P1-017` | Audit outage and reconciliation tests. |
 | `SEC-P1-019` | Search/vector/graph/caches/conversations MUST store lineage, workspace scope, source authorization attributes, deletion state, and freshness; current policy is rechecked before output. | `REQ-P1-GPH-002`, `REQ-P1-SRCH-003`, `UC-P1-013` | Revocation, stale-index, deletion, and cache tests. |
-| `SEC-P1-020` | AI/OCR/reranking/embedding adapters MUST be capability-scoped, schema-bound, evidence-bound, injection-resistant, and prohibited from training/retaining/reusing content except under an approved explicit processing contract. | `REQ-P1-AI-001`–`007`, `AC-P1-AI-001` | Adapter conformance, injection, egress, retention, and schema tests. |
+| `SEC-P1-020` | Default AI/OCR/reranking/embedding processing over customer content MUST run on the authorized client and remain capability-scoped, schema-bound, evidence-bound, and injection-resistant. A server/cloud adapter MUST receive no plaintext unless a later explicit-consent private-processing decision and route is approved. | `REQ-P1-AI-001`–`007`, `REQ-P1-CRYPTO-003`, `AC-P1-AI-001` | Local adapter conformance, injection, no-egress, retention, and schema tests. |
 | `SEC-P1-021` | Model, document, source-page, metadata, and connector instructions MUST be treated as untrusted data and cannot alter policy, workspace, tool, citation, or action authority. | `REQ-P1-AI-002`, `005`, `AC-UC-P1-005-03` | Indirect/direct prompt-injection corpus. |
 | `SEC-P1-022` | Connectors MUST use purpose-limited consent, least scopes, protected tokens, source/version identity, revocation, sync/deletion semantics, and provider-neutral conformance. | `REQ-P1-ING-009`, `REQ-P1-TRUST-009`, `GAP-007` | Token theft, disconnect, replay, permission drift, deletion tests. |
 | `SEC-P1-023` | Governed-source retrieval MUST restrict destinations/protocols, resist SSRF and content poisoning, preserve snapshots, and separate retrieval/parser output from rule publication. | `REQ-P1-MON-003`–`006`, `AC-P1-MON-001` | SSRF, redirect, DNS, oversized content, parser tamper tests. |
@@ -168,13 +168,20 @@ IDs are stable. Each rule requires an owning implementation contract, automated 
 | `SEC-P1-025` | Support and operators MUST have no standing raw-content access; privileged configuration and exceptional access require separate identity, strong authentication, approval, bounded scope/time, user/incident purpose, and enhanced audit. | `REQ-P1-TRUST-001`–`004`, `UC-P1-013` | Insider, dormant grant, approval bypass, session recording tests. |
 | `SEC-P1-026` | Emergency/break-glass access MUST NOT exist in Phase 1 until its policy, scope, notification, review, revocation, retention, and tests are explicitly approved; it is distinct from user continuity under `DEC-032`. | `JRN-P1-010`, `UC-P1-016` | Confirm no hidden universal support role. |
 | `SEC-P1-027` | Export and deletion orchestrators MUST reauthorize at request, enumeration/execution, and delivery/verification; temporary outputs and late events cannot bypass revocation or purge. | `REQ-P1-TRUST-006`–`007`, `UC-P1-011`, `UC-P1-012` | Mid-job revocation and resurrection tests. |
-| `SEC-P1-028` | The Australian residency option MUST be enforceable from a versioned data-class/processor/region matrix across primary, derived, telemetry, support, adapter, export, backup, and DR paths; final matrix awaits `DEC-040`. | `REQ-P1-TRUST-005`, `DEC-022` | Placement, egress, restore, failover, adapter denial tests. |
+| `SEC-P1-028` | The Australian residency policy MUST be enforceable from a versioned data-class/processor/region matrix across primary, derived, telemetry, support, adapter, export, backup, and DR paths. Australia East is primary and only declared Australian paired-region roles may use Australia Southeast under `DEC-049`. | `REQ-P1-TRUST-005`, `DEC-049` | Placement, egress, restore, failover, adapter denial tests. |
 | `SEC-P1-029` | Dependency failure, abuse, and resource exhaustion MUST have quotas, bounded fan-out/depth/time/size, backpressure, circuit breaking, retry budgets, and truthful state without weakening security controls. | `REQ-P1-GPH-005`, `REQ-P1-AI-006`, `OUT-P1-007` | DoS, decompression bomb, queue flood, retry storm tests. |
 | `SEC-P1-030` | Build and deployment MUST verify provenance, dependencies, signed/approved artifacts, configuration compatibility, vulnerability gates, rollback/forward repair, and separation of duties. | `DEC-009`, `CODEX.md` testing/DoD | SBOM/provenance, dependency, tamper, rollback drills. |
+| `SEC-P1-031` | Every original and sensitive derivative MUST be encrypted on the authorized client using a versioned authenticated-encryption envelope before network transfer; the server MUST NOT receive plaintext or an unwrapped customer content key. | `DEC-050`, `REQ-P1-CRYPTO-001` | Cross-client known-answer, tamper, downgrade, network-capture, and storage-inspection tests. |
+| `SEC-P1-032` | Device, workspace, document, member-share, and recovery keys MUST have separate purposes, versions, wrapping relationships, revocation/rotation/destruction states, and privacy-safe audit evidence. | `REQ-P1-CRYPTO-002`, `ADR-ARCH-008` | Grant/revoke/rotate/recovery/device-loss/crypto-shred tests. |
+| `SEC-P1-033` | Apple keys MUST use approved Keychain/Secure Enclave controls, Android keys MUST use approved hardware-backed Keystore controls where available, and web keys MUST use approved non-exportable Web Crypto storage plus the customer recovery design. Platform capability absence MUST degrade truthfully. | `REQ-P1-CRYPTO-002`, `ADR-ARCH-008` | Device capability, extraction resistance, backup/restore, biometric and fallback-policy tests. |
+| `SEC-P1-034` | Passkeys authenticate identity but MUST NOT be treated as document-encryption keys or a support-access path. Account recovery, vault-key recovery, and workspace ownership recovery are separate ceremonies with no implicit authority transfer. | `DEC-038`, `DEC-050` | Factor loss, account recovery, vault recovery, and takeover negative tests. |
+| `SEC-P1-035` | Document deletion MUST activate the current fence before acknowledgement, enforce restricted Trash for 30 days, and deny restore after the recorded deadline; purge and restore MUST use current authority and step-up policy. | `DEC-053`, `REQ-P1-DEL-001` | Time-boundary, stale authority, duplicate, retry, and post-expiry restore tests. |
+| `SEC-P1-036` | Backup, replay, rebuild, resync, and late callbacks MUST consult the current deletion ledger before materializing or serving data; final purge destroys live recovery key envelopes and completes only from per-role acknowledgements. | `REQ-P1-DEL-002`, `ADR-ARCH-010` | Restore/replay/resync resurrection and crypto-shred tests. |
+| `SEC-P1-037` | Web, iOS, and Android releases MUST be reproducible or independently source-to-artifact verifiable, signed where the platform supports it, provenance-recorded, dependency-pinned/scanned, and approved separately from the identity that can deploy/sign. A changed client is a cryptographic trust-boundary change. | `DEC-051`, `THR-P1-032` | Build-tamper, provenance, signing, rollback, and malicious-release exercises. |
 
 ## 5. Identity, session, and device baseline
 
-The identity provider remains deferred. Its adapter MUST support stable internal identity mapping, verified contact-factor state, strong/step-up authentication, MFA lifecycle, session inventory, token/session revocation, risk/security events, and tenant-safe error handling. External provider subject identifiers are evidence for authentication, not core resource identities.
+Microsoft Entra External ID is the selected production identity adapter under `ADR-ARCH-007`, but activation remains gated by tenant/application configuration and `DEC-054`. It MUST support stable internal identity mapping, verified contact-factor state, strong/step-up authentication, MFA lifecycle, session inventory, token/session revocation, risk/security events, and tenant-safe error handling. External provider subject identifiers are evidence for authentication, not core resource identities.
 
 | Operation | Minimum draft assurance | Additional rule |
 |---|---|---|
@@ -182,14 +189,14 @@ The identity provider remains deferred. Its adapter MUST support stable internal
 | Grant creation/change | Recent strong authentication and delegation authority | Preview exact effective access; audit grant version. |
 | Consequential approval/action | Current strong session plus action-specific authority and bound approval | Reauthorize immediately before execution. |
 | Export | Step-up authentication plus explicit export authority | Reauthorize package release/redemption. |
-| Purge/account/workspace deletion | Step-up authentication plus exact destructive authority and decision-dependent approval/cooling-off | `DEC-039` blocks final timing. |
+| Document delete/restore/final purge | Step-up authentication plus exact destructive/restore authority and the `DEC-053` 30-day state contract | Document restore and account/workspace recovery remain distinct. |
 | MFA/recovery change | Existing strong factor or the future `DEC-038` recovery ceremony | No email/support-only bypass is assumed. |
 
-Session state MUST contain opaque identifiers, not authorization truth that remains valid after policy/grant changes. Device remembrance is a revocable convenience, not independent authority. The PWA MUST not persist raw document content, tokens, evidence, or generated answers offline unless a separately approved offline threat model and decision authorize it.
+Session state MUST contain opaque identifiers, not authorization truth that remains valid after policy/grant changes. Device remembrance is a revocable convenience, not independent authority. Web and mobile clients MAY persist only approved encrypted offline content and indexes, with OS/browser key protection, bounded retention, remote revocation state, device-loss handling, and the offline threat tests required by `ADR-ARCH-008`/`009`.
 
 ## 6. Encryption, keys, and secrets
 
-The architecture remains implementation-neutral but MUST define these separations before deployment:
+The customer-content cryptographic protocol is defined by `ADR-ARCH-008`; infrastructure key products remain separate from customer content authority. The implementation MUST preserve these separations:
 
 - transport keys/certificates;
 - session/signing keys;
@@ -239,8 +246,8 @@ Security incidents require containment without destructive loss of provenance. R
 | `DEC-032` — emergency/incapacity/after-death release | No automated release or hidden continuity override. Ordinary scoped grants and curated exports remain separate. | Approved trigger evidence, delay, challenge, consent, notification, revocation, jurisdiction, false-trigger, audit, and abuse-case tests. |
 | `DEC-036` — suspected clinical content | Prevent ordinary extraction/index/AI/graph/search/analytics; do not promise reject, retain, export, or deletion treatment beyond safe containment. | Approved handling state machine, false-positive review, retention/export/deletion copy, and safety fixtures. |
 | `DEC-038` — recovery assurance | No support/email/family-role shortcut; no ownership or private-resource transfer through an unspecified recovery path. | Approved factor/identity evidence, delays/challenges, key implications, private-resource rules, support scope, abuse tests. |
-| `DEC-039` — deletion timing/audit | Define coverage/states but no invented cooling-off, active purge, backup expiry, or audit-minimization duration. | Approved lifecycle values, retention exceptions, backup/restore enforcement, deletion proof, user copy, and recovery tests. |
-| `DEC-040` — residency envelope | No adapter, support path, analytics stream, backup, or DR failover is assumed eligible for the Australian option. | Approved data-class/processor matrix, cross-border exception/consent rules, automated placement/egress/restore tests. |
+| `DEC-053` — document deletion lifecycle | Enforce immediate fence, restricted 30-day Trash, current-authority restore, final purge, crypto-shred, and non-resurrection; account/workspace deletion remains separate. | Cross-store lifecycle, backup/restore, time-boundary, content-minimized audit, user copy, and recovery tests. |
+| `DEC-049`/`050` — Azure placement and operator-blind content | Azure Australia routes and client encryption are approved only as documented; no other processor/support/analytics/backup route or server plaintext path is implied. | Complete matrix, cryptographic review, placement/egress/restore tests, and no-plaintext inspection evidence. |
 
 ## 11. Security verification gates
 

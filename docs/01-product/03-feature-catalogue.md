@@ -3,12 +3,12 @@
 | Field | Value |
 |---|---|
 | Document ID | `PROD-FEAT-001` |
-| Version | `0.1` |
+| Version | `0.2` |
 | Status | `DRAFT — derived from draft PRD; product-owner approval required` |
 | Product phase | Phase 1 — Personal and Family |
 | Jurisdiction | Australia first; jurisdiction-neutral core |
 | Source baseline | `PROD-PRD-001` version `0.1` and `APPROVED` decisions in `CTX-DEC-001` |
-| Updated | 26 August 2026 |
+| Updated | 28 August 2026 — approved Azure, customer-controlled encryption, React/Flutter, deletion, and assurance requirements mapped |
 
 ## 1. Authority and catalogue rules
 
@@ -75,9 +75,9 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Scope | `REQUIRED` |
 | Outcome | `OUT-P1-001`, `OUT-P1-002` — users can preserve and retrieve the exact evidence originally received. |
 | Release slice | `P1-S1` |
-| Linked requirements | `REQ-P1-DOC-001`, `REQ-P1-DOC-002`, `REQ-P1-DOC-004` |
+| Linked requirements | `REQ-P1-DOC-001`, `REQ-P1-DOC-002`, `REQ-P1-DOC-004`, `REQ-P1-CRYPTO-001` |
 | Primary users | Household owner; family administrator; authorized adult member; workspace service. |
-| Capabilities | Preserve immutable bytes with stable artifact identity, hash, media type, size, and acquisition provenance; keep logical-document identity separate from byte equality; support immutable versions; issue short-lived, version- and workspace-scoped preview/download access. |
+| Capabilities | Encrypt originals on an authorized customer client with an independent document key and versioned authenticated envelope before transfer; preserve immutable ciphertext with stable artifact identity, hash, media type, size, and acquisition provenance; keep logical-document identity separate from byte equality; support immutable versions; issue short-lived, version- and workspace-scoped ciphertext access that only an authorized client can decrypt. |
 | Explicit exclusions and decision dependencies | Destructive in-place replacement and permanent public artifact URLs are excluded. Immutability and logical versioning are constrained by `DEC-005`; isolation and cloud operation are constrained by `DEC-022`; slice sequencing depends on `DEC-030`. |
 | Failure or degraded behavior | Hash mismatch, wrong workspace/version, expired or revoked access, or missing authorization fails without returning content. Reprocessing or metadata failure cannot change the accepted original bytes. |
 | Product-level acceptance summary | The stored hash remains stable through reprocessing; identical bytes do not force unrelated logical documents to merge; authorized users retrieve the requested version while expired, revoked, and cross-workspace requests reveal nothing. |
@@ -89,10 +89,10 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Scope | `REQUIRED`; connector expansion is `CONDITIONAL` under `FEAT-P1-026`. |
 | Outcome | `OUT-P1-001`, `OUT-P1-007` — required capture routes produce truthful, recoverable processing rather than opaque upload success. |
 | Release slice | `P1-S1` |
-| Linked requirements | `REQ-P1-DOC-006`, `REQ-P1-ING-001`, `REQ-P1-ING-002`, `REQ-P1-ING-004` |
+| Linked requirements | `REQ-P1-DOC-006`, `REQ-P1-ING-001`, `REQ-P1-ING-002`, `REQ-P1-ING-004`, `REQ-P1-PLT-001` |
 | Primary users | Household owner; family administrator; adult member; workspace service. |
-| Capabilities | Support browser upload, PWA camera capture, and manual record creation; route all through one asynchronous ingestion state machine; configure validation, preview, native extraction, OCR fallback, and unsupported behavior by format; preserve acquisition attempts; provide idempotent retry and exact-hash duplicate detection. |
-| Explicit exclusions and decision dependencies | Native mobile/desktop applications are excluded by the PRD and `DEC-021`. Private inbound email and cloud connectors are not promised until `DEC-031` is approved. Enabled formats and the first launch profile depend on `DEC-035`; slice sequencing depends on `DEC-030`. |
+| Capabilities | Support React web/PWA upload plus Flutter iOS/Android file, camera, photo-library, and manual record capture; route all through one asynchronous ingestion state machine; configure validation, preview, native extraction, OCR fallback, and unsupported behavior by format; preserve acquisition attempts; provide idempotent retry and exact-hash duplicate detection. |
+| Explicit exclusions and decision dependencies | React web and concurrent Flutter mobile delivery are approved by `DEC-052`, which supersedes `DEC-021`. Private inbound email and cloud connectors are not promised until `DEC-031` is approved. Enabled formats and the first launch profile depend on `DEC-035`; slice sequencing depends on `DEC-030`. |
 | Failure or degraded behavior | Unsupported or unprocessable formats receive an explicit terminal or reviewable degraded state. Duplicate submissions, late events, and out-of-order retries must not create uncontrolled versions or duplicate side effects, and byte equality must not assert logical identity. |
 | Product-level acceptance summary | Every enabled format has an observable path; capture routes share the same provenance envelope; `AC-P1-ING-001` passes for duplicate submissions, timeouts, and out-of-order events. |
 
@@ -117,10 +117,10 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Scope | `REQUIRED`; detailed recovery is `CONDITIONAL` under `FEAT-P1-030`. |
 | Outcome | `OUT-P1-001`, `OUT-P1-007` — sensitive household content is isolated and consequential activity remains reconstructable without leaking content through operations data. |
 | Release slice | `P1-S1` |
-| Linked requirements | `REQ-P1-TRUST-001`, `REQ-P1-TRUST-003`, `REQ-P1-TRUST-004` |
+| Linked requirements | `REQ-P1-TRUST-001`, `REQ-P1-TRUST-003`, `REQ-P1-TRUST-004`, `REQ-P1-CRYPTO-002`, `REQ-P1-OPS-002`, `REQ-P1-ASSURE-001` |
 | Primary users | Household owner; family administrator; adult member; managed dependant; guest or delegated adviser; workspace service; product operator or support user. |
-| Capabilities | Encrypt data in transit and at rest; enforce least privilege and workspace isolation; define key, secret, session, and device controls; redact ordinary telemetry; create tamper-evident, workspace-scoped security and consequence audit records with safe provenance. |
-| Explicit exclusions and decision dependencies | Standing support access to raw household content and raw content in logs, analytics, traces, fixtures, errors, or screenshots are excluded. Multi-tenant isolation follows `DEC-022`; provider choices remain abstract under `DEC-009`; recovery assurance requires `DEC-038`. |
+| Capabilities | Combine Azure-managed transport/at-rest controls with customer-controlled member/device/recovery key envelopes; enforce least privilege and workspace isolation; revoke and rotate access without exposing content keys to ordinary operators; consume Azure commodity capabilities through provider-neutral adapters; redact ordinary telemetry; create tamper-evident, workspace-scoped security and consequence audit records; maintain an evidence-backed assurance case mapped to the approved standards baseline. |
+| Explicit exclusions and decision dependencies | Standing support access to raw household content, server-held plaintext customer keys, custom cryptographic primitives, duplicated managed-service capabilities, unsupported certification claims, and raw content in logs, analytics, traces, fixtures, errors, or screenshots are excluded. Azure selection follows `DEC-049`, customer-controlled encryption follows `DEC-050`, assurance follows `DEC-051`, and recovery assurance still requires `DEC-038`. |
 | Failure or degraded behavior | Sensitive telemetry is dropped or safely redacted rather than emitted. Audit-write or required security-control failure blocks the consequential operation or leaves it explicitly incomplete; support cannot bypass normal authorization. |
 | Product-level acceptance summary | Threat-model and negative-authorization gates pass; critical workflows can be reconstructed from privacy-safe audit records; automated redaction tests cover success and failure paths. |
 
@@ -131,9 +131,9 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Scope | Configuration foundation is `REQUIRED`; Phase 2 domain types are `RESERVED`. |
 | Outcome | `OUT-P1-001`, `OUT-P1-007` — product behavior is inspectable and changeable through governed reference data rather than scattered hard-coded values. |
 | Release slice | `P1-S1` |
-| Linked requirements | `REQ-P1-CFG-001`, `REQ-P1-CFG-005` |
+| Linked requirements | `REQ-P1-CFG-001`, `REQ-P1-CFG-005`, `REQ-P1-PLT-002` |
 | Primary users | Workspace service; product operator or support user. |
-| Capabilities | Version document types, extraction definitions, facts, dependency types, monitoring rules, sources, jurisdictions, roles, permissions, statuses, severities, workflows, and AI capabilities; validate identifiers and references; reserve organisation and enterprise-governance extension types without Phase 1 UI. |
+| Capabilities | Version document types, extraction definitions, facts, dependency types, monitoring rules, sources, jurisdictions, roles, permissions, statuses, severities, workflows, AI capabilities, and client encryption envelopes; validate identifiers and references; generate or conformance-test TypeScript and Dart models against the same contracts and fixtures; reserve organisation and enterprise-governance extension types without Phase 1 UI. |
 | Explicit exclusions and decision dependencies | Hard-coded taxonomy/workflows and vendor-bound core records are excluded by `DEC-007` and `DEC-009`. Organisation, business-unit, legal-hold, DLP, records, and information-barrier end-user capabilities are excluded from Phase 1 under `DEC-002`; only extension points are reserved. |
 | Failure or degraded behavior | Dangling IDs, invalid versions, missing required relationships, or unsupported schema versions cannot activate. Unknown reserved types remain inert rather than leaking enterprise behavior into consumer workflows. |
 | Product-level acceptance summary | Reference validation rejects invalid configuration; a later schema can add reserved Phase 2 types without redefining Phase 1 identity, workspace, resource, evidence, fact, or audit identities. |
@@ -147,10 +147,10 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Scope | `REQUIRED` |
 | Outcome | `OUT-P1-001`, `OUT-P1-002`, `OUT-P1-006` — users can organise, inspect, compare, archive, and restore documents without losing provenance or changing access boundaries. |
 | Release slice | `P1-S2` |
-| Linked requirements | `REQ-P1-DOC-003`, `REQ-P1-DOC-005` |
+| Linked requirements | `REQ-P1-DOC-003`, `REQ-P1-DOC-005`, `REQ-P1-DEL-001` |
 | Primary users | Household owner; family administrator; authorized adult member. |
 | Capabilities | Apply explicit version/supersession/effective states; perform material comparison; archive, trash, restore, and initiate controlled purge; browse by document, subject, property, vehicle, policy, or provider over the same governed resources. |
-| Explicit exclusions and decision dependencies | Resource-centric views do not create new access boundaries, and arbitrary shared office-document editing is excluded. Lifecycle behavior is constrained by `DEC-005` and `DEC-008`; purge timing and retained-audit behavior require `DEC-039`. |
+| Explicit exclusions and decision dependencies | Resource-centric views do not create new access boundaries, and arbitrary shared office-document editing is excluded. Lifecycle behavior is constrained by `DEC-005` and `DEC-008`; the immediate deletion fence, restricted Trash, step-up restore, and exact 30-calendar-day boundary are approved by `DEC-053`, which resolves the document-specific portion of `DEC-039`. |
 | Failure or degraded behavior | Invalid or unauthorized state transitions fail without rewriting history. If a material comparison is incomplete, the versions remain available and the uncertainty is shown rather than reporting no change. |
 | Product-level acceptance summary | Every view enforces the same resource policy; source versions remain inspectable; invalid transitions are rejected; archive/restore retains provenance; purge cannot occur until its approved conditions are met. |
 
@@ -161,9 +161,9 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Scope | `REQUIRED`; the first enabled schemas depend on `DEC-035`. |
 | Outcome | `OUT-P1-001`, `OUT-P1-002`, `OUT-P1-007` — derived document understanding is traceable, reviewable, and replaceable without becoming truth by default. |
 | Release slice | `P1-S2` |
-| Linked requirements | `REQ-P1-ING-005`, `REQ-P1-ING-006`, `REQ-P1-ING-007`, `REQ-P1-ING-008` |
+| Linked requirements | `REQ-P1-ING-005`, `REQ-P1-ING-006`, `REQ-P1-ING-007`, `REQ-P1-ING-008`, `REQ-P1-CRYPTO-003` |
 | Primary users | Household owner; family administrator; adult member; workspace service. |
-| Capabilities | Retain page/passage/coordinates or span, processor/model version, time, confidence, and review state; classify against versioned jurisdiction-aware types and schemas; expose uncertainty and manual correction; keep extraction, document review, fact acceptance, fulfilment, action approval, and evidence verification separate; preserve derived-result history on reprocessing. |
+| Capabilities | Perform default preview, extraction/OCR, classification, search preparation, graph preparation, and cited-answer preparation on an authorized customer client; retain page/passage/coordinates or span, processor/model version, time, confidence, and review state; classify against versioned jurisdiction-aware types and schemas; expose uncertainty and manual correction; keep extraction, document review, fact acceptance, fulfilment, action approval, and evidence verification separate; preserve derived-result history on reprocessing. |
 | Explicit exclusions and decision dependencies | OCR or model output cannot become approved fact, fulfilment, or action by itself. The initial type/schema profile requires `DEC-035`; clinical content remains outside ordinary flow under `DEC-024` and `DEC-036`; providers remain replaceable under `DEC-009`. |
 | Failure or degraded behavior | Low-confidence, unsupported, conflicting, or schema-invalid results enter review or a declared unsupported state. Reprocessing failure leaves earlier derived results and immutable bytes intact; rollback is allowed only where the detailed contract permits. |
 | Product-level acceptance summary | Every promoted field and citation resolves to stable evidence; unsupported classification is visible; state separation prevents false fulfilment; reviewers can compare provenance across parser/schema/prompt/model versions. |
@@ -375,7 +375,7 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Scope | `REQUIRED` |
 | Outcome | `OUT-P1-005` — households can collaborate and obtain limited advice without converting membership or adviser status into unrestricted browse or action authority. |
 | Release slice | `P1-S4` |
-| Linked requirements | `REQ-P1-WS-006`, `REQ-P1-SHR-001`, `REQ-P1-SHR-002`, `REQ-P1-SHR-003` |
+| Linked requirements | `REQ-P1-WS-006`, `REQ-P1-SHR-001`, `REQ-P1-SHR-002`, `REQ-P1-SHR-003`, `REQ-P1-CRYPTO-002` |
 | Primary users | Household owner; family administrator; adult member; guest/delegated adviser. |
 | Capabilities | Issue explicit purpose-, resource-, field-, action-, and time-scoped grants; create short-lived non-indexable guest links; revoke independently; separate family membership administration from content, consent, fact resolution, approval, export, and deletion authority. |
 | Explicit exclusions and decision dependencies | A separate adviser tenancy/product, general household enumeration, blanket `FAMILY_ADMIN` content access, onward sharing, and default bulk export are excluded by `DEC-023` and `DEC-003`. Grant enforcement follows `DEC-008`; slice sequencing requires `DEC-030`. |
@@ -445,10 +445,10 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Scope | Export and deletion capability are `REQUIRED`; exact export envelope and purge objectives remain decision-dependent. |
 | Outcome | `OUT-P1-006`, `OUT-P1-007` — authorized users can leave with documented usable data and request deletion without hidden active derivatives or misleading timing. |
 | Release slice | `P1-S4` |
-| Linked requirements | `REQ-P1-TRUST-006`, `REQ-P1-TRUST-007` |
+| Linked requirements | `REQ-P1-TRUST-006`, `REQ-P1-TRUST-007`, `REQ-P1-DEL-001`, `REQ-P1-DEL-002` |
 | Primary users | Household owner; family administrator; adult member; managed dependant subject where policy permits; workspace service; product operator or support user. |
 | Capabilities | Produce access-controlled, resumable, checksummed, machine-readable export manifests; govern archive, trash, account deletion, resource purge, retention exceptions, index/cache/connector removal, backup expiry, and minimized retained audit as separate states. |
-| Explicit exclusions and decision dependencies | Complete originals-plus-structured-data portability requires approval of `DEC-033` and respects third-party rights. Cooling-off, purge, backup expiry, and retained-audit minimization require `DEC-039`. Restore/support cannot bypass deletion, and deletion cannot falsely promise immediate backup erasure. |
+| Explicit exclusions and decision dependencies | Complete originals-plus-structured-data portability requires approval of `DEC-033` and respects third-party rights. Document Trash, restoration, purge coordination, key-envelope destruction, anti-resurrection controls, and content-minimized deletion evidence are approved by `DEC-053`; account deletion and lawful retention exceptions remain under the broader `DEC-039` governance boundary. Restore/support cannot bypass deletion, and deletion cannot falsely promise immediate backup erasure. |
 | Failure or degraded behavior | Interrupted export is resumable and reports completeness; deletion remains in a truthful governed state until each objective is met; failed derivative removal is visible and recoverable; retained audit is minimized rather than silently destroyed or left content-rich. |
 | Product-level acceptance summary | Export manifests are complete against the approved envelope and verify by checksum; purge covers active stores and derivatives; backup timing is disclosed; `AC-P1-DEL-001` passes without restore or support bypass. |
 
@@ -459,10 +459,10 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Scope | Residency option is `REQUIRED` by approved decision; detailed residency and recovery behavior are `CONDITIONAL`. |
 | Outcome | `OUT-P1-001`, `OUT-P1-006`, `OUT-P1-007` — the Australian residency option has verifiable processing boundaries, and recovery cannot become a weaker route to household authority or content. |
 | Release slice | `P1-S4` |
-| Linked requirements | `REQ-P1-TRUST-005`, `REQ-P1-TRUST-008` |
+| Linked requirements | `REQ-P1-TRUST-005`, `REQ-P1-TRUST-008`, `REQ-P1-OPS-001` |
 | Primary users | Household owner; family administrator; adult member; product operator or support user; workspace service. |
-| Capabilities | Apply an approved residency matrix to originals, records, indexes, backups, logs, analytics, support, AI/OCR, and disaster recovery; test placement and restore; enforce approved recovery evidence, delay/challenge, ownership, and support controls. |
-| Explicit exclusions and decision dependencies | The Australian residency option is constrained by `DEC-022`, but processor/data-class coverage and cross-border exceptions require `DEC-040`. Recovery assurance and support process require `DEC-038`. Provider assumptions are excluded by `DEC-009`, and support has no standing raw-content access. |
+| Capabilities | Define isolated Azure `dev`, `stage`, and future `prod` stacks in Bicep; apply an approved residency matrix to originals, records, indexes, backups, logs, analytics, support, AI/OCR, and disaster recovery; test placement and restore; enforce approved recovery evidence, delay/challenge, ownership, and support controls. |
+| Explicit exclusions and decision dependencies | Azure and the Australia East production realm are approved by `DEC-049`; dev/stage are synthetic-only in the current subscription and prod remains unprovisioned pending a separate subscription. Processor/data-class coverage and cross-border exceptions require `DEC-040`. Recovery assurance and support process require `DEC-038`; provider-neutral domain/adaptor boundaries remain required by `DEC-009`, and support has no standing raw-content access. |
 | Failure or degraded behavior | Unsupported or non-compliant processing is blocked or disclosed before approved consent. Recovery cannot disclose content or transfer authority when evidence, challenge, delay, or policy is unresolved; restore cannot place data outside the approved matrix. |
 | Product-level acceptance summary | Automated placement and restore match the approved matrix; cross-border exceptions are consented and recorded where permitted; recovery and support cannot bypass MFA, encryption, workspace ownership, private-resource, or delegated-access policy. |
 

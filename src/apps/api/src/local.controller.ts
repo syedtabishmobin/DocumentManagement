@@ -80,7 +80,16 @@ export class LocalController {
   connectors() { return this.store.connectorCatalogue(); }
 
   @Delete("documents/:id")
-  async remove(@Param("id") id: string) { await this.store.deleteDocument(id); return { deleted: true }; }
+  async remove(@Param("id") id: string, @Req() request: Request) {
+    await this.identities.requireSession(sessionToken(request));
+    return this.store.deleteDocument(id);
+  }
+
+  @Post("documents/:id/restore")
+  async restore(@Param("id") id: string, @Req() request: Request) {
+    await this.identities.requireSession(sessionToken(request));
+    return { state: "RESTORED", document: await this.store.restoreDocument(id) };
+  }
 
   @Post("assistant/questions")
   ask(@Body() body: unknown) { const input = askQuestionSchema.parse(body); return this.store.ask(input.question, input.documentIds); }

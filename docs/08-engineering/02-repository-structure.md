@@ -3,17 +3,17 @@
 | Field | Value |
 |---|---|
 | Document ID | `ENG-REP-001` |
-| Version | `0.1` |
-| Status | **APPROVED IMPLEMENTATION STRUCTURE under `DEC-041` and `ADR-ARCH-006`** |
+| Version | `0.2` |
+| Status | **APPROVED IMPLEMENTATION STRUCTURE under `DEC-041`, `DEC-054`, and `ADR-ARCH-006`–`009`** |
 | Product phase | Phase 1 — Personal and Family |
-| Updated | 26 August 2026 |
-| Current repository | Specifications under `docs/`, machine-readable contracts/reference data, validators, and an empty tracked `src/` reservation only |
+| Updated | 28 August 2026 |
+| Current repository | Specifications under `docs/`, machine-readable contracts/reference data, TypeScript web/API/packages under `src/`, approved Flutter mobile boundary, and Bicep infrastructure boundary |
 
 ## 1. Purpose and boundary
 
-This document defines future ownership boundaries, dependency direction, generated-contract handling, migrations, test placement, and repository hygiene. It does not decide whether implementation eventually uses one repository or several, a modular monolith or multiple deployables, a language, framework, build tool, package manager, database, cloud, or deployment topology.
+This document defines ownership boundaries, dependency direction, generated-contract handling, migrations, test placement, and repository hygiene. Accepted ADRs select the current monorepo, React/NestJS/TypeScript implementation, Flutter mobile client, Azure adapters, and Bicep deployment boundary without allowing those selections to redefine canonical domain contracts.
 
-The current numbered specification directories under `docs/` remain authoritative according to [`CODEX.md`](../../CODEX.md). The `src/` directory now contains the Phase 1 modular application authorized by `DEC-041`. Accepted `ADR-ARCH-006` maps the logical boundaries below into workspace packages; future adaptations require an accepted repository ADR with equivalent ownership and dependency enforcement.
+The current numbered specification directories under `docs/` remain authoritative according to [`CODEX.md`](../../CODEX.md). The `src/` directory contains the Phase 1 modular application authorized by `DEC-041` and `DEC-054`. `ADR-ARCH-006` and `ADR-ARCH-009` map the TypeScript and Flutter boundaries below; future adaptations require an accepted repository ADR with equivalent ownership and dependency enforcement.
 
 ## 2. Current immutable specification boundary
 
@@ -31,7 +31,7 @@ Generated output, caches, dependency trees, local state, secrets, test recording
 
 ## 3. Current root and future logical implementation layout
 
-The following is an ownership model, not a request to create directories now:
+The following is the approved ownership model; directories are created incrementally as their implementation begins:
 
 ```text
 /
@@ -42,12 +42,18 @@ The following is an ownership model, not a request to create directories now:
 │   ├── 11-reference-data/         # reviewed inert schemas and catalogues
 │   └── 12-testing/                # test/evaluation contracts and synthetic manifests
 ├── src/
-│   ├── domain/                    # aggregates, value objects, invariants, domain events
-│   ├── application/               # commands, queries, workflows, use cases, ports
-│   ├── capabilities/              # logical capability modules and projection builders
-│   ├── adapters/                  # external/provider and persistence implementations
-│   ├── interfaces/                # API, workers, clients and operator entry points
-│   └── platform/                  # cross-cutting bootstrap/configuration, never domain truth
+│   ├── apps/
+│   │   ├── web/                   # React public site and authenticated web/PWA
+│   │   ├── api/                   # NestJS API and application composition
+│   │   └── mobile/                # Flutter iOS/Android application
+│   └── packages/
+│       ├── domain/                # TypeScript aggregates/invariants used by server/web-safe flows
+│       ├── contracts/             # generated/validated TypeScript wire bindings
+│       └── crypto-vectors/        # language-neutral envelope fixtures, never live keys/content
+├── infra/
+│   ├── modules/                   # versioned Azure Bicep modules
+│   ├── environments/              # safe dev/stage/prod parameter sources
+│   └── tests/                     # lint, What-If, policy and deployment verification
 ├── migrations/
 │   ├── canonical/                 # expand/validate/migrate/switch/retire
 │   ├── derived/                   # rebuild/generation/cutover manifests
@@ -156,8 +162,8 @@ Migration code is versioned and retained for the applicable supported history. I
 
 | Rule ID | Draft normative rule |
 |---|---|
-| `ENG-REP-P1-001` | The implementation MUST preserve these logical boundaries and the authorization recorded by `DEC-041`; production activation remains separately gated. |
-| `ENG-REP-P1-002` | Repository count, deployable count, service topology, language, framework, package manager, and build tool remain undecided. |
+| `ENG-REP-P1-001` | The implementation MUST preserve these logical boundaries and the authorization recorded by `DEC-041` and `DEC-054`; production activation remains separately gated. |
+| `ENG-REP-P1-002` | The approved monorepo contains React/TypeScript web, NestJS/TypeScript API/domain packages, Flutter/Dart mobile, and Bicep infrastructure; new deployables or languages require an accepted decision. |
 | `ENG-REP-P1-003` | Current numbered specification, API/event, reference-data, and validator sources MUST retain their authority and review history. |
 | `ENG-REP-P1-004` | The domain boundary MUST depend on no interface, provider, persistence, deployment, telemetry, or generated transport implementation. |
 | `ENG-REP-P1-005` | Application code MUST own ports; adapters implement ports and MUST NOT redefine canonical domain semantics. |

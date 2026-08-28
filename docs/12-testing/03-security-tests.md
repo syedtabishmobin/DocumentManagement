@@ -3,11 +3,11 @@
 | Field | Value |
 |---|---|
 | Document ID | `TST-SEC-001` |
-| Version | `0.1` |
-| Status | **DRAFT — security environment, tooling, assessors, and release approval are not selected** |
+| Version | `0.2` |
+| Status | **APPROVED IMPLEMENTATION BASELINE — independent production evidence remains required** |
 | Product phase | Phase 1 — Personal and Family |
-| Updated | 26 August 2026 |
-| Primary trace | `SEC-P1-001`–`030`, `AUTH-P1-001`–`035`, `PRIV-P1-001`–`030`, `AUD-P1-001`–`030`, `THR-P1-001`–`030` |
+| Updated | 28 August 2026 |
+| Primary trace | `SEC-P1-001`–`037`, `AUTH-P1-001`–`035`, `PRIV-P1-001`–`030`, `AUD-P1-001`–`030`, `THR-P1-001`–`034`, `DEC-049`–`054` |
 
 ## 1. Security test stance
 
@@ -34,6 +34,10 @@ Security tests assert both the allowed outcome and prohibited observations. A sa
 | `TEST-SEC-P1-013` | Consent, connector/channel and retained-copy boundaries | Permission drift, revoke, disconnect, late callback/resync and external-channel attempts remain disabled or fenced; no live `.invalid` call. |
 | `TEST-SEC-P1-014` | Deletion, replay, rebuild, backup and restore | Current fence/tombstone denies late output, cache, event, resync, derived rebuild and restore; residual state never becomes serviceable. |
 | `TEST-SEC-P1-015` | Abuse, exhaustion, quota and noisy neighbour | Size/depth/fan-out/rate/retry/cost/queue attacks remain bounded and tenant-isolated without weakening authorization, audit, quarantine or deletion. |
+| `TEST-SEC-P1-016` | Client-side encryption and key hierarchy | Plaintext and unwrapped keys never reach API, Azure stores, queues, telemetry, support or backup; wrong workspace/member/version/context and tampered envelopes fail closed. |
+| `TEST-SEC-P1-017` | Web/Flutter release integrity and malicious-update resistance | Signed/provenanced candidates match reviewed source; CSP and dependency controls block unapproved egress; rollback, compromised builder and untrusted plugin cases cannot obtain plaintext silently. |
+| `TEST-SEC-P1-018` | Trash, restore and final purge | Immediate fence, authorized pre-deadline restore, post-deadline denial, crypto-shred, derived cleanup, replay/restore suppression and immutable content-free ledger are verified at clock boundaries. |
+| `TEST-SEC-P1-019` | Azure identity, network and environment isolation | Dev/stage/prod identities, data, secrets, RBAC and routes cannot cross; public exposure, policy drift and non-Australian route attempts fail deployment or runtime gates. |
 
 ## 3. Authorization negative matrix
 
@@ -68,7 +72,7 @@ Audit outage and telemetry outage are separate cases: required consequential/sec
 
 ## 7. Decision fences and abuse of unavailable routes
 
-Negative cases prove no connector/effect under `DEC-031`, automatic continuity under `DEC-032`, aggregate score under `DEC-034`, enabled DRAFT source/profile under `DEC-035`, ordinary clinical route under `DEC-036`, external notification under `DEC-037`, recovery/ownership transfer under `DEC-038`, invented deletion duration under `DEC-039`, or unknown processor/region/failover under `DEC-040`. UI hiding is insufficient: API, job, event, configuration, replay, migration, support, and direct-port invocation all fail closed.
+Negative cases prove no connector/effect under `DEC-031`, automatic continuity under `DEC-032`, aggregate score under `DEC-034`, enabled DRAFT source/profile under `DEC-035`, ordinary clinical route under `DEC-036`, external notification under `DEC-037`, or recovery/ownership transfer under `DEC-038`. They also prove that no client/server path bypasses `DEC-050`, no platform drifts from `DEC-052`, no restore extends the `DEC-053` deadline, and no deployment crosses `DEC-049`/`054` environment or release gates. UI hiding is insufficient: API, job, event, configuration, replay, migration, support, and direct-port invocation all fail closed.
 
 ## 8. Evidence and release consequence
 

@@ -3,15 +3,15 @@
 | Field | Value |
 |---|---|
 | Document ID | `OPS-CICD-001` |
-| Version | `0.1` |
-| Status | **DRAFT — engineering, architecture, security, privacy, operations, and quality approval required** |
+| Version | `0.2` |
+| Status | **APPROVED IMPLEMENTATION BASELINE — production promotion remains gated** |
 | Product phase | Phase 1 — Personal and Family |
-| Updated | 26 August 2026 |
-| Primary trace | `SEC-P1-030`, `THR-P1-021`, `THR-P1-028`, `ARCH-P1-005`, `ARCH-P1-039`–`045`, `NFR-P1-005`, `022`–`045` |
+| Updated | 28 August 2026 |
+| Primary trace | `SEC-P1-030`–`037`, `THR-P1-021`, `028`, `032`–`034`, `ARCH-P1-005`, `039`–`055`, `NFR-P1-005`, `022`–`050`, `DEC-049`–`054` |
 
 ## 1. Purpose and non-selection boundary
 
-This standard defines provider-neutral integration, build, verification, release-candidate, promotion, approval, and evidence contracts. It does not select a source-control, CI, artifact, dependency, signing, scanning, test, deployment, or change-management product; prescribe a branching model; or authorize application implementation.
+This standard defines integration, build, verification, release-candidate, promotion, approval, and evidence contracts for the approved React web, Flutter mobile, TypeScript API and Azure/Bicep stack. Exact CI vendor and production release authority remain outside this standard.
 
 Environment rules are in [`OPS-ENV-001`](01-environments.md), infrastructure changes in [`OPS-IAC-001`](03-infrastructure-as-code.md), secret/configuration changes in [`OPS-SEC-001`](04-secrets-and-configuration.md), release execution in [`OPS-DEP-001`](05-deployment-rollback-and-repair.md), and test/evidence ownership in [`ENG-TST-001`](../08-engineering/06-testing-standards.md).
 
@@ -57,6 +57,10 @@ A release candidate manifest binds: source revision; build definition/toolchain/
 | `OPS-CICD-P1-028` | A waiver MUST name exact rule/gate, candidate and scope, evidence, impact, compensating controls, owner, approvers, effective/expiry conditions, monitoring, remediation, and disable/rollback trigger; it cannot waive law/policy, current authorization, deletion fence, original integrity, required audit, or residency eligibility. |
 | `OPS-CICD-P1-029` | Build, gate, approval, promotion, deployment, rollback, repair, and waiver outcomes MUST create immutable privacy-safe evidence that can reconstruct who approved which exact artifact/configuration and why. |
 | `OPS-CICD-P1-030` | Pipeline definitions and gate policies are consequential configuration: changes MUST be reviewed, compatibility-tested, integrity-protected, effective-dated, audited, and recoverable; disabling a gate is itself a gated release change. |
+| `OPS-CICD-P1-031` | Every candidate MUST build and test the React web, TypeScript API, Flutter iOS, Flutter Android, shared contract fixtures and Bicep modules from pinned toolchains; missing critical-platform evidence blocks promotion. |
+| `OPS-CICD-P1-032` | Language-neutral cryptographic known-answer vectors, randomized nonce/tamper tests and mixed-client compatibility MUST pass unchanged across React and Flutter before any document path is releasable. |
+| `OPS-CICD-P1-033` | Azure deployment MUST use reviewed Bicep, environment-scoped workload identities and What-If evidence. Dev and stage may deploy synthetic/test candidates; production deployment is impossible without a separately approved subscription parameter set and release gate. |
+| `OPS-CICD-P1-034` | Web and mobile artifacts that can observe plaintext MUST be signed/provenanced, dependency-scanned and traceable to reviewed source. Production requires protected signing identities, reproducible-build evidence and independent security closure. |
 
 ## 4. Minimum gate matrix
 

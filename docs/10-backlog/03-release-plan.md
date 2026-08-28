@@ -3,16 +3,16 @@
 | Field | Value |
 |---|---|
 | Document ID | `BLG-REL-001` |
-| Version | `0.1` |
-| Status | **APPROVED IMPLEMENTATION SEQUENCE — not production launch authorization** |
+| Version | `0.2` |
+| Status | **APPROVED CONTINUOUS PHASE 1 BUILD — dev/stage deployment authorized; production promotion remains gated** |
 | Product phase | Phase 1 — Personal and Family |
-| Updated | 26 August 2026 |
+| Updated | 28 August 2026 |
 
 ## 1. Release stance
 
-This plan sequences specification-backed vertical slices. It sets no calendar dates, staffing commitments, provider selection, public-launch claim, service-level agreement, or production authorization. Slice completion means its approved scope and evidence gates pass together; it is not the sum of completed technical layers or story status labels.
+This plan sequences specification-backed vertical slices. It sets no calendar dates, staffing commitments, public-launch claim, service-level agreement, or production authorization. Azure and the client platforms are selected by `DEC-049`/`052`; slice completion means its approved scope and evidence gates pass together.
 
-`DEC-030` and `DEC-041` approve the complete sequence as one continuously authorized implementation program. Slice boundaries remain engineering checkpoints and do not require renewed product scope approval. Tests and evaluation cases move from `NOT_RUN` only when their corresponding implementation evidence exists; production launch remains separately gated.
+`DEC-030`, `DEC-041`, and `DEC-054` approve the complete sequence as one continuously authorized implementation program. Slice boundaries remain engineering checkpoints and do not require renewed product scope approval. Azure dev/stage deployments use synthetic/test data; production subscription provisioning, real customer data, public DNS, external providers, and store publication remain separately gated.
 
 ## 2. Proposed sequence
 
@@ -21,7 +21,7 @@ This plan sequences specification-backed vertical slices. It sets no calendar da
 | `P1-S1` — Secure household vault | An eligible household can establish an isolated workspace, capture through required routes, preserve exact originals, inspect durable status, and operate under current authorization/audit/configuration. | `STORY-P1-001`–`010` | PRD/slice baseline approved; identity/auth/security/privacy/audit architecture accepted; required capture routes and safe `DEC-035`/`036` boundary approved or explicitly synthetic-only; route eligibility known. | S1 functional, negative-auth/privacy, immutable-original, idempotency/retry, quarantine, configuration, accessibility, migration/repair, NFR, audit, and telemetry gates pass; no open decision is silently activated. |
 | `P1-S2` — Understand and retrieve | Authorized users can inspect document history/evidence, resolve facts/conflicts/dependencies, search, compare, and receive cited limited answers. | `STORY-P1-011`–`025` | S1 exit; evidence/fact/graph/search/AI schemas and proposed ADRs approved; enabled type/schema/capability/processor routes known; evaluation fixtures and gates approved. | Exact citation redemption and current authorization pass across document/fact/edge/search/AI; bitemporal/history/reprocessing integrity pass; AI safety/quality/cost/accessibility and degraded states pass. |
 | `P1-S3` — Monitor and close the loop | Governed observations detect change, establish applicability/impact, support bound approval/action, verify closure, explain evidence health, and coordinate in-app work. | `STORY-P1-026`–`038` | S2 exit; source/rule/profile pack approved under `DEC-035`; monitoring/action ports, approval authorities, configuration publication, and source/residency routes approved. | Source health and coverage truthfulness, replay/dedup, applicability/impact, stale approval, action unknown/partial/reconcile, evidence closure, health alternatives, task/in-app accessibility, and audit/operations gates pass. |
-| `P1-S4` — Family launch and portability | Households can share exact scopes, manage dependant boundaries, export declared data, request deletion, and see truthful connector/channel/score/recovery/continuity/residency availability. | `STORY-P1-039`–`048` | S3 exit; ordinary sharing/export/deletion authority approved; applicable `DEC-031`–`040` choices either approved with updated contracts/tests or retained as disabled/absence boundaries. | Grant/revocation, export manifest/limitations, deletion fence/purge evidence/resurrection, residency denial, dependant transition, decision-fence, accessibility, recovery/continuity non-bypass, and production operations evidence pass. |
+| `P1-S4` — Family launch and portability | Households can share exact scopes, manage dependant boundaries, export declared data, use 30-day Trash/restore, and see truthful connector/channel/score/recovery/continuity/residency availability. | `STORY-P1-039`–`048` | S3 exit; ordinary sharing/export approved; `DEC-049`–`053` contracts implemented; still-open `DEC-031`–`038` routes retained as disabled/absence boundaries. | Grant/key-envelope revocation, export manifest/limitations, Trash/restore/final purge/resurrection, residency denial, dependant transition, decision-fence, accessibility, recovery/continuity non-bypass, and production operations evidence pass. |
 
 `STORY-P1-026` belongs to the S3 sequence because its conformed current view is consumed by monitoring, but it remains in `EPIC-P1-004` because document evidence owns its semantics.
 
@@ -68,8 +68,11 @@ Validator success alone is necessary specification evidence, not a slice exit.
 | `DEC-036` | `POLICY_HOLD` prevents ordinary preview/extraction/search/graph/AI; no storage/disposition/timing promise. | `STORY-P1-005` |
 | `DEC-037` | In-app state may proceed if approved; external channel adapters and delivery/escalation claims stay disabled. | `STORY-P1-042` |
 | `DEC-038` | Recovery/ownership transfer/support override remain absent and tested as unavailable. | `STORY-P1-047` |
-| `DEC-039` | Deletion states/residual verification can be specified; no timing, retained-audit, or backup-expiry promise. | `STORY-P1-045` |
-| `DEC-040` | Unknown/ineligible routes block processing/export/backup/failover/support; no provider-location claim. | `STORY-P1-046` and all processor-using stories |
+| `DEC-039` / `DEC-053` | `DEC-039` is superseded for documents: implement immediate deletion fence, 30-calendar-day Trash/restore, then final purge/crypto-shred and content-free evidence. | `STORY-P1-045` |
+| `DEC-040` / `DEC-049` | `DEC-040` is superseded by the approved Azure Australian placement matrix; unknown/ineligible routes still block. | `STORY-P1-046` and all processor-using stories |
+| `DEC-050` | Every document path uses customer-controlled client encryption; platform processing cannot add a plaintext fallback. | All document, AI, export, sharing and recovery stories |
+| `DEC-052` | Critical journeys and semantics ship on React web and Flutter iOS/Android; a platform omission needs an explicit release exception. | All user-facing stories |
+| `DEC-054` | IaC and complete Phase 1 implementation may proceed continuously; only synthetic/test data is allowed in the current dev/stage subscription. | All |
 
 If a decision changes, the affected requirements, architecture/security/data/API/event/UX/reference data, stories/AC, tests, migration/compatibility, operations, and user-facing claims must be revised as one governed change. A feature flag, environment variable, or deployment choice cannot approve scope.
 
@@ -88,6 +91,6 @@ Unsafe destructive rollback is rejected in favor of forward repair. State alread
 
 Promotion must satisfy `OPS-CICD-P1-001`–`030` and `OPS-DEP-P1-001`–`032` using the same verified artifact, compatible configuration/migrations, decision fences, and route eligibility. Production promotion also requires current recovery/restore, incident, security, privacy, accessibility, NFR, and cost evidence.
 
-Public claims are limited to the approved, enabled, measured profile. They must disclose material source/type/schema/route/AI/monitoring/export limitations and never imply legal compliance, professional advice, complete detection, complete portability, deletion timing, recovery availability, Australian-only processing, or an aggregate risk/readiness guarantee unless the owning decision and evidence explicitly permit it.
+Public claims are limited to the approved, enabled, measured profile. They must disclose material source/type/schema/route/AI/monitoring/export limitations and never imply legal compliance, professional advice, complete detection, complete portability, account recovery availability, or an aggregate risk/readiness guarantee unless the owning decision and evidence explicitly permit it. The 30-day document Trash promise and Australian Azure placement may be claimed only after release evidence proves `DEC-049` and `DEC-053` end to end.
 
-This DRAFT plan grants no implementation or launch authority.
+This plan grants complete Phase 1 implementation and Azure dev/stage deployment authority under `DEC-054`; it does not grant production launch authority.

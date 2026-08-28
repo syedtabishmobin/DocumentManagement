@@ -5,7 +5,7 @@
 | Document ID | `ARCH-ADR-INDEX-001` |
 | Version | `0.1` |
 | Status | **ACTIVE index** |
-| Updated | 26 August 2026 |
+| Updated | 28 August 2026 |
 
 ## Purpose and authority
 
@@ -40,8 +40,12 @@ All ADRs in the current Phase 1 implementation set are **ACCEPTED**.
 | [`ADR-ARCH-004`](ADR-004-durable-commands-events-and-eventual-consistency.md) | ACCEPTED | Local authoritative transitions with durable publication, idempotent events, explicit workflows, and eventual cross-aggregate convergence | `DEC-006`, `ARCH-P1-019`–`024`, `DATA-P1-033`–`040` |
 | [`ADR-ARCH-005`](ADR-005-provider-neutral-ports-and-residency-policy.md) | ACCEPTED | Versioned provider-neutral ports with capability conformance and policy-enforced processing/residency routes | `DEC-009`, `DEC-022`, `REQ-P1-AI-007`, `REQ-P1-TRUST-005`, `009` |
 | [`ADR-ARCH-006`](ADR-006-phase-1-local-first-typescript-stack.md) | ACCEPTED | TypeScript monorepo, responsive React PWA, NestJS API, local adapters, and explicit production adapter gates | `DEC-041`, `DEC-042`, `ENG-STACK-001`, `ENG-REP-001` |
+| [`ADR-ARCH-007`](ADR-007-azure-environments-and-managed-services.md) | ACCEPTED | Three Bicep-defined Azure environments, Australian production placement, and managed production adapters | `DEC-049`, `DEC-051`, `DEC-054`, `OPS-IAC-001` |
+| [`ADR-ARCH-008`](ADR-008-customer-controlled-client-encryption.md) | ACCEPTED | Customer-controlled client encryption, device/workspace/document key hierarchy, local intelligence, and operator-blind storage | `DEC-050`, `REQ-P1-TRUST-001`–`009`, `SEC-ARCH-001` |
+| [`ADR-ARCH-009`](ADR-009-react-web-flutter-mobile.md) | ACCEPTED | React web plus a mobile-first Flutter iOS/Android client sharing contracts and conformance evidence | `DEC-052`, `ENG-STACK-001`, `ENG-REP-001` |
+| [`ADR-ARCH-010`](ADR-010-thirty-day-document-recovery-and-purge.md) | ACCEPTED | Immediate deletion fence, 30-day Trash/restore, cross-store purge, crypto-shredding, and restore-safe deletion ledger | `DEC-053`, `REQ-P1-TRUST-007`, `OPS-DR-001` |
 
-Together these records form a coherent logical baseline: authoritative state and immutable evidence retain history; derivatives remain replaceable; asynchronous work cannot lose triggers or invent completion; every output/effect uses current authorization; and all external/data-placement choices pass replaceable capability and residency policy boundaries.
+Together these records form a coherent logical and deployment baseline: authoritative state and immutable evidence retain history; derivatives remain replaceable; asynchronous work cannot lose triggers or invent completion; every output/effect uses current authorization; Azure adapters remain behind portable boundaries; customer content is encrypted before transfer; React and Flutter share contracts rather than UI source; and deletion remains recoverable for exactly the approved window without resurrection through restore or replay.
 
 ## Required ADR contents
 

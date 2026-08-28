@@ -8,6 +8,7 @@
 | Decision scope | Phase 1 application language, modular repository, client/API framework, local adapters, and test toolchain |
 | Decision owners | Product owner and engineering |
 | Supersedes | The non-selection boundary in `ENG-STACK-001` for the named implementation components only |
+| Superseded in part by | `ADR-ARCH-009` for dedicated mobile delivery; the React web, NestJS API, TypeScript packages, and local profile remain active |
 
 ## Context
 
@@ -25,4 +26,4 @@ The default runtime profile is `local`, outbound-denied, synthetic-first, and us
 - A shared TypeScript model reduces contract drift while source OpenAPI/event/reference contracts retain authority.
 - Local filesystem persistence is development evidence, not production durability or Australian-residency evidence.
 - Productionisation replaces adapters and configuration rather than domain workflows or user journeys.
-- Browser and native-wrapper distribution can share the responsive web application; App Store packaging remains a later delivery choice.
+- React remains the responsive web/PWA implementation. Dedicated mobile delivery now uses Flutter under `ADR-ARCH-009`; it shares contracts, fixtures, and server/domain semantics rather than React UI source.

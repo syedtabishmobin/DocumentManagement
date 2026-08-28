@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Answer, AuthSession, DashboardSnapshot } from "@document-management/contracts";
-import { Archive, Bell, Bot, CalendarClock, Check, ChevronRight, Eye, FileLock2, FileText, FolderSearch2, Home, ListChecks, Menu, Network, Plus, Search, ShieldCheck, Sparkles, Trash2, Upload, Users, X } from "lucide-react";
+import { Archive, Bell, Bot, CalendarClock, Check, ChevronRight, Eye, FileLock2, FileText, FolderSearch2, Home, ListChecks, Menu, Network, Plus, RotateCcw, Search, ShieldCheck, Sparkles, Trash2, Upload, Users, X } from "lucide-react";
 import { api } from "./api.js";
 import { AuthScreen, Onboarding, Startup } from "./Auth.js";
 import { CaptureModal } from "./CaptureModal.js";
@@ -11,7 +11,7 @@ import { BrandMark, BrandName } from "./Brand.js";
 import { DocumentDossier } from "./DocumentDossier.js";
 import { ProfileView } from "./Profile.js";
 
-type View = "home" | "documents" | "profile" | "assistant" | "attention" | "family" | "activity";
+type View = "home" | "documents" | "profile" | "assistant" | "attention" | "family" | "activity" | "trash";
 const nav: Array<{ id: View; label: string; icon: typeof Home }> = [
   { id: "home", label: "Overview", icon: Home },
   { id: "documents", label: "Documents", icon: FileText },
@@ -20,6 +20,7 @@ const nav: Array<{ id: View; label: string; icon: typeof Home }> = [
   { id: "attention", label: "Needs attention", icon: ListChecks },
   { id: "family", label: "Family access", icon: Users },
   { id: "activity", label: "Activity", icon: Bell },
+  { id: "trash", label: "Trash", icon: Trash2 },
 ];
 
 export function App() {
@@ -82,12 +83,13 @@ export function App() {
     <main>
       {error ? <div className="error-banner">{error}<button onClick={() => setError("")}>Dismiss</button></div> : null}
       {view === "home" && <Overview data={data} onUpload={() => setCapture(true)} onNavigate={setView} />}
-      {view === "documents" && <Documents data={data} onUpload={() => setCapture(true)} onDelete={async (id) => { if (!confirm("Delete this local document and its derived content?")) return; await api.deleteDocument(id); await refresh(); }} />}
+      {view === "documents" && <Documents data={data} onUpload={() => setCapture(true)} onDelete={async (id) => { if (!confirm("Move this document to Trash? You can restore it for 30 days.")) return; await api.deleteDocument(id); await refresh(); }} />}
       {view === "profile" && <ProfileView data={data} refresh={refresh} />}
       {view === "assistant" && <Assistant documentCount={activeDocuments.filter((document) => document.status === "READY").length} />}
       {view === "attention" && <Attention data={data} refresh={refresh} />}
       {view === "family" && <FamilyView data={data} refresh={refresh} />}
       {view === "activity" && <ActivityView data={data} />}
+      {view === "trash" && <Trash data={data} onRestore={async (id) => { await api.restoreDocument(id); await refresh(); }} />}
     </main>
     {capture ? <CaptureModal subjects={data.subjects} onClose={() => setCapture(false)} onAdded={async () => { await refresh(); setView("documents"); }} /> : null}
   </div>;
@@ -151,9 +153,17 @@ function Attention({ data, refresh }: { data: DashboardSnapshot; refresh: () => 
   return <><PageHead eyebrow="Monitor and close" title="Needs attention" copy="Explainable findings and human-approved actions—without a misleading aggregate score." /><div className="task-create"><input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Add a household task" /><button className="primary" onClick={async () => { if (!title.trim()) return; await api.addTask(title); setTitle(""); await refresh(); }}><Plus size={17} /> Add task</button></div><div className="task-list">{tasks.map((task) => <article key={task.id} className={task.state === "DONE" ? "done" : ""}><button aria-label="Complete task" disabled={task.state === "DONE"} onClick={async () => { await api.completeTask(task.id); await refresh(); }}>{task.state === "DONE" ? <Check /> : null}</button><span><strong>{task.title}</strong><small>{task.severity.toLowerCase()} · {task.dueAt ? formatDate(task.dueAt) : "No due date"}</small></span></article>)}</div></>;
 }
 
+function Trash({ data, onRestore }: { data: DashboardSnapshot; onRestore: (id: string) => Promise<void> }) {
+  const documents = data.documents.filter((document) => document.status === "DELETED").sort((a, b) => (b.deletedAt ?? "").localeCompare(a.deletedAt ?? ""));
+  return <><PageHead eyebrow="30-day recovery" title="Trash" copy="Deleted documents are inaccessible everywhere else. Restore them before the displayed deadline; after that, final purge removes the original and derived data." />
+    {documents.length ? <div className="document-grid trash-grid">{documents.map((document) => <article className="document-card trash-card" key={document.id}><div className="doc-top"><span className="file-icon large"><Trash2 /></span><span className="status deleted">TRASHED</span></div><h3>{document.name}</h3><p>{document.category}</p><dl><div><dt>Deleted</dt><dd>{document.deletedAt ? formatDateTime(document.deletedAt) : "Recorded"}</dd></div><div><dt>Final purge</dt><dd>{document.purgeDueAt ? formatDateTime(document.purgeDueAt) : "Pending"}</dd></div></dl><div className="review-note">The original, preview, search, facts, answers and connections are fenced while this item is in Trash.</div><button className="view-document" onClick={() => void onRestore(document.id)}><RotateCcw size={17} /> Restore document</button></article>)}</div> : <Empty icon={Trash2} title="Trash is empty" copy="Documents you delete will be recoverable here for 30 days." />}
+  </>;
+}
+
 function Empty({ icon: Icon, title, copy, action }: { icon: typeof Home; title: string; copy: string; action?: React.ReactNode }) { return <div className="empty"><Icon /><h3>{title}</h3><p>{copy}</p>{action}</div>; }
 function formatBytes(value: number) { return value < 1024 ? `${value} B` : value < 1024 * 1024 ? `${(value / 1024).toFixed(1)} KB` : `${(value / 1024 / 1024).toFixed(1)} MB`; }
 function formatDate(value: string) { return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric" }).format(new Date(value)); }
+function formatDateTime(value: string) { return new Intl.DateTimeFormat("en-AU", { day: "numeric", month: "short", year: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" }).format(new Date(value)); }
 function initials(value?: string) { return value?.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "ME"; }
 function navigate(href: string, replace = false) {
   window.history[replace ? "replaceState" : "pushState"]({}, "", href);

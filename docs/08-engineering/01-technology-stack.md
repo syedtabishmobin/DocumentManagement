@@ -3,18 +3,30 @@
 | Field | Value |
 |---|---|
 | Document ID | `ENG-STACK-001` |
-| Version | `0.1` |
-| Status | **APPROVED CONSTRAINTS — implementation selection in `ADR-ARCH-006`; production providers unselected** |
+| Version | `0.2` |
+| Status | **APPROVED CONSTRAINTS AND SELECTED PHASE 1 STACK — `ADR-ARCH-006`–`009`** |
 | Product phase | Phase 1 — Personal and Family |
-| Updated | 26 August 2026 |
-| Architecture inputs | `ARCH-SOL-001`, `ARCH-DATA-001`, `ARCH-NFR-001`, proposed `ADR-ARCH-001`–`005` |
+| Updated | 28 August 2026 |
+| Architecture inputs | `ARCH-SOL-001`, `ARCH-DATA-001`, `ARCH-NFR-001`, accepted `ADR-ARCH-001`–`010` |
 | Decision boundary | Capability criteria and evidence only; selection requires an approved decision/ADR |
 
 ## 1. Purpose and non-selection statement
 
-This document defines what every implementation and future production technology must prove. Accepted `ADR-ARCH-006` selects the Phase 1 local application language, modular repository, client/API frameworks, local adapters, and test toolchain. It does **not** select a cloud, production hosting model, identity provider, managed database, object store, queue, search/vector/graph engine, OCR/model provider, notification service, connector, analytics platform, observability product, or production key/secrets product.
+This document defines what every implementation and production technology must prove. `ADR-ARCH-006` selects the TypeScript local/web/API stack; `ADR-ARCH-007` selects Azure/Bicep and the named managed-service adapters; `ADR-ARCH-008` selects the operator-blind encryption boundary; and `ADR-ARCH-009` selects Flutter/Dart for mobile. Unnamed external AI/OCR, connector, notification, analytics, and specialist search/graph products remain unselected and disabled by default.
 
-Approved `DEC-009` requires provider-specific choices behind abstractions. Approved `DEC-021` requires a responsive web app/PWA product surface, and `DEC-022` requires strict multi-tenant workspace isolation with an Australian-residency option. Those decisions constrain capabilities, not products. Proposed ADRs are evaluation inputs until accepted. `DEC-031`–`DEC-040` continue to fence conditional connectors, continuity, scoring, launch profiles, clinical handling, channels, recovery, deletion timing, and residency routes.
+Approved `DEC-009` still requires provider-specific choices behind abstractions. `DEC-052` requires React web and Flutter mobile; `DEC-049` selects Azure while retaining strict multi-tenant isolation and Australian placement; `DEC-050` makes customer-device plaintext processing the default. Conditional connectors, continuity, scoring, clinical handling, external channels, account recovery, and production/public activation remain fenced by their owning decisions.
+
+### Approved implementation selections
+
+| Area | Selection | Authority |
+|---|---|---|
+| Public/authenticated web | React, TypeScript, Vite/PWA | `ADR-ARCH-006`, `ADR-ARCH-009` |
+| Dedicated mobile | Flutter/Dart for iOS and Android | `ADR-ARCH-009` |
+| API/application | NestJS/TypeScript modular server | `ADR-ARCH-006` |
+| Contracts | OpenAPI/event/reference sources with generated or conformance-validated TypeScript and Dart bindings | `ADR-ARCH-009` |
+| Infrastructure | Azure expressed in Bicep for isolated `dev`, `stage`, and `prod` | `ADR-ARCH-007` |
+| Managed production adapters | Container Apps, PostgreSQL Flexible Server, Blob Storage, Service Bus, Key Vault, Entra External ID, Front Door/WAF, Azure Monitor | `ADR-ARCH-007` |
+| Customer content protection | Azure platform encryption plus customer-controlled client encryption and local intelligence | `ADR-ARCH-008` |
 
 ## 2. Selection principles
 
@@ -31,7 +43,8 @@ Approved `DEC-009` requires provider-specific choices behind abstractions. Appro
 
 | Capability family | Required provider-neutral behavior | Mandatory evaluation evidence | Decision dependencies |
 |---|---|---|---|
-| Responsive web/PWA client | Accessible responsive journeys; safe session/local-state behavior; secure rendering/download; versioned API consumption; truthful async/degraded states | Critical-journey/accessibility matrix, browser threat tests, contract compatibility, build provenance, offline/non-persistence tests | `DEC-021`; client technology deferred |
+| Responsive web/PWA client | Accessible responsive journeys; safe session/local-state behavior; secure rendering/download; versioned API consumption; truthful async/degraded states | Critical-journey/accessibility matrix, browser threat tests, contract compatibility, build provenance, offline/non-persistence tests | React selected by `ADR-ARCH-006`/`009` |
+| Dedicated mobile client | Mobile-first adaptive journeys, OS-protected keys, secure capture/viewing, generated contracts, encrypted offline state, truthful background/degraded behavior | iOS/Android device matrix, MASVS/MASTG, contract/crypto-vector parity, accessibility, signing and store-build provenance | Flutter selected by `DEC-052`, `ADR-ARCH-009` |
 | Edge/API boundary | OpenAPI 3.1 conformance, authenticated workspace/purpose context, current authorization, quotas, ETags, idempotency, problem responses, artifact grant/redemption | `API-P1-*` suite, abuse/non-disclosure, compatibility and load evidence | `API-STD-001`, `API-OAS-001` |
 | Domain/application runtime | Aggregate ownership, bitemporal/immutable semantics, deterministic rules, explicit workflows, provider-neutral ports | State-machine/property, temporal, boundary, replay and migration evidence | `ARCH-DOM-001`, `ARCH-DATA-001` |
 | Identity/session/recovery port | Stable internal mapping, strong/session/step-up/revocation events, least disclosure, tenant-safe failure | Authentication/session conformance, revoke/race/abuse, credential isolation | `SEC-P1-003`–`007`; recovery disabled by `DEC-038` |
@@ -137,7 +150,7 @@ Criteria and fixtures are approved before comparative execution. Candidate-speci
 |---|---|
 | `ENG-STACK-P1-001` | Technology selection MUST start from a versioned capability/port contract, not a preferred product or SDK. |
 | `ENG-STACK-P1-002` | Canonical IDs, aggregates, states, events, evidence, policies, and reference data MUST remain provider-neutral. |
-| `ENG-STACK-P1-003` | No implementation language, framework, cloud, store, identity, processor, model, scanner, channel, connector, analytics, observability, build, or deployment product is selected here. |
+| `ENG-STACK-P1-003` | Selected technologies MUST remain limited to the accepted ADR scope above. Any additional language, framework, cloud service, processor, model, scanner, channel, connector, or analytics product requires its owning decision and conformance evidence. |
 | `ENG-STACK-P1-004` | A logical component or port MUST NOT be interpreted as a required service, process, repository, store, or vendor. |
 | `ENG-STACK-P1-005` | Every candidate MUST declare the exact port, contract, schema, adapter, and capability versions it implements. |
 | `ENG-STACK-P1-006` | Missing, expired, incompatible, or unverified capability-manifest claims MUST make a route ineligible. |
@@ -161,7 +174,7 @@ Criteria and fixtures are approved before comparative execution. Candidate-speci
 | `ENG-STACK-P1-024` | A material provider, model, API, region, subprocessor, support, retention, reuse, failover, pricing, or capability change MUST expire or rerun evidence. |
 | `ENG-STACK-P1-025` | Selection MUST record alternatives, consequences, residual risks, exit plan, evidence, owners, review date, and triggers in an approved decision/ADR. |
 | `ENG-STACK-P1-026` | An evaluation recommendation MUST NOT activate a candidate; accepted authority and a compatible disabled-by-default configuration are required. |
-| `ENG-STACK-P1-027` | `DEC-031`–`DEC-040` MUST remain visible gates; an engineering default or local fake cannot close or bypass them. |
+| `ENG-STACK-P1-027` | Remaining decision fences, especially external connectors/channels, clinical handling, account recovery, server-side plaintext processing, and production/public activation, MUST remain visible; an engineering default or local fake cannot close or bypass them. |
 | `ENG-STACK-P1-028` | Performance/cost evidence MUST be segmented by capability, outcome, retry/cache class, slice, and data-quality state; safety failures cannot be averaged away. |
 | `ENG-STACK-P1-029` | A selected technology MUST have operational, security, privacy, data, test, upgrade, incident, and decommission owners before production. |
 | `ENG-STACK-P1-030` | Selection evidence and decisions MUST be immutable by version, safely auditable, reviewable, and reproducible from retained manifests/fixtures. |
@@ -178,4 +191,4 @@ No stack choice is valid until the decision states:
 6. residual risks, owners, evidence expiry, activation and rollback/forward-repair gates; and
 7. review/replacement triggers.
 
-`ADR-ARCH-006` supplies the approved local implementation output. Each production provider remains deliberately undecided until it supplies the evidence and decision output above.
+`ADR-ARCH-006`–`009` supply the approved Phase 1 implementation output. Every unnamed adapter/provider remains deliberately disabled until it supplies the evidence and decision output above.

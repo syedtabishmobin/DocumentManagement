@@ -1,4 +1,4 @@
-import type { Answer, AuthSession, ConnectorDescriptor, DashboardSnapshot, DocumentDetail, DocumentRecord, FactRecord, ManagePersonInput, Member, SubjectRecord, TaskRecord, Workspace, WorkspaceRole } from "@document-management/contracts";
+import type { Answer, AuthSession, ConnectorDescriptor, DashboardSnapshot, DocumentDeletionResult, DocumentDetail, DocumentRecord, DocumentRestoreResult, FactRecord, ManagePersonInput, Member, SubjectRecord, TaskRecord, Workspace, WorkspaceRole } from "@document-management/contracts";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`/api${path}`, { credentials: "same-origin", ...init });
@@ -27,7 +27,8 @@ export const api = {
   updatePerson: (id: string, input: ManagePersonInput) => request<SubjectRecord>(`/people/${id}`, { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }),
   deletePerson: (id: string) => request<{ deleted: true }>(`/people/${id}`, { method: "DELETE" }),
   connectors: () => request<ConnectorDescriptor[]>("/connectors"),
-  deleteDocument: (id: string) => request<{ deleted: true }>(`/documents/${id}`, { method: "DELETE" }),
+  deleteDocument: (id: string) => request<DocumentDeletionResult>(`/documents/${id}`, { method: "DELETE" }),
+  restoreDocument: (id: string) => request<DocumentRestoreResult>(`/documents/${id}/restore`, { method: "POST" }),
   ask: (question: string) => request<Answer>("/assistant/questions", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ question }) }),
   addMember: (displayName: string, role: WorkspaceRole) => request<Member>("/members", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ displayName, role }) }),
   addTask: (title: string) => request<TaskRecord>("/tasks", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ title, severity: "ACTION" }) }),

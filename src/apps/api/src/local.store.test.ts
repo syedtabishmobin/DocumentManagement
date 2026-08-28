@@ -19,7 +19,7 @@ describe("LocalStore", () => {
     delete process.env.DM_DATA_DIR;
   });
 
-  it("stores, retrieves, cites, and purges a local text document", async () => {
+  it("stores, retrieves, cites, trashes, restores, and finally purges a local text document", async () => {
     const text = "Home insurance policy expires on 30 June 2027.\nPolicy number: SYN-12345";
     const uploaded = await store.addDocument({
       fieldname: "file",
@@ -55,11 +55,24 @@ describe("LocalStore", () => {
     expect(reviewed.reviewState).toBe("REVIEWED");
     expect((await store.dashboard()).audit.some((entry) => entry.type === "FACT_REVIEWED")).toBe(true);
 
-    await store.deleteDocument(uploaded.id);
+    const deletion = await store.deleteDocument(uploaded.id);
+    expect(deletion).toMatchObject({ state: "TRASHED", documentId: uploaded.id });
     dashboard = await store.dashboard();
     expect(dashboard.documents.find((document) => document.id === uploaded.id)?.status).toBe("DELETED");
     expect(dashboard.dependencies.some((edge) => edge.evidenceDocumentId === uploaded.id)).toBe(false);
     expect(await store.ask("When does the home insurance policy expire?")).toMatchObject({ confidence: "LOW", citations: [] });
+    await expect(store.documentArtifact(uploaded.id)).rejects.toThrow("not found");
+
+    const restored = await store.restoreDocument(uploaded.id, new Date(new Date(deletion.deletedAt).getTime() + 1_000).toISOString());
+    expect(restored.status).toBe("READY");
+    expect((await store.documentArtifact(uploaded.id)).buffer.toString("utf8")).toBe(text);
+    expect((await store.ask("When does the home insurance policy expire?")).citations.length).toBeGreaterThan(0);
+
+    const deletedAgain = await store.deleteDocument(uploaded.id);
+    await expect(store.restoreDocument(uploaded.id, deletedAgain.purgeDueAt)).rejects.toThrow("recovery period has ended");
+    expect(await store.purgeExpiredDocuments(deletedAgain.purgeDueAt)).toEqual([uploaded.id]);
+    expect((await store.dashboard()).documents.some((document) => document.id === uploaded.id)).toBe(false);
+    await expect(store.documentArtifact(uploaded.id)).rejects.toThrow("not found");
   });
 
   it("isolates suspected clinical content", async () => {

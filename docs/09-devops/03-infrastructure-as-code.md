@@ -3,17 +3,17 @@
 | Field | Value |
 |---|---|
 | Document ID | `OPS-IAC-001` |
-| Version | `0.1` |
-| Status | **DRAFT — architecture, security, privacy, operations, and finance approval required** |
+| Version | `0.2` |
+| Status | **APPROVED IMPLEMENTATION STANDARD under `DEC-049` and `ADR-ARCH-007`** |
 | Product phase | Phase 1 — Personal and Family |
-| Updated | 26 August 2026 |
-| Primary trace | `DEC-009`, `DEC-022`, `ADR-ARCH-005`, `ARCH-P1-001`–`005`, `013`–`018`, `031`–`045`, `SEC-P1-028`–`030` |
+| Updated | 28 August 2026 |
+| Primary trace | `DEC-009`, `DEC-049`–`054`, `ADR-ARCH-005`, `ADR-ARCH-007`–`010`, `ARCH-P1-001`–`005`, `013`–`018`, `031`–`045`, `SEC-P1-028`–`030` |
 
 ## 1. Purpose and boundary
 
-This standard defines declarative infrastructure intent, protected state, change planning, drift control, residency evidence, and lifecycle without selecting a cloud, infrastructure-as-code language/product, state backend, network, runtime, database, queue, secret, key, monitoring, backup, or deployment technology.
+This standard defines declarative infrastructure intent, protected state, change planning, drift control, residency evidence, and lifecycle. `ADR-ARCH-007` selects Azure and Bicep for the named Phase 1 adapters; provider-neutral capability records and domain boundaries remain authoritative.
 
-Logical architecture components do not imply separate deployables. Infrastructure code MUST implement approved boundaries and contracts; it cannot decide service count, topology, region, provider, recovery route, or data placement while those choices remain open.
+Logical architecture components do not automatically imply separate deployables. Bicep modules implement the accepted environment/topology decision and MUST NOT invent an additional service, public route, region, processor, recovery route, retention period, or data placement outside `DEC-049`–`054`.
 
 ## 2. Declarative resource contract
 
@@ -46,10 +46,10 @@ The record contains references and eligibility state, not raw secrets, keys, con
 | `OPS-IAC-P1-011` | Resource naming, tags/labels, external provider IDs, IPs, endpoints, or content hashes MUST NOT become canonical platform identities or authorization boundaries. |
 | `OPS-IAC-P1-012` | Network and egress intent MUST be default-deny, purpose/capability scoped, environment specific, and testable. An outage or lower-cost route MUST NOT introduce an undeclared processor, destination, support path, or cross-region fallback. |
 | `OPS-IAC-P1-013` | Public exposure, inbound callbacks, administrative entry, inter-zone paths, and artifact redemption MUST be explicit, minimized, authenticated, authorized, rate/abuse controlled, observable, and linked to their owning API/adapter contracts. |
-| `OPS-IAC-P1-014` | Placement, replication, telemetry, support, backup, and disaster-recovery route fields MUST be policy inputs. Unknown or ineligible `DEC-040` matrix rows block creation/activation; a provider region label alone is insufficient evidence. |
+| `OPS-IAC-P1-014` | Placement, replication, telemetry, support, backup, and disaster-recovery route fields MUST be policy inputs. Azure Australia East is primary and Australia Southeast is eligible only for explicitly declared paired-region roles; unknown or other routes block creation/activation. |
 | `OPS-IAC-P1-015` | Storage and processing resources MUST declare encryption/key domain, immutability or append-only needs, deletion acknowledgement behavior, backup class, restore role, and rebuildability; derived stores cannot be treated as authoritative backups. |
 | `OPS-IAC-P1-016` | Destruction, replacement, import, move, state repair, and resource adoption MUST check data ownership, current deletion fences/tombstones, audit, backup, dependency, migration, and service consequences before action. |
-| `OPS-IAC-P1-017` | A resource destroy does not prove data deletion, connector erasure, backup expiry, audit minimization, or key destruction. `DeletionCase` per-role acknowledgements remain authoritative and no duration is invented under `DEC-039`. |
+| `OPS-IAC-P1-017` | A resource destroy does not prove data deletion, connector erasure, backup expiry, audit minimization, or key destruction. `DeletionCase` per-role acknowledgements remain authoritative and document lifecycle evidence MUST satisfy the 30-day recovery/purge contract in `DEC-053`. |
 | `OPS-IAC-P1-018` | Infrastructure drift MUST be reconciled continuously or at an approved cadence against declared intent; security, identity, residency, encryption, deletion, backup, exposure, or recovery drift is a control finding and blocks affected promotion/serviceability. |
 | `OPS-IAC-P1-019` | Automatic drift correction MAY operate only for pre-approved reversible changes with bounded blast radius and no data, privilege, route, key, deletion, or serviceability consequence; other drift requires reviewed repair. |
 | `OPS-IAC-P1-020` | Manual emergency change is not a bypass: it requires incident authority, exact scope, independent review where feasible, privacy-safe audit, bounded credentials, verification, and prompt reconciliation back into declarative intent. No Phase 1 universal break-glass content role is created. |
@@ -66,4 +66,4 @@ Retirement disables service routes, drains/reconciles work, preserves required e
 
 ## 6. Decision and approval gates
 
-No infrastructure definition may encode a chosen provider, physical region, cross-border exception, recovery ceremony, backup expiry, or deletion duration without its approved decision/ADR and updated contracts. `DEC-038` keeps account/workspace recovery and ownership transfer disabled; an infrastructure restore or key path cannot create that authority. `DEC-039` leaves deletion/backup timing open, and `DEC-040` leaves physical routes ineligible until approved. Production readiness requires provider-portability tests, closed route rows, security/threat review, cost evidence, operations ownership, and rollback/forward-repair/restore exercises.
+Infrastructure definitions implement only the provider, regions, environment topology, encryption boundaries, and document-deletion duration approved by `DEC-049`–`053`. `DEC-038` still keeps account/workspace ownership recovery disabled; infrastructure restore or key access cannot create that authority. Production readiness requires provider-portability tests, closed route rows, security/threat review, cost evidence, operations ownership, and rollback/forward-repair/restore exercises under `DEC-054`.

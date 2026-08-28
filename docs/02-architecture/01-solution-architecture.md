@@ -3,26 +3,26 @@
 | Field | Value |
 |---|---|
 | Document ID | `ARCH-SOL-001` |
-| Version | `0.1` |
-| Status | **DRAFT — not an approved implementation baseline or accepted ADR** |
+| Version | `0.2` |
+| Status | **APPROVED IMPLEMENTATION BASELINE under `DEC-041` and `DEC-054`** |
 | Product phase | Phase 1 — Personal and Family, with Phase 2 extension points |
 | Jurisdiction | Australia first; jurisdiction-neutral core |
-| Updated | 26 August 2026 |
-| Normative basis | Approved `DEC-001`–`DEC-011` and `DEC-020`–`DEC-024`; draft `PROD-PRD-001` |
+| Updated | 28 August 2026 |
+| Normative basis | Approved decision register through `DEC-054`; approved `PROD-PRD-001` version `0.2`; accepted `ADR-ARCH-001`–`010` |
 | Companion | [`ARCH-DOM-001`](02-domain-model.md) |
 
 ## 1. Purpose, authority, and non-decisions
 
-This document defines the logical architecture needed to satisfy the draft Phase 1 product requirements. Its `ARCH-P1-*` rules are stable draft architecture rules. They become implementation constraints only when this specification and the applicable product baseline are approved.
+This document defines the logical architecture needed to satisfy the approved Phase 1 product requirements. Its `ARCH-P1-*` rules are implementation constraints under `DEC-041` and `DEC-054`.
 
 The source-of-truth hierarchy in [`CODEX.md`](../../CODEX.md) applies. Approved entries in the [decision register](../00-context/decision-register.md) constrain this design. The [Phase 1 PRD](../01-product/02-phase-1-prd.md), [feature catalogue](../01-product/03-feature-catalogue.md), [use-case catalogue](../01-product/04-use-case-catalogue.md), [personas and journeys](../01-product/05-personas-and-journeys.md), and [scope and metrics](../01-product/06-scope-and-success-metrics.md) are draft inputs rather than implementation authority.
 
-This document deliberately does **not** select:
+Accepted ADRs now select the current implementation while the logical boundaries remain provider-neutral:
 
-- a cloud or infrastructure provider;
-- a programming language, framework, runtime, or repository topology;
+- Azure/Bicep for the named environment and managed-service adapters;
+- React/TypeScript for web, NestJS/TypeScript for API/domain composition, and Flutter/Dart for mobile;
 - a relational, object, search, vector, graph, cache, queue, or analytics product;
-- an identity, key-management, malware-scanning, OCR, AI, notification, or observability vendor;
+- Entra External ID and the named Azure infrastructure/observability adapters, while external OCR/AI/scanner/connector/notification providers remain disabled until separately activated;
 - a modular-monolith, process, service, container, cluster, or serverless deployment count; or
 - an accepted Architecture Decision Record.
 
@@ -32,7 +32,7 @@ The components below are logical ownership and policy boundaries. Several may be
 
 The architecture is shaped by these product facts:
 
-1. Highly sensitive content and derivatives exist in a multi-tenant service with strict workspace isolation (`DEC-022`).
+1. Highly sensitive content and derivatives exist in a multi-tenant service with strict workspace isolation and customer-controlled client encryption (`DEC-049`, `DEC-050`).
 2. Identity, membership, workspace, subject, and resource are distinct (`DEC-003`).
 3. Original evidence is immutable while logical documents and derived interpretations evolve (`DEC-005`).
 4. Canonical facts are independent of occurrences and preserve temporal history (`DEC-004`).
@@ -40,8 +40,11 @@ The architecture is shaped by these product facts:
 6. Consequential recommendations and effects require evidence, explanation, bound approval, and audit (`DEC-006`).
 7. Taxonomy, policy, rules, sources, workflows, and AI capabilities are versioned configuration (`DEC-007`).
 8. Long-running document processing, monitoring, impact, export, and deletion workflows must survive retry, duplication, reordering, interruption, and provider failure.
-9. The Australian residency option applies to the complete processing path, not only original storage (`DEC-022`); its data-class/processor matrix remains open in `DEC-040`.
+9. The Australian residency policy applies to the complete processing path, not only original storage; Australia East is primary and only approved paired-region roles may use Australia Southeast (`DEC-049`).
 10. Core contracts must remain portable across providers (`DEC-009`) and extensible to organisation workspaces without Phase 2 UI in Phase 1 (`DEC-002`).
+11. React web and Flutter mobile share contracts and evidence but not UI source (`DEC-052`).
+12. Plaintext document intelligence runs on an authorized customer device by default; Azure stores encrypted artifacts/derivatives and cannot perform plaintext fallback (`DEC-050`).
+13. Production document deletion has an immediate fence, a 30-day restricted recovery window, and final non-resurrecting purge (`DEC-053`).
 
 ## 3. Logical context
 
@@ -49,7 +52,7 @@ The architecture is shaped by these product facts:
 flowchart LR
     Human[Household member or scoped guest]
     Operator[Configuration or operations actor]
-    Client[Responsive web application / PWA]
+    Client[React web/PWA or Flutter mobile]
 
     subgraph Platform[Document intelligence platform]
         Edge[Edge and application API]
@@ -515,7 +518,22 @@ Phase 1 reserves, but does not enable:
 
 Extension is achieved through versioned resource kinds, policies, configuration packages, ports, events, and projection schemas. Phase 1 identifiers and evidence/fact/audit histories are not replaced. Reserved types remain inert and absent from consumer navigation, APIs available to Phase 1 actors, reference packs, and backlog claims.
 
-## 16. Open and proposed decisions
+### 15.1 Approved production and client refinements
+
+| Rule ID | Normative architecture rule |
+|---|---|
+| `ARCH-P1-046` | React web/PWA and Flutter iOS/Android clients MUST consume the same versioned API, event, error, authorization, encryption-envelope, and reference-data contracts. |
+| `ARCH-P1-047` | Customer plaintext and unwrapped content keys MUST remain in the authorized client trust boundary for the default route; the API and Azure adapters receive only authenticated ciphertext and minimal routing metadata. |
+| `ARCH-P1-048` | Device, workspace, document, member-share, and recovery keys MUST remain separate, versioned, rotatable, revocable, and independently testable according to `ADR-ARCH-008`. |
+| `ARCH-P1-049` | Preview, extraction, OCR, classification, encrypted indexing, relationship construction, and cited question answering MUST execute on the authorized client unless a later explicit-consent private-compute route is accepted. |
+| `ARCH-P1-050` | Encrypted originals and sensitive derivatives remain immutable/versioned artifacts; Azure platform encryption, private networking, workspace authorization, and deletion controls remain mandatory defense in depth. |
+| `ARCH-P1-051` | Bicep MUST define isolated Azure `dev`, `stage`, and `prod` stacks. Production is recreated from the same modules and release in its future subscription rather than depending on in-place resource moves. |
+| `ARCH-P1-052` | Document deletion acknowledgement MUST follow durable fence activation and create a server-time 30-day `TRASHED` interval. Restore before expiry uses current authorization and step-up; restore at/after expiry is denied. |
+| `ARCH-P1-053` | Final purge MUST coordinate artifacts, key envelopes, canonical sensitive fields, derivatives, caches, graphs, conversations, exports, connector copies, backups, and content-minimized audit evidence through per-role acknowledgements. |
+| `ARCH-P1-054` | Backup restore, replay, rebuild, resync, and late callbacks MUST apply the current deletion ledger and crypto-shred state before data becomes serviceable. |
+| `ARCH-P1-055` | Web/mobile releases and Azure deployments MUST carry source-to-artifact provenance, contract/configuration versions, security evidence, and environment identity; production/public/real-data routes remain disabled until `DEC-054` gates pass. |
+
+## 16. Current decision boundaries
 
 | Decision | Architecture kept open | Safe draft boundary |
 |---|---|---|
@@ -528,8 +546,11 @@ Extension is achieved through versioned resource kinds, policies, configuration 
 | `DEC-036` — clinical handling | Isolated policy-pending state blocks ordinary processing. | Do not select reject, quarantine-for-decision, or encrypted-original retention as the final behavior. |
 | `DEC-037` — channels | Task model and notification port are channel-neutral. | Do not enable or promise a delivery channel not approved by the decision. |
 | `DEC-038` — recovery | Authentication/session boundary exposes a recovery port and audit hooks. | Support/operator cannot reset ownership or disclose content; final recovery flow remains disabled/conditional. |
-| `DEC-039` — deletion timing | Deletion fences, per-store acknowledgements, backup residual and audit-minimization states exist. | Durations and completion promise remain unset; active access stays denied once the fence applies. |
-| `DEC-040` — residency matrix | Every data class/copy/processor has placement-policy hooks and evidence. | No cross-border route or exception is inferred; unsupported processing is blocked or disclosed before approved consent. |
+| `DEC-053` — document deletion | Deletion fences, per-store acknowledgements, backup residual and audit-minimization states implement the approved 30-day Trash contract. | Account/workspace deletion and lawful retention remain separate; no restore/replay resurrection. |
+| `DEC-049` — Azure/Australian realm | Every data class/copy/processor has placement-policy hooks and evidence for the approved Azure routes. | Unverified identity/support/telemetry/backup control-plane behavior blocks the affected production route. |
+| `DEC-050` — customer encryption | Client-only plaintext processing and encrypted synchronization are the default. | No cloud plaintext fallback or operator content access; missing local capability is explicit. |
+| `DEC-052` — clients | React web and Flutter mobile implement the same product contracts. | Contract/behavior parity is required; UI implementation is intentionally separate. |
+| `DEC-054` — activation | Azure `dev`/`stage` may use synthetic data; production remains defined but unprovisioned. | Real data, public DNS, external providers, store publication, and production provisioning stay gated. |
 
 ## 17. Requirement traceability
 
@@ -547,6 +568,7 @@ Extension is achieved through versioned resource kinds, policies, configuration 
 | `ARCH-P1-043` | `REQ-P1-WS-001`, `REQ-P1-CFG-005` | `FEAT-P1-001`, `007`; `GAP-010` reserve |
 | `ARCH-P1-044` | Conditional parts of `REQ-P1-ING-009`, `REQ-P1-HLT-004`, `REQ-P1-SHR-004`, `REQ-P1-NTF-003`–`004`, `REQ-P1-TRUST-005`–`009` | `FEAT-P1-025`–`030`; `UC-P1-014`, `016`, `017` and decision-dependent journeys |
 | `ARCH-P1-045` | All 90 `REQ-P1-*` requirements and launch gates | `FEAT-P1-001`–`030`, `AC-P1-E2E-001`, `AC-P1-SEC-001`, `AC-P1-ING-001`, `AC-P1-RAG-001`, `AC-P1-MON-001`, `AC-P1-DEL-001`, `AC-P1-AI-001`, `AC-P1-A11Y-001` |
+| `ARCH-P1-046`–`055` | `REQ-P1-PLT-001`–`002`, `REQ-P1-CRYPTO-001`–`003`, `REQ-P1-DEL-001`–`002`, `REQ-P1-OPS-001`–`002`, `REQ-P1-ASSURE-001` | Cross-client contract/crypto tests, Azure Bicep evidence, no-plaintext inspection, 30-day deletion/restore/DR tests, MASVS/ASVS and release provenance |
 
 ### 17.2 Component-to-requirement coverage check
 
@@ -578,4 +600,4 @@ Before this architecture can support implementation readiness:
 5. end-to-end tests prove current authorization across direct and derived channels, immutable evidence, durable publication, stale/degraded states, bound approval, deletion fences, audit, and residency; and
 6. traceability links every implemented component and test to `ARCH-P1-*`, `DOM-P1-*`, `REQ-P1-*`, `UC-P1-*`, security/NFR, API/event, and backlog IDs.
 
-No diagram, component name, or port in this draft grants permission to implement before the repository readiness gate is satisfied.
+Implementation authority is recorded by `DEC-041` and `DEC-054`; production/public/real-data activation still requires the evidence and owner inputs defined by those decisions.

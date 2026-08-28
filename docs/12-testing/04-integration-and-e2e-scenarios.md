@@ -3,11 +3,11 @@
 | Field | Value |
 |---|---|
 | Document ID | `TST-E2E-001` |
-| Version | `0.1` |
-| Status | **DRAFT — implementation, clients, representative accessibility matrix, and release baseline are not approved** |
+| Version | `0.2` |
+| Status | **APPROVED IMPLEMENTATION BASELINE — representative client and production evidence remains required** |
 | Product phase | Phase 1 — Personal and Family |
-| Updated | 26 August 2026 |
-| Primary trace | `UC-P1-001`–`019`, all `AC-UC-P1-*`, `AC-P1-E2E-001`, `A11Y-P1-001`–`056` |
+| Updated | 28 August 2026 |
+| Primary trace | `UC-P1-001`–`019`, all `AC-UC-P1-*`, `AC-P1-E2E-001`, `A11Y-P1-001`–`056`, `DEC-049`–`054` |
 
 ## 1. Integration profile
 
@@ -30,7 +30,7 @@ Every scenario asserts UI/API state, canonical revision, immutable evidence/prov
 | `TEST-E2E-P1-009` | `UC-P1-009`; `AC-UC-P1-009-01`–`05` | Preview exact grant, delegate two resources, expire/revoke link and invalidate conversation/download/notification/export; administrator cannot share private data; continuity trigger is inert. |
 | `TEST-E2E-P1-010` | `UC-P1-010`; `AC-UC-P1-010-01`–`05` | Repeated events create one logical in-app reminder, snooze preserves truth, stale source/revoked grant degrades delivery, and complete-without-evidence cannot close obligation. |
 | `TEST-E2E-P1-011` | `UC-P1-011`; `AC-UC-P1-011-01`–`05` | Authorized versioned export has exact manifest/checksums/envelope/omissions; revoke mid-build and partial item stay non-deliverable/incomplete; redemption reauthorizes. |
-| `TEST-E2E-P1-012` | `UC-P1-012`; `AC-UC-P1-012-01`–`05` | Deletion case fences originals/derivatives/caches/events/connectors/backups, exposes per-class partial state, blocks late resurrection, preserves allowed cancellation history and invents no duration. |
+| `TEST-E2E-P1-012` | `UC-P1-012`; `AC-UC-P1-012-01`–`05` | Delete fences originals/derivatives/caches/events/connectors/backups immediately, displays Trash and exact server deadline, restores only with current step-up authority before 30 days, blocks post-deadline/late resurrection, and reconciles final purge evidence. |
 | `TEST-E2E-P1-013` | `UC-P1-013`; `AC-UC-P1-013-01`–`04` | Two-workspace isolation across API, stores, search, graph, model/tools, conversations, notifications, exports, analytics, support and audit; revocation repairs queued/cached derivatives. |
 | `TEST-E2E-P1-014` | `UC-P1-014` | Upload/camera/manual remain the only active routes; connector port conformance is synthetic and disabled; consent/revoke/resync/delete/route checks cannot activate a live adapter under `DEC-031`. |
 | `TEST-E2E-P1-015` | `UC-P1-015` | Managed-dependant transition stays unavailable without approved authority/eligibility/challenge rules; existing evidence/history is not reassigned or recreated by a generic membership change. |
@@ -39,6 +39,9 @@ Every scenario asserts UI/API state, canonical revision, immutable evidence/prov
 | `TEST-E2E-P1-018` | `UC-P1-018` | Validate, approve, publish, acknowledge, activate, supersede and roll back/forward-repair immutable configuration packages; DRAFT, incompatible, dangling or stale packages never activate. |
 | `TEST-E2E-P1-019` | `UC-P1-019` | Reconstruct consequential workflow from immutable content-free audit/provenance, detect tamper/gaps, enforce tenant/purpose access and minimization, and keep retention durations unset. |
 | `TEST-E2E-P1-020` | Mandatory product umbrellas | Run the four proposed slices as one cross-cutting synthetic journey and assert ingestion, RAG, monitoring, AI, security, deletion and accessibility umbrellas without enabling open-decision routes. |
+| `TEST-E2E-P1-021` | `DEC-050`; `REQ-P1-CRYPTO-001`–`003` | Encrypt on client, upload only ciphertext/wrapped envelope, share and revoke a member key envelope, reopen on another authorized device, reject tamper/wrong context, and prove plaintext absent from transport, Azure data roles and telemetry. |
+| `TEST-E2E-P1-022` | `DEC-052`; `REQ-P1-PLT-001`–`002` | Execute onboarding, capture, view, organize, ask-with-citations, family access, activity, Trash/restore and offline/reconnect through React web, Flutter iOS and Flutter Android with matching contract/security semantics. |
+| `TEST-E2E-P1-023` | `DEC-049`/`054`; `REQ-P1-OPS-001`–`002` | Deploy immutable candidate to isolated Azure dev then stage, validate Australian routes, managed identities/RBAC/diagnostics/budget, reject cross-environment references, and prove production remains unprovisioned. |
 
 ## 3. Async, event, and race coverage
 
@@ -92,7 +95,7 @@ Accessibility failure in onboarding, capture/review, evidence/citation, grant/re
 
 No journey tests only a happy path. At each screen/API transition, the suite exercises loading, empty, partial, retryable and terminal error, offline, stale, restricted, revoked, expired, deleted, unknown version, and dependency unavailable where applicable. Cached/offline views carry last-verified time, coverage and non-authoritative label, cannot authorize a write/effect, and revalidate current authority before navigation or redemption. Privacy-safe counts never reveal hidden items through totals, badges or layout changes.
 
-Destructive actions show exact scope and consequences, require current authority and explicit confirmation, and distinguish reversible request/cooling-off state from irreversible execution without inventing `DEC-039` timing. Failure preserves user input where safe and provides one accessible next action without exposing provider/internal detail.
+Destructive actions show exact scope and consequences, require current authority and explicit confirmation, and distinguish reversible Trash state from irreversible execution using the server-authored `deleted_at + 30 calendar days` deadline in `DEC-053`. Failure preserves user input where safe and provides one accessible next action without exposing provider/internal detail.
 
 ## 8. Completion evidence
 

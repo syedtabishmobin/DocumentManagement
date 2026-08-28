@@ -35,6 +35,11 @@ interface LocalState {
 }
 
 const now = (): string => new Date().toISOString();
+const trashDeadline = (deletedAt: string): string => {
+  const deadline = new Date(deletedAt);
+  deadline.setUTCDate(deadline.getUTCDate() + 30);
+  return deadline.toISOString();
+};
 const defaultPermissions = (owner = false): FilePermissions => ({ view: true, add: owner, edit: owner, delete: owner });
 const stableId = (prefix: string, ...parts: string[]): string => `${prefix}_${createHash("sha256").update(parts.join("\u001f")).digest("hex").slice(0, 24)}`;
 
@@ -177,6 +182,7 @@ export class LocalStore {
         ...document,
         subjectIds: document.subjectIds?.length ? document.subjectIds : [state.subjects[0]!.id],
         captureRoute: document.captureRoute ?? "FILE",
+        ...(document.status === "DELETED" && !document.deletedAt ? { deletedAt: document.updatedAt, purgeDueAt: trashDeadline(document.updatedAt), preDeleteStatus: "NEEDS_REVIEW" as const } : {}),
       }));
       state.facts = (state.facts ?? []).map((fact) => {
         const source = state.documents.find((document) => document.id === fact.documentId);
@@ -500,19 +506,56 @@ export class LocalStore {
     return task;
   }
 
-  async deleteDocument(id: string): Promise<void> {
+  async deleteDocument(id: string): Promise<{ documentId: string; state: "TRASHED"; deletedAt: string; purgeDueAt: string }> {
     const state = await this.load();
     const document = state.documents.find((item) => item.id === id);
     if (!document) throw new NotFoundException("Document not found");
+    if (document.status === "DELETED" && document.deletedAt && document.purgeDueAt) {
+      return { documentId: document.id, state: "TRASHED", deletedAt: document.deletedAt, purgeDueAt: document.purgeDueAt };
+    }
+    const deletedAt = now();
+    document.preDeleteStatus = document.status === "DELETED" ? "NEEDS_REVIEW" : document.status;
     document.status = "DELETED";
-    delete document.extractedText;
-    document.updatedAt = now();
-    state.facts = state.facts.filter((fact) => fact.documentId !== id);
-    state.dependencies = state.dependencies.filter((edge) => edge.evidenceDocumentId !== id);
-    state.tasks = state.tasks.filter((task) => task.documentId !== id);
-    state.audit.push(auditRecord(state.workspace.id, "DOCUMENT_PURGED", "DOCUMENT", "Deleted the original and derived local document data", id));
-    try { await unlink(join(this.artifactRoot, id)); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+    document.deletedAt = deletedAt;
+    document.purgeDueAt = trashDeadline(deletedAt);
+    document.updatedAt = deletedAt;
+    state.audit.push(auditRecord(state.workspace.id, "DOCUMENT_TRASHED", "DOCUMENT", `Moved document to Trash until ${document.purgeDueAt}`, id));
     await this.save(state);
+    return { documentId: document.id, state: "TRASHED", deletedAt, purgeDueAt: document.purgeDueAt };
+  }
+
+  async restoreDocument(id: string, at = now()): Promise<DocumentRecord> {
+    const state = await this.load();
+    const document = state.documents.find((item) => item.id === id);
+    if (!document || document.status !== "DELETED" || !document.purgeDueAt) throw new NotFoundException("Document is not in Trash");
+    if (new Date(at).getTime() >= new Date(document.purgeDueAt).getTime()) throw new BadRequestException("The 30-day recovery period has ended");
+    document.status = document.preDeleteStatus ?? (document.extractedText ? "READY" : "NEEDS_REVIEW");
+    document.updatedAt = at;
+    delete document.deletedAt;
+    delete document.purgeDueAt;
+    delete document.preDeleteStatus;
+    state.audit.push(auditRecord(state.workspace.id, "DOCUMENT_RESTORED", "DOCUMENT", "Restored document from Trash before its purge deadline", id));
+    await this.save(state);
+    return documentSummary(document);
+  }
+
+  async purgeExpiredDocuments(at = now()): Promise<string[]> {
+    const state = await this.load();
+    const cutoff = new Date(at).getTime();
+    const expired = state.documents.filter((document) => document.status === "DELETED" && document.purgeDueAt && new Date(document.purgeDueAt).getTime() <= cutoff);
+    for (const document of expired) {
+      state.facts = state.facts.filter((fact) => fact.documentId !== document.id);
+      state.dependencies = state.dependencies.filter((edge) => edge.evidenceDocumentId !== document.id);
+      state.tasks = state.tasks.filter((task) => task.documentId !== document.id);
+      state.audit.push(auditRecord(state.workspace.id, "DOCUMENT_PURGED", "DOCUMENT", "Completed final purge after the 30-day Trash period", document.id));
+      try { await unlink(join(this.artifactRoot, document.id)); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+    }
+    if (expired.length) {
+      const expiredIds = new Set(expired.map((document) => document.id));
+      state.documents = state.documents.filter((document) => !expiredIds.has(document.id));
+      await this.save(state);
+    }
+    return expired.map((document) => document.id);
   }
 
   async exportWorkspace(): Promise<LocalState> {

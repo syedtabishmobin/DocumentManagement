@@ -48,11 +48,11 @@ PRIVATE_KEY_RE = re.compile(r"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----"
 DIGIT_RUN_RE = re.compile(r"(?<!\d)\d{13,19}(?!\d)")
 
 EXPECTED_TEST_RANGES = {
-    "UNIT": (1, 10),
-    "CON": (1, 12),
+    "UNIT": (1, 12),
+    "CON": (1, 14),
     "AI": (1, 15),
-    "SEC": (1, 15),
-    "E2E": (1, 20),
+    "SEC": (1, 19),
+    "E2E": (1, 23),
     "PERF": (1, 10),
     "DR": (1, 8),
 }
@@ -494,7 +494,7 @@ def main() -> int:
         for error in errors:
             print(f"- {error}", file=sys.stderr)
         return 1
-    print("Test traceability validation passed: 90 stable tests; synthetic fixture references and all current upstream coverage are complete.")
+    print("Test traceability validation passed: 101 stable tests; synthetic fixture references and all current upstream coverage are complete.")
     return 0
 
 

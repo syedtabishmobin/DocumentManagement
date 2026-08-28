@@ -3,18 +3,18 @@
 | Field | Value |
 |---|---|
 | Document ID | `PROD-PRD-001` |
-| Version | `0.1` |
+| Version | `0.2` |
 | Status | `APPROVED IMPLEMENTATION BASELINE` |
 | Product phase | Phase 1 — Personal and Family |
 | Jurisdiction | Australia first; jurisdiction-neutral core |
-| Updated | 26 August 2026 |
+| Updated | 28 August 2026 |
 | Owners | Product owner; product and architecture maintainers |
 
 ## 1. Authority and approval boundary
 
-This PRD translates the approved decisions in `docs/00-context/decision-register.md` and the findings in `docs/01-product/07-competitive-gap-analysis.md` into the approved Phase 1 implementation contract. Product-owner approval is recorded by `DEC-041`.
+This PRD translates the approved decisions in `docs/00-context/decision-register.md` and the findings in `docs/01-product/07-competitive-gap-analysis.md` into the approved Phase 1 implementation contract. Product-owner implementation approval is recorded by `DEC-041` and expanded for the production-oriented program by `DEC-054`.
 
-The terms **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** are normative for Phase 1 implementation. Production deployment and real personal-data processing remain outside this approval and require their own readiness evidence.
+The terms **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** are normative for Phase 1 implementation. Azure `dev`/`stage` implementation and provisioning are approved for synthetic/test data. Production provisioning, public release, and real personal-data processing remain gated by `DEC-054` and require their own readiness evidence.
 
 When this PRD conflicts with a higher-authority source, the hierarchy in `CODEX.md` applies. In particular:
 
@@ -25,7 +25,7 @@ When this PRD conflicts with a higher-authority source, the hierarchy in `CODEX.
 
 ## 2. Product definition
 
-Phase 1 is a responsive web application and installable PWA for personal and family workspaces. It securely preserves documents, extracts evidence, resolves canonical facts with history, connects dependencies, monitors dates and governed sources, explains downstream impact, and routes consequential action through human approval and auditable closure.
+Phase 1 provides a React public website and authenticated web/PWA plus dedicated Flutter iOS and Android applications for personal and family workspaces. It securely preserves customer-encrypted documents, performs authorized intelligence on the customer device by default, resolves canonical facts with history, connects dependencies, monitors dates and governed sources, explains downstream impact, and routes consequential action through human approval and auditable closure.
 
 The product is not a passive drive, a generic chatbot, a legal-advice service, or a clinical-record system. Its short promise is:
 
@@ -50,10 +50,15 @@ The complete value chain is:
 | `DEC-009` | Core contracts remain vendor-neutral until a provider decision is approved. |
 | `DEC-010` | The complete Phase 1 specification pack precedes application implementation. |
 | `DEC-020` | Phase 1 launches Australia first on a jurisdiction-neutral core. |
-| `DEC-021` | Responsive web/PWA is first; camera capture and push-ready APIs are required extension points. |
-| `DEC-022` | The service is multi-tenant cloud SaaS with strict workspace isolation and an Australian data-residency option. |
+| `DEC-021` | Superseded by `DEC-052`; React web/PWA and Flutter mobile are concurrent Phase 1 clients. |
+| `DEC-022` | Superseded in provider selection by `DEC-049`; multi-tenant isolation and Australian-residency constraints remain active. |
 | `DEC-023` | Household owners and family administrators are primary; advisers use limited guest/delegated access. |
 | `DEC-024` | Clinical records are out of initial scope; health-insurance and general coverage documents are allowed. |
+| `DEC-049` | Azure is the approved managed production provider behind portable ports; Bicep defines isolated `dev`, `stage`, and `prod` environments. |
+| `DEC-050` | Azure platform encryption is supplemented by customer-controlled client encryption; default document intelligence is customer-device processing. |
+| `DEC-051` | Security implementation and release evidence map to the approved NIST, OWASP, Azure, and Australian privacy baseline without claiming certification. |
+| `DEC-052` | React serves web while Flutter supplies the primary dedicated iOS/Android experience; clients share contracts and evidence rather than UI code. |
+| `DEC-053` | Production document Trash is recoverable for 30 calendar days, followed by coordinated purge and non-resurrection controls. |
 
 ## 4. Product outcomes
 
@@ -298,6 +303,21 @@ Each row is an independently traceable product requirement. The acceptance summa
 | `REQ-P1-CFG-004` | Configuration publication MUST use validation, review/approval, effective dating, audit, rollback or forward repair, and impact assessment appropriate to risk. | `P1-S3` | A rule change identifies affected active findings and supports deterministic replay. |
 | `REQ-P1-CFG-005` | The domain MUST reserve organisation, business unit, client, matter, case, policy, control, record, hold, information-barrier, DLP, and residency-policy extension points without exposing Phase 2 consumer-irrelevant UI. | `P1-S1` `RESERVED` | Schema evolution can add Phase 2 types without redefining Phase 1 identity, workspace, resource, evidence, fact, or audit identities. |
 
+### 7.15 Production platform, customer encryption, and client delivery
+
+| Requirement | Normative statement | Slice | Acceptance summary |
+|---|---|---|---|
+| `REQ-P1-PLT-001` | The public website and authenticated web/PWA MUST remain React/TypeScript; dedicated iOS and Android clients MUST use one Flutter/Dart mobile codebase. | Cross-slice | Critical journeys meet the same API, authorization, evidence, encryption, state, and error contracts across supported clients. |
+| `REQ-P1-PLT-002` | TypeScript and Dart clients MUST consume generated or conformance-validated models from the same OpenAPI, event, encryption-envelope, and reference-data contracts; UI code is not a shared source of domain truth. | Cross-slice | Contract drift blocks CI and equivalent synthetic fixtures produce equivalent authorized outcomes. |
+| `REQ-P1-CRYPTO-001` | Original document bytes and sensitive derivatives MUST be encrypted on the authorized customer client before network transfer using a versioned authenticated-encryption envelope and independent document keys. | `P1-S1`–`S2` | Network/storage inspection and cross-client test vectors prove no plaintext or unwrapped customer content key reaches the service. |
+| `REQ-P1-CRYPTO-002` | Workspace/document key access MUST be customer controlled, separately wrapped to authorized devices/members/recovery factors, revocable, rotatable, and unavailable to ordinary Doculyra/Azure operators. | `P1-S1`, `S4` | Grant, revoke, rotation, device loss, recovery, wrong-key, tamper, replay, downgrade, and crypto-shred tests fail safely. |
+| `REQ-P1-CRYPTO-003` | Default preview, extraction, OCR, classification, search, graph, and cited question answering over customer content MUST run on the authorized client. No cloud plaintext fallback is permitted without a later approved, explicit-consent processing route. | `P1-S1`–`S3` | Unsupported local processing remains visible and no egress occurs when a cloud route is absent or ineligible. |
+| `REQ-P1-DEL-001` | Production document deletion MUST immediately fence ordinary access, retain the item only in restricted Trash for 30 calendar days, permit authorized step-up restoration before expiry, and permanently deny restoration after expiry. | `P1-S4` | Boundary-time, authorization, retry, failure, backup, replay, cross-store, and accessibility scenarios pass. |
+| `REQ-P1-DEL-002` | Final purge MUST remove or render irrecoverable every registered artifact, key envelope, sensitive canonical value, derivative, cache, index, graph, conversation, export, connector copy, and temporary object while retaining only content-minimized deletion/audit evidence. | `P1-S4` | Per-role acknowledgements and deletion-ledger reconciliation prevent restore/rebuild/resync resurrection. |
+| `REQ-P1-OPS-001` | Bicep MUST define isolated Azure `dev`, `stage`, and `prod` stacks. `dev`/`stage` use the current subscription only for synthetic/test data; `prod` remains parameterized and unprovisioned until the production subscription and release gate exist. | Cross-slice | Bicep build/What-If, drift, secret, placement, cost, security, migration, and teardown/recovery evidence passes. |
+| `REQ-P1-OPS-002` | Azure managed services MUST provide commodity storage, database, identity, queue, edge, secret, monitoring, backup, and lifecycle capabilities behind provider-neutral adapters; application code MUST NOT duplicate a managed capability except where the customer-controlled encryption or cross-domain product contract requires application orchestration. | Cross-slice | Adapter conformance and architecture review show no provider model in canonical domain contracts and no custom cryptographic primitive. |
+| `REQ-P1-ASSURE-001` | The release assurance case MUST map implemented controls and evidence to `DEC-051`; certification or regulatory-compliance claims MUST NOT be made without the corresponding independent assessment. | Cross-slice | Control matrix, threat review, automated evidence, privacy/legal review, and penetration-test findings have owners and release disposition. |
+
 ## 8. Cross-cutting product rules
 
 1. **Current authorization wins.** Ingestion-time or indexing-time access is never sufficient for a later read, inference, traversal, citation, notification, export, or action.
@@ -424,7 +444,7 @@ Phase 1 launch requires all of the following, with exact targets defined in `doc
 
 ## 12. Assumptions and open decisions
 
-The following approved decisions define local implementation behavior and the production activation fences. They do not select a production vendor.
+The following approved decisions define local implementation behavior and the production activation fences. `DEC-049` now selects Azure for the named managed adapters while provider-neutral domain contracts remain mandatory.
 
 | Decision | State | Question | Affected requirements |
 |---|---|---|---|
@@ -439,8 +459,14 @@ The following approved decisions define local implementation behavior and the pr
 | `DEC-038` | `APPROVED` | Recovery and ownership transfer are unavailable locally and require a separate production assurance decision. | `REQ-P1-TRUST-001`, `008` |
 | `DEC-039` | `APPROVED` | Local deletion immediately fences and purges active/derived content with no backup and a content-free tombstone. | `REQ-P1-DOC-003`, `REQ-P1-TRUST-004`, `007` |
 | `DEC-040` | `APPROVED` | Use synthetic local-only processing; require a later deployment decision for production data classes, processors, regions, support, backups, and exceptions. | `REQ-P1-TRUST-005`, `009` |
+| `DEC-049` | `APPROVED` | Use Bicep-defined Azure `dev`/`stage` now and a later separate Azure production subscription, with Australia-first placement. | `REQ-P1-OPS-001`, `002`, `REQ-P1-TRUST-005` |
+| `DEC-050` | `APPROVED` | Use Azure platform encryption plus customer-controlled client encryption and local customer-device intelligence by default. | `REQ-P1-CRYPTO-001`–`003`, `REQ-P1-TRUST-001`, `002`, `009` |
+| `DEC-051` | `APPROVED` | Implement and evidence the approved security/assurance baseline without unearned certification claims. | `REQ-P1-ASSURE-001`, all trust requirements |
+| `DEC-052` | `APPROVED` | Keep React web and build a mobile-first Flutter client for iOS/Android. | `REQ-P1-PLT-001`, `002` |
+| `DEC-053` | `APPROVED` | Provide 30-day production document Trash/restore followed by coordinated final purge. | `REQ-P1-DEL-001`, `002`, `REQ-P1-TRUST-007` |
+| `DEC-054` | `APPROVED` | Implement the complete production-oriented Phase 1 and provision synthetic-only Azure `dev`/`stage`; keep production/public/real-data activation gated. | All implementation and release requirements |
 
-Commercial pricing, storage/AI quotas, issuer partnerships, and exact provider selection remain outside this PRD's technical baseline until separately decided. They MUST NOT be hidden in implementation defaults where they change user-visible retention, quality, privacy, or access.
+Commercial pricing, production SKUs/quotas, issuer partnerships, external providers, store accounts, and exact public-release inputs remain outside this PRD's technical baseline until separately decided. They MUST NOT be hidden in implementation defaults where they change user-visible retention, quality, privacy, or access.
 
 ## 13. Dependencies on the remaining specification pack
 

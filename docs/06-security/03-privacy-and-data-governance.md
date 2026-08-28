@@ -3,14 +3,14 @@
 | Field | Value |
 |---|---|
 | Document ID | `SEC-PRIV-001` |
-| Version | `0.1` |
-| Status | `DRAFT — privacy/legal/product-owner approval required` |
+| Version | `0.2` |
+| Status | `APPROVED IMPLEMENTATION BASELINE — qualified privacy/legal review required before public production` |
 | Jurisdiction | Australia first; jurisdiction-neutral control model |
-| Updated | 26 August 2026 |
+| Updated | 28 August 2026 |
 
 ## 1. Purpose, authority, and legal boundary
 
-This contract defines privacy-by-design and data-lifecycle behaviour for Phase 1. It implements the product constraints in `DEC-003`, `DEC-005`, `DEC-006`, `DEC-008`, `DEC-020`, `DEC-022`, `DEC-023`, and `DEC-024`, and refines `REQ-P1-TRUST-003`–`REQ-P1-TRUST-009`.
+This contract defines privacy-by-design and data-lifecycle behaviour for Phase 1. It implements the product constraints in `DEC-003`, `DEC-005`, `DEC-006`, `DEC-008`, `DEC-020`, `DEC-023`, `DEC-024`, and `DEC-049`–`053`, and refines `REQ-P1-TRUST-003`–`009`, `REQ-P1-CRYPTO-001`–`003`, and `REQ-P1-DEL-001`–`002`.
 
 It aligns with the data roles and residency realm in `ARCH-P1-013`–`ARCH-P1-018`, `ARCH-P1-027`–`ARCH-P1-032`, the scope rules `DOM-P1-002`–`DOM-P1-006`, and the lifecycle aggregates `ExportCase` and `DeletionCase` under `DOM-P1-048`–`DOM-P1-054`.
 
@@ -84,8 +84,8 @@ flowchart LR
 | `PRIV-P1-010` | P5 excluded clinical content MUST not enter ordinary processing; while `DEC-036` is open, no final storage/recovery promise is inferred. | `REQ-P1-DOC-007`, `MET-P1-020` | Synthetic clinical boundary fixtures. |
 | `PRIV-P1-011` | Original, derived, fact, graph, conversation, notification, export, audit, cache, replica, and backup data MUST each have explicit lifecycle/lineage; deleting only the primary row is insufficient. | `REQ-P1-TRUST-007`, `UC-P1-012` | Per-class deletion coverage. |
 | `PRIV-P1-012` | Archive, trash, account deletion, resource purge, retention exception, connector deletion, active-data completion, and backup expiry MUST remain distinct states. | `REQ-P1-TRUST-007`, `GAP-004` | State machine/UX wording tests. |
-| `PRIV-P1-013` | Retention periods and triggers MUST be data-class/purpose/jurisdiction/state specific, versioned, reviewable, and never silently extended for product convenience or model training. | `DEC-039` | Retention rule and expired-data scans. |
-| `PRIV-P1-014` | `DEC-039` blocks invented deletion cooling-off, active-purge, backup-expiry, and audit-minimization durations. | `AC-UC-P1-012-05` | Configuration rejects unset/invented production defaults. |
+| `PRIV-P1-013` | Retention periods and triggers MUST be data-class/purpose/jurisdiction/state specific, versioned, reviewable, and never silently extended for product convenience or model training. Production document Trash is exactly 30 calendar days under `DEC-053`; other data-class periods require their own rule. | `DEC-039`, `DEC-053` | Retention rule and expired-data scans. |
+| `PRIV-P1-014` | Document deletion MUST use the approved immediate fence, 30-day restricted recovery window, and final cross-store purge. No other cooling-off, backup-expiry, audit-minimization, account-deletion, or lawful-hold duration is inferred from that value. | `DEC-053`, `AC-UC-P1-012-05` | Boundary-time and configuration tests reject extensions or reused defaults. |
 | `PRIV-P1-015` | Purge MUST make active data and content-bearing derivatives inaccessible, prevent replay/restore/resync resurrection, verify per-class completion, and disclose bounded residuals. | `AC-P1-DEL-001`, `AUTH-P1-034` | Deletion/resurrection/restore drills. |
 | `PRIV-P1-016` | Immutable originals and provenance MUST remain unmodified while retained but are still subject to approved controlled purge; lineage must not become a hidden permanent copy. | `DEC-005`, `REQ-P1-DOC-001` | Integrity plus deletion tests. |
 | `PRIV-P1-017` | Shared facts/evidence deletion MUST preserve only independently authorized/required records and must sever/redact deleted lineage without silently rewriting another subject's history. | `REQ-P1-FCT-001`, `UC-P1-012` | Multi-subject deletion scenarios. |
@@ -98,7 +98,7 @@ flowchart LR
 | `PRIV-P1-024` | Automated emergency/incapacity/death release is prohibited while `DEC-032` is open; enrolment or relationship does not imply consent to release. | `REQ-P1-SHR-004`, `UC-P1-016` | False trigger/no-release test. |
 | `PRIV-P1-025` | Recovery MUST NOT reveal or transfer private resources, consent, keys, ownership, or grants until `DEC-038` approves assurance/challenge rules. | `REQ-P1-TRUST-008` | Recovery takeover suite. |
 | `PRIV-P1-026` | Support has no standing content access; exceptional processing, if approved later, is purpose/time/scope-limited, strongly authorized, auditable, reviewable, and disclosed where policy requires. | `SEC-P1-025`, `AUTH-P1-026` | Insider/support tests. |
-| `PRIV-P1-027` | The Australian residency option MUST use an approved matrix covering every data class, processor, region, support path, analytics stream, backup, and DR route; `DEC-040` blocks assumptions. | `REQ-P1-TRUST-005`, `DEC-022` | Placement/egress/restore tests. |
+| `PRIV-P1-027` | The Australian residency policy MUST use the approved matrix covering every data class, processor, region, support path, analytics stream, backup, and DR route. Australia East is primary; Australia Southeast is eligible only for declared paired-region resilience roles under `DEC-049`. | `REQ-P1-TRUST-005`, `DEC-049` | Placement/egress/restore tests. |
 | `PRIV-P1-028` | Residency exceptions/cross-border processing require an approved basis, disclosure/consent where applicable, technical enforcement, expiry/review, and alternate/blocking behaviour. | `REQ-P1-TRUST-009` | Ineligible adapter and expired exception tests. |
 | `PRIV-P1-029` | Privacy incidents and access anomalies MUST be detected, contained, investigated, and recorded without copying raw content into ordinary incident telemetry; notification thresholds require legal review. | `MET-P1-018`, `021` | Incident drill and evidence segregation. |
 | `PRIV-P1-030` | Privacy policy/configuration changes MUST be versioned, approved, effective-dated, impact-assessed, replayable/repairable, and communicated before materially different future processing. | `REQ-P1-CFG-002`, `004` | Config publication/rollback tests. |
@@ -132,31 +132,32 @@ Missing mandatory attributes, expired review, ineligible region, withdrawn conse
 
 ## 7. Australian residency matrix contract
 
-The matrix is deliberately unpopulated until `DEC-040` is approved.
+`DEC-049` approves the base Azure/Australian routes below. A row with a prerequisite or unverified Azure control-plane behavior remains release-ineligible until its evidence is attached; selecting an Azure region alone is not proof of every support, identity, telemetry, or subprocessor location.
 
 | Data/processing class | Primary region | Derived/index region | Processor region | Support access region | Backup/DR region | Cross-border exception/consent | Enforcement/test ID |
 |---|---|---|---|---|---|---|---|
-| Immutable originals | `OPEN` | N/A | `OPEN` for malware/OCR | `OPEN` | `OPEN` | `OPEN` | Required before launch |
-| Operational/domain records | `OPEN` | `OPEN` | N/A or `OPEN` | `OPEN` | `OPEN` | `OPEN` | Required before launch |
-| Search/vector/graph/cache | `OPEN` | `OPEN` | `OPEN` | `OPEN` | `OPEN` | `OPEN` | Required before launch |
-| AI/OCR/reranking outputs | `OPEN` | `OPEN` | `OPEN` | `OPEN` | `OPEN` | `OPEN` | Required before adapter enablement |
-| Audit/security evidence | `OPEN` | N/A | `OPEN` security services | `OPEN` | `OPEN` | `OPEN` | Required before launch |
-| Ordinary telemetry/analytics | `OPEN` | N/A | `OPEN` | `OPEN` | `OPEN` | `OPEN` | Required before instrumentation |
-| Exports/temp packages | `OPEN` | N/A | N/A | None by default | `OPEN` if backed up | `OPEN` | Required before export |
+| Immutable originals | Australia East, client-encrypted Blob | N/A | Customer device only by default | No content access | GZRS/paired role in Australia Southeast | None by default | Crypto/placement/restore/no-plaintext tests |
+| Operational/domain records | Australia East PostgreSQL | Australia East | N/A | Named, content-minimized administration only | Approved Australian backup route; exact service evidence required | None by default | Private-network, tenant, backup/restore tests |
+| Search/vector/graph/cache | Australia East as client-encrypted derivatives | Australia East | Customer device only by default | No content access | Rebuild from authorized encrypted/canonical sources | None by default | Encryption, authorization epoch, deletion tests |
+| AI/OCR/reranking outputs | Customer device; encrypted before synchronization | Australia East encrypted synchronization | Customer device only; cloud plaintext route disabled | No content access | Encrypted/rebuildable according to role | None by default | No-egress and cross-client crypto tests |
+| Identity/account directory | Entra External ID Australian location only when verified/contracted | N/A | Microsoft Entra route | Content-independent identity support only | Service-defined resilience; Go-Local/evidence prerequisite | Block production if the selected tenant cannot meet approved notice/residency | Identity placement and contract evidence |
+| Audit/security evidence | Australia East | N/A | Approved Azure security services with allow-listed fields | Named security roles; no document content | Australian approved route | None by default | Schema canary, placement, restore tests |
+| Ordinary telemetry/analytics | Australia East workspace with content allow-list | N/A | Azure Monitor route only | Named operational roles; no document content | Australian approved route or no backup | None by default | Telemetry canary and placement tests |
+| Exports/temp packages | Customer device or Australia East encrypted temporary object | N/A | N/A | None by default | Not backed up by default | None by default | Expiry/revoke/deletion tests |
 
-No `OPEN` row may be interpreted as globally permitted. The Australian option must fail placement/processor validation if the active matrix cannot prove eligibility.
+No unverified/prerequisite row may be interpreted as permitted. The production route fails closed if the active matrix cannot prove eligibility.
 
 ## 8. Retention and deletion matrix contract
 
 | Data class/state | Retention trigger | Active access during retention | Purge/expiry target | Audit treatment | Decision dependency |
 |---|---|---|---|---|---|
-| Immutable artifact/current version | Workspace/resource lifecycle | Authorized only | `OPEN` | Safe lifecycle references | `DEC-039` |
-| Trash/cooling-off | Approved delete request | Restricted per policy | `OPEN` | Request/cancel evidence | `DEC-039` |
-| Derived extraction/index/cache | Source lifecycle and lineage | Never after source access block | `OPEN` | Version/result refs only | `DEC-039` |
+| Immutable artifact/current version | Workspace/resource lifecycle | Authorized only | Delete request moves it to Trash; physical encrypted blob expires after the approved soft-delete window | Safe lifecycle references | `DEC-053` |
+| Trash/cooling-off | Approved delete request and durable fence | Restore-authorized actors only after step-up; no ordinary processing | 30 calendar days from `deleted_at`, then restore is permanently denied | Request/restore/purge evidence without content | `DEC-053` |
+| Derived extraction/index/cache | Source lifecycle and deletion lineage | Never after source access block | Fenced immediately; purged or rendered irrecoverable no later than final document purge | Version/result refs only | `DEC-053` |
 | Export package | Package creation/redemption | Requester only | `OPEN` | Manifest/status refs | `DEC-033`, `039` |
 | Connector credentials/data | Consent/disconnect/source lifecycle | No future retrieval after revoke | `OPEN` | Consent/revoke refs | `DEC-031`, `039` |
 | Audit/provenance | Event/risk/purpose | Restricted audit readers | `OPEN` minimized/redacted | Self | `DEC-039` |
-| Backups/replicas | Backup generation and deletion tombstone | No ordinary access/restore bypass | `OPEN` | Deletion proof refs | `DEC-039`, `040` |
+| Backups/replicas | Backup generation and deletion ledger | No ordinary access/restore bypass | Artifact soft delete expires at 30 days; other backup generations obey their approved policy and remain non-serviceable after key destruction/fence | Deletion proof refs | `DEC-049`, `050`, `053` |
 
 ## 9. Export and deletion user guarantees
 
@@ -171,4 +172,4 @@ Before beta:
 3. `MET-P1-016`, `MET-P1-018`, `MET-P1-020`, and `MET-P1-021` evidence is available;
 4. `AC-P1-SEC-001`, `AC-P1-DEL-001`, `AC-UC-P1-008-04`, `AC-UC-P1-009-03`, `AC-UC-P1-011-01`–`05`, and `AC-UC-P1-012-01`–`05` pass;
 5. purpose/consent withdrawal, data access/correction, export, deletion, backup expiry, support, incident, and cross-border exercises pass; and
-6. `DEC-032`, `DEC-036`, `DEC-038`, `DEC-039`, and `DEC-040` remain visibly blocked or are closed with updated contracts/tests.
+6. `DEC-032`, `DEC-036`, and `DEC-038` remain visibly blocked; `DEC-049`–`053` have updated contracts and require their specified placement, encryption, deletion, legal, and release evidence.

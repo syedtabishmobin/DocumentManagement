@@ -3,12 +3,12 @@
 | Field | Value |
 |---|---|
 | Document ID | `ARCH-NFR-001` |
-| Version | `0.1` |
+| Version | `0.2` |
 | Status | **DRAFT — all numeric targets are provisional until explicitly approved** |
 | Product phase | Phase 1 — Personal and Family |
 | Jurisdiction | Australia first; jurisdiction-neutral core |
-| Updated | 26 August 2026 |
-| Normative basis | Approved `DEC-001`–`DEC-011` and `DEC-020`–`DEC-024`; draft PRD, architecture, security, privacy, audit, threat, testing, and operations contracts |
+| Updated | 28 August 2026 |
+| Normative basis | Approved decision register through `DEC-054`; approved PRD/architecture and accepted ADRs; security, privacy, audit, threat, testing, and operations contracts |
 | Target authority | Product owner plus the accountable specialist named per target; this document does not create a customer SLA |
 
 ## 1. Purpose, authority, and target status
@@ -17,7 +17,7 @@ This document defines measurable draft Phase 1 service-quality and safety object
 
 The hierarchy in [`CODEX.md`](../../CODEX.md) applies. Approved decisions and accepted ADRs outrank this draft. The [Phase 1 PRD](../01-product/02-phase-1-prd.md), [success metrics](../01-product/06-scope-and-success-metrics.md), [`ARCH-SOL-001`](01-solution-architecture.md), [`ARCH-DOM-001`](02-domain-model.md), [`ARCH-DATA-001`](03-logical-data-model.md), [`ARCH-WSP-001`](04-workspace-family-membership-model.md), and security contracts are draft inputs.
 
-Every target in this version is **PROVISIONAL**. “MUST” expresses the behavior required if the target is adopted; it does not imply product-owner approval or open the implementation gate. Numeric targets require the named accountable owners to approve the value, population, exclusions, window, and release consequence. `DEC-038` and `DEC-040` block approval of user-recovery and Australian-residency targets respectively.
+Service-level targets in this version remain **PROVISIONAL** unless their row identifies an approved product invariant. “MUST” expresses the required behavior; numeric SLO/customer promises still require the named accountable owners to approve population, exclusions, window, and release consequence. `DEC-038` continues to block account/workspace recovery; `DEC-049`–`053` approve the environment, encryption, client, and document-deletion invariants but not an external SLA.
 
 This document does not select infrastructure, deployment, database, queue, CDN, identity, monitoring, security, AI/OCR, or cost-management products.
 
@@ -124,8 +124,13 @@ This document does not select infrastructure, deployment, database, queue, CDN, 
 | `NFR-P1-036` | Sensitive telemetry/audit hygiene: scanned ordinary telemetry records with no prohibited content / all scanned records plus audit sample. | **100% continuously**, zero confirmed prohibited record, matching `MET-P1-021`; scanner/schema coverage **100%** of registered telemetry producers. | Schema allow-list, content canaries, pipeline inventory, weekly audit. | ZERO TOLERANCE — privacy, security, observability approval required. |
 | `NFR-P1-037` | Security finding remediation and residual-risk gate. | Zero unresolved **critical or high residual** release findings without authorized risk acceptance. Draft remediation objectives: critical containment **≤24 hours**, high remediation/mitigation **≤7 days**, medium **≤30 days** from validated finding. | Vulnerability/threat/penetration register, retest, risk owner/expiry; supply-chain evidence. | PROVISIONAL — security/product owners must approve severity model, times, and exception authority. |
 | `NFR-P1-038` | Encryption, key, and secret control coverage: eligible data paths/stores using approved protection / all registered in-scope paths/stores; prohibited secret exposure count. | **100%** encryption/control coverage, **zero** production secrets in source/ordinary logs, **100% quarterly** key/secret disable/rotate/recovery drill coverage for critical domains. | Data-flow inventory, configuration/protocol tests, secret scans/canaries, key audit and recovery exercise. | ZERO TOLERANCE for exposure/unprotected path — security, architecture, operations approval required. |
-| `NFR-P1-039` | Australian-residency conformance: eligible placements/processing/replication/support/telemetry/backup/DR routes / all attempted routes under the option. | **100% conforming**, zero unapproved cross-border route; unknown/ineligible route blocks. No launch approval until every matrix row is closed and tested. | Placement inventory, policy decision, egress/failover/restore/processor denial tests. | PROVISIONAL — decision blocked by `DEC-040`; privacy/legal, security, product approval required. |
+| `NFR-P1-039` | Australian-residency conformance: eligible placements/processing/replication/support/telemetry/backup/DR routes / all attempted routes. | **100% conforming**, zero unapproved cross-border route; unknown/ineligible route blocks. No launch approval until every `DEC-049` matrix row is verified. | Placement inventory, policy decision, egress/failover/restore/processor denial tests. | APPROVED invariant; privacy/legal, security, and operations evidence required before production. |
 | `NFR-P1-040` | Critical security/privacy incident response timing from first detectable signal. | Detection **≤5 minutes**, human acknowledgement **≤15 minutes**, containment action begins **≤30 minutes**, and affected high-risk capability is disabled/fail-closed until safe; measured per exercise/incident. | At least quarterly incident exercise plus real incident timeline; missed detection counts even if no harm observed. | PROVISIONAL — security, privacy, operations, product approval required. |
+| `NFR-P1-046` | Plaintext/key egress: customer originals, sensitive derivatives, recovery secrets, or unwrapped content keys observed beyond an authorized client / all inspected network, API, storage, queue, telemetry, support, backup, and failure paths. | **Zero observed and 100% registered-path inspection every release**; any confirmed instance is stop-ship/incident. | Network capture, storage/queue inspection, content canaries, wrong-route and failure-path tests. | APPROVED ZERO-TOLERANCE invariant under `DEC-050`. |
+| `NFR-P1-047` | Cross-client cryptographic conformance: supported web/iOS/Android envelope vectors producing the expected decrypt/tamper/downgrade result / all approved vectors and mixed-version cases. | **100% every release**, zero nonce reuse in generated test population, unknown/retired suite always fails closed. | Language-neutral known-answer vectors, randomized property tests, version migration and rollback tests. | APPROVED ZERO-TOLERANCE invariant; independent cryptographic review required before production. |
+| `NFR-P1-048` | Document deletion timing and state: accepted deletions fenced immediately; eligible restores accepted before deadline; restore denied at/after deadline; final-purge roles reconciled. | **100%** durable fence before acknowledgement; Trash deadline exactly `deleted_at + 30 calendar days`; **100%** post-deadline restores denied; all registered roles acknowledged before complete. | Server-clock boundary tests, delayed worker/queue/replay/restore/resync drills, lifecycle ledger. | APPROVED product invariant under `DEC-053`; no guarantee of worker completion before dependencies permit, but access remains denied. |
+| `NFR-P1-049` | Critical client parity: supported critical journeys meeting the same contract, authorization, evidence, encryption, deletion, and error semantics / required React web, Flutter iOS, and Flutter Android matrix. | **100% before release** or an explicit approved platform exception; zero security/privacy semantic exception. | Shared synthetic journeys, contract snapshots, authorized-result comparisons, accessibility/device evidence. | APPROVED release invariant under `DEC-052`. |
+| `NFR-P1-050` | Infrastructure reproducibility and isolation: environment resources represented by approved Bicep and free of unexplained security/data drift / all `dev`, `stage`, and future `prod` resources. | **100% managed or governed exception**, zero cross-environment identity/data/secret reuse, and zero production resource before its `DEC-054` gate. | Bicep build/What-If, inventory/drift, role, secret, network, data-marker and migration tests. | APPROVED release invariant under `DEC-049`/`054`; exact cost/SKU targets remain provisional. |
 
 ## 9. Observability and control evidence
 
@@ -224,6 +229,7 @@ Target changes preserve the prior target, evidence window, reason, approvers, ef
 | `NFR-P1-033`–`040` | `SEC-P1-*`, `AUTH-P1-*`, `PRIV-P1-*`, `AUD-P1-*`, `THR-P1-*` | `MET-P1-017`–`021`, `REQ-P1-TRUST-001`–`009`, `AC-P1-SEC-001`, `AC-P1-AI-001` |
 | `NFR-P1-041`–`043` | `ARCH-P1-039`–`042`, `SEC-P1-017`–`018`, `AUD-P1-001`–`030` | All operational/safety metrics and critical use cases |
 | `NFR-P1-044`–`045` | `ARCH-P1-033`, `041`–`045`, `SEC-P1-020`, `029`; `THR-P1-026`, `030` | `REQ-P1-AI-001`, `006`–`007`; product cost/value review |
+| `NFR-P1-046`–`050` | `ARCH-P1-046`–`055`, `SEC-P1-031`–`037`, `THR-P1-031`–`034` | `REQ-P1-PLT-001`–`002`, `REQ-P1-CRYPTO-001`–`003`, `REQ-P1-DEL-001`–`002`, `REQ-P1-OPS-001`–`002` |
 
 ## 15. Approval checklist
 
@@ -235,7 +241,7 @@ This document cannot become an approved NFR baseline until:
 - accessibility specialists approve the standard/version, test matrix, severity gate, and any documented exceptions;
 - AI/document-intelligence owners approve Q&A/processing timing and safe cost-degradation behavior;
 - finance approves AUD cost accounting and unit budgets;
-- `DEC-038` and `DEC-040` close or their capabilities remain blocked;
+- `DEC-038` remains blocked; all `DEC-049`–`054` placement, encryption, deletion, client, and release prerequisites are evidenced;
 - the test strategy assigns automated/manual/chaos/recovery evidence for every `NFR-P1-*`; and
 - backlog and traceability map each implementation slice to applicable NFRs and stop-ship rules.
 

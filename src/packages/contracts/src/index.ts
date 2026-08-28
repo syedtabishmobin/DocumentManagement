@@ -149,8 +149,23 @@ export interface DocumentRecord {
   updatedAt: string;
   subjectIds: string[];
   captureRoute: "FILE" | "CAMERA" | "MANUAL" | "BULK" | "CONNECTOR";
+  deletedAt?: string;
+  purgeDueAt?: string;
+  preDeleteStatus?: Exclude<DocumentStatus, "DELETED">;
   extractedText?: string;
   reviewReason?: string;
+}
+
+export interface DocumentDeletionResult {
+  documentId: string;
+  state: "TRASHED";
+  deletedAt: string;
+  purgeDueAt: string;
+}
+
+export interface DocumentRestoreResult {
+  document: DocumentRecord;
+  state: "RESTORED";
 }
 
 export interface SubjectRecord {

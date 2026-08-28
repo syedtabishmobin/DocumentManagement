@@ -3,11 +3,11 @@
 | Field | Value |
 |---|---|
 | Document ID | `TST-STR-001` |
-| Version | `0.1` |
-| Status | **DRAFT — framework, implementation, environment, and release gates are not approved** |
+| Version | `0.2` |
+| Status | **APPROVED IMPLEMENTATION BASELINE — candidate-specific release evidence is still required** |
 | Product phase | Phase 1 — Personal and Family |
-| Updated | 26 August 2026 |
-| Primary trace | `ENG-TST-P1-001`–`042`, `ARCH-NFR-001`, `OPS-CICD-001`, `OPS-DEP-001`, `OPS-OBS-001` |
+| Updated | 28 August 2026 |
+| Primary trace | `ENG-TST-P1-001`–`042`, `ARCH-NFR-001`, `OPS-CICD-001`, `OPS-DEP-001`, `OPS-OBS-001`, `DEC-049`–`054` |
 
 ## 1. Objective and test model
 
@@ -37,7 +37,7 @@ A test moves through `DRAFT`, `APPROVED`, `RETIRED`; execution uses the separate
 
 ## 4. Environments, fixtures, and determinism
 
-The default profile is local or isolated integration, outbound denied, with at least two unrelated synthetic workspaces and controlled clock, timezone, randomness, ID generation, event order, concurrency barriers, fake ports, and faults. Every fixture records its generator and seed, synthetic marker, privacy class, purpose, expected scope, provenance, cleanup, and limitations. Local results are not proof of production security, residency, durability, accessibility, performance, delivery, source authority, or recovery.
+The default profile is local or isolated Azure dev/stage integration, outbound denied except to explicitly approved test dependencies, with at least two unrelated synthetic workspaces and controlled clock, timezone, randomness, ID generation, event order, concurrency barriers, fake ports, and faults. Every fixture records its generator and seed, synthetic marker, privacy class, purpose, expected scope, provenance, cleanup, and limitations. Local/dev/stage results are not proof of production security, residency, durability, accessibility, performance, delivery, source authority, or recovery.
 
 Representative performance, accessibility, security, and recovery environments require separate approval and a parity statement. Production content or credentials are prohibited from ordinary test inputs/evidence. Raw synthetic document content is also excluded from ordinary logs so the production minimization path is tested, not bypassed.
 
@@ -55,6 +55,8 @@ Representative performance, accessibility, security, and recovery environments r
 | `TEST-UNIT-P1-008` | Source health, monitoring, applicability and replay | Failure is not no-change; exact applicability vocabulary; replay is deterministic/idempotent. |
 | `TEST-UNIT-P1-009` | Recommendation, bound approval, action, evidence and fulfilment | Separate state owners; stale digest fails; receipt/attempt is not verified closure. |
 | `TEST-UNIT-P1-010` | Expand/migrate/contract, configuration and derived generations | Interrupted rerun converges; old/new compatibility holds; current fence/policy prevents resurrection. |
+| `TEST-UNIT-P1-011` | Client encryption envelopes, key wrapping and algorithm agility | Web and Flutter known-answer vectors agree; nonces are unique; tamper, wrong context, retired suite and malformed envelope fail closed. |
+| `TEST-UNIT-P1-012` | Trash deadline and purge/restore state machine | Delete fences immediately; restore is authorized only before `deleted_at + 30 calendar days`; replay, skew and repeated requests converge without resurrection. |
 
 Property generators MUST bound field sizes, Unicode, time/clock uncertainty, interval overlap, graph cycles/fan-out/depth, page geometry, duplicate/reordered delivery, and concurrency schedules. Shrunk counterexamples preserve the seed and contract versions. Random passes do not replace named boundary cases.
 
@@ -74,6 +76,8 @@ Property generators MUST bound field sizes, Unicode, time/clock uncertainty, int
 | `TEST-CON-P1-010` | Extraction/evidence structured output | Closed schemas, exact generations/anchors/presence/confidence, unknown versions, correction/reprocessing. |
 | `TEST-CON-P1-011` | AI outputs, tools and guardrail decisions | Closed output/action schemas, citations, capability/policy versions, tool allow-list, no direct effect. |
 | `TEST-CON-P1-012` | Provider-neutral source/processor/connector/channel ports | Same suite against fake/candidate version; timeout/malformed/partial/revoke/delete/unknown version; no live activation. |
+| `TEST-CON-P1-013` | React web and Flutter iOS/Android shared contracts | OpenAPI, envelope vectors, error semantics, authorization, lifecycle and accessibility labels remain compatible across supported clients. |
+| `TEST-CON-P1-014` | Azure Bicep environment contract | Build/What-If, naming, tags, regions, identity, RBAC, diagnostics, lifecycle, budget and no-cross-environment-reference policies pass for dev/stage and parameterized prod. |
 
 Every API operation and event listed above is expanded as an exact trace ID in the scenario manifest. Per-operation conformance MUST cover authentication, workspace/header equality, purpose, minimal disclosure, supported content type, closed schemas, malformed/unknown/oversize input, current authorization, quotas, correlation, and applicable ETag, idempotency, pagination, async, cancellation, decision-fence, deletion, and redemption behavior. Every event MUST cover the common envelope, immutable bytes, duplicate/different-bytes, delay/reorder/gap, compatibility, checkpoint, DLQ/repair/replay, privacy canaries, and current authority before consequence.
 
@@ -85,9 +89,9 @@ Migration cases cover empty and populated stores; old reader/new writer and new 
 
 ## 8. Evidence, flakiness and stop-ship
 
-Oracles assert canonical state/revision, emitted event/audit obligations, caller-safe result, exact evidence/coverage, side effects, and prohibited observations. Cleanup proves cancellation/reconciliation/purge/reset and no escaped state. Retried results retain the first failure. Zero-tolerance authorization, effect approval, original integrity, clinical containment, required audit, deletion resurrection, residency, telemetry leakage, secret exposure, and critical accessibility tests cannot be quarantined or waived.
+Oracles assert canonical state/revision, emitted event/audit obligations, caller-safe result, exact evidence/coverage, side effects, and prohibited observations. Cleanup proves cancellation/reconciliation/purge/reset and no escaped state. Retried results retain the first failure. Zero-tolerance authorization, plaintext/key egress, cryptographic-vector conformance, effect approval, original integrity, clinical containment, required audit, deletion resurrection/deadline, residency, telemetry leakage, secret exposure, release provenance, and critical accessibility tests cannot be quarantined or waived.
 
-A non-safety flaky quarantine is narrow, owned, expiring, linked to repair, transparent in coverage, and leaves mapped scope `INSUFFICIENT`. A waiver cannot close `DEC-030`–`040` or turn a provisional target into an SLA.
+A non-safety flaky quarantine is narrow, owned, expiring, linked to repair, transparent in coverage, and leaves mapped scope `INSUFFICIENT`. A waiver cannot close an open decision, bypass `DEC-049`–`054`, or turn a provisional target into an SLA.
 
 ## 9. Entry and exit evidence
 

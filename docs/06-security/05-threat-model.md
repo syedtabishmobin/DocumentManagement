@@ -3,14 +3,14 @@
 | Field | Value |
 |---|---|
 | Document ID | `SEC-THR-001` |
-| Version | `0.1` |
-| Status | `DRAFT — security/architecture review and risk acceptance required` |
+| Version | `0.2` |
+| Status | `APPROVED IMPLEMENTATION RISK BASELINE — production residuals require independent review` |
 | Method | STRIDE plus privacy, AI, abuse-case, and availability analysis |
-| Updated | 26 August 2026 |
+| Updated | 28 August 2026 |
 
 ## 1. Scope and method
 
-This threat model covers the Phase 1 web/PWA, APIs, identity/session boundary, domain services, workers/events, operational stores, immutable artifact/quarantine stores, search/vector/graph/caches, AI/OCR/malware/notification adapters, trusted-source and user connectors, exports, deletion, audit, support/administration, telemetry, backups, and disaster recovery.
+This threat model covers the Phase 1 React web/PWA, Flutter iOS/Android clients, device key stores, customer-controlled cryptographic envelopes and local intelligence, APIs, identity/session boundary, domain services, workers/events, operational stores, encrypted immutable artifact/quarantine stores, encrypted search/vector/graph/caches, AI/OCR/malware/notification adapters, trusted-source and user connectors, exports, deletion, audit, support/administration, telemetry, backups, and disaster recovery.
 
 Component and aggregate names follow `ARCH-SOL-001` and `ARCH-DOM-001`. The trust analysis covers architecture zones `Z0`–`Z7`, the overlaid Australian residency realm, canonical aggregate owners, rebuildable derived projections, `ExportCase`, `DeletionCase`, and its authoritative deletion fence/tombstone (`ARCH-P1-031`–`ARCH-P1-032`, `DOM-P1-048`–`DOM-P1-052`).
 
@@ -93,21 +93,25 @@ Trust boundaries and required controls are defined in `SEC-ARCH-001` section 3. 
 | `THR-P1-013` | Disclosure / safety | Suspected clinical record enters ordinary OCR, embeddings, graph, AI, analytics, search, or notification. | M/C | `SEC-P1-014`, `PRIV-P1-010`, block ordinary flow; `DEC-036` fence | Synthetic clinical fixtures; `MET-P1-020` | H/C until `DEC-036` closes |
 | `THR-P1-014` | Disclosure | Signed artifact, guest, citation, or export URL is guessed, leaked, cached, reused, wrong-audience, wrong-version, or valid after revoke. | H/C | `SEC-P1-015`, `AUTH-P1-018`–`019`; reauthorize redemption | Token abuse, expiry/revoke/wrong scope, referrer/cache tests | L/C |
 | `THR-P1-015` | Tampering / elevation | Direct or indirect prompt injection from document/source/metadata/connector changes system instructions, tools, workspace, citations, or actions. | H/C | `SEC-P1-020`–`021`, `AUTH-P1-020`, structured schemas/policy gates | Injection corpus; `AC-P1-AI-001`, `AC-UC-P1-005-03` | M/C; model robustness varies |
-| `THR-P1-016` | Disclosure | AI/OCR/embedding/reranking provider retains, trains on, logs, cross-uses, or cross-border processes household content. | M/C | `SEC-P1-020`, `PRIV-P1-008`, `027`–`028`, adapter/data-processing contract | Egress/field/region/retention conformance; contractual evidence | H/C until `DEC-040`/providers approved |
+| `THR-P1-016` | Disclosure | AI/OCR/embedding/reranking provider retains, trains on, logs, cross-uses, or cross-border processes household content. | M/C | Default customer-device processing, `SEC-P1-020`, `SEC-P1-031`, deny server plaintext route | Network no-egress, field/region/retention conformance | L/C for default route when proved; H/C for any future cloud plaintext route |
 | `THR-P1-017` | Tampering / disclosure | Trusted-source endpoint, DNS/redirect, parser, maintainer, or content is poisoned; arbitrary web content becomes authority. | M/C | `SEC-P1-023`, governed allow-list/snapshots/review/publication separation | SSRF/DNS/redirect/content diff/parser/config tests | M/H |
 | `THR-P1-018` | Disclosure / elevation | Connector token theft, over-broad scope, permission drift, webhook spoof/replay, disconnect failure, or resync revives deleted data. | M/C | `SEC-P1-022`, `AUTH-P1-029`, `PRIV-P1-009`, signed/replay-safe callbacks | Token canary, scope/revoke/replay/resync/deletion suite | H/C until `DEC-031` connector choices |
 | `THR-P1-019` | Disclosure | Raw content/values/query/prompt/answer/filename/token leaks into logs, metrics, traces, analytics, errors, screenshots, fixtures, or incident systems. | H/C | `SEC-P1-017`, `PRIV-P1-020`–`022`, `AUD-P1-027` | Continuous schema/content canaries; `MET-P1-021` | L/C with zero-tolerance monitoring |
 | `THR-P1-020` | Elevation / disclosure | Insider/support/operator abuses standing access, impersonation, configuration, debug tooling, export, or audit search. | M/C | `SEC-P1-025`–`026`, `AUTH-P1-026`–`028`, `AUD-P1-024`–`026` | Privileged anomaly, dormant grant, fake incident, peer-approval tests | M/C; insider residual |
 | `THR-P1-021` | Tampering / disclosure | Malicious/compromised configuration changes permissions, sources, prompts/tools, rules, workflows, retention, or residency. | M/C | `AUTH-P1-028`, `AUD-P1-022`, `PRIV-P1-030`; review/sign/effective date/rollback | Unauthorized/self-publish, schema, diff, rollback/replay tests | L/C |
 | `THR-P1-022` | Disclosure / privacy | Export includes cross-workspace/private/third-party data, silently omits declared classes, leaks temp package, or survives revoke. | M/C | `SEC-P1-027`, `AUTH-P1-015`, `PRIV-P1-018`, `AUD-P1-020` | Manifest/checksum/cross-tenant/mid-job revoke; `MET-P1-016` | M/C until `DEC-033` closes |
-| `THR-P1-023` | Disclosure / tampering | Purge misses derivatives/backups/connector copies or late replay/restore resurrects deleted content. | H/C | `AUTH-P1-034`, `PRIV-P1-011`–`017`, `AUD-P1-021`, tombstones/lineage | Per-class deletion, late event, restore/resync drills; `AC-P1-DEL-001` | H/C until `DEC-039` closes |
-| `THR-P1-024` | Disclosure | Australian-residency data reaches ineligible processor, telemetry, support region, backup, or DR failover. | M/C | `SEC-P1-028`, `PRIV-P1-027`–`028`, `AUD-P1-029` | Placement/egress/restore/failover/adaptor denial | H/C until `DEC-040` closes |
+| `THR-P1-023` | Disclosure / tampering | Purge misses derivatives/backups/connector copies or late replay/restore resurrects deleted content. | H/C | `AUTH-P1-034`, `SEC-P1-035`–`036`, `PRIV-P1-011`–`017`, deletion ledger and per-role acknowledgements | 30-day boundary, per-class deletion, late event, restore/resync drills; `AC-P1-DEL-001` | H/C until `DEC-053` controls are implemented and evidenced |
+| `THR-P1-024` | Disclosure | Australian-residency data reaches ineligible processor, telemetry, support region, backup, or DR failover. | M/C | `SEC-P1-028`, `PRIV-P1-027`–`028`, `AUD-P1-029`, `ADR-ARCH-007` | Placement/egress/restore/failover/adapter denial | H/C until every `DEC-049` matrix row is verified |
 | `THR-P1-025` | Elevation / privacy | False or malicious incapacity/death trigger releases protected content; family/support role is treated as authority. | M/C | `AUTH-P1-033`, `PRIV-P1-024`; no automated release | False-trigger tests, assert no route/role | H/C blocked by `DEC-032` |
 | `THR-P1-026` | Availability | Upload/AI/search/graph/source/export/delete resource exhaustion, queue flood, fan-out cycle, retry storm, decompression bomb, or cost attack degrades service. | H/H | `SEC-P1-029`, quotas/limits/backpressure/circuit/retry budget | Load/chaos/cost, fan-out/cycle, archive bomb tests | M/H |
 | `THR-P1-027` | Availability / integrity | Source/parser/model/identity/scanner/audit/key/region dependency fails and system bypasses control or presents stale success. | H/C | Fail closed/visible degradation; `SEC-P1-013`, `018`, `020`, `023`, `029` | Dependency outage/partition/clock/failover drills | M/C |
 | `THR-P1-028` | Tampering / elevation | Vulnerable or compromised dependency, build runner, artifact, IaC, deployment credential, or update introduces backdoor. | M/C | `SEC-P1-030`, isolated builds, provenance/signing, SBOM, scanning, separation | Dependency/artifact signature/provenance/rollback exercises | M/C |
 | `THR-P1-029` | Disclosure / tampering | Secret/key leakage, over-broad key permission, failed rotation, insecure backup, or destroyed key without recovery policy exposes or loses data. | M/C | `SEC-P1-009`–`011`, duty separation, scoped use, rotation/revocation | Secret scan/canary, key access/rotation/restore/destruction drills | M/C |
 | `THR-P1-030` | Safety / integrity | Hallucinated, stale, conflicting, incomplete, or unsupported AI/monitor result is presented as verified/current or drives action. | H/C | Evidence/citation, applicability, source health, confidence/review, bound approval; `SEC-P1-020`, `024` | `AC-P1-RAG-001`, `AC-P1-MON-001`, `AC-P1-E2E-001`, `MET-P1-012`, `015`, `022` | M/C; model/source limits remain |
+| `THR-P1-031` | Disclosure / availability | A compromised device, weakly protected recovery secret, or malicious authorized recipient obtains plaintext/key material or permanently loses the only recoverable vault key. | H/C | OS-protected keys, strong recovery KDF, explicit recovery verification, device/recovery inventory, revocation/rotation, customer warnings | Device theft/root/jailbreak, recovery guessing/loss, trusted-member abuse, key backup/restore tests | M/C; authorized-device compromise remains material |
+| `THR-P1-032` | Disclosure / tampering | A malicious or compromised web/mobile release exfiltrates plaintext or keys before client encryption, defeating operator-blind storage despite secure servers. | M/C | Reproducible/signed builds, protected CI/signing, review separation, release provenance/transparency, CSP/dependency pinning, store signing, rapid revoke | Source-to-artifact verification, dependency/build tamper, malicious-release exercise | M/C; web-delivered code cannot provide the same independent binary trust as an already-installed verified app |
+| `THR-P1-033` | Tampering / availability | React, Flutter, or server implementations disagree on envelope algorithms, canonicalization, key-wrap recipients, policy versions, or deletion state and corrupt, expose, or strand content. | M/C | One versioned language-neutral envelope contract, generated models, known-answer vectors, unknown-version fail closed, compatibility window | Cross-client/server crypto vectors, downgrade, migration, mixed-version, rollback tests | L/C after independent protocol review and parity evidence |
+| `THR-P1-034` | Disclosure / tampering | Encrypted malicious content bypasses server scanning and exploits an authorized client parser or harms a recipient after sharing/export. | H/C | Pre-encryption client validation, strict supported types/limits, sandboxed parsers/renderers, no active-content execution, quarantine/unsupported state, optional future consented scanner | Polyglot/archive/parser fuzz, malicious share/export, scanner-absence tests | M/C; client parser zero-days remain |
 
 ## 5. Priority abuse cases
 
@@ -133,7 +137,7 @@ Trust boundaries and required controls are defined in `SEC-ARCH-001` section 3. 
 
 **Attack/failure:** A delayed worker, stale index rebuild, connector resync, backup restore, support tool, or model cache recreates or serves purged content.
 
-**Required defenses:** authoritative deletion state/tombstone, derivative lineage, execution-time check, restore gate, connector revoke/delete, replay rejection, per-class verification and reconciliation. **Tests:** `AC-P1-DEL-001`, `AC-UC-P1-012-01`–`05`. Residual lifecycle timing cannot be accepted until `DEC-039` closes.
+**Required defenses:** authoritative deletion state/tombstone, derivative lineage, execution-time check, restore gate, connector revoke/delete, replay rejection, per-class verification, 30-day server-clock deadline, key-envelope destruction, and reconciliation. **Tests:** `AC-P1-DEL-001`, `AC-UC-P1-012-01`–`05`. `DEC-053` closes the duration choice but not its implementation evidence.
 
 ### 5.5 Recovery, support, and continuity takeover
 
@@ -169,8 +173,8 @@ For every `THR-P1-*` item, the implementation backlog must record:
 - `DEC-032`: `THR-P1-025` remains blocking for automated continuity release.
 - `DEC-036`: `THR-P1-013` remains blocking for a final suspected-clinical-content flow.
 - `DEC-038`: `THR-P1-002` remains blocking for recovery/ownership transfer.
-- `DEC-039`: `THR-P1-023` remains blocking for deletion timing and completion promises.
-- `DEC-040`: `THR-P1-016` and `THR-P1-024` remain blocking for Australian-residency-enabled external processing/DR.
+- `DEC-053`: `THR-P1-023` remains blocking until the 30-day cross-store lifecycle and non-resurrection evidence pass.
+- `DEC-049`/`050`: `THR-P1-016`, `THR-P1-024`, and `THR-P1-031`–`034` remain blocking until Azure placement, client encryption, build integrity, recovery, cross-client protocol, and encrypted-file handling evidence pass.
 
 No “provider standard,” inherited cloud control, contract clause, successful happy-path test, or absence of observed incidents closes a threat. Closure requires verified controls, detection/response evidence, and accepted residual risk.
 

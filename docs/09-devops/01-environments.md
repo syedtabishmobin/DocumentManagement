@@ -3,17 +3,17 @@
 | Field | Value |
 |---|---|
 | Document ID | `OPS-ENV-001` |
-| Version | `0.1` |
-| Status | **DRAFT — architecture, security, privacy, operations, and quality approval required** |
+| Version | `0.2` |
+| Status | **APPROVED IMPLEMENTATION STANDARD under `DEC-049` and `DEC-054`** |
 | Product phase | Phase 1 — Personal and Family |
-| Updated | 26 August 2026 |
-| Primary trace | `DEC-009`, `DEC-022`, `ARCH-P1-001`–`018`, `ARCH-P1-039`–`045`, `PRIV-P1-020`–`022`, `SEC-P1-001`–`011`, `028`–`030` |
+| Updated | 28 August 2026 |
+| Primary trace | `DEC-009`, `DEC-049`–`054`, `ADR-ARCH-007`–`010`, `ARCH-P1-001`–`018`, `ARCH-P1-039`–`045`, `PRIV-P1-020`–`022`, `SEC-P1-001`–`011`, `028`–`030` |
 
 ## 1. Purpose and boundary
 
-This document defines logical environment classes and isolation controls without selecting a cloud, account/project/subscription model, region, network, identity, data, container, orchestration, or developer tool. Environment names describe trust and evidence boundaries, not a mandated deployment topology. Detailed offline/local profiles, fake ports, fixtures, and reset safety are owned by [`ENG-DEV-001`](../08-engineering/05-local-development.md).
+This document defines logical environment classes and isolation controls. `ADR-ARCH-007` now maps those classes to Bicep-defined Azure environments while preserving the provider-neutral behavior and evidence boundaries. Detailed offline/local profiles, fake ports, fixtures, and reset safety are owned by [`ENG-DEV-001`](../08-engineering/05-local-development.md).
 
-No environment in this draft is approved for production. [`DEC-040`](../00-context/decision-register.md) leaves physical processing, support, telemetry, backup, and recovery routes open. Environment provisioning follows [`OPS-IAC-001`](03-infrastructure-as-code.md); promotion follows [`OPS-CICD-001`](02-ci-cd.md); secrets and configuration follow [`OPS-SEC-001`](04-secrets-and-configuration.md).
+`dev` and `stage` are approved for synthetic/test data in the current Azure subscription. `prod` is a defined but unprovisioned target until a separate production subscription and the `DEC-054` release gates exist. Environment provisioning follows [`OPS-IAC-001`](03-infrastructure-as-code.md); promotion follows [`OPS-CICD-001`](02-ci-cd.md); secrets and configuration follow [`OPS-SEC-001`](04-secrets-and-configuration.md).
 
 ## 2. Logical environment classes
 
@@ -26,6 +26,8 @@ No environment in this draft is approved for production. [`DEC-040`](../00-conte
 | Production | Approved customer service under current contracts, decisions, placement matrix, and release evidence | Only approved data classes, processors, routes, identities, keys, configuration, and telemetry | Conditional on the specification and release gates |
 
 An implementation may combine or subdivide these logical classes only when every trust, data, access, route, evidence, and separation property remains independently enforceable and reviewable.
+
+The approved physical mapping is: developer-local remains offline; Azure `dev` implements shared integration; Azure `stage` implements representative pre-production and isolated exercises through separately scoped resources; Azure `prod` implements production only after its subscription and release gate exist. Production's primary region is Australia East and only approved Australian paired-region routes may use Australia Southeast.
 
 ## 3. Environment manifest
 
@@ -46,7 +48,7 @@ The manifest contains safe references, not credentials, raw configuration secret
 | `OPS-ENV-P1-007` | Each environment MUST use environment-specific least-privileged human/workload identities and distinct secret/key domains; production credentials MUST be unusable from local or lower-environment execution. |
 | `OPS-ENV-P1-008` | Local development MUST NOT require, cache, export, impersonate, or offer a fallback path to a production identity, secret, signing key, data store, event stream, telemetry store, backup, or administrator session. |
 | `OPS-ENV-P1-009` | Every environment MUST enforce workspace, purpose, classification, processing/residency, retention/deletion, and configuration policy; a lower environment cannot bypass policy merely because its data is synthetic. |
-| `OPS-ENV-P1-010` | Physical region and route fields MUST remain explicit `OPEN`/ineligible until approved under `DEC-040`; a synthetic region label is test input, not evidence that a real route is eligible. |
+| `OPS-ENV-P1-010` | Azure environment region and route fields MUST match the `DEC-049` placement matrix. Australia East is primary; Australia Southeast is eligible only for an explicitly inventoried paired-region resilience role. Every other route remains ineligible until separately approved. |
 | `OPS-ENV-P1-011` | Lower environments MUST default to offline deterministic provider-neutral fakes for identity, storage, scanning, document/AI processing, sources, connectors, notifications, events, audit, telemetry, backup, and recovery ports. |
 | `OPS-ENV-P1-012` | An external conformance sandbox MAY be used only with synthetic inputs, an approved bounded purpose/route, isolated credentials, explicit cost/retention evidence, and no implication that the adapter or route is production-approved. |
 | `OPS-ENV-P1-013` | External egress and inbound callbacks in lower environments MUST be deny-by-default and restricted to declared test endpoints/sinks; tests MUST NOT address real recipients, real source accounts, or production callback identities. |
@@ -60,7 +62,7 @@ The manifest contains safe references, not credentials, raw configuration secret
 | `OPS-ENV-P1-021` | Build artifacts MUST NOT be rebuilt per environment. The same verified immutable artifact is promoted; only approved non-secret configuration and environment-specific secret/key references vary. |
 | `OPS-ENV-P1-022` | Parity claims MUST enumerate intentional differences in scale, dependencies, identity, routes, data, keys, observability, backup, and failure controls. Lower-environment success is not production reliability, residency, or recovery proof. |
 | `OPS-ENV-P1-023` | An isolated restored or disaster-recovery environment MUST remain non-serviceable until integrity, schema/configuration, authorization, deletion-fence/tombstone, audit continuity, processing/residency, key, and release gates pass. |
-| `OPS-ENV-P1-024` | Environment policy MUST preserve `DEC-038`, `DEC-039`, and `DEC-040`: no user-authority recovery route, no invented retention/backup-expiry duration, and no presumed region/failover/processor eligibility. |
+| `OPS-ENV-P1-024` | Environment policy MUST preserve `DEC-038`, `DEC-050`, and `DEC-053`: no user-authority recovery bypass, no operator document-decryption path, and no restore/replay route that exceeds the approved 30-day document recovery lifecycle. |
 
 ## 5. Synthetic fixture and reset contract
 
