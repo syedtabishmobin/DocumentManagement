@@ -6,8 +6,8 @@ This record contains content-free infrastructure evidence only. It contains no t
 
 | Environment | Deployment | Result | Customer-data policy | Applications |
 |---|---|---|---|---|
-| `dev` | `doculyra-dev-foundation` | `Succeeded` | `synthetic-only` | Not deployed |
-| `stage` | `doculyra-stage-foundation` | `Succeeded` | `synthetic-only` | Not deployed |
+| `dev` | `doculyra-dev-preview-copy-20260828` | `Succeeded` | `synthetic-only` | React web and NestJS API deployed from `b972b0265d84e35afdf268b31c2006ad95664050` |
+| `stage` | `doculyra-stage-foundation-refresh-20260829` | `Succeeded` | `synthetic-only` | Not deployed |
 | `prod` | Parameterized only | Not provisioned | `production-gated` | Not deployed |
 
 Both live deployments used Australia East and isolated resource groups. Azure validation and ResourceId-only What-If completed before creation. An initial dev attempt failed because the current Key Vault API rejects an explicit `enablePurgeProtection: false`; the Bicep was corrected to omit the property outside production, recompiled, revalidated, and the idempotent retry succeeded.
@@ -22,8 +22,16 @@ The following properties were queried from the deployed resources after successf
 - Cosmos DB: local authentication disabled, key-based metadata writes disabled, continuous seven-day backup enabled; free tier enabled only for dev.
 - Key Vault: RBAC authorization and soft delete enabled with 90-day retention. Purge protection remains reserved for production because enabling it is irreversible.
 - Monthly resource-group budget: AUD 25 for dev and AUD 75 for stage, with notification contacts supplied at deployment time rather than committed to source.
-- Application deployment switch: `false`; API and web URLs are therefore intentionally empty.
+- Dev application deployment switch: `true`; stage and prod remain `false`.
+- Dev web: `https://ca-doculyra-dev-web.ashystone-3c89dc27.australiaeast.azurecontainerapps.io`.
+- Dev API: `https://ca-doculyra-dev-api.ashystone-3c89dc27.australiaeast.azurecontainerapps.io`.
+- Web root, direct API health, proxied API health, and proxied unauthenticated-session checks returned HTTP 200 after deployment.
+- The dev API reports `synthetic-only`, outbound network denied, external AI disabled, and external connectors disabled.
+- Synthetic preview state is persisted on a dedicated 5 GiB Azure Files share; it is not the production customer artifact route.
+- Immutable web/API images were built and pushed by GitHub-hosted runners using a repository/branch-bound Azure OIDC identity with ACR push only. The registry admin account remains disabled.
+- ACR Tasks were unavailable on this subscription, returning `TasksOperationsNotAllowed`; the passwordless GitHub OIDC build path is the implemented replacement.
+- Stage foundations were refreshed with the same repository/branch-bound OIDC identity pattern and synthetic-preview share; stage applications remain deliberately disabled.
 
 ## Gates that remain
 
-These foundations do not authorize real customer data. Application workloads remain gated on immutable reviewed images, the ciphertext-only Azure adapter, external identity configuration, network/private-endpoint hardening, secrets/RBAC review, automated evidence, privacy/legal review, and independent security testing. Production also requires a separate production subscription and an explicit production deployment approval.
+The live dev application does not authorize real customer data. Its capture routes require an explicit synthetic-data confirmation and store only synthetic preview state. Real-document enablement remains gated on the ciphertext-only Azure adapter, client-side key lifecycle, device-local intelligence, external identity configuration, network/private-endpoint hardening, secrets/RBAC review, automated evidence, privacy/legal review, and independent security testing. Production also requires a separate production subscription and an explicit production deployment approval.
