@@ -29,6 +29,17 @@ No Product Authority decision is required. Exact paid SKU and production activat
 | `AUTH-DUR-AC-09` | Repository, infrastructure, migration and security gates pass | `pnpm verify`, Bicep compile, PostgreSQL CI integration | Local gate and PR CI evidence to be linked |
 | `AUTH-DUR-AC-10` | Status, traceability, operations and residual work truthful | This map, `OPS-PG-AUTH-001`, onboarding/status/remaining-work/IaC updates | Implemented in change; PR/Issue links pending |
 
+## Independent QA history
+
+The first independent review of candidate `6f25df79d9cb3925d30eaf4ca90f6e568464b36b` failed and blocked approval and merge. The assurance task recorded four evidence-backed defects against Issue #2 and PR #4:
+
+- [Issue #5](https://github.com/syedtabishmobin/DocumentManagement/issues/5): cross-workspace nested authority records were accepted by invariant verification (`AUTH-DUR-AC-01`, `03`, `04`, `06`).
+- [Issue #6](https://github.com/syedtabishmobin/DocumentManagement/issues/6): a foreign-workspace membership could authorize after durable reload (`AUTH-DUR-AC-04`, `05`).
+- [Issue #7](https://github.com/syedtabishmobin/DocumentManagement/issues/7): non-local profiles allowed TLS without server-certificate verification (`AUTH-DUR-AC-09`).
+- [Issue #8](https://github.com/syedtabishmobin/DocumentManagement/issues/8): a digest replay could report verified reuse after target corruption (`AUTH-DUR-AC-06`, `10`).
+
+The remediation candidate strengthens persisted graph invariants, requires membership workspace scope during authorization, requires `verify-full` TLS outside local development, prevents connection-string TLS overrides, revalidates replay state and retained migration evidence, and records `REPAIR_REQUIRED` instead of false success. Developer unit, regression and PostgreSQL-service tests cover the reported reproductions, concurrency and transaction rollback. The defects remain open and PR #4 remains blocked until the independent assurance task retests the exact new commit and records its result.
+
 ## Release boundary
 
 This increment does not complete `STORY-P1-001`–`003`, `039` or `040`. External identity, delegated grants, field/edge/search/result authorization, production database provisioning, Azure conformance, backup/restore, performance, independent QA and release gates remain open. PostgreSQL runtime activation and real customer data remain prohibited.

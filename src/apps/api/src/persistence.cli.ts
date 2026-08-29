@@ -25,7 +25,7 @@ async function run(): Promise<void> {
       const database = normalizeWorkspaceDatabase(JSON.parse(source.toString("utf8")) as WorkspaceDatabase | WorkspaceState);
       const sourceSha256 = createHash("sha256").update(source).digest("hex");
       const result = await store.importSynthetic(database, sourceSha256);
-      process.stdout.write(`${JSON.stringify({ command: selected, status: "VERIFIED", reused: result.reused, migrationRunId: result.migrationRunId, workspaces: database.workspaces.length, receipts: database.workspaceCreationReceipts.length, outbox: database.authorityOutbox.length })}\n`);
+      process.stdout.write(`${JSON.stringify({ command: selected, status: result.status, reused: result.reused, migrationRunId: result.migrationRunId, workspaces: database.workspaces.length, receipts: database.workspaceCreationReceipts.length, outbox: database.authorityOutbox.length })}\n`);
       return;
     }
     const counts = await store.verifyInvariants();

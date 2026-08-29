@@ -32,7 +32,7 @@ DM_POSTGRES_TLS=verify-full
 DM_POSTGRES_MIGRATIONS=verify
 ```
 
-`DM_POSTGRES_URL` is a secret. It must enter through an approved deployment identity/Key Vault route and must never be committed, printed, placed in Bicep parameters, or copied into Issues. The runtime identity receives data-operation permissions only. A distinct migration identity applies DDL. TLS defaults to certificate verification; disabling TLS is rejected outside the local profile.
+`DM_POSTGRES_URL` is a secret. It must enter through an approved deployment identity/Key Vault route and must never be committed, printed, placed in Bicep parameters, or copied into Issues. The runtime identity receives data-operation permissions only and verification mode performs no DDL. A distinct migration identity applies DDL. TLS defaults to certificate verification; `require` without certificate authentication and `disabled` are both rejected outside the local profile. TLS query parameters in the connection URL cannot override the explicit mode.
 
 PostgreSQL infrastructure and runtime activation remain disabled until exact SKU/capacity, managed identity/database administration, private networking, firewall/egress, backup/restore, monitoring, cost and release evidence are approved. No real customer data is authorised by the adapter's existence.
 
@@ -53,7 +53,7 @@ An explicit synthetic-only local import is available for governed development mi
 pnpm --filter @document-management/api persistence:import-local
 ```
 
-The import refuses the production profile or a non-synthetic data policy, requires an empty target, validates authority invariants, records source digest/count evidence, and is idempotent by source digest. A legacy file without one explicit owner binding, owner membership and owner grant must first pass the existing local legacy-claim path; the importer will not fabricate repair state.
+The import refuses the production profile or a non-synthetic data policy, requires an empty target, validates authority invariants, records source digest/count evidence, and is idempotent by source digest. Exact replay returns `ALREADY_APPLIED_AND_VERIFIED` only after revalidating the current target and retained evidence; corruption or incomplete evidence marks the run `REPAIR_REQUIRED` and fails. Legitimate later additions remain valid when invariants hold and retained counts do not regress. A legacy file without one explicit owner binding, owner membership and owner grant must first pass the existing local legacy-claim path; the importer will not fabricate repair state.
 
 ## Failure, rollback and repair
 

@@ -82,18 +82,121 @@ describe("PostgresWorkspacePersistence", () => {
     openPools.push(targetHarness.pool);
     const first = await targetHarness.persistence.importSynthetic(source, "a".repeat(64));
     const repeated = await targetHarness.persistence.importSynthetic(source, "a".repeat(64));
-    expect(first.reused).toBe(false);
-    expect(repeated).toEqual({ migrationRunId: first.migrationRunId, reused: true });
-    await expect(targetHarness.persistence.verifyInvariants()).resolves.toEqual({ workspaces: 1, receipts: 1, outbox: 1 });
+    expect(first).toMatchObject({ reused: false, status: "VERIFIED" });
+    expect(repeated).toEqual({ migrationRunId: first.migrationRunId, reused: true, status: "ALREADY_APPLIED_AND_VERIFIED" });
+    await targetHarness.store.createPerson(source.workspaces[0]!.workspace.id, actor, {
+      displayName: "Synthetic evolved person", kind: "ADULT", relationship: "Family member", loginEnabled: false,
+      role: "ADULT_MEMBER", permissions: { view: true, add: false, edit: false, delete: false },
+    });
+    await expect(targetHarness.persistence.importSynthetic(source, "a".repeat(64))).resolves.toMatchObject({ reused: true, status: "ALREADY_APPLIED_AND_VERIFIED" });
+    await expect(targetHarness.persistence.verifyInvariants()).resolves.toEqual({ workspaces: 1, receipts: 1, outbox: 2 });
+  });
+
+  it("rejects cross-workspace and dangling authority records before commit", async () => {
+    const { pool, persistence, store } = harness();
+    openPools.push(pool);
+    await store.createWorkspace(actor, "Synthetic invariant household", "FAMILY", "postgres-invariant-0001");
+    const corruptions: Array<(state: WorkspaceDatabase["workspaces"][number]) => void> = [
+      (state) => { state.members[0]!.workspaceId = "workspace_foreign"; },
+      (state) => { state.ownerBindings[0]!.workspaceId = "workspace_foreign"; },
+      (state) => { state.accessGrants[0]!.workspaceId = "workspace_foreign"; },
+      (state) => { state.authorizationEpoch.workspaceId = "workspace_foreign"; },
+      (state) => { state.subjectIdentityLinks[0]!.subjectId = "subject_missing"; },
+      (state) => { state.accessGrants[0]!.resourceIds = ["workspace_foreign"]; },
+      (state) => { state.members[0]!.subjectId = "subject_missing"; },
+      (state) => { state.ownerBindings.push({ ...state.ownerBindings[0]! }); },
+    ];
+    for (const corrupt of corruptions) {
+      await expect(persistence.mutate((database) => corrupt(database.workspaces[0]!))).rejects.toThrow();
+      await expect(persistence.verifyInvariants()).resolves.toMatchObject({ workspaces: 1 });
+    }
+  });
+
+  it("marks a corrupt imported target as repair-required instead of verified reuse", async () => {
+    const sourceHarness = harness();
+    openPools.push(sourceHarness.pool);
+    await sourceHarness.store.createWorkspace(actor, "Synthetic replay source", "FAMILY", "postgres-replay-source-0001");
+    const source = await sourceHarness.persistence.read();
+
+    const targetHarness = harness();
+    openPools.push(targetHarness.pool);
+    const first = await targetHarness.persistence.importSynthetic(source, "c".repeat(64));
+    const rows = await targetHarness.pool.query("SELECT workspace_id, state FROM doculyra.workspace_state");
+    const state = rows.rows[0]!.state as WorkspaceDatabase["workspaces"][number];
+    state.members[0]!.workspaceId = "workspace_foreign";
+    await targetHarness.pool.query("UPDATE doculyra.workspace_state SET state = $2::jsonb WHERE workspace_id = $1", [state.workspace.id, JSON.stringify(state)]);
+
+    await expect(targetHarness.persistence.importSynthetic(source, "c".repeat(64))).rejects.toThrow("requires repair");
+    const run = await targetHarness.pool.query("SELECT status FROM doculyra.authority_migration_run WHERE migration_run_id = $1", [first.migrationRunId]);
+    expect(run.rows[0]?.status).toBe("REPAIR_REQUIRED");
+    await expect(targetHarness.persistence.verifyInvariants()).rejects.toThrow("workspace scope mismatch");
+  });
+
+  it("rolls back an invalid first import and detects retained migration-ledger drift", async () => {
+    const sourceHarness = harness();
+    openPools.push(sourceHarness.pool);
+    await sourceHarness.store.createWorkspace(actor, "Synthetic import evidence source", "FAMILY", "postgres-import-evidence-0001");
+    const source = await sourceHarness.persistence.read();
+
+    const interruptedHarness = harness();
+    openPools.push(interruptedHarness.pool);
+    const invalidSource = structuredClone(source);
+    invalidSource.workspaces[0]!.members[0]!.workspaceId = "workspace_foreign";
+    await expect(interruptedHarness.persistence.importSynthetic(invalidSource, "e".repeat(64))).rejects.toThrow("workspace scope mismatch");
+    expect((await interruptedHarness.pool.query("SELECT COUNT(*)::int AS count FROM doculyra.workspace_state")).rows[0]?.count).toBe(0);
+
+    const driftHarness = harness();
+    openPools.push(driftHarness.pool);
+    const first = await driftHarness.persistence.importSynthetic(source, "f".repeat(64));
+    await driftHarness.pool.query("UPDATE doculyra.authority_migration_run SET workspace_count = workspace_count + 1 WHERE migration_run_id = $1", [first.migrationRunId]);
+    await expect(driftHarness.persistence.importSynthetic(source, "f".repeat(64))).rejects.toThrow("requires repair");
+    const run = await driftHarness.pool.query("SELECT status FROM doculyra.authority_migration_run WHERE migration_run_id = $1", [first.migrationRunId]);
+    expect(run.rows[0]?.status).toBe("REPAIR_REQUIRED");
   });
 
   it("retains deny-by-default cross-workspace authorization after durable reload", async () => {
-    const { pool, store } = harness();
+    const { pool, persistence, store } = harness();
     openPools.push(pool);
     const first = await store.createWorkspace(actor, "Owned household", "FAMILY", "postgres-auth-0001");
     const foreignActor: WorkspaceActor = { identityId: "identity_foreign", displayName: "Synthetic Foreign Actor" };
     const second = await store.createWorkspace(foreignActor, "Foreign household", "FAMILY", "postgres-auth-0002");
     await expect(store.requireAuthorization(actor, first.id, "workspace.read", "WORKSPACE", first.id)).resolves.toBeUndefined();
     await expect(store.requireAuthorization(actor, second.id, "workspace.read", "WORKSPACE", second.id)).rejects.toThrow("not available");
+
+    const rows = await pool.query("SELECT state FROM doculyra.workspace_state WHERE workspace_id = $1", [first.id]);
+    const state = rows.rows[0]!.state as WorkspaceDatabase["workspaces"][number];
+    state.members[0]!.workspaceId = second.id;
+    await pool.query("UPDATE doculyra.workspace_state SET state = $2::jsonb WHERE workspace_id = $1", [first.id, JSON.stringify(state)]);
+    const restarted = new LocalStore(new PostgresWorkspacePersistence({ pool, migrationMode: "verify", migrationsDirectory }));
+    await expect(restarted.requireAuthorization(actor, first.id, "workspace.read", "WORKSPACE", first.id)).rejects.toThrow("not available");
+    await expect(persistence.verifyInvariants()).rejects.toThrow("workspace scope mismatch");
+  });
+});
+
+describe("PostgreSQL TLS configuration", () => {
+  const original = { profile: process.env.DM_PROFILE, url: process.env.DM_POSTGRES_URL, tls: process.env.DM_POSTGRES_TLS };
+  afterEach(() => {
+    if (original.profile === undefined) delete process.env.DM_PROFILE; else process.env.DM_PROFILE = original.profile;
+    if (original.url === undefined) delete process.env.DM_POSTGRES_URL; else process.env.DM_POSTGRES_URL = original.url;
+    if (original.tls === undefined) delete process.env.DM_POSTGRES_TLS; else process.env.DM_POSTGRES_TLS = original.tls;
+  });
+
+  it.each(["dev", "stage", "prod"])("rejects non-verifying TLS in the %s profile", (profile) => {
+    process.env.DM_PROFILE = profile;
+    process.env.DM_POSTGRES_URL = "postgresql://synthetic:synthetic@example.invalid/doculyra";
+    for (const mode of ["require", "disabled"]) {
+      process.env.DM_POSTGRES_TLS = mode;
+      expect(() => PostgresWorkspacePersistence.fromEnvironment()).toThrow("must verify");
+    }
+  });
+
+  it("rejects connection-string TLS downgrades and accepts explicit verify-full", async () => {
+    process.env.DM_PROFILE = "prod";
+    process.env.DM_POSTGRES_TLS = "verify-full";
+    process.env.DM_POSTGRES_URL = "postgresql://synthetic:synthetic@example.invalid/doculyra?sslmode=require";
+    expect(() => PostgresWorkspacePersistence.fromEnvironment()).toThrow("cannot override");
+    process.env.DM_POSTGRES_URL = "postgresql://synthetic:synthetic@example.invalid/doculyra?sslmode=verify-full";
+    const persistence = PostgresWorkspacePersistence.fromEnvironment();
+    await persistence.close();
   });
 });
