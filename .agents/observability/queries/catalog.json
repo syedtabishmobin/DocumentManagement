@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0.0",
+  "queries": [
+    {"id": "active-agents", "command": "pnpm agent:status", "answers": ["active agents", "current work", "role", "capability", "skills", "tools", "source-control context", "blockers"]},
+    {"id": "agent-tree", "command": "pnpm agent:tree", "answers": ["parent-child delegation", "state", "duration", "handoffs"]},
+    {"id": "operations-summary", "command": "pnpm agent:summary", "answers": ["failures", "retries", "quality", "usage", "cost provenance", "context efficiency"]},
+    {"id": "github-and-environments", "command": "pnpm agent:status --online", "answers": ["pending decisions", "open defects by severity", "pull requests", "DEV/STAGE/UAT", "notification state"]},
+    {"id": "native-codex-sessions", "command": "codex agents", "answers": ["native local Codex sessions when the installed CLI exposes them"]}
+  ]
+}

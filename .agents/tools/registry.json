@@ -8,7 +8,11 @@
     {"id": "pnpm-node", "purpose": "TypeScript build/test/validation", "minimumAccess": "workspace read-write", "status": "AVAILABLE"},
     {"id": "flutter", "purpose": "iOS/Android analysis, tests and builds", "minimumAccess": "workspace read-write", "status": "AVAILABLE"},
     {"id": "azure-bicep", "purpose": "environment infrastructure", "minimumAccess": "scoped subscription/resource-group identities", "status": "DEV_FOUNDATION_AVAILABLE"},
-    {"id": "acs-email-adapter", "purpose": "outbound Product Authority and UAT notification", "minimumAccess": "managed identity send plus recipient allow-list", "status": "MISSING_CONFIGURED_DISABLED"}
+    {"id": "acs-email-adapter", "purpose": "outbound Product Authority and UAT notification", "minimumAccess": "managed identity send plus recipient allow-list", "status": "MISSING_CONFIGURED_DISABLED"},
+    {"id": "agent-ops-local-store", "purpose": "validated metadata-only lifecycle event storage and query", "minimumAccess": "workspace runtime read-write", "status": "AVAILABLE"},
+    {"id": "codex-agents-native", "purpose": "interactive native local agent/session view", "minimumAccess": "local Codex session read", "status": "AVAILABLE_INTERACTIVE"},
+    {"id": "codex-otel", "purpose": "native runtime logs, metrics, traces and provider-reported usage", "minimumAccess": "user configuration plus approved exporter", "status": "SUPPORTED_CONFIGURED_DISABLED"},
+    {"id": "azure-monitor-agent-operations", "purpose": "future durable agent-operations telemetry destination", "minimumAccess": "approved exporter identity and telemetry write", "status": "EXISTING_INFRASTRUCTURE_NOT_BOUND"}
   ],
   "principles": ["least-privilege", "no-secret-output", "no-production-credentials-in-change-code", "truthful-external-status"]
 }

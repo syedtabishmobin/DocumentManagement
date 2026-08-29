@@ -2,10 +2,11 @@
   "schemaVersion": "1.0.0",
   "framework": {
     "name": "Agent Engineering Framework",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "policyRoot": ".agents/framework",
     "roleRoot": ".agents/roles",
-    "protocolRoot": ".agents/protocols"
+    "protocolRoot": ".agents/protocols",
+    "observabilityRoot": ".agents/observability"
   },
   "project": {
     "id": "doculyra",
@@ -18,5 +19,6 @@
     "04_USING_THIS_REPO_WITH_CODEX.md",
     "WORKFLOW.md"
   ],
-  "validationCommand": "pnpm verify:framework"
+  "validationCommand": "pnpm verify:framework",
+  "observabilityValidationCommand": "pnpm verify:observability"
 }

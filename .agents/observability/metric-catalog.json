@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0.0",
+  "provenance": ["MEASURED", "PROVIDER_REPORTED", "ATTRIBUTED", "ESTIMATED", "UNAVAILABLE"],
+  "aggregationDimensions": ["project", "goal", "feature", "workItem", "agent", "role", "capability", "skill", "tool", "modelProfile", "environment", "releaseCandidate", "day", "week", "month"],
+  "usageRule": "Deduplicate by usage.recordId and sum only SELF_ONLY records; INCLUSIVE records are display-only rollups.",
+  "metrics": [
+    {"id": "active_agents", "unit": "count", "source": "latest-agent-state", "qualityLink": "none"},
+    {"id": "agent_duration", "unit": "milliseconds", "source": "durationMs-or-timestamp-delta", "qualityLink": "resultCode"},
+    {"id": "retry_rate", "unit": "ratio", "source": "RETRY_RECORDED / completed-runs", "qualityLink": "first-pass-QA"},
+    {"id": "skill_failure_rate", "unit": "ratio", "source": "SKILL_FAILED / SKILL_STARTED", "qualityLink": "rework"},
+    {"id": "tool_failure_rate", "unit": "ratio", "source": "TOOL_FAILED / TOOL_STARTED", "qualityLink": "rework"},
+    {"id": "first_pass_qa_rate", "unit": "ratio", "source": "first QA gate pass / first QA gate result", "qualityLink": "acceptance"},
+    {"id": "rework_rate", "unit": "ratio", "source": "work items with reworkCycle > 0 / completed work items", "qualityLink": "acceptance"},
+    {"id": "human_escalation_rate", "unit": "ratio", "source": "HUMAN_DECISION_REQUIRED / work items", "qualityLink": "cycle-time"},
+    {"id": "total_tokens", "unit": "tokens", "source": "usage.totalTokens", "qualityLink": "resultCode"},
+    {"id": "provider_cost", "unit": "currency", "source": "usage.providerCost", "qualityLink": "accepted-outcome"},
+    {"id": "tool_cost", "unit": "currency", "source": "usage.toolCost", "qualityLink": "accepted-outcome"},
+    {"id": "cache_ratio", "unit": "ratio", "source": "cachedInputTokens / inputTokens or contextEfficiency.cacheRatio", "qualityLink": "none"},
+    {"id": "context_reuse_ratio", "unit": "ratio", "source": "contextEfficiency.contextReuseRatio", "qualityLink": "none"},
+    {"id": "tokens_per_successful_story", "unit": "tokens/story", "source": "SELF_ONLY tokens / accepted stories", "qualityLink": "business-acceptance"},
+    {"id": "cost_per_uat_ready_release", "unit": "currency/release", "source": "accepted SELF_ONLY costs / UAT_READY release", "qualityLink": "Stage-QA-and-BA"}
+  ]
+}
