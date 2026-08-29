@@ -6,6 +6,9 @@
     {"id": "acceptance-test-mapping", "skill": ".agents/skills/acceptance-test-mapping/SKILL.md", "outputs": ["work-item-record", "test-map"]},
     {"id": "defect-evidence", "skill": ".agents/skills/defect-evidence/SKILL.md", "outputs": ["defect-record"]},
     {"id": "release-readiness", "skill": ".agents/skills/release-readiness/SKILL.md", "outputs": ["release-evidence", "notification-event"]},
-    {"id": "github-issue-control-plane", "skill": ".agents/skills/github-issue-control-plane/SKILL.md", "outputs": ["authoritative-issue"]}
+    {"id": "github-issue-control-plane", "skill": ".agents/skills/github-issue-control-plane/SKILL.md", "outputs": ["authoritative-issue"]},
+    {"id": "agent-operations-observability", "skill": ".agents/skills/observability-status/SKILL.md", "outputs": ["operations-status", "agent-tree"]},
+    {"id": "telemetry-validation", "skill": ".agents/skills/telemetry-validation/SKILL.md", "outputs": ["observability-validation"]},
+    {"id": "agent-cost-performance-analysis", "skill": ".agents/skills/cost-performance-analysis/SKILL.md", "outputs": ["quality-linked-optimisation-analysis"]}
   ]
 }

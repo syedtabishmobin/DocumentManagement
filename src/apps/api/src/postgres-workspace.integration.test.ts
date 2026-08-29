@@ -10,7 +10,7 @@ const integration = testUrl && resetAllowed ? describe : describe.skip;
 const migrationsDirectory = resolve(process.cwd(), "../../../migrations/canonical");
 const actor: WorkspaceActor = { identityId: "identity_real_postgres", displayName: "Synthetic PostgreSQL Owner" };
 
-integration("PostgreSQL workspace authority integration", () => {
+integration.sequential("PostgreSQL workspace authority integration", () => {
   let pool: Pool;
   let firstPersistence: PostgresWorkspacePersistence;
 
@@ -30,6 +30,12 @@ integration("PostgreSQL workspace authority integration", () => {
   });
 
   it("proves cross-connection idempotency, concurrency, restart and rollback on PostgreSQL", async () => {
+    // Deployment applies migrations before verify-only runtime instances start.
+    // Exercise concurrent migration applicants explicitly, then bind runtime
+    // concurrency to the fully migrated schema so verify cannot race first apply.
+    const concurrentApplicant = new PostgresWorkspacePersistence({ pool, migrationMode: "apply", migrationsDirectory });
+    await Promise.all([firstPersistence.read(), concurrentApplicant.read()]);
+
     const firstStore = new LocalStore(firstPersistence);
     const secondPersistence = new PostgresWorkspacePersistence({ pool, migrationMode: "verify", migrationsDirectory });
     const secondStore = new LocalStore(secondPersistence);

@@ -15,8 +15,10 @@ REQUIRED_PATHS = [
     "AGENTS.md", "CODEX.md", "WORKFLOW.md", "04_USING_THIS_REPO_WITH_CODEX.md",
     ".agents/framework-manifest.json", ".agents/framework/constitution.md",
     ".agents/framework/workflow.md", ".agents/framework/quality-release.md",
-    ".agents/framework/notification-policy.md", ".agents/project/profile.json",
-    ".agents/project/team.json", ".agents/project/source-of-truth.json",
+    ".agents/framework/notification-policy.md", ".agents/framework/operations-observability.md",
+    ".agents/observability/event-schema.json", ".agents/observability/metric-catalog.json",
+    ".agents/observability/queries/catalog.json", ".agents/project/profile.json",
+    ".agents/project/team.json", ".agents/project/source-of-truth.json", ".agents/project/observability.json",
     ".agents/project/environments.json", ".agents/project/github.json",
     ".agents/project/github-labels.json", ".agents/config/contacts.json",
     ".agents/config/notifications.json", ".agents/capabilities/registry.json",
@@ -82,8 +84,8 @@ def validate_framework() -> list[str]:
         return errors
 
     manifest = load_json(ROOT / ".agents/framework-manifest.json")
-    if manifest.get("framework", {}).get("version") != "1.1.0":
-        errors.append("framework manifest must bind reusable framework version 1.1.0")
+    if manifest.get("framework", {}).get("version") != "1.2.0":
+        errors.append("framework manifest must bind reusable framework version 1.2.0")
     if manifest.get("project", {}).get("id") != "doculyra":
         errors.append("framework manifest must bind the Doculyra profile")
 
@@ -95,7 +97,8 @@ def validate_framework() -> list[str]:
     guide = (ROOT / "04_USING_THIS_REPO_WITH_CODEX.md").read_text(encoding="utf-8")
     for marker in ("GitHub Issues", ".agents/framework/", ".agents/project/", ".agents/config/",
                    "pnpm verify:framework", "EXTERNAL_ACTION_REQUIRED", "UAT READY",
-                   "repository-discovery/SKILL.md", "docs/10-backlog/05-personal-family-implementation-status.md"):
+                   "repository-discovery/SKILL.md", "docs/10-backlog/05-personal-family-implementation-status.md",
+                   "pnpm agent:status", "pnpm agent:tree", "pnpm agent:summary", "pnpm verify:observability"):
         if marker not in guide:
             errors.append(f"onboarding guide is missing operational marker: {marker}")
 
@@ -172,7 +175,7 @@ def validate_framework() -> list[str]:
             errors.append(f"GitHub label registry is missing {required_label}")
 
     scripts = load_json(ROOT / "package.json").get("scripts", {})
-    expected = "python3 scripts/validate_agent_framework.py && python3 scripts/test_agent_framework.py"
+    expected = "python3 scripts/validate_agent_framework.py && python3 scripts/test_agent_framework.py && pnpm verify:observability"
     if scripts.get("verify:framework") != expected:
         errors.append("package.json verify:framework must run framework validation and tests")
     if not scripts.get("verify", "").startswith("pnpm verify:framework"):

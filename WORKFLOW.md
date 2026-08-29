@@ -8,6 +8,7 @@ This file is the executable repository workflow. Reusable policy is in `.agents/
 2. Pull `main`, inspect the working tree and recent history, and query open GitHub Issues and pull requests. Never assume the repository is greenfield.
 3. Create or select the authoritative GitHub Issue. Record scope, acceptance criteria, requirement/decision links, risks, owner, and dependencies.
 4. Produce a discovery record for material work using `.agents/protocols/discovery.schema.json` and classify each affected area as `REUSE`, `EXTEND`, `REFACTOR`, `REPLACE_SELECTIVELY`, or `REBUILD`.
+5. Emit `AGENT_STARTED` and `WORK_ITEM_STARTED` metadata for material execution using `scripts/agent_ops.py`; include the Issue, role, capability, selected skills, branch/worktree and parent agent when reliably available.
 
 ## 2. Decide and plan
 
@@ -24,6 +25,7 @@ This file is the executable repository workflow. Reusable policy is in `.agents/
 3. Run `pnpm verify:framework`, then the narrow affected checks, then `pnpm verify` before review.
 4. Independent QA verifies acceptance criteria and affected regression paths. A failed criterion becomes an evidence-backed defect routed to the owning component; the fixer does not provide final independent retest.
 5. Use a pull request linked to the Issue. Complete `.github/pull_request_template.md`; do not merge with unresolved blocking evidence.
+6. Record material capability, skill, tool, test, gate, defect, handoff, retry, blocker and decision transitions. Validate with `pnpm verify:observability`; never persist raw prompts or tool/customer content.
 
 ## 4. Release and notify
 
@@ -34,4 +36,4 @@ This file is the executable repository workflow. Reusable policy is in `.agents/
 
 ## 5. Finish
 
-Update the Issue, durable evidence, source-of-truth records, and notification ledger. Commit coherent changes, push the branch, and report changed files, validation evidence, unresolved risks, external/admin actions, and the next governed queue.
+Update the Issue, durable evidence, source-of-truth records, notification ledger and terminal `AGENT_COMPLETED` or `AGENT_FAILED` event. Run `pnpm agent:status` to confirm truthful final state. Commit coherent changes, push the branch, and report changed files, validation evidence, unresolved risks, external/admin actions, and the next governed queue.

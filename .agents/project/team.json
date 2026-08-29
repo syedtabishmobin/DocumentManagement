@@ -3,11 +3,12 @@
   "projectId": "doculyra",
   "productAuthorityContactId": "doculyra-product-authority",
   "persistentRoles": [
-    {"id": "delivery-orchestrator", "contract": ".agents/roles/persistent.md", "capabilities": ["repository-discovery", "critical-decision", "handoff"]},
+    {"id": "delivery-orchestrator", "contract": ".agents/roles/persistent.md", "capabilities": ["repository-discovery", "critical-decision", "handoff", "agent-operations-observability"]},
     {"id": "product-ba", "contract": ".agents/roles/persistent.md", "capabilities": ["work-item-shaping", "acceptance-test-mapping", "business-acceptance"]},
     {"id": "architecture-guardian", "contract": ".agents/roles/persistent.md", "capabilities": ["architecture-impact", "contract-review"]},
     {"id": "qa-release-lead", "contract": ".agents/roles/persistent.md", "capabilities": ["independent-qa", "release-readiness"]},
-    {"id": "repository-steward", "contract": ".agents/roles/persistent.md", "capabilities": ["repository-controls", "framework-validation"]}
+    {"id": "repository-steward", "contract": ".agents/roles/persistent.md", "capabilities": ["repository-controls", "framework-validation", "telemetry-validation"]},
+    {"id": "agent-operations-lead", "contract": ".agents/roles/persistent.md", "capabilities": ["agent-operations-observability", "agent-cost-performance-analysis"]}
   ],
   "specialists": ["security-privacy", "data-domain", "ux-accessibility", "ai-quality-safety", "reliability-operations", "legal-compliance-adviser"],
   "separationOfDuties": {

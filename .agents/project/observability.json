@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectId": "doculyra",
+  "workManagement": "GITHUB_ISSUES",
+  "eventSchema": ".agents/observability/event-schema.json",
+  "metricCatalog": ".agents/observability/metric-catalog.json",
+  "runtimeStore": {
+    "kind": "LOCAL_JSONL",
+    "path": ".agent-ops/runtime/events.jsonl",
+    "status": "AVAILABLE_LOCAL",
+    "retentionDays": 30,
+    "versionControlled": false,
+    "dataClassification": "OPERATIONAL_METADATA"
+  },
+  "adapters": [
+    {"id": "agent-ops-local-store", "status": "AVAILABLE", "purpose": "privacy-safe framework events and local queries"},
+    {"id": "github-operations-context", "status": "AVAILABLE_ON_DEMAND", "purpose": "authoritative issues, decisions, defects, PRs and CI evidence"},
+    {"id": "codex-agents-native", "status": "AVAILABLE_INTERACTIVE", "purpose": "native local Codex session view"},
+    {"id": "codex-otel", "status": "SUPPORTED_CONFIGURED_DISABLED", "purpose": "provider-reported runtime logs, metrics, traces and token counts", "reason": "OTel routing is user-level and no privacy-filtered destination has passed conformance"},
+    {"id": "azure-monitor-agent-operations", "status": "EXISTING_INFRASTRUCTURE_NOT_BOUND", "purpose": "future durable agent-operations backend", "reason": "Log Analytics and Application Insights exist for product/dev telemetry; agent export route and source filtering are not configured"}
+  ],
+  "nativeTelemetry": {
+    "codexCliVersionObserved": "0.150.0-alpha.8",
+    "multiAgentFeature": "STABLE_ENABLED",
+    "runtimeMetricsFeature": "UNDER_DEVELOPMENT_DISABLED",
+    "otelRoutingScope": "USER_LEVEL_ONLY",
+    "logUserPromptRequired": false,
+    "tokenStatus": "UNAVAILABLE",
+    "costStatus": "UNAVAILABLE"
+  },
+  "attribution": {
+    "externalSkillIds": ["openai-docs", "skill-creator"],
+    "externalToolIds": ["codex-thread-coordination", "web"]
+  },
+  "privacy": {
+    "rawPromptsAllowed": false,
+    "productContentAllowed": false,
+    "credentialsAllowed": false,
+    "arbitraryToolPayloadsAllowed": false,
+    "externalExportAllowed": false,
+    "evidenceHosts": ["github.com"],
+    "evidenceRepositories": ["syedtabishmobin/DocumentManagement"],
+    "evidenceRoutePatterns": [
+      "^(?:issues|pull)/[1-9][0-9]*$",
+      "^actions/runs/[1-9][0-9]*(?:/job/[1-9][0-9]*)?$",
+      "^commit/[0-9a-f]{7,40}$"
+    ]
+  },
+  "environments": ".agents/project/environments.json",
+  "notifications": ".agents/config/notifications.json",
+  "autonomousQueueGate": {
+    "status": "BLOCKED",
+    "reason": "Required Product Authority email notification path is not operational and GitHub-only fallback has not been explicitly accepted."
+  }
+}

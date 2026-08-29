@@ -1,0 +1,48 @@
+{
+  "id": "DISC-DOCULYRA-OBSERVABILITY-2026-08-29",
+  "assessedAt": "2026-08-29T20:00:00+10:00",
+  "scope": "Post-bootstrap Agent Operations & Observability installation only; no Doculyra product feature development",
+  "baseline": {
+    "branch": "main",
+    "revision": "00d553e93a8367b7cdbc0239c78ba3e8e63b2fcd",
+    "workingTreeAtStart": "clean",
+    "repository": "syedtabishmobin/DocumentManagement",
+    "visibility": "public",
+    "authoritativeWorkItem": "https://github.com/syedtabishmobin/DocumentManagement/issues/11"
+  },
+  "evidence": [
+    "Complete supplied global Agent Operations & Observability addendum and Doculyra project configuration",
+    "AGENTS.md, CODEX.md, WORKFLOW.md, 04_USING_THIS_REPO_WITH_CODEX.md, framework manifest, project profile/team/state/queue and bootstrap report",
+    "All framework roles, capabilities, skills, protocols, tools, contacts, notification configuration and ledger",
+    "GitHub Issue/PR forms and conventions, protected-main configuration, CI workflows, live Issues and pull requests",
+    "Existing product observability standard and Azure Bicep Log Analytics/Application Insights/budget configuration",
+    "Installed Codex CLI 0.150.0-alpha.8 feature/config surface and official OpenAI Codex OpenTelemetry configuration documentation",
+    "Current environment model, deployment evidence, security/privacy controls and missing outbound email adapter status"
+  ],
+  "dispositions": [
+    {"area": "Base Agent Engineering Framework", "decision": "EXTEND", "evidence": "Bootstrap v1.1.0 is complete, validated and internally separated; observability adds policy, contracts, capabilities and gates without changing its authority model."},
+    {"area": "Product and infrastructure monitoring", "decision": "REUSE", "evidence": "The provider-neutral product observability standard and Azure Log Analytics/Application Insights foundations are sound, but currently monitor product/dev infrastructure rather than agent operations."},
+    {"area": "Immediate agent runtime store", "decision": "EXTEND", "evidence": "No repository-queryable agent event store exists; a local metadata-only, closed-schema, Git-ignored store satisfies the approved minimal local/native mechanism without provider cost or lock-in."},
+    {"area": "Native Codex telemetry", "decision": "EXTEND", "evidence": "Codex supports user-level OpenTelemetry and an interactive agents view, while project-local OTel routing is ignored and runtime_metrics is disabled in the observed CLI. Native export is documented but not falsely enabled."},
+    {"area": "GitHub operational context", "decision": "REUSE", "evidence": "GitHub Issues remains authoritative for work, decisions and defects and can be joined on demand without flooding Issues with high-frequency events."},
+    {"area": "Telemetry privacy", "decision": "EXTEND", "evidence": "Existing product telemetry rules already prohibit prompts/content/payloads; agent producers add closed-schema source rejection, secret-pattern checks, approved evidence hosts and local retention."},
+    {"area": "Notification readiness", "decision": "REUSE", "evidence": "The exactly-once ledger and both event contracts are sound; the prepared ACS Email infrastructure still lacks a runtime adapter and delivery conformance, so autonomous execution remains blocked."},
+    {"area": "External telemetry/dashboard vendor", "decision": "REPLACE_SELECTIVELY", "evidence": "No new vendor is introduced; any future durable binding should assess the existing Azure route first and requires privacy/route conformance."}
+  ],
+  "consultations": [
+    "Delivery Orchestrator: bounded framework-only sequencing and Issue #11 evidence map",
+    "Repository Steward: versioned definitions, CI integration, runtime Git exclusion and reproducible commands",
+    "Architecture Guardian: reusable/project separation and provider-neutral event contract",
+    "QA & Release Lead: negative privacy, no-double-count, blocker/notification and environment evidence",
+    "Reliability & Operations: retention, locking, pruning, failure truth and existing Azure route",
+    "Security & Privacy: source allow-list, no raw prompts/content/secrets, destination activation fence",
+    "Agent Operations Lead: query model, attribution and quality-linked cost/performance analysis"
+  ],
+  "risks": [
+    "Exact native token, credit and cost data is unavailable; precision must remain UNAVAILABLE until a supported source is configured.",
+    "Native Codex OTel may include tool-result snippets or error details; export is ineligible without source/collector filtering and destination conformance.",
+    "The local runtime store is workstation-local and does not provide organisation-wide history; it is the approved minimal mechanism, not a durable external dashboard.",
+    "Product Authority blocking-decision and UAT emails cannot be delivered until the ACS adapter passes conformance; autonomous queue execution remains blocked without explicit GitHub-only fallback acceptance."
+  ],
+  "recommendation": "Merge the privacy-safe local observability layer after independent QA, keep native/external export disabled, then implement and conformance-test the already selected ACS Email adapter or obtain explicit Product Authority acceptance of GitHub-only fallback before starting the autonomous product queue."
+}

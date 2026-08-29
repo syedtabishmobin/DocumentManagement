@@ -5,11 +5,14 @@
 Run `pnpm verify:framework` from the repository root. It executes:
 
 - `python3 scripts/validate_agent_framework.py`, which validates framework/profile separation, required paths, structured configuration, source links, small skills, notification routing/ledger, GitHub controls, CI integration, and bootstrap completion; and
-- `python3 scripts/test_agent_framework.py`, which exercises notification deduplication and validator invariants.
+- `python3 scripts/test_agent_framework.py`, which exercises notification deduplication and validator invariants; and
+- `pnpm verify:observability`, which validates the Agent Operations contracts and runs privacy, lifecycle, tree, state, usage-provenance and no-double-count smoke tests.
 
 Validate a structured record with `python3 scripts/validate_agent_framework.py --record <type> <file.json>`.
 
 Use `python3 scripts/notification_ledger.py plan <event.json>` to resolve deduplicated recipients and truthful adapter status. Use `python3 scripts/notification_ledger.py record <event.json> --status <status> --evidence <url>` to record an exactly-once result. `SENT` is rejected unless configuration is operational and a provider message ID is supplied.
+
+Use `pnpm agent:status`, `pnpm agent:tree`, and `pnpm agent:summary` for the local Agent Operations interface. Add `--online` to status for current GitHub context. `pnpm agent:prune` physically removes events outside retention. `scripts/agent_ops.py emit` validates and appends metadata-only events to the Git-ignored local store.
 
 ## Specification validation
 
