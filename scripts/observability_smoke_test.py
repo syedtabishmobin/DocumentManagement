@@ -113,6 +113,12 @@ class ObservabilitySmokeTests(unittest.TestCase):
         missing = event("evt-missing-parent", "SUBAGENT_SPAWNED", "agent-child", "STARTING", 1, parentAgentId="agent-absent")
         self.assertTrue(any("missing parent" in error for error in validate_observability.validate_event_sequence([missing])))
 
+    def test_parent_assignment_cannot_change_or_disappear(self) -> None:
+        parent = event("evt-parent", "AGENT_STARTED", "agent-root", "RUNNING", 0)
+        spawned = event("evt-child-a", "SUBAGENT_SPAWNED", "agent-child", "STARTING", 1, parentAgentId="agent-root")
+        changed = event("evt-child-b", "AGENT_STARTED", "agent-child", "RUNNING", 2)
+        self.assertTrue(any("changes parent" in error for error in validate_observability.validate_event_sequence([parent, spawned, changed])))
+
     def test_illegal_state_transition_fails_closed(self) -> None:
         started = event("evt-transition-a", "AGENT_STARTED", "agent-root", "RUNNING", 1)
         regressed = event("evt-transition-b", "AGENT_STATE_CHANGED", "agent-root", "STARTING", 2)

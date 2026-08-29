@@ -257,13 +257,12 @@ def validate_event_sequence(events: list[dict[str, Any]]) -> list[str]:
     for event in ordered:
         key = (event["runId"], event["agentId"])
         parent = event.get("parentAgentId")
+        if key in parents and parents[key] != parent:
+            errors.append(f"run {event['runId']} agent {event['agentId']} changes parent from {parents[key] or 'ROOT'} to {parent or 'ROOT'}")
         if parent:
             parent_key = (event["runId"], parent)
             if parent_key not in keys:
                 errors.append(f"run {event['runId']} agent {event['agentId']} references missing parent {parent}")
-            previous_parent = parents.get(key)
-            if previous_parent and previous_parent != parent:
-                errors.append(f"run {event['runId']} agent {event['agentId']} changes parent from {previous_parent} to {parent}")
             parents[key] = parent
         else:
             parents.setdefault(key, None)
