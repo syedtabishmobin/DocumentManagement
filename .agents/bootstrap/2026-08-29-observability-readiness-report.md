@@ -17,6 +17,7 @@ Governed by [Issue #11](https://github.com/syedtabishmobin/DocumentManagement/is
 - Definitions: `.agents/observability/README.md`, event schema, metric catalogue, query catalogue, privacy/retention policies and Codex OTel adapter contract.
 - Skills: `observability-status`, `telemetry-validation`, and `cost-performance-analysis`.
 - Runtime/query/test: `scripts/agent_ops.py`, `scripts/validate_observability.py`, `scripts/observability_smoke_test.py`, package scripts and framework validator integration.
+- Regression stabilization: `src/apps/api/src/postgres-workspace.integration.test.ts` now proves concurrent migration applicants before verify-only runtime concurrency and serializes destructive shared-schema fixtures.
 - Operations: `.gitignore`, `AGENTS.md`, `WORKFLOW.md`, `04_USING_THIS_REPO_WITH_CODEX.md`, `scripts/README.md`, current-state/queue reconciliation, this report and the observability discovery record.
 - Volatile `.agent-ops/runtime/events.jsonl` is intentionally excluded from version control.
 
@@ -27,6 +28,8 @@ The closed `1.0.0` event schema supports agent start/complete/fail/block/state, 
 Correlation dimensions include project, goal, feature, work item, run, agent/parent, role, capability, skill, tool/adapter, branch/worktree/PR, environment and release candidate. Current state and duration are derived from ordered events. The metric catalogue links usage to result, acceptance, first-pass QA and rework.
 
 Usage aggregation deduplicates `usage.recordId` and sums only `SELF_ONLY`; `INCLUSIVE` parent rollups are display-only. Smoke evidence counted one provider-reported 100-token child record while excluding its duplicate and a 100-token parent rollup.
+
+Lifecycle validation is per run, enforces legal state transitions and stable acyclic parent assignment, and rejects missing parents. Retention removes expired records and any now-orphaned descendant subtree rather than fabricating parent events or retaining data past policy.
 
 ## 4. Agent/capability/skill/tool attribution status
 
@@ -60,7 +63,7 @@ pnpm agent:prune                  # physically remove events outside 30-day rete
 codex agents                      # native interactive local session view
 ```
 
-The online status proof returned one active Issue #11 agent on PR #12, zero pending decision Issues and zero open defects; it also showed `agent-local=AVAILABLE`, `dev=SYNTHETIC_PREVIEW_AVAILABLE`, `stage/prod=DEFINED_NOT_PROVISIONED`, UAT not ready, notification failure and unavailable native token/cost telemetry.
+The final pre-merge online status proof returned one active Issue #11 agent on PR #12, zero pending decision Issues, zero open defects and one open PR; it also showed `agent-local=AVAILABLE`, `dev=SYNTHETIC_PREVIEW_AVAILABLE`, `stage/prod=DEFINED_NOT_PROVISIONED`, UAT not ready, notification failure and unavailable native token/cost telemetry.
 
 ## 7. Privacy/security controls
 
@@ -68,7 +71,7 @@ The online status proof returned one active Issue #11 agent on PR #12, zero pend
 - Explicit rejection of raw prompt/content/tool-payload/credential fields, multiline arbitrary content, secret-like values, unsafe URLs and inconsistent usage provenance.
 - Runtime directory/file modes are restricted; writes use an exclusive lock, validated rewrite, flush and filesystem sync after pruning.
 - Runtime events are Git-ignored, metadata-only, separate from product content, pruned on append/query to 30 days, and removable explicitly with `pnpm agent:prune`.
-- Evidence URLs are HTTPS and limited to configured hosts without credentials/query strings/fragments.
+- Evidence URLs are HTTPS and limited to the configured GitHub repository and durable Issue, PR, Actions-run/job or commit routes, without credentials/query strings/fragments.
 - Native `log_user_prompt` must remain false; external export is disabled until destination, filtering, identity, retention, residency and conformance are approved.
 
 ## 8. Notification-path validation
@@ -93,9 +96,9 @@ GitHub remains the authoritative phone-accessible decision/UAT record. Email is 
 
 The event/config model, local destination, lifecycle/attribution queries, privacy controls, validation, GitHub join and environment/quality/decision visibility pass. Autonomous queue readiness does not pass because the mandatory Product Authority email path is unavailable and no GitHub-only fallback has been accepted.
 
-Validation evidence: `pnpm verify` passed framework/observability, 140-document specifications, API/event/reference/traceability contracts, TypeScript typechecks, 41 local tests with two expected PostgreSQL-service skips, and all builds. `pnpm verify:observability` now passes 28 focused tests, including regressions for independent QA defects #13–#16. Azure Bicep compilation passed. Protected PR #12 CI passed specifications/TypeScript, Android and iOS on the first candidate; replacement-candidate CI and independent retest remain required. Local Flutter tooling is unavailable. The skill-creator `quick_validate.py` could not start because its environment lacks `PyYAML`; no dependency was added. The repository's dependency-free validator passed all skill frontmatter, naming, descriptions, directory matching and capability registration.
+Validation evidence: local `pnpm verify` passed framework/observability, 140-document specifications, API/event/reference/traceability contracts, TypeScript typechecks, 41 local tests with two honestly skipped PostgreSQL-service tests, and all builds. `pnpm verify:observability` passes 34 focused tests. Independent QA passed a separate 22-case adversarial suite and every OBS-AC-01–12 criterion on exact candidate `c025420aacb522f25952750e72b067bdbf86892c`. Protected [run 33250411214 attempt 1](https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33250411214/attempts/1) passed specifications/TypeScript, 31/31 API tests including both PostgreSQL 17 integrations, Bicep, Android and iOS; [attempt 2](https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33250411214/attempts/2) repeated the PostgreSQL/specification/Bicep job successfully. Local Flutter tooling is unavailable. The skill-creator `quick_validate.py` could not start because its environment lacks `PyYAML`; no dependency was added. The repository's dependency-free validator passed all skill frontmatter, naming, descriptions, directory matching and capability registration.
 
-Independent QA blocked candidate `4dc03a0` with lifecycle/parent-graph [defect #13](https://github.com/syedtabishmobin/DocumentManagement/issues/13), prompt/retention [defect #14](https://github.com/syedtabishmobin/DocumentManagement/issues/14), usage/currency [defect #15](https://github.com/syedtabishmobin/DocumentManagement/issues/15), and partial-GitHub [defect #16](https://github.com/syedtabishmobin/DocumentManagement/issues/16). The replacement implementation adds fail-closed lifecycle/graph and attribution validation, normalized identifier fields, append/query retention with explicit pruning, deterministic self-only reconciliation with currency partitions, and per-source GitHub/UAT availability. These defects remain open until independent retest; PR #12 is not approved or merged.
+Independent QA originally blocked candidate `4dc03a0` with lifecycle/parent-graph [defect #13](https://github.com/syedtabishmobin/DocumentManagement/issues/13), prompt/retention [defect #14](https://github.com/syedtabishmobin/DocumentManagement/issues/14), usage/currency [defect #15](https://github.com/syedtabishmobin/DocumentManagement/issues/15), partial-GitHub [defect #16](https://github.com/syedtabishmobin/DocumentManagement/issues/16), and later protected-CI migration-race [defect #17](https://github.com/syedtabishmobin/DocumentManagement/issues/17). Exact-SHA independent retest passed and closed all five defects. The durable acceptance matrix is recorded on [Issue #11](https://github.com/syedtabishmobin/DocumentManagement/issues/11#issuecomment-5462210886) and [PR #12](https://github.com/syedtabishmobin/DocumentManagement/pull/12#issuecomment-5462210905).
 
 ## 11. Exact reasons for non-PASS result
 
@@ -105,4 +108,4 @@ Exact token/cost and context-efficiency data is unavailable, but this is labelle
 
 ## 12. Recommendation for starting the governed Doculyra work queue
 
-Do **not** start the autonomous product queue yet. Merge this framework-only observability change after independent QA, then make the notification adapter/conformance work the next governed item—or record explicit Product Authority acceptance of GitHub-only fallback. Re-run `pnpm agent:status --online` and both notification plans; only after the queue gate changes truthfully to pass should the existing application queue resume at current-authorization coverage.
+Do **not** start the autonomous product queue yet. The framework-only observability layer has independent technical acceptance; make notification-adapter implementation and delivery conformance the next governed item—or record explicit Product Authority acceptance of GitHub-only fallback. Re-run `pnpm agent:status --online` and both notification plans; only after the queue gate changes truthfully to pass should the existing application queue resume at current-authorization coverage.
