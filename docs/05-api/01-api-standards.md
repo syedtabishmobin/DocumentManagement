@@ -231,7 +231,7 @@ A collection envelope contains:
 | `DEC-035` | Launch document/source profiles | APIs expose exact active configuration versions; no example claims that a type or source is launch-enabled. |
 | `DEC-036` | Suspected-clinical disposition | Reserved decision command cannot choose reject/retain/recover until approved; `POLICY_HOLD` remains the safe state. |
 | `DEC-037` | External email/push notification channels | Channel registration/delivery adapters remain disabled; documenting a neutral request does not enable a channel. |
-| `DEC-038` | Account/workspace recovery and owner transfer | Reserved request cannot produce a successful recovery/transfer event or state. |
+| `DEC-038` | Account/workspace recovery and owner transfer | The approved Phase 1 decision keeps the reserved request from producing a successful recovery/transfer event or state; a later governed assurance decision is required to add one. |
 | `DEC-039` | Deletion cancellation windows, active purge, backup expiry, audit minimization | APIs expose state/residuals without durations or premature completion; cancellation is conditional on approved policy. |
 | `DEC-040` | Australian residency data classes, processors, routes, exceptions | Any unknown/ineligible processor or route blocks; connector/channel/AI routes remain disabled until the matrix proves eligibility. |
 

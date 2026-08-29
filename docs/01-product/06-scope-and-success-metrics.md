@@ -3,21 +3,22 @@
 | Field | Value |
 |---|---|
 | Document ID | `PROD-SCOPE-001` |
-| Status | **DRAFT — scope and targets are not an approved implementation baseline** |
+| Version | `0.2` |
+| Status | **APPROVED BUILD MEASUREMENT BASELINE — numeric targets remain PROVISIONAL** |
 | Product phase | Phase 1, with explicit Phase 2 exclusions and extension points |
 | Jurisdiction | Australia first; jurisdiction-neutral core |
-| Updated | 26 August 2026 |
-| Normative basis | `DEC-001`–`DEC-011`, `DEC-020`–`DEC-024` |
+| Updated | 30 August 2026 — build-baseline traceability reconciliation |
+| Normative basis | `PROD-PRD-001` version `0.3`; approved decisions through `DEC-055` |
 | Strategy | [`PROD-VIS-001`](01-product-vision-strategy.md) |
-| Draft candidate normative baseline | [`docs/01-product/02-phase-1-prd.md`](02-phase-1-prd.md) |
+| Approved normative baseline | [`docs/01-product/02-phase-1-prd.md`](02-phase-1-prd.md) |
 
 ## 1. Purpose and status
 
-This document separates approved Phase boundaries from draft capability candidates, defines candidate Phase 1 outcomes using stable `OUT-P1-*` IDs, and supplies provisional success measures using stable `MET-P1-*` IDs.
+This document records the approved Phase 1 boundaries and outcomes using stable `OUT-P1-*` IDs and supplies measurement definitions using stable `MET-P1-*` IDs. It is the measurement layer of the approved build baseline, not evidence that an outcome, implementation, environment, or release gate has passed.
 
-It is not the Phase 1 PRD. A capability listed as a candidate is not authorized for implementation until the draft [Phase 1 PRD](02-phase-1-prd.md) is approved with testable requirements and the specification-readiness gate is satisfied. Approved entries in the [decision register](../00-context/decision-register.md) remain normative. Recommendations from [`PROD-COMP-001`](07-competitive-gap-analysis.md), including all `GAP-*` items, remain research inputs only.
+It is not the Phase 1 PRD and cannot independently change product scope. The approved [Phase 1 PRD](02-phase-1-prd.md), approved entries in the [decision register](../00-context/decision-register.md), and the `CODEX.md` hierarchy remain authoritative. Recommendations from [`PROD-COMP-001`](07-competitive-gap-analysis.md), including all `GAP-*` items, remain research inputs except where the approved PRD explicitly adopts or dispositions them.
 
-All metric targets in this draft are **PROVISIONAL**. They are explicit so that instrumentation and validation can be designed, but they require product-owner approval and recalibration against dogfood/private-beta baselines. Recalibration must not weaken a zero-tolerance safety control merely because early performance is poor.
+The metric identities, definitions, provenance expectations, and outcome relationships are approved for build planning and instrumentation. Every numeric target remains **PROVISIONAL**: it is an engineering/evaluation hypothesis, not a public promise or final goal-completion threshold, until Product Authority approval after representative dogfood/private-beta calibration. Recalibration must not weaken a zero-tolerance safety control merely because early performance is poor.
 
 ## 2. Scope taxonomy
 
@@ -26,13 +27,13 @@ Every capability must be assigned one of these states in the PRD:
 | State | Meaning |
 |---|---|
 | Approved boundary | Directly constrained by an approved decision; later specifications may add detail but cannot contradict it. |
-| Candidate Phase 1 capability | Consistent with approved direction but not yet an implementation commitment. |
+| Approved Phase 1 capability | Included by the approved PRD; implementation and release evidence remain separately gated. |
 | Decision required | Material user, privacy, legal, cost, or scope behavior remains unresolved and must be recorded in the decision register. |
 | Deferred implementation choice | Capability contracts may be specified, but the named provider or technical product remains replaceable. |
 | Phase 2 reservation | The core may preserve an extension point, but Phase 1 must not expose enterprise UI or promise the enterprise capability. |
 | Out of Phase 1 | Explicitly excluded by an approved decision. |
 
-“Phase 1” is a product phase, not a single release. The PRD must divide it into at least a first coherent validation slice and later Phase 1 slices; this draft does not select those slices.
+“Phase 1” is a product phase, not a single release. `DEC-030` defines four coherent engineering/evidence slices inside one continuously approved implementation program.
 
 ## 3. Approved Phase 1 boundary
 
@@ -49,16 +50,18 @@ Every capability must be assigned one of these states in the PRD:
 | `DEC-009` | Vendors remain behind abstractions until approved. | No product requirement may depend on one cloud, OCR, model, graph, search, identity, or notification vendor. |
 | `DEC-010` | Complete Phase 1 specification pack precedes application implementation. | Draft scope is not permission to begin application code. |
 | `DEC-020` | Australia-first launch pack with neutral core contracts. | Initial terminology, scenarios, sources, and reference data are Australian. |
-| `DEC-021` | Responsive web/PWA first, mobile camera capture, push-ready APIs; native later. | Responsive browser flows and mobile capture are Phase 1 constraints; native clients are not. |
-| `DEC-022` | Multi-tenant cloud SaaS, strict workspace isolation, Australian data-residency option; provider undecided. | Isolation and residency behavior must be specified without provider coupling. |
+| `DEC-021` | Superseded by `DEC-052`. | The obsolete web-first/native-later sequencing is not part of the current baseline. |
+| `DEC-022` | Superseded in provider selection by `DEC-049`; isolation and Australian-residency constraints remain active. | Azure is selected for managed infrastructure while canonical product contracts remain provider-neutral. |
 | `DEC-023` | Household owners and family administrators first; advisers receive limited guest/delegated access. | A separate adviser product is outside Phase 1. Guest access requires bounded product and authorization behavior. |
 | `DEC-024` | Clinical records excluded; health-insurance and general coverage included. | The PRD must define supported-content boundaries and the safe handling of attempted clinical content. |
+| `DEC-041`, `DEC-054` | The complete Phase 1 build is authorized for synthetic local/Azure dev-stage work. | Scope authorization is not implementation completion, Stage/UAT acceptance, production activation, or real-data authority. |
+| `DEC-049`, `DEC-052` | Azure managed infrastructure and concurrent React/Flutter clients are selected. | Environment and client evidence must follow the approved portable contracts and release gates. |
 
 `DEC-011` fixes the repository location and has no user-facing scope consequence.
 
-## 4. Candidate Phase 1 capability envelope
+## 4. Approved Phase 1 capability envelope
 
-The following capabilities are candidates for PRD disposition. They reflect the approved product direction but are deliberately non-normative here.
+The following summarises capabilities adopted by the approved PRD. The PRD requirements, not this summary, are normative; none of these entries claims implementation completion.
 
 ### 4.1 Workspace and access
 
@@ -103,18 +106,18 @@ Exact file formats, limits, encrypted-file behavior, bulk-upload scope, and docu
 ### 5.1 Out of Phase 1 by approved decision
 
 - Organisation workspaces and enterprise administration (`DEC-002`).
-- Native iOS or Android applications before core workflows are validated (`DEC-021`).
+- Native desktop applications. Dedicated Flutter iOS and Android applications are required by `DEC-052`.
 - A standalone adviser product (`DEC-023`).
 - Clinical and medical records (`DEC-024`).
 - Silent consequential document changes or external actions (`DEC-006`).
 
 ### 5.2 Deferred implementation choices
 
-Cloud infrastructure, application framework, data stores, identity, OCR/document processing, foundation models, embeddings, notifications, malware scanning, observability, analytics, and other named vendors remain replaceable (`DEC-009`). `DEC-022` additionally leaves the infrastructure provider undecided.
+Azure is the approved managed infrastructure provider under `DEC-049`; React/TypeScript and Flutter/Dart are selected under `DEC-052`. Canonical domain, API, event, encryption, and reference-data contracts remain provider-neutral under `DEC-009`. Exact identity, OCR/document-processing, model, embedding/vector/graph/search, customer-notification, malware-scanning, analytics, and other adapters remain replaceable or activation-gated unless a later approved decision selects them.
 
-The order of connectors beyond upload, camera, and manual import is deferred in the decision register. Email import, private inbound email, OneDrive, Google Drive, Dropbox, Box, and other connectors must not be represented as committed launch scope until the PRD assigns them to a slice.
+`DEC-045` and `DEC-055` authorize consent-driven connector adapter implementation and configuration preparation. Email import, private inbound email, OneDrive, Google Drive, Dropbox, Box, and other exact providers remain non-operational until their credentials, minimal scopes, consent, token protection, route eligibility, revocation/deletion, audit, and conformance gates pass; registration alone is not launch scope or activation evidence.
 
-### 5.3 Product decisions required before scope freeze
+### 5.3 Approved decisions and remaining release gates
 
 | Topic | Review entry | Why a decision is required |
 |---|---|---|
@@ -123,21 +126,21 @@ The order of connectors beyond upload, camera, and manual import is deferred in 
 | Connector sequence | `DEC-031` — APPROVED | Upload/capture/manual routes are local; live inbound email/cloud connectors remain disabled. |
 | Notification channels | `DEC-037` — APPROVED | In-app notifications are enabled; external channels remain disabled. |
 | Emergency, after-death, and time-aware access | `DEC-032` — APPROVED | Automated release is excluded from Phase 1. |
-| Offline or curated emergency packs | No approved decision | Local storage, revocation, device loss, freshness, and encryption create a separate risk model; curated export must remain separate from automated release. |
+| Offline or curated continuity packs | `DEC-032`, `DEC-033` | Curated authorized export is governed by the approved export envelope; it must remain separate from excluded automated release. Any new offline-release behaviour requires governed change control. |
 | Export and portability envelope | `DEC-033` — APPROVED | Complete authorized originals, versions, derivatives, facts, relationships, rules, work, grants, and audit envelope. |
 | Readiness or document-health score | `DEC-034` — APPROVED | Item-level explainable findings only; aggregate/hidden scoring prohibited. |
 | Unsupported clinical-content handling | `DEC-036` — APPROVED | Suspected clinical material enters isolated `POLICY_HOLD`. |
-| Agentic and bulk actions | No separate approved decision; proposed in the draft PRD | Approval granularity, policy gates, reversibility, rate limits, and completion evidence materially affect safety. |
-| Family subject, dependant, and guest lifecycle | `DEC-032` and draft PRD approval | Age/capacity, account transition, delegation, access expiry, and resource privacy need product and authorization decisions. |
+| Agentic and bulk actions | Approved PRD safety boundary | Bound approval, current authorization, policy gates, reversibility, rate limits, reconciliation, and completion evidence are required; unbounded autonomous action remains excluded. |
+| Family subject, dependant, and guest lifecycle | Approved PRD; safe transition fence | Subjects, identities, memberships and grants remain separate. A dependant transition cannot activate without an approved applicable consent/authority policy; history preservation and fail-closed absence are buildable now. |
 | Account and workspace recovery | `DEC-038` — APPROVED | Recovery/ownership transfer is unavailable locally and separately production-gated. |
 | Deletion and purge timing | `DEC-039` — APPROVED | Immediate local fence/purge, no production backup, and content-free tombstone. |
 | Australian residency envelope | `DEC-040` — APPROVED | Synthetic local processing enabled; production processor/region choices remain deployment-gated. |
 
-### 5.4 Research recommendations and draft PRD disposition
+### 5.4 Research recommendations and approved PRD disposition
 
 The approved PRD records the following Phase 1 dispositions. Production claims remain limited by the deployment and evidence gates.
 
-| Research item | Draft PRD disposition | Scope interpretation pending approval |
+| Research item | Approved PRD disposition | Build/release interpretation |
 |---|---|---|
 | `GAP-001` expected-document requirements, alternatives, waivers, fulfilment, and evidence | Adopt | Requirement-profile contracts and user terminology must distinguish evidence from fulfilment and legal obligation. |
 | `GAP-002` bitemporal fact and rule resolution | Adopt | Architecture and data contracts must define valid/effective time and platform transaction time. |
@@ -145,28 +148,42 @@ The approved PRD records the following Phase 1 dispositions. Production claims r
 | `GAP-004` distinct lifecycle states | Adopt | Domain, UX, API, and reference data must own exact states and transitions without calling incompatible states “complete.” |
 | `GAP-005` conformed effective-document views and obligation inheritance | Adopt | Versioning and obligation specifications must define supported amendment, addendum, cancellation, and supersession semantics. |
 | `GAP-006` monitor coverage, freshness, health, and stale behavior | Adopt | Monitoring, UX, operations, and API contracts must define coverage and failure behavior. |
-| `GAP-007` time-aware access, emergency succession, offline/export packs | Split | Scoped grants and portability are proposed; automated emergency/after-death release remains conditional on `DEC-032`, and offline behavior needs independent review. |
-| `GAP-008` explainable readiness scoring | Conditional adopt | Any aggregate score remains conditional on `DEC-034` and must be decomposable, permission-safe, and explicitly not legal compliance. |
+| `GAP-007` time-aware access, emergency succession, offline/export packs | Split | Scoped grants and complete portability are adopted; `DEC-032` excludes automated emergency/incapacity/after-death release from Phase 1. |
+| `GAP-008` explainable readiness scoring | Item-level adopt; aggregate excluded | `DEC-034` requires explainable item-level findings and prohibits aggregate/hidden readiness, compliance, risk, traffic-light, or ranking scores in Phase 1. |
 | `GAP-009` policy/evaluation gates for agentic or bulk action | Adopt | PRD, AI, authorization, audit, and test specifications must agree on bound approval, policy gates, and recovery. |
 | `GAP-010` enterprise records, holds, barriers, DLP, and residency abstractions | Reserve | Architecture may preserve extension points; no Phase 1 enterprise UX or backlog promise. |
 
-## 6. Candidate Phase 1 outcomes
+## 6. Approved Phase 1 outcomes
 
-Outcome IDs are stable even if wording is refined. Retired IDs must not be reused. Every outcome remains **DRAFT** until incorporated into an approved PRD.
+Outcome IDs and definitions are part of the approved build baseline. Retired IDs must not be reused. `APPROVED BUILD OUTCOME` means approved intent and planning traceability; it does not mean achieved, validated, released, or production-ready.
 
-| Outcome ID | Candidate user outcome | Primary users | Decision alignment | Status |
+| Outcome ID | Approved user outcome | Primary users | Decision alignment | Status |
 |---|---|---|---|---|
-| `OUT-P1-001` | A household can establish a secure, intelligible document baseline without specialist records-management knowledge. This includes understandable ownership, lifecycle, evidence-review, and access state rather than storage volume alone. | Household owner, family administrator | `DEC-002`, `DEC-003`, `DEC-005`, `DEC-021`, `DEC-022` | DRAFT |
-| `OUT-P1-002` | An authorized user can locate a document, fact, obligation, or deadline and inspect the exact evidence supporting the result. The experience distinguishes proposed extraction, accepted state, conflict, insufficiency, staleness, and restriction. | All authorized Phase 1 participants | `DEC-004`, `DEC-006`, `DEC-008` | DRAFT |
-| `OUT-P1-003` | A material fact, document, event, or governed-rule change produces a permission-safe, explainable impact set. Applicability, source health, evidence, severity, urgency, confidence, and dependency path remain inspectable rather than collapsing into an opaque alert. | Household owner, family administrator, authorized decision maker | `DEC-001`, `DEC-004`, `DEC-007`, `DEC-008`, `DEC-020` | DRAFT |
-| `OUT-P1-004` | A user can take a recommendation from evidence through approval and replacement-evidence closure without losing audit history. Approval, execution, and verified completion remain distinct states. | Authorized decision maker | `DEC-005`, `DEC-006` | DRAFT |
-| `OUT-P1-005` | Family collaboration improves readiness without making workspace membership equivalent to unrestricted access. Members and limited guests can receive the minimum permitted evidence or action while restricted resources remain undisclosed. | Family administrator, member, limited adviser/guest | `DEC-003`, `DEC-008`, `DEC-023` | DRAFT |
-| `OUT-P1-006` | Users can leave the service with a complete, documented export and can request controlled deletion. Exact export, retention, purge, recovery, and audit-minimization semantics remain subject to approval. | Household owner, authorized family administrator | `DEC-005`, `DEC-006`, `DEC-009` | DRAFT |
-| `OUT-P1-007` | AI and monitoring failures are visible, recoverable, and never presented as verified truth or complete coverage. Low confidence, stale sources, parser failure, incomplete graphs, and insufficient evidence visibly degrade the result. | All authorized Phase 1 participants | `DEC-001`, `DEC-006`, `DEC-007`, `DEC-008`, `DEC-009` | DRAFT |
+| `OUT-P1-001` | A household can establish a secure, intelligible document baseline without specialist records-management knowledge. This includes understandable ownership, lifecycle, evidence-review, and access state rather than storage volume alone. | Household owner, family administrator | `DEC-002`, `DEC-003`, `DEC-005`, `DEC-049`, `DEC-052` | APPROVED BUILD OUTCOME |
+| `OUT-P1-002` | An authorized user can locate a document, fact, obligation, or deadline and inspect the exact evidence supporting the result. The experience distinguishes proposed extraction, accepted state, conflict, insufficiency, staleness, and restriction. | All authorized Phase 1 participants | `DEC-004`, `DEC-006`, `DEC-008` | APPROVED BUILD OUTCOME |
+| `OUT-P1-003` | A material fact, document, event, or governed-rule change produces a permission-safe, explainable impact set. Applicability, source health, evidence, severity, urgency, confidence, and dependency path remain inspectable rather than collapsing into an opaque alert. | Household owner, family administrator, authorized decision maker | `DEC-001`, `DEC-004`, `DEC-007`, `DEC-008`, `DEC-020` | APPROVED BUILD OUTCOME |
+| `OUT-P1-004` | A user can take a recommendation from evidence through approval and replacement-evidence closure without losing audit history. Approval, execution, and verified completion remain distinct states. | Authorized decision maker | `DEC-005`, `DEC-006` | APPROVED BUILD OUTCOME |
+| `OUT-P1-005` | Family collaboration improves readiness without making workspace membership equivalent to unrestricted access. Members and limited guests can receive the minimum permitted evidence or action while restricted resources remain undisclosed. | Family administrator, member, limited adviser/guest | `DEC-003`, `DEC-008`, `DEC-023` | APPROVED BUILD OUTCOME |
+| `OUT-P1-006` | Users can leave the service with a complete, documented export and can request controlled deletion under the approved portability, Trash, purge, non-resurrection, recovery-absence, and audit-minimization boundaries. | Household owner, authorized family administrator | `DEC-005`, `DEC-006`, `DEC-033`, `DEC-038`, `DEC-053` | APPROVED BUILD OUTCOME |
+| `OUT-P1-007` | AI and monitoring failures are visible, recoverable, and never presented as verified truth or complete coverage. Low confidence, stale sources, parser failure, incomplete graphs, and insufficient evidence visibly degrade the result. | All authorized Phase 1 participants | `DEC-001`, `DEC-006`, `DEC-007`, `DEC-008`, `DEC-009` | APPROVED BUILD OUTCOME |
+
+### 6.1 Exact outcome-to-measure ownership
+
+This inverse index is normative for build traceability. A measure may contribute to more than one outcome; `MET-P1-006` and `MET-P1-021` are universal cross-outcome measures. Numeric targets retain their `PROVISIONAL` status.
+
+| Outcome | Owning measures |
+|---|---|
+| `OUT-P1-001` | `MET-P1-001`, `002`, `003`, `006`, `019`, `020`, `021` |
+| `OUT-P1-002` | `MET-P1-001`, `003`, `006`, `009`, `010`, `011`, `012`, `018`, `021`, `022` |
+| `OUT-P1-003` | `MET-P1-004`, `005`, `006`, `008`, `009`, `013`, `014`, `015`, `021` |
+| `OUT-P1-004` | `MET-P1-005`, `006`, `007`, `008`, `009`, `017`, `021` |
+| `OUT-P1-005` | `MET-P1-006`, `018`, `021` |
+| `OUT-P1-006` | `MET-P1-006`, `016`, `019`, `021` |
+| `OUT-P1-007` | `MET-P1-006`, `009`, `012`, `015`, `021`, `022` |
 
 ## 7. Metric design rules
 
-1. A metric does not become a requirement merely because it has an ID or target in this draft.
+1. A metric definition is an approved measurement and traceability contract only to the extent stated here; its provisional numeric target is not a final requirement, public promise, or proof of outcome completion.
 2. Numerator and denominator count the same eligible unit unless the definition explicitly describes an evaluation set.
 3. Internal, test, synthetic, known-abusive, and successfully deleted workspaces are excluded from customer-behavior denominators. Synthetic evaluation fixtures remain included in evaluation metrics.
 4. A “supported” document or action means it meets the approved type, format, size, language, jurisdiction, and workflow criteria that the PRD and detailed specifications will define.
@@ -298,17 +315,17 @@ Anti-metrics may be operational inputs or diagnostic segments, but they require 
 
 Target changes must record the previous value, new value, reason, evidence window, approver, and effective date. Material changes to scope, privacy, user-facing behavior, safety tolerance, legal interpretation, vendor commitment, or external action require a decision-register entry, not only a table edit.
 
-## 15. PRD handoff checklist
+## 15. Build-baseline measurement and release handoff
 
-Before [`docs/01-product/02-phase-1-prd.md`](02-phase-1-prd.md) can become an approved implementation baseline, it should:
+The approved build baseline must preserve:
 
-- adopt, revise, or retire each `OUT-P1-*` outcome without recycling IDs;
-- adopt or explicitly defer each `MET-P1-*` measure and target;
-- select the first validation slice and later Phase 1 slices;
-- resolve the product decisions listed in section 5.3;
-- disposition `GAP-001`–`GAP-010` individually;
-- define supported document types, formats, channels, jurisdictions, users, actions, and non-goals for each slice;
-- link requirements to use cases, UX, authorization, security/privacy, API/event, NFR, reference-data, testing, and backlog artifacts; and
-- state which metric and safety evidence is required for beta and general availability.
+- stable `OUT-P1-*` and `MET-P1-*` identities without recycling retired IDs;
+- exact outcome-to-feature/story and outcome-to-metric traceability;
+- privacy-safe instrumentation and provenance classification for every measure;
+- explicit `PROVISIONAL` status for every unapproved numeric target;
+- separate build, test/evaluation, Stage, BA/business acceptance, UAT, production, and public-launch evidence;
+- approved supported document types, formats, channels, jurisdictions, users, actions, and non-goals for each released profile;
+- requirement links to use cases, UX, authorization, security/privacy, API/event, NFR, reference-data, tests/evaluations, and governed work items; and
+- recorded Product Authority approval, previous/new value, evidence window, reason, and effective date for any target promoted or materially changed.
 
-Until that handoff is approved, this document supplies a measurement-ready draft, not implementation authorization.
+This document makes the build measurable. It does not establish that a metric is currently instrumented, a target has been met, a goal is complete, or the product is ready for Stage, BA acceptance, UAT, production, public release, or real personal data.

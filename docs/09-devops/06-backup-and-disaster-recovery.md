@@ -83,7 +83,7 @@ The implemented matrix MUST further enumerate every canonical aggregate, artifac
 | `OPS-DR-P1-029` | Failback/reintegration MUST use the same compatibility, migration, event, idempotency, authorization, deletion, residency, audit, and external-effect reconciliation gates as ordinary deployment; bidirectional merge is never assumed safe. |
 | `OPS-DR-P1-030` | Recovery exercises and incidents MUST produce immutable privacy-safe timelines/manifests with objective timestamps, expected/actual RPO/RTO, gaps, control outcomes, decisions, owners, remediation, and retest; ordinary reports contain no raw household content or secrets. |
 | `OPS-DR-P1-031` | Production backup/restore testing MUST NOT copy customer content into local/shared/pre-production environments. Exercises use synthetic data or isolated approved recovery inputs with equal access, purpose, residency, deletion, and evidence controls. |
-| `OPS-DR-P1-032` | No backup, restore, replica, snapshot, key, failover, or DR mechanism may close `DEC-038`, bypass customer-controlled encryption, extend the `DEC-053` Trash deadline, or use a route outside `DEC-049`. Unknown state keeps the affected recovery path disabled. |
+| `OPS-DR-P1-032` | No backup, restore, replica, snapshot, key, failover, or DR mechanism may override approved `DEC-038`, bypass customer-controlled encryption, extend the `DEC-053` Trash deadline, or use a route outside `DEC-049`. Unknown state keeps the affected recovery path disabled. |
 
 ## 5. Restore gate sequence
 

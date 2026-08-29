@@ -3,11 +3,11 @@
 | Field | Value |
 |---|---|
 | Document ID | `BLG-IDX-001` |
-| Version | `0.2` |
-| Status | **APPROVED CONTINUOUS IMPLEMENTATION PROGRAM — completion evidence remains gated** |
+| Version | `0.3` |
+| Status | **BUILD BASELINE APPROVED — `DEC-P1-056` resolved; exact-candidate independent review PASS** |
 | Product phase | Phase 1 — Personal and Family |
 | Sequence basis | `P1-S1`–`P1-S4`, approved as one continuous program by `DEC-030`, `DEC-041`, and `DEC-054` |
-| Updated | 29 August 2026 |
+| Updated | 30 August 2026 |
 
 ## 1. Purpose and authority
 
@@ -32,7 +32,7 @@ The four slices are coherent value increments, not folders or handover chapters:
 2. [`02-features-and-stories.md`](02-features-and-stories.md) — implementation-sized stories, exact contract links, fences, failure/repair obligations, and Given/When/Then acceptance criteria.
 3. [`03-release-plan.md`](03-release-plan.md) — proposed slice entry/exit gates, dependency order, evidence, stop-ship rules, and approval boundary.
 4. [`04-traceability-matrix.md`](04-traceability-matrix.md) — coverage across requirements, features, use cases, downstream contracts, decisions, and absent test cases.
-5. [`05-personal-family-implementation-status.md`](05-personal-family-implementation-status.md) — evidence-based comparison of the current application against all 48 stories and the remaining personal/family work.
+5. [`05-personal-family-implementation-status.md`](05-personal-family-implementation-status.md) — evidence-based comparison of the current application against all 49 stories and the remaining personal/family work.
 6. [`06-personal-family-remaining-work.md`](06-personal-family-remaining-work.md) — prioritised checklist of every missing, incomplete, or intentionally unavailable personal/family workstream.
 
 Before acting on any item, also read the [decision register](../00-context/decision-register.md), [Phase 1 PRD](../01-product/02-phase-1-prd.md), [feature catalogue](../01-product/03-feature-catalogue.md), [use-case catalogue](../01-product/04-use-case-catalogue.md), [architecture index](../02-architecture/README.md), [document-intelligence index](../03-document-intelligence/README.md), [AI index](../04-ai/README.md), [API index](../05-api/README.md), [security index](../06-security/README.md), [UX index](../07-ux/README.md), [engineering index](../08-engineering/README.md), [operations index](../09-devops/README.md), and [reference-data index](../11-reference-data/README.md).
@@ -78,31 +78,31 @@ Approved decision behavior is explicit:
 
 | Gap | State | Consequence | Closure evidence |
 |---|---|---|---|
-| `TRACE-GAP-P1-TEST-001` | `CLOSED — superseded 26 August 2026` | The earlier absence of stable implementation-test IDs was closed by DRAFT `TST-IDX-001` version `0.1`. | `TEST-UNIT-P1-001`–`010`, `TEST-CON-P1-001`–`012`, `TEST-AI-P1-001`–`015`, `TEST-SEC-P1-001`–`015`, `TEST-E2E-P1-001`–`020`, `TEST-PERF-P1-001`–`010`, and `TEST-DR-P1-001`–`008` are mapped across 48/48 stories. DRAFT/NOT_RUN/INSUFFICIENT evidence still cannot satisfy a gate. |
-| `TRACE-GAP-P1-APPROVAL-001` | `OPEN` | The PRD, catalogue, UX, architecture, security, API, engineering, operations, and backlog are DRAFT; proposed ADRs are not accepted. | Recorded approvals or an explicitly approved narrower implementation baseline. |
+| `TRACE-GAP-P1-TEST-001` | `CLOSED — reconciled 30 August 2026` | Stable test expectations and reciprocal story/AC mappings exist; source test files are owned by the implementation-evidence manifest. | 104 DRAFT tests map across 49/49 stories and 98/98 story ACs. DRAFT/NOT_RUN/INSUFFICIENT evidence still cannot satisfy a gate. |
+| `TRACE-GAP-P1-APPROVAL-001` | `CLOSED — stale status corrected 30 August 2026` | `PROD-PRD-001`, the continuous Phase 1 build and applicable ADRs are approved under `DEC-041`, `DEC-049`–`055`; derived catalogues are reconciled into the controlled build baseline. | Reopen only if a higher-authority decision or baseline version changes. |
 | `TRACE-GAP-P1-DECISION-001` | `CLOSED — superseded by DEC-030–055` | The original implementation-shaping questions now have approved dev/stage behavior and explicit production/provider fences. Runtime delivery and release evidence remain incomplete. | Reopen only if an approved decision is changed or a new unsafe ambiguity is found. |
 | `TRACE-GAP-P1-TARGET-001` | `OPEN` | Numeric NFRs and support/accessibility matrices are provisional, not service commitments. | Accountable owner approval with representative workload, measurement, and stop-ship evidence. |
-| `TRACE-GAP-P1-UC-001` | `OPEN` | `UC-P1-014`–`019` are catalogue-only and lack the detailed product AC/contract depth required for implementation. Stories may test only a disabled/absence/safe-boundary outcome. | Approved detailed use case and product acceptance scenarios, plus updated product, API/event, security, UX, reference-data, test, and backlog traces. |
+| `TRACE-GAP-P1-UC-001` | `CLOSED — 30 August 2026` | `UC-P1-014`–`020` now have detailed positive/negative/absence acceptance contracts. | Reopen if those contracts or their decision fences change. |
 | `TRACE-GAP-P1-API-001` | `OPEN` | No direct classification operation is present in `API-OPENAPI-001`. | Owning API decision: add a versioned operation or document/test an internal-only boundary and observable job/result contract. |
 | `TRACE-GAP-P1-API-002` | `OPEN` | No extraction review/correction operation is present. | Approved operation/schema/concurrency/audit contract and tests. |
 | `TRACE-GAP-P1-API-003` | `OPEN` | No analysis-generation reprocess operation is present; ingestion retry is not equivalent. | Approved reprocessing command/status contract and tests. |
 | `TRACE-GAP-P1-API-004` | `OPEN` | No `ResourceEntity` create/link/merge/split operation is present. | Approved entity-resolution command/query contract and tests, or an explicitly approved non-public owner. |
 | `TRACE-GAP-P1-API-005` | `OPEN` | No dependency-edge CRUD/review/traversal operation is present. | Approved graph command/query boundary and tests, or documented internal-only ownership. |
-| `TRACE-GAP-P1-API-006` | `OPEN` | The internal AI gateway/evaluation contract has no generic public API/event; this is appropriate only if capability-specific operations provide complete observable state. | Architecture/API confirmation plus provider-port, manifest, job, audit, and evaluation conformance tests. |
+| `TRACE-GAP-P1-API-006` | `CLOSED — intentional internal boundary` | The AI gateway remains internal; capability-specific operations own user-visible state and no generic public model-invocation endpoint is required. | Reopen only if a public generic AI operation is proposed; provider-port, manifest, job, audit and evaluation conformance remain story evidence. |
 | `TRACE-GAP-P1-API-007` | `OPEN` | No conformed-view operation is present. | Approved conformed-view query schema including inputs/generation/coverage/freshness/current authorization. |
 | `TRACE-GAP-P1-API-008` | `OPEN` | No `RuleResolution`/`ChangeCase` operation is present. | Approved monitoring applicability/change command/query contract and tests. |
 | `TRACE-GAP-P1-API-009` | `OPEN` | Action execution exists, but evidence submission/verification/closure operations are absent. | Approved evidence-verification and closure command/query contracts with separate authority/state. |
 | `TRACE-GAP-P1-API-010` | `OPEN` | No `RequirementCase` profile/finding/disposition/fulfilment operation is present. | Approved expected-evidence/health API and tests. |
 | `TRACE-GAP-P1-API-011` | `OPEN` | No configuration publication/activation operation is present. | Approved privileged global-scope configuration API or explicitly approved non-HTTP control contract. |
 | `TRACE-GAP-P1-API-012` | `OPEN` | No dedicated minimal-disclosure “impact exists” operation is present. | Approved named disclosure-policy response contract and side-channel tests. |
-| `TRACE-GAP-P1-API-013` | `OPEN` | No managed-dependant transition operation is present, matching its catalogue-only state. | Close `TRACE-GAP-P1-UC-001`, then approve the exact transition case/API. |
+| `TRACE-GAP-P1-API-013` | `RESOLVED — INTENTIONAL ABSENCE` | `DEC-P1-056` approves a tested fail-closed fence and no independent-transfer endpoint in Phase 1. Existing subject/membership operations remain subject to the fence. | [Issue #33 decision](https://github.com/syedtabishmobin/DocumentManagement/issues/33#issuecomment-5463877570); any richer endpoint requires a later governed baseline change. |
 | `TRACE-GAP-P1-API-014` | `OPEN` | Residency is cross-cutting and has no dedicated route-policy evidence query; all processing operations still require an enforceable decision. | Approved internal policy/evidence contract and operator/product-safe visibility without a second authority source. |
 | `TRACE-GAP-P1-EVT-001` | `OPEN` | No connector event family exists; connector operations remain disabled. | Close `DEC-031`/`040`, then add schemas/catalogue entries and replay/deletion/privacy conformance. |
 | `TRACE-GAP-P1-EVT-002` | `OPEN` | No notification delivery/preference event family exists; external channels remain disabled. | Approved event ownership/compatibility/privacy contract if asynchronous consumers require it. |
 | `TRACE-GAP-P1-EVT-003` | `OPEN` | No recovery or continuity event exists, intentionally matching disabled capabilities. | Add only after `DEC-032`/`038` and the full owning product/security contracts are approved. |
 | `TRACE-GAP-P1-REF-001` | `OPEN` | DIT requires versioned fact definitions, but no fact-definition reference catalogue exists. Extraction fields are not fact definitions. | Approved fact-definition schema/data pack, publication rules, migrations, and tests. |
 | `TRACE-GAP-P1-REF-002` | `OPEN` | No connector profile/adapter catalogue exists even though disabled-first adapter implementation is approved. | Add provider-neutral records for the approved Microsoft, Google, Dropbox, and Box development registrations, then prove consent, scope, route, deletion, and conformance behavior before activation. |
-| `TRACE-GAP-P1-REF-003` | `OPEN` | No managed-dependant transition policy catalogue exists. | Approved transition product/security/privacy contract and versioned policy records. |
+| `TRACE-GAP-P1-REF-003` | `RESOLVED — INTENTIONAL ABSENCE` | `DEC-P1-056` makes default deny, provenance preservation and the revisioned fail-closed attempt contract the complete Phase 1 policy. | No richer transfer-policy catalogue is invented; later transfer/delegation semantics require governed change control. |
 | `TRACE-GAP-P1-REF-004` | `INTENTIONAL ABSENCE` | No aggregate score/weight/threshold/denominator record exists because `DEC-034` prohibits aggregate or hidden scoring in Phase 1. | Preserve the absence unless a later approved decision and full metric/permission/evaluation contract supersede it. |
 | `TRACE-GAP-P1-REF-005` | `OPEN` | No approved data-class/processor/region/exception matrix exists under `DEC-040`. | Approved enforceable matrix and placement/egress/restore/failover tests. |
 | `TRACE-GAP-P1-REF-006` | `INTENTIONAL ABSENCE` | No recovery/continuity activation records exist because `DEC-038` excludes recovery/ownership transfer and `DEC-032` excludes automatic continuity release. | Do not add unless later approved decisions and abuse-resistant contracts explicitly supersede these boundaries. |
@@ -123,6 +123,12 @@ Completion requires all `AC-STORY-*` outcomes plus passing mapped `TEST-UNIT/CON
 
 ## 7. Validation stance
 
-Repository, API/event, and reference-data validators check structure and contract consistency; they do not approve product scope or implementation readiness. Backlog review additionally compares all 100 `REQ-P1-*`, 30 `FEAT-P1-*`, and 19 `UC-P1-*` catalogue entries against story coverage and reports conditional/catalogue-only items separately from executable baseline work.
+Repository, API/event, and reference-data validators check structure and contract consistency; they do not approve product scope or product completion. Backlog review compares all 101 `REQ-P1-*`, 31 `FEAT-P1-*`, 20 `UC-P1-*`, 49 stories, 98 story ACs and 104 product tests, while the implementation-evidence manifest provides reverse source-test ownership.
 
 Application implementation is authorized by `DEC-041` and `DEC-054`, not by this pack. Story completion and production/provider activation still require the exact acceptance, test, security/privacy, accessibility, operational, and release evidence described above.
+
+## 8. GitHub issuance and execution control
+
+The controlled baseline contains 12 epics, 31 features, 49 stories and 98 story acceptance criteria. A planned story without active execution is recorded as `PLANNED_UNISSUED`; creating dozens of empty Issues does not improve assurance. Before any story starts, its attributed GitHub Issue MUST link the baseline version, epic, feature, outcomes, requirements, ACs, dependency predecessors, specialist applicability, exact test/evaluation expectations, environment and evidence owner. Active work without that Issue fails Definition of Ready.
+
+Historical Issue #2 and PR #4 remain bounded implementation evidence for `STORY-P1-001`–`003`, `039`, and `040`; they do not complete those stories or replace future story Issues. Framework Product Authority email evidence under Issue #18 is not evidence for customer notification `STORY-P1-042`.

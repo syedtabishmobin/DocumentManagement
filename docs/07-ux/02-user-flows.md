@@ -8,12 +8,12 @@
 | Product phase | Phase 1 — Personal and Family |
 | Primary use cases | `UC-P1-001`–`UC-P1-013`; conditional catalogue boundaries `UC-P1-016`–`UC-P1-017` |
 | Primary acceptance | `AC-P1-E2E-001`, `AC-P1-SEC-001`, `AC-P1-ING-001`, `AC-P1-RAG-001`, `AC-P1-MON-001`, `AC-P1-DEL-001`, `AC-P1-AI-001`, `AC-P1-A11Y-001` |
-| Open decisions | `DEC-032`, `DEC-034`, `DEC-036`–`DEC-040` |
-| Updated | 26 August 2026 |
+| Approved boundaries | `DEC-032`, `DEC-034`, `DEC-036`–`DEC-040`, `DEC-044`, `DEC-047`, `DEC-049`–`DEC-053`, `DEC-055` |
+| Updated | 30 August 2026 |
 
 ## 1. Purpose and common flow contract
 
-This document defines the user-visible sequence, branching, recovery, and completion criteria for critical Phase 1 journeys. It does not replace the use-case state machines, authorization policy, domain transitions, API contracts, or test specifications.
+This document defines the user-visible sequence, branching, recovery, and completion criteria for critical Phase 1 journeys. Authenticated journeys have shared semantic outcomes across React web/PWA and Flutter iOS/Android under `DEC-052`; each client implements and verifies those outcomes in its own UI source. The public product, trust, privacy, terms, contact, and browser account-entry journey is React-specific under `DEC-044`. This document does not replace the use-case state machines, authorization policy, domain transitions, API contracts, or test specifications.
 
 Every flow binds the current actor, workspace, subject/resource scope, purpose, authorization/policy epoch, expected revision where changing state, and correlation/idempotency identity. Each asynchronous boundary exposes a durable status, lets the user safely leave and return, and distinguishes retry, cancel, review, restriction, deletion, and unknown external outcome. A UI transition is not evidence that the owning domain transition succeeded.
 
@@ -108,7 +108,7 @@ stateDiagram-v2
 4. Offer only the actor's authorized containment actions. Malware rescan/release/delete and clinical false-positive review/delete are separate actions; ordinary document read or workspace administration is insufficient.
 5. Reauthorize at every action and retain privacy-safe audit.
 
-**Clinical fence:** while `DEC-036` is open, suspected clinical content remains `POLICY_HOLD`. The UI MUST NOT promise reject-before-storage, retention, user recovery, export, purge, or a final false-positive path. If no approved restricted action exists, show “contained; action unavailable pending policy” without asking the user to describe clinical content.
+**Clinical boundary:** approved `DEC-036` places suspected clinical content in `POLICY_HOLD`. The UI MUST NOT expose an ordinary processing route or promise retention, recovery, export, purge, or a false-positive transition that the configured restricted-review policy does not provide. If no approved restricted action exists, show “contained; action unavailable under the current policy” without asking the user to describe clinical content.
 **Failure:** scanner unavailable/timeout stays isolated; reviewer loses access and the content disappears behind a normalized restricted state; deletion race makes the fence win; late scan/review cannot reactivate content.
 **Trace:** `REQ-P1-DOC-007`, `REQ-P1-ING-002`–`REQ-P1-ING-003`, `FEAT-P1-005`, `UC-P1-002`, `JRN-P1-009`, `DIT-ING-P1-006`–`DIT-ING-P1-010`, `SEC-P1-013`–`SEC-P1-016`, `AUTH-P1-031`.
 
@@ -283,7 +283,7 @@ stateDiagram-v2
 4. In-app notification exposes a safe summary and deep link that reauthorizes. Delivery, seen, acknowledgement, and task state remain separate.
 5. Preferences and quiet periods affect notification attempts, not task existence, urgency, applicability, or fulfilment.
 
-**Channel fence:** while `DEC-037` is unresolved, no email/push/SMS control, delivery claim, escalation chain, or sensitive external message preview is enabled. A failed external adapter, if later enabled, cannot mark task completion.
+**Channel boundary:** approved `DEC-037` requires in-app notification behavior. No customer email/push/SMS control, delivery claim, escalation chain, or sensitive external message preview is enabled until that exact channel, consent, destination, content policy, and conformance evidence are configured. A failed external adapter, if enabled later, cannot mark task completion.
 **Trace:** `REQ-P1-NTF-001`–`REQ-P1-NTF-004`, `FEAT-P1-021`, `FEAT-P1-027`, `UC-P1-010`, `AUD-P1-019`, `DIT-HLT-P1-035`.
 
 ### `UX-FLOW-P1-014` — create scoped sharing, redeem, expire, and revoke
@@ -315,7 +315,7 @@ stateDiagram-v2
 5. At release, reauthorize and issue a short-lived audience/scope/version-bound download. Manifest checksums and category counts refer only to authorized contents.
 6. Expiry, revoke, deletion, or successful policy cleanup removes temporary serviceability without claiming source deletion.
 
-**Boundary:** `DEC-033` is proposed; until approved, copy describes the exact versioned envelope and MUST NOT claim a universally complete workspace export. `DEC-040` blocks ineligible processors.
+**Boundary:** approved `DEC-033` defines the complete authorized portability categories, but every generated export still declares its exact versioned envelope, inclusions, omissions, errors, rights, and limitations and MUST NOT claim completeness beyond that manifest. Ineligible processors or routes remain blocked under the route policy refined by `DEC-049`/`050`/`055`.
 **Failure:** one category failure prevents a complete claim but may provide an explicitly partial package only if policy permits; interrupted build/download resumes safely; mid-job revoke removes affected contents or blocks release.
 **Trace:** `REQ-P1-TRUST-006`, `FEAT-P1-029`, `UC-P1-011`, `JRN-P1-008`, `SEC-P1-015`, `SEC-P1-027`, `AUD-P1-020`.
 
@@ -332,7 +332,7 @@ stateDiagram-v2
 5. Show actual states such as requested, policy/retention review, cancellation-eligible if configured, fenced, executing, partially failed, active-data complete, residual pending, or fully complete only when the authoritative contract proves it.
 6. Per-class verification covers artifacts, metadata, analyses/anchors, previews, search/vector/graph, comparisons/conformed views, caches/conversations, tasks/notifications, exports, replicas/connectors, backups, and minimized audit as policy applies.
 
-**Decision fence:** while `DEC-039` is open, no cooling-off, purge, backup-expiry, retained-audit, or overall completion duration is shown. “Restore” appears only before the irreversible policy boundary; disaster recovery/support cannot bypass the fence.
+**Deletion boundary:** the local synthetic profile continues to follow `DEC-039`. The production document route follows `DEC-053`: access is fenced immediately, restricted Trash is recoverable for 30 calendar days after step-up authorization, and coordinated purge/non-resurrection follows expiry. Account/workspace deletion, lawful retention, backup expiry, and content-minimized audit duration remain separate governed policies and are not inferred from the document boundary. “Restore” appears only before the applicable irreversible boundary; disaster recovery/support cannot bypass the fence.
 **Failure:** partial deletion keeps resource inaccessible and status incomplete; late worker/index/connector/restore is rejected; shared occurrences are handled by lineage rather than silently erasing another authorized subject's evidence.
 **Trace:** `REQ-P1-DOC-003`, `REQ-P1-TRUST-007`, `FEAT-P1-029`, `UC-P1-012`, `JRN-P1-008`, `DIT-VER-P1-032`–`DIT-VER-P1-042`, `NFR-P1-017`, `AC-P1-DEL-001`.
 
@@ -340,7 +340,7 @@ stateDiagram-v2
 
 **Actors:** signed-out or signed-in user seeking recovery; support actor has no standing content authority.
 **Entry:** failed sign-in or account/security settings.
-**Outcome while open:** no recovery, factor bypass, ownership transfer, key release, private-resource access, or support override is performed.
+**Outcome under approved `DEC-038`:** no recovery, factor bypass, ownership transfer, key release, private-resource access, or support override is performed.
 
 1. Present ordinary sign-in/factor options supported by the approved identity design without revealing whether a protected workspace or resource exists.
 2. If those options fail, show a generic unavailable/policy-pending recovery message and safe incident/support contact that does not solicit documents, family assertions, keys, or sensitive workspace details through ordinary channels.
@@ -354,7 +354,7 @@ stateDiagram-v2
 
 **Actors:** currently authorized resource owner/grantor; proposed future recipient has no release authority.
 **Entry:** sharing or export education.
-**Outcome while open:** ordinary time-bounded grant or curated export may be completed under its own contract; no emergency/incapacity/death release is enrolled or triggered.
+**Outcome under approved `DEC-032`:** ordinary time-bounded grant or curated export may be completed under its own contract; no emergency/incapacity/death release is enrolled or triggered.
 
 1. Explain that account recovery and continuity are different, and that Phase 1 does not currently provide automatic release.
 2. Offer links to the ordinary scoped-sharing flow and owner-created curated export flow only when the actor is already authorized.
@@ -363,6 +363,24 @@ stateDiagram-v2
 
 `DEC-032`, `WSP-P1-041`–`WSP-P1-043`, and `AUTH-P1-033` fence the capability. Any future flow requires approved evidence, consent, scope, delay, challenge, notice, revocation, jurisdiction, false-trigger recovery, encryption/key, appeal, audit, accessibility, and abuse-case contracts.
 **Trace:** `REQ-P1-SHR-004`, `FEAT-P1-025`, `JRN-P1-010`, `UC-P1-016`, `THR-P1-025`.
+
+### `UX-FLOW-P1-031` — discover Doculyra, inspect trust/legal information, and enter an account route
+
+**Actors:** signed-out prospective user, evaluator, security/privacy reviewer, or returning user.
+**Entry:** the React public home route, a direct privacy/terms link, or a safe external link to the public site.
+**Outcome:** the person can understand the approved Doculyra purpose and current preview boundary, inspect product/features/trust/about/contact and legal information, and reach the intended create-account or sign-in mode without submitting protected workspace data.
+
+1. Present the approved Doculyra identity, `Doculyra Home` Phase 1 positioning, product purpose, evidence-aware assistance, privacy/security principles, and explicit human-control boundary.
+2. Keep product examples clearly illustrative and label the current development environment as synthetic/test-data only; do not imply complete source coverage, production encryption conformance, hosted-AI use, legal advice, certification, or public-release readiness.
+3. Provide equivalent compact and wide navigation to Product, Intelligence, Features, Security, Company/About, Contact, Privacy, Terms, create-account, and sign-in destinations. Menu open/close, Escape, focus order, headings, landmarks, links, reflow, and reduced-motion behavior remain accessible.
+4. Privacy and terms routes are directly addressable, retain the Doculyra context, expose document status/effective date, and return safely to the public site. Their development-preview wording does not substitute for final production legal approval.
+5. Contact shows the configured approved public route or an accurate unavailable/pending state. It never invents a destination, records free-text contact content in product analytics, or treats email delivery as available without configuration.
+6. Create-account and sign-in links preserve only the non-sensitive account-entry intent. Authentication then starts `UX-FLOW-P1-001` or the approved sign-in path; the public page and URL carry no workspace authority.
+
+**Failure/recovery:** a missing contact route, disabled provider, unavailable account service, direct-route refresh, small viewport, keyboard-only input, reduced motion, or script/style degradation retains truthful content and a bounded accessible next step. No preview example is represented as current user data.
+**Client boundary:** this public/trust/legal flow is React-specific under `DEC-044`. Once authenticated, React and Flutter implement the same protected product semantics under `DEC-052`; Flutter is not required to duplicate the marketing or browser legal presentation.
+**Release gate:** final operator identity, production contact/domain, legal/privacy approval, public claims, supported browser/assistive-technology versions, disabled-user research, and release conformance evidence remain required before public production release.
+**Trace:** `DEC-044`, `DEC-047`, `DEC-052`, `REQ-P1-PLT-001`, `OUT-P1-001`, `OUT-P1-007`, `AC-P1-A11Y-001`.
 
 ## 3. Cross-flow normative rules
 
@@ -377,7 +395,7 @@ stateDiagram-v2
 - `UX-FLOW-P1-027` — Offline behavior MUST not claim server acceptance or queue a consequential effect invisibly; reconnect requires current reauthorization, policy, revision, and explicit confirmation where intent could have changed.
 - `UX-FLOW-P1-028` — Every flow MUST offer a non-camera path, avoid drag-only/file-system-only interaction, preserve a keyboard and screen-reader completion path, and meet `A11Y-P1-*` evidence gates.
 - `UX-FLOW-P1-029` — Flow analytics MUST record only opaque flow/screen/state IDs, safe actor/workspace classes, step/outcome/error code, retry/cancel/resume, duration buckets, accessibility context when consented, and synthetic marker; content, names, titles, queries, answers, evidence, values, filenames, URLs, tokens, and screen recordings are prohibited.
-- `UX-FLOW-P1-030` — Open-decision branches MUST end in an explicit unavailable/policy-pending state and an approved alternative; UX copy, prototype links, feature flags, and analytics MUST NOT imply that a fenced capability is active or guaranteed.
+- `UX-FLOW-P1-030` — Configuration-, assurance-, or release-gated branches MUST end in an explicit unavailable/policy-pending state and an approved alternative; UX copy, prototype links, feature flags, and analytics MUST NOT imply that a gated capability is active or guaranteed.
 
 ## 4. Flow-to-acceptance matrix
 
@@ -391,8 +409,9 @@ stateDiagram-v2
 | `UX-FLOW-P1-014` | `UC-P1-009`, `AC-P1-SEC-001` | grant overreach, link abuse, mid-session revoke, cached search/AI/export/task denial |
 | `UX-FLOW-P1-015`–`016` | `UC-P1-011`–`UC-P1-012`, `AC-P1-DEL-001` | incomplete export, mid-job revoke, deletion partial failure, backup residual, late-event/restore rejection, no invented duration |
 | `UX-FLOW-P1-017`–`018` | `UC-P1-016`–`UC-P1-017`, `NFR-P1-032` | all unapproved recovery/ownership/continuity routes deny without resource disclosure |
+| `UX-FLOW-P1-031` | `DEC-044`, `DEC-047`, `DEC-052`, `REQ-P1-PLT-001`, `AC-P1-A11Y-001` | direct privacy/terms routes, missing contact, disabled account/provider route, illustrative-preview disclosure, keyboard/focus/reflow/reduced-motion and truthful preview claims |
 | All | `AC-P1-A11Y-001`, `NFR-P1-022`–`NFR-P1-025` | keyboard, screen reader, reflow/zoom, touch target, status/error, timeout, interruption, reduced motion, language/cognitive-load matrix |
 
 ## 5. Research and approval questions
 
-Research must test with synthetic or specifically consented data whether users understand: personal versus family scope; subject versus account; relationship versus authority; receipt versus ready; evidence versus accepted fact; supported versus restricted answer; applicability versus severity; source authority versus health; task completion versus verified closure; grant preview/revoke; export envelope; deletion residuals; and the explicit absence of recovery/automatic continuity. A finding that requires new authority or resolves an open decision is escalated to the product/decision register rather than silently incorporated into UX.
+Research must test with synthetic or specifically consented data whether users understand: public illustrative preview versus available product behavior; development legal/contact status; personal versus family scope; subject versus account; relationship versus authority; receipt versus ready; evidence versus accepted fact; supported versus restricted answer; applicability versus severity; source authority versus health; task completion versus verified closure; grant preview/revoke; export envelope; deletion residuals; and the explicit absence of recovery/automatic continuity. A finding that requires new authority or changes an approved boundary is escalated to the product/decision register rather than silently incorporated into UX.

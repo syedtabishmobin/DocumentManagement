@@ -6,14 +6,14 @@
 | Version | `0.1` |
 | Status | `DRAFT — product, design, accessibility, security, privacy, and content approval required` |
 | Product phase | Phase 1 — Personal and Family |
-| Boundary | Provider-, framework-, brand-, and implementation-neutral |
-| Primary screens | `UX-SCR-P1-001`–`UX-SCR-P1-045` |
-| Open decisions | `DEC-032`, `DEC-034`, `DEC-036`–`DEC-040` |
-| Updated | 26 August 2026 |
+| Boundary | Provider-neutral semantic system; approved Doculyra identity; React and Flutter implementations remain separate |
+| Primary screens | `UX-SCR-P1-001`–`UX-SCR-P1-047` |
+| Approved boundaries | `DEC-032`, `DEC-034`, `DEC-036`–`DEC-040`, `DEC-044`, `DEC-047`, `DEC-049`–`DEC-053`, `DEC-055` |
+| Updated | 30 August 2026 |
 
 ## 1. Purpose and principles
 
-This document defines the semantic visual, interaction, content, and component contract for the Phase 1 responsive web/PWA. It does not choose a CSS framework, component library, design tool, icon set, font family, frontend architecture, animation library, browser-storage technology, analytics provider, or brand palette.
+This document defines the semantic visual, interaction, content, and component contract shared by the authenticated React web/PWA and Flutter iOS/Android clients, plus the React-specific public product and legal surfaces. The clients do not share UI source code under `DEC-052`, but they preserve equivalent state, evidence, authorization, error, accessibility, and action meaning. `DEC-047` approves the Doculyra name, `Doculyra Home` Phase 1 edition, folded-document `D` mark, matching icon family, and restrained black/graphite/grey/white direction. This document does not choose a CSS/Flutter component library, design tool, font family, frontend architecture, animation library, browser-storage technology, or analytics provider; exact tokens remain subject to component-level accessibility evidence.
 
 The system makes trust boundaries visible without turning them into decoration:
 
@@ -83,7 +83,7 @@ Colour, position, fill, motion, acronym, icon shape, or tooltip alone is insuffi
 | Impact/action | Impact class, recommendation decision, approval, execution, verification, and closure each occupy separate sections. Unknown/partial external outcome is visually persistent. |
 | Expected evidence | Display all authorized item-level signals, disposition, verification, and fulfilment. No aggregate score, progress percentage, traffic light, ring, rank, or “complete household” illustration. |
 | Access | Restricted, redacted, minimal disclosure, revoked, and expired use different copy/actions internally; policy may normalize the external existence message. |
-| Deletion | Archive/trash/fence/purge/residual/verification states use a timeline or list with exact achieved milestones and unknowns; no duration while `DEC-039` is open. |
+| Deletion | Archive/Trash/fence/purge/residual/verification states use a timeline or list with exact achieved milestones and unknowns. Production document Trash uses the approved `DEC-053` 30-calendar-day boundary; local, account, lawful-retention, backup-expiry, and other durations remain separately governed. |
 
 Positive styling is reserved for an exact successfully achieved domain state. It MUST NOT be used for “no visible findings,” “no search result,” accepted upload, provider acknowledgement, high confidence, an unverified file, or a task check-off that still requires evidence.
 
@@ -115,6 +115,10 @@ Positive styling is reserved for an exact successfully achieved domain state. It
 | Destructive dialog/page | Exact action/target/scope, consequences, recoverability, affected classes, residuals, explicit confirmation | revoke/cancel/archive/trash/purge/account/workspace deletion; no generic “Are you sure?” |
 | Empty state | Scope statement, reason only when safely known, one safe next step | no visible items, restricted/partial/stale distinction; no celebratory compliance imagery |
 | Error summary | Page-level linked list plus field errors, what was accepted/preserved, recovery | focus on summary after failed submit; safe correlation; no raw provider/content detail |
+| Public navigation/header | Approved Doculyra wordmark/mark, labelled section links, create-account/sign-in actions, compact menu with explicit state | React-specific; keyboard/Escape/focus return; no icon-only destination, active Business/Enterprise implication, or account-mode ambiguity |
+| Public product preview | Clearly illustrative product structure and synthetic example labels | never current user data, complete coverage, production assurance, or hidden personalized claim |
+| Public contact state | Configured approved destination or explicit unavailable/pending explanation | no invented address, simulated delivery, free-text analytics, or implied production support |
+| Privacy/terms page | Doculyra context, one page heading, document kind/status/effective date, structured sections, contact availability and safe return links | React-specific direct route; viewing does not force acceptance; development wording is not final production legal approval |
 
 ## 6. Content and terminology
 
@@ -131,7 +135,7 @@ Copy is direct, calm, specific, and non-judgmental. It explains what the service
 | “This definitely applies” without rule outcome | “Applicability: APPLICABLE under rule/version …” with evidence and limitations |
 | “Action complete” after dispatch | “Sent; outcome awaiting confirmation” or exact action state |
 | “Permanent deletion in 30 days” | Exact current deletion state and residual categories; no duration until approved |
-| “Stored in Australia” | Exact approved processor/route statement only after `DEC-040`; otherwise unavailable/unknown |
+| “Stored in Australia” | Exact configured environment, data class, processor and route statement under `DEC-049`/`050`/`055`; otherwise unavailable/unknown |
 
 ### 6.2 Dates, numbers, and identifiers
 
@@ -172,8 +176,10 @@ Confidence is shown only when a registered capability and calibration slice supp
 | `DEC-036` | `POLICY_HOLD` uses generic containment component; no content preview, ordinary metadata, clinical detail, or implied final action. |
 | `DEC-037` | Channel picker exposes only approved enabled channels. Current seed external channels are DRAFT/disabled; do not render them as “coming soon” commitments. |
 | `DEC-038` | No recovery wizard, upload-evidence form, support override, ownership transfer, or family attestation component. |
-| `DEC-039` | No countdown/duration/deadline token for deletion; timeline shows achieved/unknown milestones and policy-defined residual classes only. |
-| `DEC-040` | No flag/map/data-centre icon or “Australian hosted” badge without an approved exact matrix result; unknown/ineligible route uses blocking limitation. |
+| `DEC-039`, `DEC-053` | Local synthetic and production document deletion policies stay distinct. A 30-calendar-day Trash boundary is shown only for the `DEC-053` production document route; other durations require their own policy. |
+| `DEC-040`, `DEC-049`, `DEC-050`, `DEC-055` | No flag/map/data-centre icon or generic “Australian hosted” badge beyond an exact configured environment/data-class/processor route; unknown/ineligible route uses a blocking limitation and hosted AI receives no plaintext by implication. |
+| `DEC-044`, `DEC-047` | React public/trust/legal components use the approved Doculyra identity, show accurate product and account-entry routes, and label development/illustrative content without implying release readiness. |
+| `DEC-052` | React and Flutter components may differ visually and structurally but preserve equivalent semantic information, state, error, evidence, authorization, and accessibility outcomes for shared protected journeys. |
 
 ## 9. Draft normative rules
 
@@ -183,7 +189,7 @@ Confidence is shown only when a registered capability and calibration slice supp
 - `UX-DS-P1-002` — Text and meaningful non-text contrast, focus indication, forced-colours behavior, zoom/reflow, target size, and motion MUST meet `A11Y-P1-*` and provisional `NFR-P1-022`–`NFR-P1-025`.
 - `UX-DS-P1-003` — Colour, icon, shape, position, sound, motion, texture, or spatial relationship MUST NOT be the only means of conveying state, evidence, difference, error, requiredness, selection, or action.
 - `UX-DS-P1-004` — Components MUST inherit user text-size, spacing, contrast, motion, input, language, and platform accessibility settings without loss of content or function.
-- `UX-DS-P1-005` — Framework, library, provider, CSS methodology, font, brand palette, analytics, and device-specific choices remain implementation decisions subject to this semantic contract.
+- `UX-DS-P1-005` — Framework, library, provider, CSS methodology, font, analytics, and device-specific choices remain implementation decisions subject to this semantic contract. Brand implementation MUST remain consistent with approved `DEC-047` and cannot replace semantic state meaning with colour or decoration.
 
 ### State and trust language
 
@@ -214,19 +220,19 @@ Confidence is shown only when a registered capability and calibration slice supp
 - `UX-DS-P1-024` — Dates affecting expiry, effectiveness, approval, evidence, freshness, tasks, or deletion MUST include absolute date/time and time zone/precision as applicable; relative time alone is prohibited.
 - `UX-DS-P1-025` — Sensitive values, names, filenames, evidence text, query/answer text, URLs, tokens, and protected identifiers MUST NOT appear in component analytics, browser/title metadata, error detail, test snapshots, or unapproved clipboard/download surfaces.
 - `UX-DS-P1-026` — Counts, percentages, denominators, badges, facets, rankings, sorting, and empty-state illustrations MUST have an authorized scope and MUST NOT disclose restricted contributors.
-- `UX-DS-P1-027` — While `DEC-034` is open, aggregate readiness/content-health/compliance/risk scores and every visible, hidden, colour, rank, trend, progress, or accessible-name proxy are prohibited.
-- `UX-DS-P1-028` — Suspected clinical `POLICY_HOLD` MUST use generic containment presentation with no ordinary content or inferred disposition while `DEC-036` is open.
+- `UX-DS-P1-027` — Under approved `DEC-034`, aggregate readiness/content-health/compliance/risk scores and every visible, hidden, colour, rank, trend, progress, or accessible-name proxy are prohibited.
+- `UX-DS-P1-028` — Under approved `DEC-036`, suspected clinical `POLICY_HOLD` MUST use generic containment presentation with no ordinary content or inferred disposition beyond configured restricted policy.
 - `UX-DS-P1-029` — External notification channels MUST render only when an approved, enabled channel definition exists; `DEC-037` does not authorize placeholder delivery claims.
-- `UX-DS-P1-030` — Recovery and automated continuity components MUST be absent except accurate unavailable-information surfaces while `DEC-032`/`DEC-038` remain open.
-- `UX-DS-P1-031` — Deletion components MUST show actual state/residuals and MUST NOT display an invented duration, deadline, countdown, or total-erasure claim while `DEC-039` is open.
-- `UX-DS-P1-032` — Residency components MUST show only approved exact route/data-class status and MUST NOT use an Australian-location badge or consent-based exception assumption while `DEC-040` is open.
+- `UX-DS-P1-030` — Recovery and automated continuity components MUST be absent except accurate unavailable-information surfaces under approved `DEC-032`/`DEC-038`.
+- `UX-DS-P1-031` — Deletion components MUST show actual state/residuals and MUST NOT display a duration, deadline, countdown, or total-erasure claim outside the exact applicable `DEC-039` or `DEC-053` policy.
+- `UX-DS-P1-032` — Residency components MUST show only the configured exact environment/route/data-class status and MUST NOT use a generic Australian-location badge or consent-based exception assumption.
 - `UX-DS-P1-033` — Phase 2 organisation, business-unit, SSO/SCIM, tenant-admin, policy, DLP, information-barrier, matter/case, legal-hold, and enterprise-dashboard components MUST be absent from Phase 1.
 
 ### Governance and verification
 
 - `UX-DS-P1-034` — Every production component MUST have stable component/version identity, documented states/variants, content contract, accessibility semantics, responsive behavior, privacy classification, analytics allow-list, and test fixtures.
 - `UX-DS-P1-035` — Component examples, screenshots, visual regression fixtures, demos, and research prototypes MUST use synthetic non-personal content and disabled decision-fenced data.
-- `UX-DS-P1-036` — A component change affecting domain meaning, destructive action, privacy disclosure, accessibility, or open-decision behavior requires cross-contract impact review and versioned migration evidence.
+- `UX-DS-P1-036` — A component change affecting domain meaning, destructive action, privacy disclosure, accessibility, or configuration-/assurance-/release-gated behavior requires cross-contract impact review and versioned migration evidence.
 - `UX-DS-P1-037` — Visual regression cannot be the sole acceptance method; semantic DOM/accessibility tree, keyboard, state, disclosure, reflow, current-policy, and content-safety tests are mandatory.
 - `UX-DS-P1-038` — New component variants MUST fail safely for unknown domain states and MUST NOT map them to success, absence, generic low severity, or a default colour.
 - `UX-DS-P1-039` — Disabled controls MUST be accompanied by perceivable reason and safe next step when relevant; a tooltip-only or lower-opacity-only explanation is insufficient.

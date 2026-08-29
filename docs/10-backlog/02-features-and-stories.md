@@ -3,17 +3,19 @@
 | Field | Value |
 |---|---|
 | Document ID | `BLG-STORY-001` |
-| Version | `0.1` |
-| Status | **DRAFT — no story is implementation-ready or authorized** |
+| Version | `0.2` |
+| Status | **APPROVED BUILD BACKLOG — execution requires a story Issue and Definition of Ready pass** |
 | Product phase | Phase 1 — Personal and Family |
-| Sequence basis | Proposed `P1-S1`–`P1-S4` under `DEC-030` |
-| Updated | 26 August 2026 |
+| Sequence basis | Approved continuous `P1-S1`–`P1-S4` program under `DEC-030`, `DEC-041`, and `DEC-054` |
+| Updated | 30 August 2026 |
 
 ## 1. Story contract
 
 Each story is the smallest currently coherent implementation candidate that leaves an observable, testable result without weakening a later invariant. A story includes its API/domain outcome, user-visible state where applicable, security/privacy/audit behavior, failure and repair path, migration compatibility, and evidence. Splitting a story by UI/API/database/worker is not completion.
 
-All stories are `DRAFT` unless explicitly `BLOCKED`. Owners are accountable roles. Product/catalogue, architecture/security/API/UX/engineering/operations/reference contracts remain their own source of truth. The reference-data records named below are DRAFT/disabled seeds unless an approved publication changes them; names are exact configuration identities, not hard-coded implementation values.
+All stories are part of the approved build backlog, but baseline inclusion is not permission to begin work without an attributed story Issue and a current Definition of Ready pass. `BASELINED`, `PLANNED_UNISSUED`, `SHAPING_REQUIRED`, `READY`, `IN_PROGRESS`, `PARTIAL PREVIEW`, `INTENTIONALLY UNAVAILABLE`, and `DONE` remain distinct. Owners are accountable roles. Product/catalogue, architecture/security/API/UX/engineering/operations/reference contracts remain their own sources of truth. DRAFT/disabled reference records remain non-activating until an approved publication changes them.
+
+Each story inherits the complete `OUT-P1-*` set declared by its governing `FEAT-P1-*`. Requirement and acceptance links may be narrower, but a hand-maintained story row MUST NOT contradict its parent feature. `scripts/validate-build-baseline.py` enforces this reciprocal relationship.
 
 The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*` cases. Every story maps exact applicable IDs in its `Future TEST` row, closing historical `TRACE-GAP-P1-TEST-001`. Those IDs are candidates, not passing evidence: tests that are DRAFT, `BLOCKED`, `NOT_RUN`, or `INSUFFICIENT` cannot satisfy a story or release gate. Product `AC-P1-*`, use-case `AC-UC-*`, engineering rules, story ACs, and implementation tests retain separate ownership.
 
@@ -23,7 +25,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Product + Identity/Workspace |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Product + Identity/Workspace |
 | Product | `REQ-P1-WS-001`, `REQ-P1-WS-002`; `FEAT-P1-001`; `UC-P1-001`; `OUT-P1-001`, `OUT-P1-005` |
 | UX / accessibility | `UX-FLOW-P1-002`; `UX-SCR-P1-002`, `003`; `UX-IA-P1-001`–`006`; `A11Y-P1-001`–`017`, `021`–`035`, `043`–`050` |
 | API / events | `API-P1-101`–`103`; `EVT-P1-001`, `002`; API rules `API-P1-007`–`014`, `027`–`038`, `047`–`052` |
@@ -42,8 +44,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Product + Identity/Workspace |
-| Product | `REQ-P1-WS-003`; `FEAT-P1-001`; `UC-P1-001`; `OUT-P1-005` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Product + Identity/Workspace |
+| Product | `REQ-P1-WS-003`; `FEAT-P1-001`; `UC-P1-001`; `OUT-P1-001`, `OUT-P1-005` |
 | UX / accessibility | `UX-FLOW-P1-002`; `UX-SCR-P1-004`–`006`; `UX-IA-P1-007`–`012`; `A11Y-P1-001`–`017`, `024`–`035`, `043`–`050` |
 | API / events | `API-P1-104`–`111`; `EVT-P1-002`, `003`; `API-P1-007`–`020`, `027`–`038`, `047`–`050` |
 | Security | `AUTH-P1-001`–`007`, `012`, `021`, `025`, `035`; `SEC-P1-001`, `002`, `006`, `017`, `018`; `PRIV-P1-001`–`004`, `019`, `023`; `AUD-P1-001`–`010`, `027`; `THR-P1-003`–`007`, `009`, `019` |
@@ -61,7 +63,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Security + Authorization |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Security + Authorization |
 | Product | `REQ-P1-WS-004`, `REQ-P1-WS-005`, `REQ-P1-TRUST-002`; `FEAT-P1-002`; `UC-P1-001`, `013`; `OUT-P1-005`, `OUT-P1-007` |
 | UX / accessibility | All `UX-FLOW-P1-*`/`UX-SCR-P1-*` discovery and action surfaces; `UX-IA-P1-013`–`032`; `A11Y-P1-003`, `004`, `007`–`025`, `051`–`056` |
 | API / events | `API-P1-112`–`115`; `EVT-P1-004`, `005`; cross-cutting `API-P1-007`–`014`, `024`–`032`, `037`–`052` |
@@ -80,7 +82,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Document Platform + UX |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Document Platform + UX |
 | Product | `REQ-P1-DOC-006`, `REQ-P1-ING-001`, `REQ-P1-ING-002`; `FEAT-P1-004`; `UC-P1-002`; `OUT-P1-001`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-003`; `UX-SCR-P1-009`–`011`; `UX-DS-P1-014`–`025`; `A11Y-P1-001`–`042`, especially `036`, `037` |
 | API / events | `API-P1-116`–`119`; `EVT-P1-006`; `API-P1-015`–`023`, `027`–`043`, `047`–`052` |
@@ -90,7 +92,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | Dependencies / fences | Depends on `STORY-P1-001`, `003`; required routes only; connector capture deferred to `STORY-P1-041`; enabled formats/limits remain disabled/synthetic pending `DEC-035`. |
 | Migration / rollback / repair | Preserve acquisition-attempt and case IDs across schema versions; interrupted transfer resumes/reconciles or cancels; no accepted bytes are discarded by deployment rollback; forward repair publishes a new attempt/stage. |
 | Negative, failure, audit | Reject wrong workspace/grant, unsafe MIME/size, expired transfer, duplicate fingerprint mismatch, and disabled format; same idempotency fingerprint returns one case; offline/cancel/retry preserves truthful state and content-free audit. |
-| Future TEST | `TEST-UNIT-P1-003`, `TEST-UNIT-P1-004`, `TEST-CON-P1-002`, `TEST-CON-P1-006`, `TEST-SEC-P1-009`, `TEST-SEC-P1-010`, `TEST-SEC-P1-015`, `TEST-E2E-P1-002`, `TEST-PERF-P1-005`, `TEST-DR-P1-001`, `TEST-DR-P1-002`; DRAFT cases require execution/accessibility evidence. |
+| Future TEST | `TEST-UNIT-P1-003`, `TEST-UNIT-P1-004`, `TEST-CON-P1-002`, `TEST-CON-P1-006`, `TEST-SEC-P1-009`, `TEST-SEC-P1-010`, `TEST-SEC-P1-015`, `TEST-E2E-P1-002`, `TEST-PERF-P1-005`, `TEST-DR-P1-001`, `TEST-DR-P1-002`, `TEST-UNIT-P1-011`, `TEST-SEC-P1-016`, `TEST-SEC-P1-017`, `TEST-E2E-P1-021`, `TEST-CON-P1-013`, `TEST-E2E-P1-022`; DRAFT cases require execution/accessibility evidence. |
 
 - `AC-STORY-P1-004-01` — **Given** an enabled synthetic format, **when** the same authorized payload is submitted through retries, **then** one durable ingestion case records route/provenance/attempts and exposes a retrievable truthful state without claiming extraction success.
 - `AC-STORY-P1-004-02` — **Given** camera denial, keyboard-only use, offline interruption, unsupported input, or authorization change, **when** capture proceeds, **then** an equivalent file/manual path and safe cancel/retry outcome exist without duplicate versions or leaked metadata.
@@ -99,14 +101,14 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT — final clinical disposition BLOCKED by DEC-036`; Security + Document Platform |
+| State / owner | `BASELINED — PLANNED_UNISSUED; approved POLICY_HOLD boundary`; Security + Document Platform |
 | Product | `REQ-P1-DOC-007`, `REQ-P1-ING-003`; `FEAT-P1-005`; `UC-P1-002`; `OUT-P1-001`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-004`; `UX-SCR-P1-012`; `UX-DS-P1-026`–`034`; `A11Y-P1-001`–`005`, `014`–`028`, `036`, `037`, `043`–`056` |
 | API / events | `API-P1-118`, `120`, conditional `121`; `EVT-P1-006`, `007`, `029`; `API-P1-033`–`040`, `047`–`052` |
 | Security | `AUTH-P1-001`–`007`, `012`, `021`, `025`, `031`, `035`; `SEC-P1-013`, `014`, `016`–`018`, `029`; `PRIV-P1-010`, `011`, `020`, `022`; `AUD-P1-001`–`008`, `011`, `027`; `THR-P1-011`–`013`, `019`, `026`, `027` |
 | NFR / DIT / AI | `NFR-P1-004`–`006`, `012`, `013`, `022`–`029`, `033`, `036`, `037`, `040`–`043`; `DIT-ING-P1-019`–`035`; `DIT-TAX-P1-011`–`025`; `AI-GRD-P1-001`–`035` must refuse ordinary processing |
 | Reference data | `data/document-types.json`: `content-boundary.CLINICAL_EXCLUDED`, `doctype.health.clinical-record`; `data/states-and-severity.json`: `state.ingestion.QUARANTINED`, `state.ingestion.POLICY_HOLD`, `state.ai-output.POLICY_BLOCKED` |
-| Dependencies / fences | Depends on `STORY-P1-004`; scanner timeout/unavailability and suspicion remain contained; `DEC-036` forbids choosing reject/quarantine/retain timing/disposition; `DEC-024` excludes clinical records. |
+| Dependencies / fences | Depends on `STORY-P1-004`; scanner timeout/unavailability and suspicion remain contained; approved `DEC-036` requires isolated `POLICY_HOLD` and forbids inventing any broader storage/disposition/timing promise; `DEC-024` excludes clinical records. |
 | Migration / rollback / repair | Quarantine/hold survives deployment and projection rebuild; repaired scanner creates a new stage attempt; rollback cannot expose content or erase containment history; release/delete waits for approved policy and distinct authority. |
 | Negative, failure, audit | Deny preview/download/parser/OCR/AI/index/graph/search/notification/support for contained content; malicious/polyglot/archive/scanner-timeout fixtures; generic status discloses no clinical inference; audit safe classification/attempt/result only. |
 | Future TEST | `TEST-UNIT-P1-004`, `TEST-CON-P1-002`, `TEST-AI-P1-001`, `TEST-SEC-P1-009`, `TEST-SEC-P1-010`, `TEST-SEC-P1-012`, `TEST-E2E-P1-002`, `TEST-PERF-P1-001`, `TEST-PERF-P1-005`, `TEST-DR-P1-008`; DRAFT cases require execution/accessibility evidence. |
@@ -118,8 +120,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Document Platform |
-| Product | `REQ-P1-ING-004`; `FEAT-P1-004`; `UC-P1-002`; `OUT-P1-007` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Document Platform |
+| Product | `REQ-P1-ING-004`; `FEAT-P1-004`; `UC-P1-002`; `OUT-P1-001`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-003`, `005`; `UX-SCR-P1-011`; `A11Y-P1-002`, `017`, `021`–`028`, `046`, `051`–`054` |
 | API / events | `API-P1-118`–`120`, `142`, `143`; `EVT-P1-006`, `008`; `API-P1-027`–`040`, `047`–`050` |
 | Security | `AUTH-P1-001`, `003`–`007`, `012`, `021`, `024`, `025`, `035`; `SEC-P1-001`, `006`, `007`, `013`, `014`, `017`–`020`, `029`; `PRIV-P1-001`, `010`, `020`, `022`; `AUD-P1-001`–`008`, `011`, `027`; `THR-P1-007`, `009`, `011`–`013`, `019`, `026`, `027` |
@@ -137,7 +139,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Document Platform + Security |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Document Platform + Security |
 | Product | `REQ-P1-DOC-001`, `REQ-P1-DOC-002`, `REQ-P1-DOC-004`; `FEAT-P1-003`; `UC-P1-002`, `003`; `OUT-P1-001`, `OUT-P1-002` |
 | UX / accessibility | `UX-FLOW-P1-005`, `006`; `UX-SCR-P1-014`–`016`; `A11Y-P1-001`–`020`, `029`–`042`, `043`–`050` |
 | API / events | `API-P1-122`–`130`; `EVT-P1-007`, `009`; `API-P1-015`–`020`, `027`–`038`, `041`, `042`, `047`–`050` |
@@ -147,7 +149,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | Dependencies / fences | Depends on `STORY-P1-003`–`006`; hash equality is not logical identity; access is short-lived and reauthorized; originals are immutable while retained but still subject to governed purge. |
 | Migration / rollback / repair | Byte/key/version identities and acquisition hash never change during migration; derived metadata is rebuildable; integrity mismatch blocks access and starts incident/repair; restore proves digest, policy, deletion, and residency before service. |
 | Negative, failure, audit | Mutation/substitution, wrong workspace/version/audience, guessed/expired/revoked grant, range/MIME abuse, cache/referrer leakage, restore/deletion resurrection; record receipt/hash/version/grant/redemption without filename/content/token. |
-| Future TEST | `TEST-UNIT-P1-003`, `TEST-CON-P1-002`, `TEST-CON-P1-006`, `TEST-SEC-P1-006`, `TEST-SEC-P1-009`, `TEST-SEC-P1-014`, `TEST-E2E-P1-003`, `TEST-PERF-P1-003`, `TEST-PERF-P1-006`, `TEST-DR-P1-001`, `TEST-DR-P1-004`, `TEST-DR-P1-006`, `TEST-DR-P1-008`; DRAFT cases require execution/accessibility evidence. |
+| Future TEST | `TEST-UNIT-P1-003`, `TEST-CON-P1-002`, `TEST-CON-P1-006`, `TEST-SEC-P1-006`, `TEST-SEC-P1-009`, `TEST-SEC-P1-014`, `TEST-E2E-P1-003`, `TEST-PERF-P1-003`, `TEST-PERF-P1-006`, `TEST-DR-P1-001`, `TEST-DR-P1-004`, `TEST-DR-P1-006`, `TEST-DR-P1-008`, `TEST-UNIT-P1-011`, `TEST-SEC-P1-016`, `TEST-SEC-P1-017`, `TEST-E2E-P1-021`; DRAFT cases require execution/accessibility evidence. |
 
 - `AC-STORY-P1-007-01` — **Given** accepted bytes, **when** reprocessing, migration, export, backup, restore, or repeated retrieval occurs, **then** the acquisition digest and immutable bytes remain identical while derived generations and logical versions remain separate.
 - `AC-STORY-P1-007-02` — **Given** wrong scope/version/audience, expiry, revocation, quarantine, deletion, integrity mismatch, or stale policy, **when** access is redeemed, **then** no bytes/existence leak and a privacy-safe audit outcome records the denial.
@@ -156,7 +158,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Security + Platform |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Security + Platform |
 | Product | `REQ-P1-TRUST-001`; `FEAT-P1-006`; `UC-P1-001`, `013`; `OUT-P1-001`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-001`; `UX-SCR-P1-001`, `030`, `031`; `A11Y-P1-001`–`035`, `043`–`050`, especially `047` |
 | API / events | Authentication prerequisite for `API-P1-101`–`183`; `EVT-P1-003`, `005`, `029`; `API-P1-007`–`014`, `047`–`052` |
@@ -166,7 +168,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | Dependencies / fences | Depends on approved identity/session design; `DEC-038` prohibits recovery/factor/ownership fallback; no standing support/break-glass content role; provider products remain unselected. |
 | Migration / rollback / repair | Credential/session/key/secret versions rotate with overlap and revocation proof; deployment rollback cannot restore compromised material or older authorization; key failure degrades safely and recovery exercises respect deletion/residency. |
 | Negative, failure, audit | Credential stuffing, phishing/session theft/fixation/replay, MFA downgrade, support impersonation, secret canaries, crypto downgrade, key denial/rotation, device/offline cache leakage; audit safe identity/session/key version outcomes only. |
-| Future TEST | `TEST-UNIT-P1-002`, `TEST-CON-P1-001`, `TEST-SEC-P1-001`, `TEST-SEC-P1-008`, `TEST-SEC-P1-011`, `TEST-E2E-P1-001`, `TEST-E2E-P1-013`, `TEST-E2E-P1-017`, `TEST-PERF-P1-001`, `TEST-PERF-P1-006`, `TEST-PERF-P1-009`, `TEST-DR-P1-004`, `TEST-DR-P1-007`, `TEST-DR-P1-008`; DRAFT cases require execution/accessibility evidence. |
+| Future TEST | `TEST-UNIT-P1-002`, `TEST-CON-P1-001`, `TEST-SEC-P1-001`, `TEST-SEC-P1-008`, `TEST-SEC-P1-011`, `TEST-E2E-P1-001`, `TEST-E2E-P1-013`, `TEST-E2E-P1-017`, `TEST-PERF-P1-001`, `TEST-PERF-P1-006`, `TEST-PERF-P1-009`, `TEST-DR-P1-004`, `TEST-DR-P1-007`, `TEST-DR-P1-008`, `TEST-UNIT-P1-011`, `TEST-CON-P1-013`, `TEST-SEC-P1-016`, `TEST-SEC-P1-017`, `TEST-SEC-P1-018`, `TEST-E2E-P1-021`, `TEST-E2E-P1-022`; DRAFT cases require execution/accessibility evidence. |
 
 - `AC-STORY-P1-008-01` — **Given** an authenticated actor, **when** session/privilege/security state changes, **then** sessions and downstream authorization are rotated/revoked within the owning control while secrets/keys/content never enter ordinary telemetry.
 - `AC-STORY-P1-008-02` — **Given** lost factor, alleged ownership, family/support assertion, or unavailable identity dependency under the `DEC-038` no-recovery boundary, **when** access is attempted, **then** no weaker recovery/transfer route or workspace-existence disclosure is available.
@@ -175,14 +177,14 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT — UC-P1-019 catalogue-only`; Security/Privacy + Observability |
-| Product | `REQ-P1-TRUST-003`, `REQ-P1-TRUST-004`; `FEAT-P1-006`; `UC-P1-013`, `UC-P1-019`; `OUT-P1-007`; **`TRACE-GAP-P1-UC-001`** |
+| State / owner | `BASELINED — PLANNED_UNISSUED; detailed UC-P1-019 contract`; Security/Privacy + Observability |
+| Product | `REQ-P1-TRUST-003`, `REQ-P1-TRUST-004`; `FEAT-P1-006`; `UC-P1-013`, `UC-P1-019`; `OUT-P1-001`, `OUT-P1-007`; **`TRACE-GAP-P1-UC-001`** |
 | UX / accessibility | Audit/status/error behavior across all `UX-FLOW-P1-*`; `UX-SCR-P1-030`; `A11Y-P1-003`, `004`, `021`–`025`, `051`–`056` |
 | API / events | `API-P1-176`; all `EVT-P1-001`–`032` envelopes; `API-P1-021`–`023`, `033`, `037`, `047`–`050` |
 | Security | `AUTH-P1-001`, `025`, `026`, `030`, `035`; `SEC-P1-017`, `018`, `025`, `029`, `030`; `PRIV-P1-001`, `020`–`022`, `026`, `029`; `AUD-P1-001`–`030`; `THR-P1-005`, `008`–`011`, `019`–`021`, `027`, `028` |
 | NFR / DIT / AI | `NFR-P1-003`–`006`, `013`, `016`–`021`, `022`–`029`, `033`–`043`; all DIT/AI outputs use safe references; `AI-TOOL-P1-001`–`030`, `AI-GRD-P1-001`–`035`, `AI-EVAL-P1-001`–`035` |
 | Reference data | `data/common.json`: all `privacy.*`, `PUR-P1-001`–`008`; `data/states-and-severity.json`: `severity.*`; no raw values from any other data pack may become telemetry labels. |
-| Dependencies / fences | Applies to every story; telemetry, audit, events, provenance, analytics, and protected evidence stay distinct; `DEC-039` leaves retention durations unset and `DEC-040` makes unknown routes ineligible. |
+| Dependencies / fences | Applies to every story; telemetry, audit, events, provenance, analytics, and protected evidence stay distinct; `DEC-053` defines document Trash timing and `DEC-049` makes unknown/ineligible routes fail closed. |
 | Migration / rollback / repair | Audit schemas remain decodable and append-only; correction supersedes; telemetry schema rollback cannot drop required audit; gaps create findings/reconciliation; restore verifies checkpoints and deletion/residency. |
 | Negative, failure, audit | Content/token/filename/query/prompt/answer/provider-payload canaries, arbitrary serialization, cardinality attack, audit write outage, duplicate/reorder/tamper/gap, privileged audit search, cross-workspace audit view; required audit failure blocks/incompletes consequence. |
 | Future TEST | `TEST-UNIT-P1-010`, `TEST-CON-P1-006`, `TEST-CON-P1-007`, `TEST-CON-P1-008`, `TEST-SEC-P1-007`, `TEST-SEC-P1-012`, `TEST-E2E-P1-019`, `TEST-E2E-P1-020`, `TEST-PERF-P1-009`, `TEST-DR-P1-003`; DRAFT cases require execution/accessibility evidence. |
@@ -194,14 +196,14 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT — launch activation BLOCKED by DEC-035`; Reference-data Governance + Platform |
+| State / owner | `BASELINED — PLANNED_UNISSUED; launch activation BLOCKED by DEC-035`; Reference-data Governance + Platform |
 | Product | `REQ-P1-CFG-001`, `REQ-P1-CFG-005`; `FEAT-P1-007`; `UC-P1-001`, `018`; `OUT-P1-001`, `OUT-P1-007` |
 | UX / accessibility | No Phase 1 configuration console; absence follows `UX-IA-P1-006`, `UX-SCR-P1-030`; any safe validation problem follows `A11Y-P1-021`–`028`, `043`–`050` |
 | API / events | No public household configuration operation; `EVT-P1-031`; API schema/version rules `API-P1-001`–`006`, `009`, `020`, `046`–`052` |
 | Security | `AUTH-P1-003`, `020`, `028`, `035`; `SEC-P1-001`, `006`, `007`, `017`, `018`, `025`, `030`; `PRIV-P1-001`, `020`–`022`, `030`; `AUD-P1-001`–`008`, `022`, `024`, `027`; `THR-P1-007`, `009`, `019`–`021`, `028` |
 | NFR / DIT / AI | `NFR-P1-003`–`006`, `018`, `020`, `026`–`028`, `033`, `036`–`043`; all `DIT-*-P1-*` and `AI-*-P1-*` consumers use exact configuration versions, but no package is activated here |
 | Reference data | All schemas and `data/*.json`; especially `meta.reference-data-draft`, `launch-profile.synthetic.au.phase1`, `source.synthetic.au.reference-series`, `channel.EMAIL`, `channel.PUSH`; every seed remains DRAFT/disabled as declared. |
-| Dependencies / fences | Validator checks schema, unique/dangling/typed IDs, safe endpoints, cross-pack references, decision fences, and inert Phase 2 types; publication/activation is `STORY-P1-037`; `DEC-035` prohibits launch coverage inference. |
+| Dependencies / fences | Validator checks schema, unique/dangling/typed IDs, safe endpoints, cross-pack references, decision fences, and inert Phase 2 types; publication/activation is `STORY-P1-037`; `DEC-035` prohibits launch coverage inference. Detailed `UC-P1-018` ACs govern the product boundary. |
 | Migration / rollback / repair | Package/schema versions are immutable; canonical expansion precedes consumer support; invalid migration never activates; repair publishes a new version; no direct database/code hotfix or reinterpretation of an old package. |
 | Negative, failure, audit | Reject dangling/duplicate/unknown typed IDs, unsafe endpoint, enabled DRAFT seed, invented duration/score/channel/processor, clinical ordinary path, incompatible consumer, household ID in global scope; audit validation/publication attempts safely. |
 | Future TEST | `TEST-UNIT-P1-001`, `TEST-UNIT-P1-010`, `TEST-CON-P1-009`, `TEST-SEC-P1-011`, `TEST-SEC-P1-012`, `TEST-E2E-P1-018`, `TEST-PERF-P1-007`, `TEST-PERF-P1-009`, `TEST-DR-P1-002`, `TEST-DR-P1-008`; DRAFT cases require execution evidence. |
@@ -215,7 +217,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Document Platform + Product |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Document Platform + Product |
 | Product | `REQ-P1-DOC-003`, `REQ-P1-DOC-005`; `FEAT-P1-008`; `UC-P1-003`, `012`; `OUT-P1-001`, `OUT-P1-002`, `OUT-P1-006` |
 | UX / accessibility | `UX-FLOW-P1-006`, `016`, `019`–`021`; `UX-SCR-P1-008`, `014`, `016`, `029`, `033`–`036`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `040`, `042`–`056` |
 | API / events | `API-P1-122`–`126`; `EVT-P1-010`, `011`; `API-P1-007`–`020`, `027`–`038`, `047`–`052` |
@@ -234,8 +236,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Document Intelligence |
-| Product | `REQ-P1-ING-005`; `FEAT-P1-009`; `UC-P1-003`, `004`; `OUT-P1-002`, `OUT-P1-007` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Document Intelligence |
+| Product | `REQ-P1-ING-005`; `FEAT-P1-009`; `UC-P1-003`, `004`; `OUT-P1-001`, `OUT-P1-002`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-005`, `006`, `020`; `UX-SCR-P1-011`, `013`, `015`, `033`–`036`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`039`, `042`–`056` |
 | API / events | `API-P1-129`, `130`; `EVT-P1-008`; `API-P1-015`–`020`, `033`–`038`, `041`, `042`, `047`–`050` |
 | Security | `AUTH-P1-001`–`010`, `012`, `019`–`025`, `035`; `SEC-P1-012`, `015`–`021`, `029`; `PRIV-P1-001`, `004`, `008`, `020`, `022`; `AUD-P1-001`–`008`, `011`, `014`, `027`; `THR-P1-006`, `008`, `014`–`016`, `019`, `026`, `030` |
@@ -253,8 +255,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT — launch types/schemas BLOCKED by DEC-035`; Document Intelligence |
-| Product | `REQ-P1-ING-006`; `FEAT-P1-009`; `UC-P1-002`, `003`; `OUT-P1-002`, `OUT-P1-007` |
+| State / owner | `BASELINED — PLANNED_UNISSUED; launch types/schemas BLOCKED by DEC-035`; Document Intelligence |
+| Product | `REQ-P1-ING-006`; `FEAT-P1-009`; `UC-P1-002`, `003`; `OUT-P1-001`, `OUT-P1-002`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-005`, `020`; `UX-SCR-P1-013`, `033`–`036`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `042`–`056` |
 | API / events | No direct classification operation in `API-OPENAPI-001`; adjacent job/document operations `API-P1-118`, `122`, `123`, `142`; `EVT-P1-008`; **`TRACE-GAP-P1-API-001`** |
 | Security | `AUTH-P1-001`–`007`, `020`–`025`, `029`, `035`; `SEC-P1-017`, `019`–`021`, `028`, `029`; `PRIV-P1-001`, `004`, `008`, `010`, `020`, `022`, `027`, `028`; `AUD-P1-001`–`008`, `011`, `014`, `027`, `029`; `THR-P1-006`, `013`, `015`, `016`, `019`, `024`, `026`, `030` |
@@ -272,8 +274,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Document Intelligence + UX |
-| Product | `REQ-P1-ING-007`; `FEAT-P1-009`; `UC-P1-003`, `004`; `OUT-P1-002` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Document Intelligence + UX |
+| Product | `REQ-P1-ING-007`; `FEAT-P1-009`; `UC-P1-003`, `004`; `OUT-P1-001`, `OUT-P1-002`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-005`, `020`, `021`; `UX-SCR-P1-013`, `015`, `033`–`036`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`039`, `042`–`056` |
 | API / events | No extraction-review/correction operation in `API-OPENAPI-001`; adjacent `API-P1-118`, `129`, `130`, `133`; `EVT-P1-008`; **`TRACE-GAP-P1-API-002`** |
 | Security | `AUTH-P1-001`–`007`, `012`–`014`, `021`, `025`, `035`; `SEC-P1-006`, `017`–`021`, `024`; `PRIV-P1-001`, `004`, `008`, `019`, `020`, `022`; `AUD-P1-001`–`008`, `011`, `012`, `014`, `027`; `THR-P1-005`–`010`, `015`, `016`, `019`, `030` |
@@ -291,8 +293,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Document Intelligence + Platform |
-| Product | `REQ-P1-ING-008`; `FEAT-P1-009`; `UC-P1-002`, `003`, `012`; `OUT-P1-002`, `OUT-P1-007` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Document Intelligence + Platform |
+| Product | `REQ-P1-ING-008`; `FEAT-P1-009`; `UC-P1-002`, `003`, `012`; `OUT-P1-001`, `OUT-P1-002`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-005`, `020`; `UX-SCR-P1-011`, `013`, `033`–`036`; `A11Y-P1-001`–`035`, `038`, `039`, `042`–`056` |
 | API / events | Adjacent retry `API-P1-120` does not define analysis reprocessing; status `API-P1-118`, `142`; `EVT-P1-008`; **`TRACE-GAP-P1-API-003`** |
 | Security | `AUTH-P1-001`–`007`, `020`–`025`, `029`, `034`, `035`; `SEC-P1-012`, `017`–`021`, `027`–`029`; `PRIV-P1-001`, `004`, `008`, `011`, `015`–`017`, `020`, `022`; `AUD-P1-001`–`008`, `011`, `012`, `014`, `027`; `THR-P1-006`–`009`, `011`, `015`, `016`, `019`, `023`, `026`, `027`, `030` |
@@ -310,7 +312,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Domain/Data + Document Intelligence |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Domain/Data + Document Intelligence |
 | Product | `REQ-P1-FCT-001`, `REQ-P1-FCT-002`; `FEAT-P1-010`; `UC-P1-003`, `004`; `OUT-P1-002`, `OUT-P1-003` |
 | UX / accessibility | `UX-FLOW-P1-007`, `021`; `UX-SCR-P1-017`, `033`–`036`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `038`, `039`, `042`–`056` |
 | API / events | `API-P1-133`–`135`; `EVT-P1-012`, `013`; `API-P1-015`–`020`, `027`–`038`, `047`–`050` |
@@ -329,7 +331,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Domain/Data + Document Intelligence |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Domain/Data + Document Intelligence |
 | Product | `REQ-P1-FCT-003`, `REQ-P1-FCT-004`; `FEAT-P1-010`; `UC-P1-004`; `OUT-P1-002`, `OUT-P1-003` |
 | UX / accessibility | `UX-FLOW-P1-007`, `021`; `UX-SCR-P1-017`, `033`–`036`; `A11Y-P1-001`–`035`, `042`–`056` |
 | API / events | No `ResourceEntity` create/link/merge/split API in `API-OPENAPI-001`; adjacent fact operations `API-P1-133`–`135`; `EVT-P1-012`, `013`; **`TRACE-GAP-P1-API-004`** |
@@ -348,7 +350,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Document Intelligence + UX |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Document Intelligence + UX |
 | Product | `REQ-P1-FCT-005`; `FEAT-P1-010`; `UC-P1-004`; `OUT-P1-002`, `OUT-P1-003` |
 | UX / accessibility | `UX-FLOW-P1-007`, `021`; `UX-SCR-P1-017`, `033`–`036`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `038`, `039`, `042`–`056` |
 | API / events | `API-P1-136`–`138`; `EVT-P1-013`; `API-P1-007`–`020`, `027`–`038`, `047`–`050` |
@@ -367,7 +369,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Security/Privacy + Document Intelligence |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Security/Privacy + Document Intelligence |
 | Product | `REQ-P1-FCT-006`; `FEAT-P1-011`; `UC-P1-004`, `005`, `008`, `013`; `OUT-P1-002`, `OUT-P1-005`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-007`, `008`, `010`, `012`, `019`–`021`; `UX-SCR-P1-015`, `017`–`021`, `024`, `033`–`045`; `A11Y-P1-001`–`056`, especially `003`, `004`, `038`–`042` |
 | API / events | `API-P1-133`–`138` plus every downstream read/result; `EVT-P1-012`, `013`; cross-cutting `API-P1-007`–`014`, `024`–`026`, `037`–`052` |
@@ -386,8 +388,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Domain/Data + Document Intelligence |
-| Product | `REQ-P1-GPH-001`, `REQ-P1-GPH-002`; `FEAT-P1-012`; `UC-P1-004`, `005`, `013`; `OUT-P1-003`, `OUT-P1-005` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Domain/Data + Document Intelligence |
+| Product | `REQ-P1-GPH-001`, `REQ-P1-GPH-002`; `FEAT-P1-012`; `UC-P1-004`, `005`, `013`; `OUT-P1-002`, `OUT-P1-003` |
 | UX / accessibility | `UX-FLOW-P1-010`, `022`; `UX-SCR-P1-005`, `021`, `033`–`045`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `041`–`056` |
 | API / events | No dependency-edge CRUD/traversal operation in `API-OPENAPI-001`; graph is consumed by search/impact operations; `EVT-P1-014`; **`TRACE-GAP-P1-API-005`** |
 | Security | `AUTH-P1-001`–`012`, `019`–`025`, `034`, `035`; `SEC-P1-001`, `002`, `006`, `017`–`019`, `029`; `PRIV-P1-001`, `004`, `011`, `017`, `020`, `022`; `AUD-P1-001`–`008`, `013`, `027`; `THR-P1-003`–`009`, `011`, `019`, `023`, `026`, `030` |
@@ -405,8 +407,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Search + Security |
-| Product | `REQ-P1-SRCH-001`, `REQ-P1-SRCH-003`; `FEAT-P1-013`; `UC-P1-005`, `013`; `OUT-P1-004`, `OUT-P1-005` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Search + Security |
+| Product | `REQ-P1-SRCH-001`, `REQ-P1-SRCH-003`; `FEAT-P1-013`; `UC-P1-005`, `013`; `OUT-P1-002`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-008`, `023`; `UX-SCR-P1-018`, `033`–`045`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `038`, `039`, `042`–`056` |
 | API / events | `API-P1-139`; no result event required; `EVT-P1-032` is projection activation only; `API-P1-007`–`026`, `037`–`040`, `047`–`052` |
 | Security | `AUTH-P1-001`–`010`, `019`–`025`, `034`, `035`; `SEC-P1-001`, `002`, `006`, `017`–`021`, `029`; `PRIV-P1-001`, `004`, `008`, `011`, `020`–`022`; `AUD-P1-001`–`008`, `014`, `027`; `THR-P1-003`–`007`, `014`–`016`, `019`, `023`, `026`, `030` |
@@ -424,8 +426,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; AI/Search + Product |
-| Product | `REQ-P1-SRCH-002`, `REQ-P1-SRCH-004`; `FEAT-P1-013`; `UC-P1-005`; `OUT-P1-004`, `OUT-P1-007` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; AI/Search + Product |
+| Product | `REQ-P1-SRCH-002`, `REQ-P1-SRCH-004`; `FEAT-P1-013`; `UC-P1-005`; `OUT-P1-002`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-008`, `023`; `UX-SCR-P1-018`, `019`, `033`–`045`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`039`, `042`–`056` |
 | API / events | `API-P1-140`–`143`; no answer-content event; `API-P1-007`–`023`, `027`–`040`, `047`–`052` |
 | Security | `AUTH-P1-001`–`011`, `019`–`025`, `029`, `034`, `035`; `SEC-P1-017`–`021`, `028`, `029`; `PRIV-P1-001`, `004`, `008`, `020`–`022`, `027`, `028`; `AUD-P1-001`–`008`, `014`, `027`, `029`; `THR-P1-005`–`007`, `014`–`016`, `019`, `024`, `026`, `027`, `030` |
@@ -434,7 +436,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | Dependencies / fences | Depends on `STORY-P1-012`, `019`, `021`, `024`, `025`; every material claim maps to redeemable authorized evidence; insufficient/conflicting/stale/restricted/unavailable are first-class outcomes; no professional-advice claim. |
 | Migration / rollback / repair | Answer job/result is immutable by capability/prompt/model/schema/retrieval generation; retry creates linked attempt; capability rollback leaves old answer evidence but disables reuse where unsafe; conversation cache reauthorizes each turn. |
 | Negative, failure, audit | Direct/indirect injection, fabricated/misattributed citation, restricted inference, stale source, revoke/delete during generation/redemption, provider timeout/malformed output, budget exhaustion; audit versions/citation refs/limitations, not prompt/query/answer. |
-| Future TEST | `TEST-CON-P1-003`, `TEST-CON-P1-011`, `TEST-AI-P1-009`–`TEST-AI-P1-012`, `TEST-AI-P1-015`, `TEST-SEC-P1-003`, `TEST-SEC-P1-004`, `TEST-SEC-P1-010`, `TEST-SEC-P1-015`, `TEST-E2E-P1-005`, `TEST-PERF-P1-003`, `TEST-PERF-P1-004`, `TEST-PERF-P1-010`, `TEST-DR-P1-005`, `TEST-DR-P1-008`; DRAFT cases require execution/accessibility evidence. |
+| Future TEST | `TEST-CON-P1-003`, `TEST-CON-P1-011`, `TEST-AI-P1-009`–`TEST-AI-P1-012`, `TEST-AI-P1-015`, `TEST-SEC-P1-003`, `TEST-SEC-P1-004`, `TEST-SEC-P1-010`, `TEST-SEC-P1-015`, `TEST-E2E-P1-005`, `TEST-PERF-P1-003`, `TEST-PERF-P1-004`, `TEST-PERF-P1-010`, `TEST-DR-P1-005`, `TEST-DR-P1-008`, `TEST-CON-P1-013`, `TEST-E2E-P1-022`; DRAFT cases require execution/accessibility evidence. |
 
 - `AC-STORY-P1-022-01` — **Given** sufficient current authorized evidence, **when** an answer completes, **then** each material claim is supported by exact redeemable citations and limitations/coverage are explicit.
 - `AC-STORY-P1-022-02` — **Given** conflicting, stale, insufficient, restricted, unavailable, injected, or revoked evidence, **when** Q&A runs, **then** the answer refuses/limits truthfully without fabricating a claim/citation or exposing protected context.
@@ -443,8 +445,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Search/Document Platform + UX |
-| Product | `REQ-P1-SRCH-005`; `FEAT-P1-013`; `UC-P1-003`, `005`; `OUT-P1-002`, `OUT-P1-004` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Search/Document Platform + UX |
+| Product | `REQ-P1-SRCH-005`; `FEAT-P1-013`; `UC-P1-003`, `005`; `OUT-P1-002`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-006`, `008`, `020`, `023`; `UX-SCR-P1-015`, `016`, `019`, `033`–`045`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`056`, especially `038`–`040`, `042` |
 | API / events | `API-P1-127`–`132`; adjacent `EVT-P1-009`, `010`; `API-P1-010`, `015`–`020`, `027`–`038`, `041`, `042`, `047`–`050` |
 | Security | `AUTH-P1-001`–`010`, `012`, `018`–`025`, `034`, `035`; `SEC-P1-012`, `015`–`021`, `027`; `PRIV-P1-001`, `004`, `011`, `016`, `020`, `022`; `AUD-P1-001`–`008`, `011`, `014`, `027`; `THR-P1-005`, `006`, `008`, `014`–`016`, `019`, `023`, `030` |
@@ -462,8 +464,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; AI Platform + Security |
-| Product | `REQ-P1-AI-001`, `REQ-P1-AI-002`, `REQ-P1-AI-003`; `FEAT-P1-014`; `UC-P1-005`; `OUT-P1-002`, `OUT-P1-004`, `OUT-P1-007` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; AI Platform + Security |
+| Product | `REQ-P1-AI-001`, `REQ-P1-AI-002`, `REQ-P1-AI-003`; `FEAT-P1-014`; `UC-P1-005`; `OUT-P1-002`, `OUT-P1-003`, `OUT-P1-004`, `OUT-P1-007` |
 | UX / accessibility | Platform-only gateway; user-visible async/limitation outcomes surface through `UX-FLOW-P1-005`, `008`, `010`, `012`, `020`–`023` and `UX-SCR-P1-013`, `019`, `021`, `024`, `033`–`045`; `A11Y-P1-002`–`005`, `021`–`028`, `043`–`056` |
 | API / events | No generic public AI invocation API/event by design; capability-specific operations own user contracts; **`TRACE-GAP-P1-API-006`** records gateway conformance visibility, not a demand for a public endpoint. |
 | Security | `AUTH-P1-001`–`011`, `020`–`025`, `029`, `034`, `035`; `SEC-P1-007`, `017`–`021`, `028`, `029`; `PRIV-P1-001`, `004`, `008`, `020`–`022`, `027`, `028`; `AUD-P1-001`–`008`, `014`, `027`, `029`; `THR-P1-005`–`007`, `015`, `016`, `019`, `024`, `026`, `027`, `030` |
@@ -481,8 +483,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; AI Assurance + Product/Security |
-| Product | `REQ-P1-AI-004`, `REQ-P1-AI-005`, `REQ-P1-AI-006`, `REQ-P1-AI-007`; `FEAT-P1-014`; `UC-P1-002`, `004`, `005`, `007`; `OUT-P1-002`, `OUT-P1-004`, `OUT-P1-007` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; AI Assurance + Product/Security |
+| Product | `REQ-P1-AI-004`, `REQ-P1-AI-005`, `REQ-P1-AI-006`, `REQ-P1-AI-007`; `FEAT-P1-014`; `UC-P1-002`, `004`, `005`, `007`; `OUT-P1-002`, `OUT-P1-003`, `OUT-P1-004`, `OUT-P1-007` |
 | UX / accessibility | Platform evaluation; user-visible confidence/evidence/limitations/review across `UX-FLOW-P1-005`, `007`, `008`, `010`, `012`, `020`–`023`; `UX-SCR-P1-013`, `017`, `019`, `021`, `024`, `033`–`045`; `A11Y-P1-001`–`056` |
 | API / events | No generic AI evaluation API/event; capability APIs/jobs expose only validated outcomes; **`TRACE-GAP-P1-API-006`**; all operations inherit `API-P1-037`, `047`–`052`. |
 | Security | `AUTH-P1-001`–`014`, `020`–`025`, `029`, `034`, `035`; `SEC-P1-017`–`021`, `024`, `028`, `029`; `PRIV-P1-001`, `004`, `008`, `020`–`022`, `027`, `028`; `AUD-P1-001`–`008`, `014`, `016`–`018`, `027`, `029`; `THR-P1-005`–`007`, `010`, `015`, `016`, `019`, `024`, `026`, `027`, `030` |
@@ -502,8 +504,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Document Intelligence + Domain/Data |
-| Product | `REQ-P1-DOC-008`; `FEAT-P1-015`; `UC-P1-003`, `006`; `OUT-P1-002`, `OUT-P1-003` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Document Intelligence + Domain/Data |
+| Product | `REQ-P1-DOC-008`; `FEAT-P1-015`; `UC-P1-003`, `006`; `OUT-P1-002`, `OUT-P1-004` |
 | UX / accessibility | `UX-FLOW-P1-006`, `020`, `021`; `UX-SCR-P1-016`, `033`–`036`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`056`, especially `038`–`040`, `042` |
 | API / events | No conformed-view operation in `API-OPENAPI-001`; adjacent version/comparison `API-P1-125`, `126`, `131`, `132`; `EVT-P1-010`; **`TRACE-GAP-P1-API-007`** |
 | Security | `AUTH-P1-001`–`010`, `019`–`025`, `034`, `035`; `SEC-P1-012`, `017`–`021`, `027`, `029`; `PRIV-P1-001`, `004`, `011`, `016`, `017`, `020`, `022`; `AUD-P1-001`–`008`, `011`–`014`, `027`; `THR-P1-005`, `006`, `008`, `009`, `019`, `023`, `026`, `030` |
@@ -521,7 +523,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Monitoring + Document Intelligence |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Monitoring + Document Intelligence |
 | Product | `REQ-P1-MON-001`, `REQ-P1-MON-002`; `FEAT-P1-016`; `UC-P1-006`; `OUT-P1-003`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-009`, `024`; `UX-SCR-P1-020`, `037`–`039`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `041`–`056` |
 | API / events | `API-P1-144`–`148`; `EVT-P1-017`; `API-P1-007`–`014`, `027`–`040`, `047`–`052` |
@@ -540,7 +542,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT — launch source pack BLOCKED by DEC-035`; Source Governance + Monitoring |
+| State / owner | `BASELINED — PLANNED_UNISSUED; launch source pack BLOCKED by DEC-035`; Source Governance + Monitoring |
 | Product | `REQ-P1-MON-003`, `REQ-P1-MON-004`, `REQ-P1-MON-005`, `REQ-P1-MON-007`; `FEAT-P1-017`; `UC-P1-006`; `OUT-P1-003`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-009`, `024`; `UX-SCR-P1-020`, `037`–`039`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `041`–`056` |
 | API / events | `API-P1-149`–`152` are `CONFIGURATION_DEPENDENT_NO_LAUNCH_PACK`; `EVT-P1-015`–`017`; `API-P1-038`, `046`–`052` |
@@ -559,8 +561,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Monitoring + Document Intelligence |
-| Product | `REQ-P1-MON-006`; `FEAT-P1-018`; `UC-P1-006`, `007`; `OUT-P1-003` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Monitoring + Document Intelligence |
+| Product | `REQ-P1-MON-006`; `FEAT-P1-018`; `UC-P1-006`, `007`; `OUT-P1-003`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-009`, `010`, `024`, `025`; `UX-SCR-P1-020`, `021`, `037`–`040`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `041`–`056` |
 | API / events | No `RuleResolution`/`ChangeCase` operation in `API-OPENAPI-001`; adjacent source/impact queries `API-P1-152`–`154`; `EVT-P1-018`, `019`; **`TRACE-GAP-P1-API-008`** |
 | Security | `AUTH-P1-001`–`011`, `021`–`025`, `029`, `034`, `035`; `SEC-P1-017`–`019`, `023`, `029`; `PRIV-P1-001`, `004`, `008`, `020`, `022`, `027`, `028`; `AUD-P1-001`–`008`, `013`, `015`, `016`, `027`, `029`; `THR-P1-005`–`007`, `009`, `017`, `019`, `024`, `026`, `027`, `030` |
@@ -578,7 +580,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Document Intelligence + Domain/Data |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Document Intelligence + Domain/Data |
 | Product | `REQ-P1-GPH-003`, `REQ-P1-GPH-004`, `REQ-P1-GPH-005`; `FEAT-P1-018`; `UC-P1-006`, `007`; `OUT-P1-003`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-010`, `022`, `025`; `UX-SCR-P1-005`, `021`, `037`–`040`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `041`–`056` |
 | API / events | `API-P1-153`, `154`; `EVT-P1-014`, `020`; `API-P1-007`–`026`, `033`–`040`, `047`–`052` |
@@ -597,8 +599,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Product Workflow + Document Intelligence |
-| Product | `REQ-P1-ACT-001`, `REQ-P1-ACT-002`, `REQ-P1-ACT-003`, `REQ-P1-ACT-004`; `FEAT-P1-018`; `UC-P1-004`, `007`, `008`; `OUT-P1-003`, `OUT-P1-006` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Product Workflow + Document Intelligence |
+| Product | `REQ-P1-ACT-001`, `REQ-P1-ACT-002`, `REQ-P1-ACT-003`, `REQ-P1-ACT-004`; `FEAT-P1-018`; `UC-P1-004`, `007`, `008`; `OUT-P1-003`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-010`, `025`; `UX-SCR-P1-021`, `037`–`040`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `041`–`056` |
 | API / events | `API-P1-153`–`157`; `EVT-P1-020`, `021`; `API-P1-007`–`020`, `027`–`040`, `047`–`052` |
 | Security | `AUTH-P1-001`–`014`, `019`–`025`, `035`; `SEC-P1-017`–`019`, `024`, `029`; `PRIV-P1-001`, `004`, `020`, `022`; `AUD-P1-001`–`008`, `013`, `015`, `016`, `027`; `THR-P1-005`–`011`, `019`, `026`, `027`, `030` |
@@ -616,8 +618,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Product Workflow + Security |
-| Product | `REQ-P1-ACT-005`, `REQ-P1-ACT-006`; `FEAT-P1-019`; `UC-P1-004`, `007`; `OUT-P1-003`, `OUT-P1-006` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Product Workflow + Security |
+| Product | `REQ-P1-ACT-005`, `REQ-P1-ACT-006`; `FEAT-P1-019`; `UC-P1-004`, `007`; `OUT-P1-004`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-010`, `025`, `026`; `UX-SCR-P1-021`, `022`, `037`–`041`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `043`–`056`, especially `049` |
 | API / events | `API-P1-157`–`159`; `EVT-P1-021`, `022`; `API-P1-007`–`020`, `027`–`038`, `044`, `047`–`052` |
 | Security | `AUTH-P1-001`–`014`, `019`–`025`, `035`; `SEC-P1-017`–`019`, `024`, `029`; `PRIV-P1-001`, `004`, `020`, `022`; `AUD-P1-001`–`008`, `016`, `017`, `027`; `THR-P1-005`–`011`, `019`, `026`, `027`, `030` |
@@ -635,8 +637,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Product Workflow + Integration/Security |
-| Product | `REQ-P1-ACT-007`, `REQ-P1-ACT-008`; `FEAT-P1-019`; `UC-P1-007`; `OUT-P1-003`, `OUT-P1-006` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Product Workflow + Integration/Security |
+| Product | `REQ-P1-ACT-007`, `REQ-P1-ACT-008`; `FEAT-P1-019`; `UC-P1-007`; `OUT-P1-004`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-011`, `026`; `UX-SCR-P1-023`, `041`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `038`, `039`, `043`–`056`, especially `049` |
 | API / events | `API-P1-160`, `161`; `EVT-P1-023`, `024`; evidence submit/verify/closure API is absent: **`TRACE-GAP-P1-API-009`**; `API-P1-027`–`052` |
 | Security | `AUTH-P1-001`–`015`, `019`–`025`, `029`, `035`; `SEC-P1-017`–`019`, `022`, `024`, `027`–`029`; `PRIV-P1-001`, `004`, `006`–`009`, `020`, `022`, `027`, `028`; `AUD-P1-001`–`008`, `016`–`018`, `023`, `027`, `029`; `THR-P1-005`–`011`, `018`, `019`, `024`, `026`, `027`, `030` |
@@ -654,8 +656,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT — launch profiles BLOCKED by DEC-035`; Document Intelligence + Product |
-| Product | `REQ-P1-HLT-001`, `REQ-P1-HLT-002`, `REQ-P1-HLT-003`; `FEAT-P1-020`; `UC-P1-008`; `OUT-P1-006`, `OUT-P1-007` |
+| State / owner | `BASELINED — PLANNED_UNISSUED; launch profiles BLOCKED by DEC-035`; Document Intelligence + Product |
+| Product | `REQ-P1-HLT-001`, `REQ-P1-HLT-002`, `REQ-P1-HLT-003`; `FEAT-P1-020`; `UC-P1-008`; `OUT-P1-001`, `OUT-P1-003`, `OUT-P1-004` |
 | UX / accessibility | `UX-FLOW-P1-012`, `027`; `UX-SCR-P1-024`, `042`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `038`, `039`, `042`–`056` |
 | API / events | No `RequirementCase`/profile operation in `API-OPENAPI-001`; `EVT-P1-025`; **`TRACE-GAP-P1-API-010`** |
 | Security | `AUTH-P1-001`–`011`, `019`–`025`, `035`; `SEC-P1-017`–`019`, `023`, `029`; `PRIV-P1-001`, `004`, `020`, `022`; `AUD-P1-001`–`008`, `013`, `015`, `016`, `019`, `027`; `THR-P1-005`–`007`, `009`, `017`, `019`, `026`, `027`, `030` |
@@ -673,8 +675,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Product + Document Intelligence |
-| Product | `REQ-P1-HLT-005`; `FEAT-P1-020`; `UC-P1-008`; `OUT-P1-006` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Product + Document Intelligence |
+| Product | `REQ-P1-HLT-005`; `FEAT-P1-020`; `UC-P1-008`; `OUT-P1-001`, `OUT-P1-003`, `OUT-P1-004` |
 | UX / accessibility | `UX-FLOW-P1-012`, `027`; `UX-SCR-P1-024`, `042`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `038`, `039`, `042`–`056` |
 | API / events | No `RequirementCase` finding/disposition/fulfilment operation in `API-OPENAPI-001`; `EVT-P1-025`; **`TRACE-GAP-P1-API-010`** |
 | Security | `AUTH-P1-001`–`012`, `019`–`025`, `035`; `SEC-P1-017`–`019`, `024`, `029`; `PRIV-P1-001`, `004`, `019`, `020`, `022`; `AUD-P1-001`–`008`, `016`, `018`, `019`, `027`; `THR-P1-005`–`011`, `019`, `026`, `030` |
@@ -692,8 +694,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Product Workflow + UX |
-| Product | `REQ-P1-NTF-001`, `REQ-P1-NTF-002`, `REQ-P1-NTF-003`; `FEAT-P1-021`; `UC-P1-007`, `008`, `010`; `OUT-P1-006` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Product Workflow + UX |
+| Product | `REQ-P1-NTF-001`, `REQ-P1-NTF-002`, `REQ-P1-NTF-003`; `FEAT-P1-021`; `UC-P1-007`, `008`, `010`; `OUT-P1-004`, `OUT-P1-005`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-013`, `028`; `UX-SCR-P1-025`, `043`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `042`–`056` |
 | API / events | `API-P1-162`–`168`; `EVT-P1-026`; `API-P1-007`–`026`, `027`–`038`, `047`–`052` |
 | Security | `AUTH-P1-001`–`012`, `019`–`025`, `035`; `SEC-P1-017`–`019`, `024`, `029`; `PRIV-P1-001`, `004`, `020`, `022`; `AUD-P1-001`–`008`, `019`, `027`; `THR-P1-005`–`007`, `009`, `011`, `019`, `026`, `030` |
@@ -702,7 +704,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | Dependencies / fences | Depends on `STORY-P1-003`, `031`, `035`; task, reminder, notification delivery/seen/ack, action, fulfilment, and closure are distinct; protected cause uses current authorization/minimal disclosure. |
 | Migration / rollback / repair | Stable task/notification/cause/dedup IDs; retry delivery cannot duplicate task or completion; late notification reflects current state; repair/reopen is explicit; rollback does not erase user action/history. |
 | Negative, failure, audit | Wrong assignee/workspace, hidden cause/badge/count, revoke between creation/delivery/open, duplicate/out-of-order delivery, offline/reconnect, notification failure; in-app state canonical and content-minimized; audit causality/transitions. |
-| Future TEST | `TEST-UNIT-P1-009`, `TEST-CON-P1-005`, `TEST-CON-P1-008`, `TEST-SEC-P1-002`, `TEST-SEC-P1-013`, `TEST-SEC-P1-015`, `TEST-E2E-P1-007`, `TEST-E2E-P1-008`, `TEST-E2E-P1-010`, `TEST-PERF-P1-001`, `TEST-PERF-P1-002`, `TEST-PERF-P1-006`, `TEST-DR-P1-002`, `TEST-DR-P1-008`; DRAFT cases require execution/accessibility evidence. |
+| Future TEST | `TEST-UNIT-P1-009`, `TEST-CON-P1-005`, `TEST-CON-P1-008`, `TEST-SEC-P1-002`, `TEST-SEC-P1-013`, `TEST-SEC-P1-015`, `TEST-E2E-P1-007`, `TEST-E2E-P1-008`, `TEST-E2E-P1-010`, `TEST-PERF-P1-001`, `TEST-PERF-P1-002`, `TEST-PERF-P1-006`, `TEST-DR-P1-002`, `TEST-DR-P1-008`, `TEST-CON-P1-013`, `TEST-E2E-P1-022`; DRAFT cases require execution/accessibility evidence. |
 
 - `AC-STORY-P1-036-01` — **Given** an authorized finding or action cause, **when** a task/reminder and in-app notification are created/retried, **then** one logical task preserves cause, assignment, state, delivery/ack history, and current authorized presentation.
 - `AC-STORY-P1-036-02` — **Given** hidden/revoked cause, wrong assignee, duplicate delivery, offline client, or notification failure, **when** the user returns, **then** no protected badge/detail leaks and canonical task state remains truthful and repairable.
@@ -711,14 +713,14 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT — UC-P1-018 catalogue-only; launch activation BLOCKED by DEC-035`; Configuration Governance |
-| Product | `REQ-P1-CFG-002`, `REQ-P1-CFG-003`, `REQ-P1-CFG-004`; `FEAT-P1-022`; `UC-P1-018`; `OUT-P1-007`; **`TRACE-GAP-P1-UC-001`** |
+| State / owner | `BASELINED — PLANNED_UNISSUED; detailed UC-P1-018 contract; launch activation gated by DEC-035`; Configuration Governance |
+| Product | `REQ-P1-CFG-002`, `REQ-P1-CFG-003`, `REQ-P1-CFG-004`; `FEAT-P1-022`; `UC-P1-018`; `OUT-P1-003`, `OUT-P1-007`; **`TRACE-GAP-P1-UC-001`** |
 | UX / accessibility | No Phase 1 configuration administration console; user-visible enabled coverage/settings through `UX-SCR-P1-030`, safe stale/unavailable states `UX-SCR-P1-033`–`045`; `A11Y-P1-002`–`005`, `021`–`028`, `043`–`056` |
 | API / events | No configuration-publication API in `API-OPENAPI-001`; `EVT-P1-031`; **`TRACE-GAP-P1-API-011`** |
 | Security | `AUTH-P1-001`, `003`, `020`, `028`, `035`; `SEC-P1-001`, `006`, `007`, `017`, `018`, `025`, `030`; `PRIV-P1-001`, `020`–`022`, `030`; `AUD-P1-001`–`008`, `022`, `024`, `027`; `THR-P1-007`, `009`, `019`–`021`, `028` |
 | NFR / DIT / AI | `NFR-P1-003`–`006`, `013`, `018`, `020`, `026`–`030`, `033`, `036`–`043`; `DIT-TAX-P1-023`–`025`, `DIT-MON-P1-004`, `005`, `DIT-SRC-P1-005`, `006`, `014`–`019`, `DIT-HLT-P1-003`, `004`; `AI-CAP-P1-030`, `AI-OUT-P1-029`, `030`, `AI-TOOL-P1-029`, `030`, `AI-GRD-P1-033`–`035` |
 | Reference data | All `docs/11-reference-data/data/*.json` and schemas; exact package/meta/owner/effective/version/status fields; DRAFT/disabled seeds never activate without approved replacement/publication. |
-| Dependencies / fences | Depends on `STORY-P1-009`, `010`; separate proposal/review/approval/publication/activation/supersession/rollback; required consumer compatibility/ack; catalogue-only UC lacks detailed product AC until closed. |
+| Dependencies / fences | Depends on `STORY-P1-009`, `010`; separate proposal/review/approval/publication/activation/supersession/rollback; required consumer compatibility/ack; detailed `UC-P1-018` ACs govern the safe publication boundary. |
 | Migration / rollback / repair | Immutable signed/versioned package; validate diff/dependencies/consumer compatibility/effective interval and impact; activate only after acknowledgements; rollback selects prior approved version and replays/repairs, never edits history. |
 | Negative, failure, audit | Self-publish, privilege/config injection, DRAFT seed, dangling ID, unsafe endpoint, unapproved route/type/source/channel/score/duration, missing/incompatible consumer, partial activation; block/repair with immutable privacy-safe audit. |
 | Future TEST | `TEST-UNIT-P1-001`, `TEST-UNIT-P1-010`, `TEST-CON-P1-008`, `TEST-CON-P1-009`, `TEST-SEC-P1-007`, `TEST-SEC-P1-011`, `TEST-SEC-P1-012`, `TEST-E2E-P1-018`, `TEST-PERF-P1-007`, `TEST-PERF-P1-009`, `TEST-DR-P1-002`, `TEST-DR-P1-005`, `TEST-DR-P1-008`; DRAFT cases require execution/accessibility evidence. |
@@ -730,8 +732,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Security/Privacy + Product Workflow |
-| Product | `REQ-P1-SHR-005`; `FEAT-P1-023`; `UC-P1-007`, `010`, `013`; `OUT-P1-005`, `OUT-P1-006` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Security/Privacy + Product Workflow |
+| Product | `REQ-P1-SHR-005`; `FEAT-P1-023`; `UC-P1-007`, `010`, `013`; `OUT-P1-003`, `OUT-P1-005` |
 | UX / accessibility | `UX-FLOW-P1-010`, `013`, `025`, `028`; `UX-SCR-P1-007`, `021`, `025`, `037`–`043`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `041`–`056` |
 | API / events | Adjacent `API-P1-153`–`156`, `162`–`166`; no dedicated minimal-disclosure impact operation: **`TRACE-GAP-P1-API-012`**; `EVT-P1-020`, `021`, `026` |
 | Security | `AUTH-P1-001`–`012`, `019`–`025`, `035`; `SEC-P1-001`, `002`, `006`, `017`–`019`, `024`, `029`; `PRIV-P1-001`, `003`, `004`, `020`, `022`; `AUD-P1-001`–`008`, `013`, `016`, `019`, `027`; `THR-P1-003`–`007`, `009`, `010`, `019`, `026`, `030` |
@@ -751,8 +753,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT`; Product + Authorization/Privacy |
-| Product | `REQ-P1-SHR-001`, `REQ-P1-SHR-002`, `REQ-P1-SHR-003`, `REQ-P1-WS-006`; `FEAT-P1-024`; `UC-P1-009`, `011`, `013`; `OUT-P1-005`, `OUT-P1-006` |
+| State / owner | `BASELINED — PLANNED_UNISSUED`; Product + Authorization/Privacy |
+| Product | `REQ-P1-SHR-001`, `REQ-P1-SHR-002`, `REQ-P1-SHR-003`, `REQ-P1-WS-006`; `FEAT-P1-024`; `UC-P1-009`, `011`, `013`; `OUT-P1-005` |
 | UX / accessibility | `UX-FLOW-P1-014`, `029`; `UX-SCR-P1-026`, `027`, `044`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`056`, especially `042`, `049` |
 | API / events | `API-P1-112`–`115`; `EVT-P1-004`, `005`; `API-P1-007`–`020`, `027`–`032`, `037`, `041`, `042`, `047`–`052` |
 | Security | `AUTH-P1-001`–`007`, `012`, `015`–`025`, `035`; `SEC-P1-001`–`006`, `015`–`019`, `027`, `029`; `PRIV-P1-001`–`007`, `018`–`020`, `022`; `AUD-P1-001`–`010`, `020`, `027`; `THR-P1-003`–`006`, `009`, `011`, `014`, `019`, `022`, `026` |
@@ -761,7 +763,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | Dependencies / fences | Depends on `STORY-P1-001`–`003`, `019`; grant names issuer/recipient/resources/fields/actions/purpose/start/expiry/onward/export/revocation; issuer cannot delegate more than current authority; ordinary grants never become `DEC-032` continuity release. |
 | Migration / rollback / repair | Grant revisions/uses/revocations immutable; policy/relationship changes increment epoch; projection/cache repair uses current grant/policy/deletion watermark; rollback cannot revive expiry/revocation or expand scope. |
 | Negative, failure, audit | Mixed-authority selection, over-broad/missing scope, hidden effective-access preview, guessed/reused guest capability, wrong audience/workspace/use, revoke mid-session/job/redemption/export, clock skew; audit exact safe scope IDs and history. |
-| Future TEST | `TEST-UNIT-P1-002`, `TEST-CON-P1-001`, `TEST-CON-P1-006`, `TEST-SEC-P1-001`, `TEST-SEC-P1-002`, `TEST-SEC-P1-006`, `TEST-SEC-P1-008`, `TEST-E2E-P1-009`, `TEST-E2E-P1-011`, `TEST-E2E-P1-013`, `TEST-PERF-P1-002`, `TEST-PERF-P1-006`, `TEST-DR-P1-002`, `TEST-DR-P1-008`; DRAFT cases require execution/accessibility evidence. |
+| Future TEST | `TEST-UNIT-P1-002`, `TEST-CON-P1-001`, `TEST-CON-P1-006`, `TEST-SEC-P1-001`, `TEST-SEC-P1-002`, `TEST-SEC-P1-006`, `TEST-SEC-P1-008`, `TEST-E2E-P1-009`, `TEST-E2E-P1-011`, `TEST-E2E-P1-013`, `TEST-PERF-P1-002`, `TEST-PERF-P1-006`, `TEST-DR-P1-002`, `TEST-DR-P1-008`, `TEST-UNIT-P1-011`, `TEST-SEC-P1-016`, `TEST-SEC-P1-017`, `TEST-E2E-P1-021`; DRAFT cases require execution/accessibility evidence. |
 
 - `AC-STORY-P1-039-01` — **Given** an issuer with delegation authority for an exact scope, **when** a grant is reviewed and issued, **then** the preview and immutable grant match recipient/resources/fields/actions/purpose/time/onward/export limits without hidden expansion.
 - `AC-STORY-P1-039-02` — **Given** expiry/revocation, changed issuer authority, wrong audience/workspace/use, or mid-flow policy change, **when** access/result/redemption occurs, **then** current policy denies it and downstream consumers converge without existence leakage.
@@ -770,27 +772,27 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT — UC-P1-015 catalogue-only; detailed product AC missing`; Product + Identity/Privacy |
-| Product | `REQ-P1-WS-007`; `FEAT-P1-025`; `UC-P1-015`; `OUT-P1-005`; **`TRACE-GAP-P1-UC-001`** |
+| State / owner | `BASELINED — PLANNED_UNISSUED; fail-closed Phase 1 fence; richer transfer deferred by DEC-P1-056`; Product + Identity/Privacy |
+| Product | `REQ-P1-WS-007`; `FEAT-P1-025`; `UC-P1-015`; `OUT-P1-005`, `OUT-P1-006`; `DEC-P1-056` |
 | UX / accessibility | `UX-FLOW-P1-002`, `030`; `UX-SCR-P1-006`, `045`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `043`–`056`, especially `047`, `049` |
-| API / events | Adjacent subject/membership operations `API-P1-104`–`111`; no dedicated dependant-transition operation; `EVT-P1-002`, `003`; **`TRACE-GAP-P1-API-013`** |
+| API / events | Adjacent subject/membership operations `API-P1-104`–`111` and `EVT-P1-002`, `003` remain governed by the transition fence. `DEC-P1-056` intentionally requires no independent-transfer endpoint in Phase 1; any later endpoint is a governed extension. |
 | Security | `AUTH-P1-001`–`007`, `012`, `016`–`025`, `032`, `033`, `035`; `SEC-P1-001`–`007`, `017`, `018`, `025`, `026`; `PRIV-P1-001`–`007`, `019`, `023`–`026`; `AUD-P1-001`–`010`, `024`, `027`; `THR-P1-001`–`006`, `009`, `014`, `020`, `025` |
 | NFR / DIT / AI | `NFR-P1-002`–`006`, `008`, `013`, `016`, `022`–`029`, `032`, `033`, `036`, `041`–`043`; no DIT/AI authority; `DIT-FCT-P1-018`–`024` may preserve subject/entity provenance only |
-| Reference data | No dependant-transition policy catalogue exists: **`TRACE-GAP-P1-REF-003`**; current `data/access-control.json` default deny/role/action records remain the only active-safe baseline. |
-| Dependencies / fences | Depends on `STORY-P1-002`, `003`, `039`; transition evidence/consent/age/jurisdiction/notice/challenge/appeal/private-resource rules require product approval; relationship/maturity alone does not transfer credentials, ownership, grants, or content. |
-| Migration / rollback / repair | Stable subject identity and prior authority/evidence history survive any future transition; use an explicit fenced case with revision/approval; rollback/appeal is a new decision, not rewriting prior relationships/access. |
-| Negative, failure, audit | Premature/false age/event, family-admin assertion, identity mismatch, missing consent/evidence, private-resource expansion, support/recovery bypass, concurrent policy/grant change; no transition until detailed contract closes; audit attempts safely. |
+| Reference data | `data/access-control.json` default-deny, role and action records are the complete Phase 1 fence. `DEC-P1-056` intentionally defers a richer transition-policy catalogue to a later governed capability. |
+| Dependencies / fences | Depends on `STORY-P1-002`, `003`, `039`; Phase 1 permits no independent access-transfer semantics. Relationship, maturity, invitation, support, partial state or uncertainty never transfers credentials, ownership, grants, inherited rights, delegation chains or content. |
+| Migration / rollback / repair | Stable subject identity and prior authority/evidence history survive every attempt. A transition attempt has an explicit revisioned state and atomic deny/commit boundary; interrupted/ambiguous/partial work recovers to the last authorised state, invalidates stale permission projections and recalculates current authority before any response. |
+| Negative, failure, audit | Premature/false age/event, family-admin assertion, identity mismatch, missing consent/evidence, partial apply, retry, rollback, stale projection, private-resource expansion, support/recovery bypass and concurrent policy/grant change all fail closed. Audit records safe state, policy/version, actor, outcome, recovery and recalculation evidence without sensitive content. |
 | Future TEST | `TEST-UNIT-P1-002`, `TEST-CON-P1-001`, `TEST-CON-P1-006`, `TEST-SEC-P1-001`, `TEST-SEC-P1-002`, `TEST-SEC-P1-008`, `TEST-E2E-P1-015`, `TEST-PERF-P1-002`, `TEST-PERF-P1-006`, `TEST-DR-P1-007`, `TEST-DR-P1-008`; DRAFT disabled-boundary cases require execution/accessibility evidence. |
 
-- `AC-STORY-P1-040-01` — **Given** a managed dependant and no approved transition contract, **when** age, relationship, membership, support, or asserted consent changes, **then** subject provenance remains intact and no ownership/credential/private-resource authority transfers automatically.
-- `AC-STORY-P1-040-02` — **Given** a future approved transition case, **when** it is eventually implemented, **then** this story cannot be closed until exact evidence, consent, notice, challenge, appeal, grant, private-resource, migration, and test IDs replace `TRACE-GAP-P1-UC-001`/`REF-003`.
+- `AC-STORY-P1-040-01` — **Given** a managed dependant, **when** age, relationship, invitation, identity-link, membership, support, or asserted consent changes, **then** the explicit Phase 1 transition state and audit show no independent transfer and no ownership, credential, key, grant, inherited, delegated, export, or private-resource authority broadens.
+- `AC-STORY-P1-040-02` — **Given** an incomplete, ambiguous, failed, retried, rolled-back, stale, concurrent, or partially applied transition attempt, **when** authority is evaluated, **then** the attempt converges to the last authorised state, subject/provenance remain intact, permission projections are invalidated and recalculated, and independent negative evidence proves fail-closed behaviour.
 
 ### `STORY-P1-041` — Preserve disabled connector consent and conformance boundaries
 
 | Field | Contract |
 |---|---|
-| State / owner | `BLOCKED — DEC-031 and DEC-040`; Integration + Security/Privacy |
-| Product | `REQ-P1-ING-009`, `REQ-P1-TRUST-009`; `FEAT-P1-026`; `UC-P1-014`; `OUT-P1-001`, `OUT-P1-007`; **`TRACE-GAP-P1-UC-001`** |
+| State / owner | `BASELINED — PLANNED_UNISSUED; adapter work authorised; provider activation gated`; Integration + Security/Privacy |
+| Product | `REQ-P1-ING-009`, `REQ-P1-TRUST-009`; `FEAT-P1-026`; `UC-P1-014`; `OUT-P1-001`, `OUT-P1-006`, `OUT-P1-007`; **`TRACE-GAP-P1-UC-001`** |
 | UX / accessibility | No enabled connector setup flow; safe unavailable/settings boundary `UX-SCR-P1-030`, `033`–`045`; `A11Y-P1-002`–`005`, `021`–`028`, `043`–`056` |
 | API / events | `API-P1-177`–`180` are disabled; no connector event family exists: **`TRACE-GAP-P1-EVT-001`**; API fence rules `API-P1-046`–`052` |
 | Security | `AUTH-P1-001`–`007`, `019`–`025`, `029`, `034`, `035`; `SEC-P1-001`, `002`, `006`, `007`, `017`–`019`, `022`, `027`–`029`; `PRIV-P1-001`, `004`, `005`–`009`, `011`–`017`, `020`, `022`, `027`, `028`; `AUD-P1-001`–`008`, `023`, `027`, `029`; `THR-P1-003`, `005`–`007`, `009`, `011`, `018`, `019`, `023`, `024`, `026`, `027` |
@@ -799,36 +801,36 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | Dependencies / fences | Requires approved connector routes/scope, purpose/consent, external identity/version/permissions, cursor, callback, retention/deletion, revocation/disconnect, residency/processor, action semantics, notification, conformance, and tests; documentation is not enablement. |
 | Migration / rollback / repair | Future connector versions/cursors/external IDs immutable/namespaced; disconnect fences new work; resync/replay creates attempt lineage and honors tombstones; token/consent rotation cannot resurrect deleted/revoked scope. |
 | Negative, failure, audit | Today every create/sync/disconnect route is disabled. Future suite covers token theft, over-scope, permission drift, spoof/replay, partial sync, cursor rollback, withdraw mid-job, late callback, deletion/resync resurrection, ineligible route; safe audit by references. |
-| Future TEST | `TEST-UNIT-P1-010`, `TEST-CON-P1-005`, `TEST-CON-P1-012`, `TEST-SEC-P1-010`, `TEST-SEC-P1-013`–`TEST-SEC-P1-015`, `TEST-E2E-P1-014`, `TEST-PERF-P1-001`, `TEST-PERF-P1-006`, `TEST-PERF-P1-008`, `TEST-DR-P1-008`; DRAFT disabled-boundary cases require execution evidence. |
+| Future TEST | `TEST-UNIT-P1-010`, `TEST-CON-P1-005`, `TEST-CON-P1-012`, `TEST-SEC-P1-010`, `TEST-SEC-P1-013`–`TEST-SEC-P1-015`, `TEST-E2E-P1-014`, `TEST-PERF-P1-001`, `TEST-PERF-P1-006`, `TEST-PERF-P1-008`, `TEST-DR-P1-008`, `TEST-SEC-P1-018`; DRAFT disabled-boundary cases require execution evidence. |
 
-- `AC-STORY-P1-041-01` — **Given** `DEC-031` or `DEC-040` is unresolved, **when** any connector creation, sync, action, callback, or credential path is invoked, **then** it remains disabled/fails closed without token, external request, household disclosure, or inferred launch scope.
+- `AC-STORY-P1-041-01` — **Given** an exact provider has not passed approved `DEC-031`, `DEC-045`, `DEC-049`, and `DEC-055` activation evidence, **when** any connector creation, sync, action, callback, or credential path is invoked, **then** it remains disabled/fails closed without token, external request, household disclosure, or inferred launch scope.
 - `AC-STORY-P1-041-02` — **Given** a future approved connector, **when** conformance is assessed, **then** consent/scope/external version/cursor/permissions/revocation/deletion/partial failure/residency evidence must all pass before enablement.
 
 ### `STORY-P1-042` — Apply notification preferences while external channels stay disabled
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT — external delivery BLOCKED by DEC-037 and DEC-040`; Product Workflow + UX/Privacy |
-| Product | `REQ-P1-NTF-004`; `FEAT-P1-027`; `UC-P1-010`; `OUT-P1-006` |
+| State / owner | `BASELINED — PLANNED_UNISSUED; in-app required; customer external channels activation-gated`; Product Workflow + UX/Privacy |
+| Product | `REQ-P1-NTF-004`; `FEAT-P1-027`; `UC-P1-010`; `OUT-P1-004`, `OUT-P1-005`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-013`, `028`; `UX-SCR-P1-025`, `030`, `043`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `042`–`056` |
 | API / events | `API-P1-165`–`168`; `API-P1-169` is disabled; no notification delivery/preference event: **`TRACE-GAP-P1-EVT-002`**; `API-P1-047`–`052` |
 | Security | `AUTH-P1-001`–`012`, `019`–`025`, `029`, `035`; `SEC-P1-017`–`019`, `022`, `029`; `PRIV-P1-001`, `004`–`009`, `020`, `022`, `027`, `028`; `AUD-P1-001`–`008`, `019`, `023`, `027`, `029`; `THR-P1-005`–`007`, `011`, `018`, `019`, `024`, `026`, `027` |
 | NFR / DIT / AI | `NFR-P1-001`–`008`, `013`, `016`, `022`–`030`, `033`, `036`, `039`, `041`–`043`; no owning DIT/AI rule; canonical task/cause behavior remains in `DIT-HLT-P1-007`–`036` and `DIT-IMP-P1-034`–`044` |
 | Reference data | `data/notifications.json`: `channel.IN_APP` is proposed baseline; `channel.EMAIL`, `channel.PUSH` remain disabled; synthetic templates are not production message approval. |
-| Dependencies / fences | Depends on `STORY-P1-036`, `038`; channel, category, privacy/content policy, consent, quiet/escalation/delivery success remain separate; external failure never changes task/action/fulfilment. |
+| Dependencies / fences | Depends on `STORY-P1-036`, `038`; channel, category, privacy/content policy, consent, quiet/escalation/delivery success remain separate; external failure never changes task/action/fulfilment. The framework Product Authority ACS adapter under Issue #18 is a governance control-plane channel and supplies no completion evidence for this customer notification story. |
 | Migration / rollback / repair | Preference revisions/delivery attempts/dedup IDs preserved; template/channel versions immutable; rollback does not resend or mark delivered; late/out-of-order delivery checks current authorization/cause; disabling channel cancels future dispatch. |
 | Negative, failure, audit | Hidden badge/cause, preference bypass, duplicate/out-of-order, revoked/expired cause, external content leak, invalid destination/consent/route, quiet/escalation invention; external routes disabled; safe audit state/attempt/template IDs only. |
-| Future TEST | `TEST-CON-P1-005`, `TEST-CON-P1-012`, `TEST-SEC-P1-002`, `TEST-SEC-P1-012`, `TEST-SEC-P1-013`, `TEST-SEC-P1-015`, `TEST-E2E-P1-010`, `TEST-PERF-P1-001`, `TEST-PERF-P1-002`, `TEST-PERF-P1-006`, `TEST-DR-P1-002`, `TEST-DR-P1-008`; DRAFT cases require execution/accessibility evidence. |
+| Future TEST | `TEST-CON-P1-005`, `TEST-CON-P1-012`, `TEST-SEC-P1-002`, `TEST-SEC-P1-012`, `TEST-SEC-P1-013`, `TEST-SEC-P1-015`, `TEST-E2E-P1-010`, `TEST-PERF-P1-001`, `TEST-PERF-P1-002`, `TEST-PERF-P1-006`, `TEST-DR-P1-002`, `TEST-DR-P1-008`, `TEST-SEC-P1-018`; DRAFT cases require execution/accessibility evidence. |
 
 - `AC-STORY-P1-042-01` — **Given** current in-app preferences and an authorized cause, **when** a notification is created/acknowledged/dismissed, **then** canonical state and task causality remain separate, deduplicated, accessible, and privacy-safe.
-- `AC-STORY-P1-042-02` — **Given** `DEC-037`/`040` is unresolved or consent/route/current authority is absent, **when** email/push/other external delivery is requested, **then** no dispatch or success/escalation claim occurs.
+- `AC-STORY-P1-042-02` — **Given** a customer channel is not activated under approved `DEC-037`, `DEC-045`, and the current route policy, or consent/current authority is absent, **when** email/push/other external delivery is requested, **then** no dispatch or success/escalation claim occurs.
 
 ### `STORY-P1-043` — Show item-level health while aggregate scoring stays absent
 
 | Field | Contract |
 |---|---|
-| State / owner | `BLOCKED — aggregate score under DEC-034`; Product + UX/AI Assurance |
-| Product | `REQ-P1-HLT-004`; `FEAT-P1-028`; `UC-P1-008`; `OUT-P1-006` |
+| State / owner | `BASELINED — PLANNED_UNISSUED; item-level findings required; aggregate scoring intentionally unavailable`; Product + UX/AI Assurance |
+| Product | `REQ-P1-HLT-004`; `FEAT-P1-028`; `UC-P1-008`; `OUT-P1-001`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-012`, `027`; `UX-SCR-P1-024`, `042`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `042`–`056` |
 | API / events | `API-P1-183` is disabled; no readiness event exists and `EVT-P1-032` explicitly is not readiness; `API-P1-051`, `052` |
 | Security | `AUTH-P1-001`–`011`, `019`–`025`, `035`; `SEC-P1-017`–`019`, `029`; `PRIV-P1-001`, `004`, `020`–`022`; `AUD-P1-001`–`008`, `019`, `027`; `THR-P1-005`, `006`, `019`, `026`, `030` |
@@ -846,8 +848,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT — envelope completeness unapproved under DEC-033; routes constrained by DEC-040`; Product + Privacy/Platform |
-| Product | `REQ-P1-TRUST-006`; `FEAT-P1-029`; `UC-P1-011`; `OUT-P1-005`, `OUT-P1-006` |
+| State / owner | `BASELINED — PLANNED_UNISSUED; approved envelope`; Product + Privacy/Platform |
+| Product | `REQ-P1-TRUST-006`; `FEAT-P1-029`; `UC-P1-011`; `OUT-P1-006`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-015`, `029`; `UX-SCR-P1-028`, `044`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`056`, especially `042`, `049` |
 | API / events | `API-P1-170`–`172` are decision-fenced; `EVT-P1-027`; `API-P1-010`–`020`, `027`–`038`, `041`, `042`, `047`–`052` |
 | Security | `AUTH-P1-001`–`007`, `012`, `015`, `018`–`025`, `029`, `034`, `035`; `SEC-P1-009`, `012`, `015`, `017`–`019`, `027`–`029`; `PRIV-P1-001`, `004`, `011`, `015`–`020`, `022`, `027`, `028`; `AUD-P1-001`–`008`, `020`, `027`, `029`; `THR-P1-003`, `005`, `006`, `008`, `011`, `014`, `019`, `022`–`024`, `026`, `027` |
@@ -865,17 +867,17 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `DRAFT — durations and retained-audit treatment BLOCKED by DEC-039; routes by DEC-040`; Privacy + Platform/Operations |
-| Product | `REQ-P1-TRUST-007`; `FEAT-P1-029`; `UC-P1-012`; `OUT-P1-005`, `OUT-P1-007` |
+| State / owner | `BASELINED — PLANNED_UNISSUED; 30-day Trash and coordinated purge approved`; Privacy + Platform/Operations |
+| Product | `REQ-P1-TRUST-007`; `FEAT-P1-029`; `UC-P1-012`; `OUT-P1-006`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-016`, `029`; `UX-SCR-P1-029`, `044`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`056`, especially `042`, `049` |
 | API / events | `API-P1-124`, `173`–`175` are decision-fenced; `EVT-P1-011`, `028`–`030`; `API-P1-027`–`038`, `047`–`052` |
 | Security | `AUTH-P1-001`–`007`, `012`, `015`, `019`–`025`, `029`, `034`, `035`; `SEC-P1-009`, `012`, `017`–`019`, `027`–`029`; `PRIV-P1-001`, `004`, `011`–`017`, `020`, `022`, `027`, `028`; `AUD-P1-001`–`008`, `021`, `026`–`029`; `THR-P1-003`, `005`, `006`, `008`, `009`, `011`, `019`, `023`, `024`, `026`, `027`, `029` |
 | NFR / DIT / AI | `NFR-P1-003`–`006`, `008`, `013`, `016`–`018`, `022`–`031`, `033`, `035`, `036`, `039`, `041`–`043`; `DIT-VER-P1-032`–`042` plus deletion rules of every owning DIT/AI contract |
-| Reference data | `data/access-control.json`: `action.trash`, `action.restore`, `action.purge`; deletion/fence states in `data/states-and-severity.json`; no timing/retention value exists or may be invented. |
+| Reference data | `data/access-control.json`: `action.trash`, `action.restore`, `action.purge`; deletion/fence states in `data/states-and-severity.json`; the 30-calendar-day document Trash boundary comes from `DEC-053`; account deletion and lawful-retention values remain separate release contracts. |
 | Dependencies / fences | Depends on all state-owning stories; archive/trash/restore/account deletion/resource purge/retention exception/active completion/backup expiry/audit minimization remain distinct; durable fence precedes acceptance; per-class verification/residuals. |
 | Migration / rollback / repair | Deletion plan/generation/tombstone/purge acknowledgements immutable; late events/replay/rebuild/resync/restore consult fence; partial failure stays inaccessible and repairable; rollback cannot cross irreversible boundary or resurrect data. |
 | Negative, failure, audit | Wrong delete/export/read authority, stale target/revision, hidden affected party, cancel race, worker/connector/backup miss, late callback/event, restore/resync resurrection, audit over-retention, route failure; no invented durations/false completion. |
-| Future TEST | `TEST-UNIT-P1-004`, `TEST-UNIT-P1-010`, `TEST-CON-P1-005`, `TEST-CON-P1-007`, `TEST-CON-P1-008`, `TEST-SEC-P1-001`, `TEST-SEC-P1-002`, `TEST-SEC-P1-007`, `TEST-SEC-P1-012`, `TEST-SEC-P1-014`, `TEST-SEC-P1-015`, `TEST-E2E-P1-012`, `TEST-PERF-P1-001`, `TEST-PERF-P1-006`, `TEST-PERF-P1-008`, `TEST-PERF-P1-009`, `TEST-DR-P1-001`–`TEST-DR-P1-006`, `TEST-DR-P1-008`; DRAFT cases require execution/accessibility evidence. |
+| Future TEST | `TEST-UNIT-P1-004`, `TEST-UNIT-P1-010`, `TEST-CON-P1-005`, `TEST-CON-P1-007`, `TEST-CON-P1-008`, `TEST-SEC-P1-001`, `TEST-SEC-P1-002`, `TEST-SEC-P1-007`, `TEST-SEC-P1-012`, `TEST-SEC-P1-014`, `TEST-SEC-P1-015`, `TEST-E2E-P1-012`, `TEST-PERF-P1-001`, `TEST-PERF-P1-006`, `TEST-PERF-P1-008`, `TEST-PERF-P1-009`, `TEST-DR-P1-001`–`TEST-DR-P1-006`, `TEST-DR-P1-008`, `TEST-UNIT-P1-011`, `TEST-UNIT-P1-012`, `TEST-SEC-P1-016`, `TEST-SEC-P1-017`, `TEST-E2E-P1-021`; DRAFT cases require execution/accessibility evidence. |
 
 - `AC-STORY-P1-045-01` — **Given** an authorized exact deletion target, **when** the case is accepted, **then** a durable fence immediately denies access/work and per-class execution/verification/residual states are reconstructable.
 - `AC-STORY-P1-045-02` — **Given** partial failure, late event/callback, rebuild/resync/restore, or an overdue `DEC-053` purge, **when** deletion status is evaluated, **then** data remains inaccessible/non-resurrected, repair remains explicit, and the 30-calendar-day Trash boundary is reported truthfully.
@@ -884,8 +886,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `BLOCKED — production route matrix under DEC-040`; Architecture + Security/Privacy/Operations |
-| Product | `REQ-P1-TRUST-005`; `FEAT-P1-030`; `UC-P1-011`–`013`; `OUT-P1-005`, `OUT-P1-007` |
+| State / owner | `BASELINED — PLANNED_UNISSUED; Azure/device-local build routes approved; production processor matrix release-gated`; Architecture + Security/Privacy/Operations |
+| Product | `REQ-P1-TRUST-005`; `FEAT-P1-030`; `UC-P1-011`–`013`; `OUT-P1-001`, `OUT-P1-006`, `OUT-P1-007` |
 | UX / accessibility | Platform policy; user-visible safe blocked/degraded state across affected flows and `UX-SCR-P1-030`, `033`–`045`; `A11Y-P1-002`–`005`, `021`–`028`, `043`–`056` |
 | API / events | Cross-cutting route context on every processor/export/deletion operation; no dedicated residency API/event; `API-P1-049`, `051`, `052`; **`TRACE-GAP-P1-API-014`** documents required route-policy evidence. |
 | Security | `AUTH-P1-001`–`007`, `019`–`025`, `029`, `034`, `035`; `SEC-P1-008`–`011`, `017`–`023`, `027`–`030`; `PRIV-P1-001`, `005`–`009`, `011`, `018`, `020`–`022`, `027`–`029`; `AUD-P1-001`–`008`, `023`, `024`, `027`, `029`; `THR-P1-003`, `007`, `016`–`020`, `022`–`024`, `027`–`029` |
@@ -894,7 +896,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 | Dependencies / fences | Applies to primary/derived/search/vector/graph/AI/OCR/scanner/source/telemetry/support/analytics/connector/export/backup/DR/failover routes; consent cannot cure an unapproved route; provider/location not selected or claimed. |
 | Migration / rollback / repair | Route-policy/config versions immutable; placement migration needs classified inventory, copy/verify/cutover/delete evidence and denial during uncertainty; restore/failover re-evaluates route; rollback cannot reintroduce ineligible copies. |
 | Negative, failure, audit | Unknown/missing/mismatched route, cross-border adapter/support/telemetry/backup/DR, expired exception, consent misuse, failover pressure, provider error; block/degrade, preserve content-free placement/egress/audit evidence, initiate incident/repair. |
-| Future TEST | `TEST-UNIT-P1-010`, `TEST-CON-P1-005`, `TEST-CON-P1-012`, `TEST-SEC-P1-010`–`TEST-SEC-P1-015`, `TEST-E2E-P1-013`, `TEST-E2E-P1-014`, `TEST-E2E-P1-020`, `TEST-PERF-P1-001`, `TEST-PERF-P1-006`, `TEST-PERF-P1-008`–`TEST-PERF-P1-010`, `TEST-DR-P1-004`, `TEST-DR-P1-006`, `TEST-DR-P1-008`; DRAFT blocked-route cases require execution/accessibility evidence. |
+| Future TEST | `TEST-UNIT-P1-010`, `TEST-CON-P1-005`, `TEST-CON-P1-012`, `TEST-SEC-P1-010`–`TEST-SEC-P1-015`, `TEST-E2E-P1-013`, `TEST-E2E-P1-014`, `TEST-E2E-P1-020`, `TEST-PERF-P1-001`, `TEST-PERF-P1-006`, `TEST-PERF-P1-008`–`TEST-PERF-P1-010`, `TEST-DR-P1-004`, `TEST-DR-P1-006`, `TEST-DR-P1-008`, `TEST-CON-P1-014`, `TEST-SEC-P1-018`, `TEST-SEC-P1-019`, `TEST-E2E-P1-023`; DRAFT blocked-route cases require execution/accessibility evidence. |
 
 - `AC-STORY-P1-046-01` — **Given** the Australian-residency option and an unknown/ineligible route, **when** any household data processing/export/backup/support/failover is attempted, **then** it fails closed before egress and records privacy-safe policy evidence.
 - `AC-STORY-P1-046-02` — **Given** a future approved matrix/version, **when** placement, restore, migration, or processor routing occurs, **then** every data class/route is verified against that exact matrix and no consent/default silently expands it.
@@ -903,8 +905,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `BLOCKED — DEC-038`; Security + Product |
-| Product | `REQ-P1-TRUST-008`; `FEAT-P1-030`; `UC-P1-017`; `OUT-P1-005`, `OUT-P1-007`; **`TRACE-GAP-P1-UC-001`** |
+| State / owner | `BASELINED — PLANNED_UNISSUED; intentionally unavailable under DEC-038`; Security + Product |
+| Product | `REQ-P1-TRUST-008`; `FEAT-P1-030`; `UC-P1-017`; `OUT-P1-001`, `OUT-P1-006`, `OUT-P1-007`; **`TRACE-GAP-P1-UC-001`** |
 | UX / accessibility | `UX-FLOW-P1-017`, `030`; `UX-SCR-P1-001`, `031`, `045`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `043`–`056`, especially `047` |
 | API / events | `API-P1-181` is disabled; no recovery event exists; `API-P1-051`, `052`; **`TRACE-GAP-P1-EVT-003`** |
 | Security | `AUTH-P1-001`–`007`, `019`–`027`, `032`, `035`; `SEC-P1-003`–`007`, `017`, `018`, `025`, `026`, `029`; `PRIV-P1-001`–`005`, `020`, `022`, `025`, `026`; `AUD-P1-001`–`009`, `024`, `027`; `THR-P1-001`–`007`, `009`, `019`, `020`, `029` |
@@ -922,8 +924,8 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `BLOCKED — DEC-032`; Product + Security/Privacy |
-| Product | `REQ-P1-SHR-004`; `FEAT-P1-025`; `UC-P1-016`; `OUT-P1-005`; **`TRACE-GAP-P1-UC-001`** |
+| State / owner | `BASELINED — PLANNED_UNISSUED; intentionally unavailable under DEC-032`; Product + Security/Privacy |
+| Product | `REQ-P1-SHR-004`; `FEAT-P1-025`; `UC-P1-016`; `OUT-P1-005`, `OUT-P1-006`; **`TRACE-GAP-P1-UC-001`** |
 | UX / accessibility | `UX-FLOW-P1-018`, `030`; `UX-SCR-P1-032`, `045`; `UX-DS-P1-001`–`040`; `A11Y-P1-001`–`035`, `043`–`056`, especially `049` |
 | API / events | `API-P1-182` is disabled; no continuity event exists; `API-P1-051`, `052`; **`TRACE-GAP-P1-EVT-003`** |
 | Security | `AUTH-P1-001`–`007`, `016`–`025`, `033`, `035`; `SEC-P1-015`, `017`, `018`, `025`, `026`, `029`; `PRIV-P1-001`–`007`, `020`, `022`–`024`, `026`; `AUD-P1-001`–`010`, `024`, `027`; `THR-P1-003`–`006`, `009`, `014`, `019`, `020`, `025`, `026` |
@@ -937,7 +939,28 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 - `AC-STORY-P1-048-01` — **Given** approved `DEC-032`, **when** any event/actor asserts emergency, incapacity, or death, **then** no enrolment, nominee, timer, export, grant change, notification, or protected-content release is created.
 - `AC-STORY-P1-048-02` — **Given** the continuity information screen, **when** an authorized current user views it, **then** it explains the unavailable boundary and ordinary sharing/export alternatives without implying a trigger, guarantee, or future automatic release.
 
-## 6. Cross-story implementation rules
+## 6. Cross-slice public product entry
+
+### `STORY-P1-049` — Present truthful public product, trust, legal-preview, and account-entry routes
+
+| Field | Contract |
+|---|---|
+| State / owner | `BASELINED — PLANNED_UNISSUED; partial preview evidence exists`; Product + UX/Accessibility + Security/Privacy |
+| Product | `REQ-P1-PLT-001`, `REQ-P1-PLT-003`, `REQ-P1-ASSURE-001`; `FEAT-P1-031`; `UC-P1-020`; `OUT-P1-001`, `OUT-P1-007`; `DEC-044`, `DEC-047`, `DEC-048` |
+| UX / accessibility | `UX-FLOW-P1-031`; `UX-SCR-P1-046`, `UX-SCR-P1-047`; approved Doculyra identity; applicable `UX-DS-P1-*` and `A11Y-P1-*` public/onboarding criteria |
+| API / events | Public React routes `/`, `/privacy`, `/terms`, `/app?mode=register`, `/app?mode=login`; no customer-data API or external-provider activation is implied |
+| Security | Current public/synthetic environment disclosure; no workspace enumeration, customer content, credential, secret, unsupported assurance claim, or simulated provider success; privacy-safe analytics only |
+| NFR / DIT / AI | Responsive/accessible public route behavior; AI copy distinguishes evidence-aware assistance from authority and does not claim production model availability or complete coverage |
+| Reference data | Approved Doculyra/Doculyra Home naming and mark under `DEC-047`; production legal entity, address, contact/domain, launch coverage, and final legal review remain release inputs rather than hard-coded assumptions |
+| Dependencies / fences | Existing preview evidence is `src/apps/web/src/Marketing.tsx`, `Legal.tsx`, `Brand.tsx`, and `Marketing.test.tsx`; `DEC-054` authorizes synthetic dev/stage only; public production, DNS, real-data processing, and legal approval remain gated |
+| Migration / rollback / repair | Public routes and links remain backward-compatible; withdrawn or corrected claims retain review history; rollback cannot restore disproven or unapproved claims |
+| Negative, failure, audit | Direct-route refresh, missing contact configuration, keyboard/mobile-menu/focus/reflow, disabled providers, synthetic preview labelling, legal-route availability, unsupported product/security/AI/legal claims, and absence of customer-data disclosure |
+| Future TEST | `TEST-CON-P1-015`, `TEST-SEC-P1-020`, `TEST-E2E-P1-024`; DRAFT cases require independent accessibility, claim, privacy, and route evidence. |
+
+- `AC-STORY-P1-049-01` — **Given** a signed-out visitor, **when** the public experience is opened on a supported viewport or direct route, **then** approved Doculyra product, feature, trust, about, contact and account-entry content is accessible, correctly branded, and routes to governed sign-in or registration while labelling illustrative/synthetic preview state truthfully.
+- `AC-STORY-P1-049-02` — **Given** privacy, terms, contact, provider, AI, security, coverage, or environment information is unavailable or release-gated, **when** the visitor navigates by pointer, keyboard or assistive technology, **then** direct legal routes and safe alternatives remain usable without customer-data disclosure, simulated success, inaccessible focus/reflow, or unsupported production, assurance, advice, or legal claim.
+
+## 7. Cross-story implementation rules
 
 1. Every story inherits `ENG-CODE-P1-001`–`016`, `030`–`036`; `ENG-TST-P1-001`–`009`, `012`–`020`, `029`, `035`–`042`; `OPS-CICD-P1-001`–`030`; and `OPS-OBS-P1-001`–`030`. Mutable/async work also inherits `ENG-CODE-P1-020`–`027`, `ENG-ERR-P1-004`–`038`, `ENG-TST-P1-021`–`028`, `OPS-DEP-P1-015`–`031`.
 2. These engineering/operations rules are specification obligations, not existing implementation tests or deployment evidence.

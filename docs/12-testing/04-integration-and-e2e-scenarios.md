@@ -3,11 +3,11 @@
 | Field | Value |
 |---|---|
 | Document ID | `TST-E2E-001` |
-| Version | `0.2` |
+| Version | `0.3` |
 | Status | **APPROVED IMPLEMENTATION BASELINE — representative client and production evidence remains required** |
 | Product phase | Phase 1 — Personal and Family |
 | Updated | 28 August 2026 |
-| Primary trace | `UC-P1-001`–`019`, all `AC-UC-P1-*`, `AC-P1-E2E-001`, `A11Y-P1-001`–`056`, `DEC-049`–`054` |
+| Primary trace | `UC-P1-001`–`020`, all `AC-UC-P1-*`, `AC-P1-E2E-001`, `AC-P1-PUB-001`, `A11Y-P1-001`–`056`, `DEC-049`–`054` |
 
 ## 1. Integration profile
 
@@ -33,15 +33,16 @@ Every scenario asserts UI/API state, canonical revision, immutable evidence/prov
 | `TEST-E2E-P1-012` | `UC-P1-012`; `AC-UC-P1-012-01`–`05` | Delete fences originals/derivatives/caches/events/connectors/backups immediately, displays Trash and exact server deadline, restores only with current step-up authority before 30 days, blocks post-deadline/late resurrection, and reconciles final purge evidence. |
 | `TEST-E2E-P1-013` | `UC-P1-013`; `AC-UC-P1-013-01`–`04` | Two-workspace isolation across API, stores, search, graph, model/tools, conversations, notifications, exports, analytics, support and audit; revocation repairs queued/cached derivatives. |
 | `TEST-E2E-P1-014` | `UC-P1-014` | Upload/camera/manual remain the only active routes; connector port conformance is synthetic and disabled; consent/revoke/resync/delete/route checks cannot activate a live adapter under `DEC-031`. |
-| `TEST-E2E-P1-015` | `UC-P1-015` | Managed-dependant transition stays unavailable without approved authority/eligibility/challenge rules; existing evidence/history is not reassigned or recreated by a generic membership change. |
+| `TEST-E2E-P1-015` | `UC-P1-015` | Managed-dependant transition attempts are explicit and revisioned but fail closed: deny, interruption, ambiguity, retry, rollback/recovery, partial apply, stale projection and concurrent policy/grant cases preserve the last authorised state and history, recalculate permissions, and never broaden access. |
 | `TEST-E2E-P1-016` | `UC-P1-016` | Incapacity/death/event input creates no automatic grant, disclosure, notification or effect while `DEC-032` is open; ordinary sharing/export remain distinct. |
-| `TEST-E2E-P1-017` | `UC-P1-017` | Lost factors and support request reveal no workspace/member/private-resource existence and create no recovery/owner transfer while `DEC-038` is open. |
+| `TEST-E2E-P1-017` | `UC-P1-017` | Lost factors and support request reveal no workspace/member/private-resource existence and create no recovery/owner transfer under the approved Phase 1 `DEC-038` unavailability fence. |
 | `TEST-E2E-P1-018` | `UC-P1-018` | Validate, approve, publish, acknowledge, activate, supersede and roll back/forward-repair immutable configuration packages; DRAFT, incompatible, dangling or stale packages never activate. |
 | `TEST-E2E-P1-019` | `UC-P1-019` | Reconstruct consequential workflow from immutable content-free audit/provenance, detect tamper/gaps, enforce tenant/purpose access and minimization, and keep retention durations unset. |
 | `TEST-E2E-P1-020` | Mandatory product umbrellas | Run the four proposed slices as one cross-cutting synthetic journey and assert ingestion, RAG, monitoring, AI, security, deletion and accessibility umbrellas without enabling open-decision routes. |
 | `TEST-E2E-P1-021` | `DEC-050`; `REQ-P1-CRYPTO-001`–`003` | Encrypt on client, upload only ciphertext/wrapped envelope, share and revoke a member key envelope, reopen on another authorized device, reject tamper/wrong context, and prove plaintext absent from transport, Azure data roles and telemetry. |
 | `TEST-E2E-P1-022` | `DEC-052`; `REQ-P1-PLT-001`–`002` | Execute onboarding, capture, view, organize, ask-with-citations, family access, activity, Trash/restore and offline/reconnect through React web, Flutter iOS and Flutter Android with matching contract/security semantics. |
 | `TEST-E2E-P1-023` | `DEC-049`/`054`; `REQ-P1-OPS-001`–`002` | Deploy immutable candidate to isolated Azure dev then stage, validate Australian routes, managed identities/RBAC/diagnostics/budget, reject cross-environment references, and prove production remains unprovisioned. |
+| `TEST-E2E-P1-024` | `UC-P1-020`; `AC-P1-PUB-001`; `AC-STORY-P1-049-01`–`02` | Navigate the signed-out public experience, privacy/terms/contact and authentic sign-in/registration entry under direct refresh, missing-contact and disabled-provider variants; verify keyboard/menu/focus, 320px reflow, 400% zoom, semantics, approved identity and explicit illustrative-preview boundaries. |
 
 ## 3. Async, event, and race coverage
 

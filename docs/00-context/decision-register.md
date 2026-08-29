@@ -4,7 +4,7 @@
 |---|---|
 | Document ID | `CTX-DEC-001` |
 | Status | Active |
-| Updated | 28 August 2026 — production architecture, customer-controlled encryption, Azure environments, and Flutter mobile delivery approved |
+| Updated | 30 August 2026 — approved architecture status reconciled and managed-dependant transition boundary approved |
 
 ## Decision states
 
@@ -82,19 +82,23 @@ The product owner approved the complete Phase 1 implementation on 26 August 2026
 | `DEC-053` | APPROVED | Production document deletion immediately activates a deletion fence and moves the document to restricted Trash for 30 calendar days. An authorized user may restore it during that window after step-up authentication. At expiry, the system MUST purge the encrypted artifact, sensitive metadata and derivatives, destroy live recovery key envelopes, retain only content-minimized audit/deletion evidence, and prevent backup/restore/replay from resurrecting access. Azure Blob soft delete provides the physical 30-day artifact safety net; the application remains responsible for the cross-store lifecycle and deletion ledger. Account deletion and lawful retention exceptions remain separate governed workflows. | Product-owner approval, 28 August 2026 |
 | `DEC-054` | APPROVED | Codex is authorized to update the specifications and implement the complete Phase 1 production-oriented program, including Bicep and Azure `dev`/`stage` provisioning in the current subscription, using synthetic/test data until production readiness. Production subscription creation, production provisioning, real-customer processing, public DNS cutover, external identity/provider activation, and App Store/Play production publication remain explicit release gates requiring the necessary owner accounts, credentials, legal details, costs, and final evidence. | Product-owner instruction, 28 August 2026 |
 | `DEC-055` | APPROVED | Proceed with deployment of the complete synthetic-data Phase 1 development experience on Azure-generated HTTPS hosts. The default RAG, extraction, preview, search, graph and question-answering route remains customer-device local under `DEC-050`; no hosted model may receive plaintext by implication. Microsoft, Google, Apple and document-platform integrations are approved for implementation and consent/configuration preparation, but an exact provider activates only after the owner supplies or authorizes its application registration, credentials, redirect URIs, minimal scopes and conformance evidence. Permanent custom-domain purchase and public DNS cutover remain later owner-controlled release steps. | Product-owner instruction, 28 August 2026 |
+| `DEC-P1-056` | APPROVED | Phase 1 implements a tested fail-closed ownership/access transition fence. Every attempt is explicit and independently testable; incomplete, ambiguous, failed, retried, rolled-back, stale, concurrent or partially applied state grants no broader access and converges to the last authorised state with permission recalculation and privacy-safe audit/recovery evidence. Advanced document-level transfer, complex inherited-right preservation, delegated authority chains and enterprise entitlement transfer are deferred to a later governed capability; extension points remain without implied authority. | Product Authority steer and [Issue #33 evidence](https://github.com/syedtabishmobin/DocumentManagement/issues/33#issuecomment-5463877570), 30 August 2026 |
 
-## Deferred implementation choices
+## Open product decisions
 
-These must remain replaceable behind explicit contracts until the architecture decision is approved:
+No material product decision currently blocks the Phase 1 build baseline. Activation and release gates below remain governed evidence requirements, not unresolved scope choices.
 
-- Cloud/infrastructure provider.
-- Application framework and programming languages.
-- Relational, search, vector, and graph storage products.
-- Identity provider.
-- OCR/document processing provider.
-- Foundation-model and embedding providers.
-- Notification, malware scanning, observability, and analytics vendors.
-- Initial connector order beyond upload/camera/manual import.
+## Remaining deferred or activation-gated choices
+
+Approved `DEC-041`, `DEC-049`, `DEC-050`, `DEC-052`, `DEC-054`, `DEC-055`, and accepted ADRs select the core stack, Azure environment model, PostgreSQL canonical persistence, React/Flutter clients, customer-controlled encryption, and device-local intelligence boundary. The following narrower choices remain replaceable or disabled behind explicit contracts until their owning release evidence or decision is approved:
+
+- exact production Azure subscription, SKUs, quotas, network, backup, failover, support, and per-data-role processor/placement matrix;
+- search, vector, and graph physical adapters where accepted contracts do not yet select a managed product;
+- external OCR/scanning and any separately consented private-compute AI/model/embedding route; the default plaintext route remains customer-device local under `DEC-050`/`055`;
+- production recovery/ownership-transfer assurance; the Phase 1 dependant fence is approved by `DEC-P1-056`, while richer transfer semantics require a later governed change;
+- customer-facing external notification/SMS activation, which is distinct from the framework Product Authority notification channel;
+- exact external identity and connector registrations, credentials, redirect URIs, minimal scopes, consent, deletion, residency, and conformance evidence; and
+- production legal terms, custom domain/DNS, store accounts/signing, public launch claims, and final accountable release approval.
 
 ## Decision workflow
 

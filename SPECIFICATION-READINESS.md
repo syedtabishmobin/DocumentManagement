@@ -4,8 +4,8 @@
 |---|---|
 | Document ID | `GOV-READY-001` |
 | Status | Active gate record |
-| Current verdict | **READY FOR FULL PHASE 1 DEV/STAGE IMPLEMENTATION — SYNTHETIC DEV DEPLOYED — NOT PRODUCTION AUTHORIZED** |
-| Updated | 29 August 2026 |
+| Current verdict | **BUILD BASELINE APPROVED — DEFINITION OF READY SATISFIED — NOT PRODUCT OR PRODUCTION COMPLETE** |
+| Updated | 30 August 2026 |
 | Governing contract | [`CODEX.md`](CODEX.md#specification-readiness-gate) |
 
 ## 1. Purpose
@@ -18,24 +18,24 @@ A file's existence is not evidence that its contract is approved, complete, inte
 
 The product owner explicitly approved the Phase 1 PRD, resolved `DEC-030`–`040` for safe local behavior, and authorized the complete personal/family build in `DEC-041`. `DEC-049`–`055` select Azure/Bicep, two-layer customer-controlled encryption, React web plus Flutter mobile, 30-day document Trash, and complete synthetic dev/stage implementation and deployment.
 
-Application implementation may proceed across `P1-S1`–`P1-S4` as one continuous program. Local and Azure dev/stage profiles MUST use synthetic data; external providers and channels remain disabled until their exact activation gates pass; hosted models receive no plaintext by implication. Azure dev foundations and a synthetic web/API preview are deployed. This verdict does not authorize production provisioning, public launch, provider activation, store publication, or processing of real personal documents. Those actions still require cross-functional security, privacy, accessibility, operations, recovery, residency, retention, and release evidence.
+Approved baseline `DOCULYRA-BUILD-P1-2026.08.30.1` defines the complete hierarchy and Definition of Ready, including approved `DEC-P1-056`. Exact-candidate independent review and protected CI passed. Attributed story Issues may enter dependency order using synthetic data only after this baseline work merges and Product Authority separately starts the queue; external providers/channels, production provisioning, public launch, store publication and real personal documents remain separately gated.
 
 ## 3. Gate criteria
 
 | Readiness ID | Criterion | Current state | Required evidence |
 |---|---|---|---|
-| `RDY-P1-001` | The Phase 1 PRD is approved or explicitly marked as an approved implementation baseline. | `SATISFIED` | `DEC-041` approves `PROD-PRD-001` version `0.1`. |
-| `RDY-P1-002` | High-impact product and architecture decisions are approved or safely deferred behind documented abstractions. | `SATISFIED` | `DEC-030`–`055` define local/dev behavior, Azure/client/encryption/deletion choices, and production/provider fences; applicable ADRs are accepted or superseded. |
-| `RDY-P1-003` | Domain/data, tenancy, authorization, security, privacy, deletion, audit, and residency models are complete and mutually consistent. | `IN PROGRESS` | Approved specifications, state/invariant matrices, threat mitigations, negative tests, deletion/residency matrices, and accepted ADRs. |
-| `RDY-P1-004` | Document-intelligence, monitoring, trusted-source, evidence, fact, graph, impact, health, and version contracts exist. | `IN PROGRESS` | Normative specifications, machine-readable schemas/data, examples that validate, failure/replay behavior, and traceability. |
-| `RDY-P1-005` | AI capability, RAG, structured-output, prompt/tool, guardrail, and evaluation contracts exist. | `IN PROGRESS` | Draft contracts and synthetic evaluation manifests exist; provider/processor decisions, thresholds, review approval, execution, and regression evidence remain outstanding. |
-| `RDY-P1-006` | API, event, async-job, upload/artifact, connector, export, deletion, and action contracts exist and validate. | `IN PROGRESS` | The draft OpenAPI/event/connector contracts pass static validation; approved baselines and executed compatibility, authorization, replay, migration, and conformance tests remain outstanding. |
-| `RDY-P1-007` | Critical responsive UX flows, states, screens, design system, and accessibility behavior are specified. | `IN PROGRESS` | Draft linked IA, flows, screen/state specs, design rules, and accessibility criteria exist; target browser/assistive-technology approval and research/conformance evidence remain outstanding. |
-| `RDY-P1-008` | Engineering and operational delivery contracts include measurable NFRs, environments, migrations, CI/CD, deployment, recovery, and observability. | `IN PROGRESS` | Azure/Bicep, React/TypeScript, Flutter, CI, dev foundations, immutable images, and synthetic deployment exist; numeric-target, migration/restore/failover, observability, and production evidence remain outstanding. |
-| `RDY-P1-009` | Every implementation epic has stable traceability and testable acceptance criteria. | `IN PROGRESS` | Twelve epics and 48 authorized stories link 100 requirements, 96 story acceptance criteria, and 101 exact test IDs; no story has complete passing release evidence. |
-| `RDY-P1-010` | Initial reference data and all required test/evaluation strategies, fixtures, and quality gates exist and pass. | `IN PROGRESS` | Twelve DRAFT/disabled reference catalogues and deterministic synthetic test fixtures validate; the launch pack is unresolved under `DEC-035`, and all test/evaluation evidence remains unexecuted. |
-| `RDY-P1-011` | No open decision makes the proposed implementation unsafe or substantially disposable. | `SATISFIED` | `DEC-031`–`040` close the local behavior and explicitly deny production/provider activation; provider-neutral ports preserve replacement. |
-| `RDY-P1-012` | The complete repository is coherent, reviewable, and protected against drift. | `IN PROGRESS` | Passing link/ID/schema/semantic/traceability/privacy validators, preserved-source checks, change review, and zero unresolved source conflict. |
+| `RDY-P1-001` | The Phase 1 PRD is approved or explicitly marked as an approved implementation baseline. | `SATISFIED` | `DEC-041` approves the PRD baseline; governed reconciliation records current `PROD-PRD-001` version `0.3`. |
+| `RDY-P1-002` | High-impact product and architecture decisions are approved or safely deferred behind documented abstractions. | `SATISFIED` | `DEC-030`–`055` and `DEC-P1-056` define local/dev behavior, Azure/client/encryption/deletion/transition choices, and production/provider fences; applicable ADRs are accepted or superseded. |
+| `RDY-P1-003` | Domain/data, tenancy, authorization, security, privacy, deletion, audit, and residency models are complete and mutually consistent. | `SATISFIED` | Reconciled architecture/security/data contracts, accepted ADRs, `DEC-P1-056`, exact story applicability and mapped negative tests form the build contract; runtime/release proof remains story evidence. |
+| `RDY-P1-004` | Document-intelligence, monitoring, trusted-source, evidence, fact, graph, impact, health, and version contracts exist. | `SATISFIED` | Normative specifications, schemas/data, failure/replay expectations, story ownership and planned tests validate. |
+| `RDY-P1-005` | AI capability, RAG, structured-output, prompt/tool, guardrail, and evaluation contracts exist. | `SATISFIED` | Provider-neutral/device-local contracts and planned evaluations are baselined; numeric thresholds and executed release evidence remain explicit delivery gates. |
+| `RDY-P1-006` | API, event, async-job, upload/artifact, connector, export, deletion, and action contracts exist and validate. | `SATISFIED` | Existing contracts and named story-owned gaps/intentional absences are sufficient for dependency-aware implementation; compatibility/conformance results remain completion evidence. |
+| `RDY-P1-007` | Critical responsive UX flows, states, screens, design system, and accessibility behavior are specified. | `SATISFIED` | Linked IA, 31 flows, 47 screen groups, design/accessibility contracts and platform boundaries are baselined; user/release conformance remains story evidence. |
+| `RDY-P1-008` | Engineering and operational delivery contracts include measurable NFRs, environments, migrations, CI/CD, deployment, recovery, and observability. | `SATISFIED` | Provisional measurement definitions, environments, migration/repair expectations, CI, observability and release gates are explicit; production evidence is not claimed. |
+| `RDY-P1-009` | Every implementation epic has stable traceability and testable acceptance criteria. | `SATISFIED` | Twelve epics, 31 features and 49 stories link 101 requirements, 20 use cases, 98 story ACs and 104 exact tests; all remain planned, not complete. |
+| `RDY-P1-010` | Initial reference data and all required test/evaluation strategies, fixtures, and quality gates exist and pass. | `SATISFIED` | Twelve DRAFT/disabled catalogues and deterministic synthetic fixtures validate; test/evaluation execution remains story/release evidence and does not weaken DoR. |
+| `RDY-P1-011` | No open decision makes the proposed implementation unsafe or substantially disposable. | `SATISFIED` | `DEC-031`–`040` and `DEC-P1-056` close local/transition behavior and explicitly deny unsafe or unproved activation; provider-neutral extension points preserve later change. |
+| `RDY-P1-012` | The complete repository is coherent, reviewable, and protected against drift. | `SATISFIED` | Static validators, exact-candidate independent baseline review, negative mutation checks and protected CI pass; controlled material-change versioning is required. |
 
 Allowed states are `MISSING`, `IN PROGRESS`, `BLOCKED`, `SATISFIED`, and `NOT APPLICABLE` with an approved rationale. `IN PROGRESS` never opens the implementation gate.
 
@@ -53,12 +53,12 @@ Allowed states are `MISSING`, `IN PROGRESS`, `BLOCKED`, `SATISFIED`, and `NOT AP
 | UX | Information architecture, flows, screens/states, design system, accessibility | [`docs/07-ux/README.md`](docs/07-ux/README.md) | `IN PROGRESS` — draft pack complete; target matrix and research/conformance evidence remain |
 | Engineering | Stack/ADRs, repository structure, coding, errors/resilience, local development, testing standards | [`docs/08-engineering/README.md`](docs/08-engineering/README.md) | `IN PROGRESS` — React/TypeScript, Flutter, Azure, and IaC choices approved; full implementation and evidence remain |
 | Operations | Environments, CI/CD, IaC, secrets, deployment/repair, backup/DR, observability | [`docs/09-devops/README.md`](docs/09-devops/README.md) | `IN PROGRESS` — Azure dev foundations and provider registrations exist; adapters, numeric targets, production controls, and operational evidence remain |
-| Backlog/traceability | Epics, features, stories, acceptance, dependencies, release slices, matrix | [`docs/10-backlog/README.md`](docs/10-backlog/README.md) | `IN PROGRESS` — 12 epics/48 stories mapped; none approved or implementation-ready |
+| Backlog/traceability | Epics, features, stories, acceptance, dependencies, release slices, matrix | [`docs/10-backlog/README.md`](docs/10-backlog/README.md) | `IN REVIEW` — 12 epics/31 features/49 stories/98 ACs/104 tests mapped; each story becomes READY only through an attributed Issue after predecessor and DoR checks |
 | Reference data | Versioned schemas plus document types, rules, jurisdictions, sources, roles, permissions, statuses/severities | [`docs/11-reference-data/README.md`](docs/11-reference-data/README.md) | `IN PROGRESS` — draft synthetic seed validates; all runtime entries remain disabled and launch pack unresolved |
 | Testing/evaluation | Test strategy, AI evaluation, security, integration/E2E, performance/resilience, fixtures/evidence | [`docs/12-testing/README.md`](docs/12-testing/README.md) | `IN PROGRESS` — draft cases and deterministic fixtures exist; execution evidence is `NOT_RUN`/insufficient |
 | Repository validation | ID/link integrity, checksums, schemas, semantics, traceability, fixture privacy | [`scripts/README.md`](scripts/README.md) | `IN PROGRESS` — four static validators pass; formal review and executed quality evidence remain |
 
-The evidence-based story and architecture comparison is maintained in [`BLG-STATUS-001`](docs/10-backlog/05-personal-family-implementation-status.md). As assessed on 29 August 2026, 28 stories have partial preview evidence, 18 are not implemented, 2 are intentionally unavailable safety boundaries, and 0 meet the complete story exit gate.
+The evidence-based comparison is maintained in [`BLG-STATUS-001`](docs/10-backlog/05-personal-family-implementation-status.md). As assessed on 30 August 2026, 29 stories have partial preview evidence, 18 are not implemented, 2 are intentionally unavailable safety boundaries, and 0 meet the complete story exit gate.
 
 ## 5. Material decisions resolved for local implementation
 
@@ -75,6 +75,7 @@ The evidence-based story and architecture comparison is maintained in [`BLG-STAT
 | `DEC-038` | `APPROVED` | Recovery and ownership transfer absent from the local profile and separately gated for production. |
 | `DEC-039` | `APPROVED` | Immediate local fence/purge, no production backup, content-free audit tombstone. |
 | `DEC-040` | `APPROVED` | Synthetic local-only processing; production processors and placement separately gated. |
+| `DEC-P1-056` | `APPROVED` | Explicit revisioned managed-dependant transition attempts fail closed; richer independent transfer/delegation is later governed scope. |
 
 Deferred provider decisions in the decision register are acceptable only after provider-neutral ports, data-processing constraints, conformance tests, and failure behavior are documented.
 

@@ -82,7 +82,7 @@ This ADR does not set account-deletion timing, statutory audit retention, or cus
 
 ## Open-decision fences
 
-Account/workspace recovery remains governed by `DEC-038`; document restore does not close it. Production backup retention and any lawful-hold policy require final legal/privacy review before customer terms are published.
+Account/workspace recovery remains unavailable under approved `DEC-038`; document restore cannot supersede that decision. Production backup retention and any lawful-hold policy require final legal/privacy review before customer terms are published.
 
 ## Revisit and supersession triggers
 

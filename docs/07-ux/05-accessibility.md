@@ -4,18 +4,18 @@
 |---|---|
 | Document ID | `UX-A11Y-001` |
 | Version | `0.1` |
-| Status | `DRAFT — product owner and accessibility specialist approval required; all targets provisional` |
+| Status | `DRAFT BUILD CONTRACT — WCAG target approved for engineering; release matrix, research, evidence, and public conformance claim remain gated` |
 | Product phase | Phase 1 — Personal and Family |
 | Target standard | WCAG 2.2 Level AA for all Phase 1 user-facing pages, components, and critical workflows |
 | NFR alignment | `NFR-P1-022`–`NFR-P1-025` |
 | Primary acceptance | `AC-P1-A11Y-001`; all `UX-FLOW-P1-*` and `UX-SCR-P1-*` critical states |
-| Updated | 26 August 2026 |
+| Updated | 30 August 2026 |
 
 ## 1. Purpose, target, and authority
 
-This document defines the accessibility behavior, testing, evidence, and release gate for the Phase 1 responsive web/PWA. WCAG 2.2 Level AA is the provisional baseline from `NFR-P1-022`; product-owner and accessibility-specialist approval is still required before it becomes a committed conformance target or public claim.
+This document defines the accessibility behavior, testing, evidence, and release gate for the React public website and authenticated web/PWA plus authenticated Flutter iOS/Android clients. WCAG 2.2 Level AA is the engineering target under `NFR-P1-022`; it is not a public conformance claim. The exact supported browser, operating-system, assistive-technology and mobile-version matrix, representative disabled-user research, independent audit, exceptions, and per-release conformance evidence remain subject to accessibility-specialist and product release approval.
 
-Conformance applies to complete processes, not only individual pages. It includes authentication, onboarding, workspace/subject setup, file and camera-alternative capture, processing/review, evidence/citation, versions/comparison, facts/conflicts, search/Q&A, monitoring/source failure, impact/approval/action/evidence closure, expected evidence, tasks/notifications, sharing/revocation, export, deletion, and every blocked conditional state.
+Conformance applies to complete processes, not only individual pages. It includes the React public product/trust/privacy/terms/contact/account-entry route, authentication, onboarding, workspace/subject setup, file and camera-alternative capture, processing/review, evidence/citation, versions/comparison, facts/conflicts, search/Q&A, monitoring/source failure, impact/approval/action/evidence closure, expected evidence, tasks/notifications, sharing/revocation, export, deletion, and every gated or unavailable state. Shared protected journeys require equivalent outcomes on React and Flutter; the React-specific public/legal surfaces are not duplicated in Flutter.
 
 Accessibility does not authorize broader disclosure. Accessible names, descriptions, live regions, headings, error messages, focus targets, page titles, transcripts, test recordings, and alternate representations follow the same current authorization and privacy rules as visual content.
 
@@ -137,8 +137,8 @@ The accessibility specialist must pin supported versions before beta. Until then
 | Desktop keyboard | Each supported desktop browser, keyboard only | All critical flows, dialogs, menus, evidence, diff, graph/list, async states, destructive actions |
 | Windows screen reader | Current approved Chromium-family and Firefox-family browsers with a widely used Windows screen reader | All critical flows; browse/forms modes; live regions; tables; errors; evidence; reflow |
 | macOS screen reader | Current approved Safari with the platform screen reader | All critical flows; VoiceOver navigation; file/camera alternative; dialogs; async status |
-| iOS screen reader/touch | Current approved Safari/PWA with platform screen reader | Compact layout; touch exploration; rotor/headings/forms; camera alternative; uploads; evidence/approval/delete |
-| Android screen reader/touch | Current approved Chromium/PWA with platform screen reader | Compact layout; touch exploration; focus order; capture alternative; tasks/sharing/delete |
+| iOS screen reader/touch | Current approved Safari/PWA and Flutter iOS build with the platform screen reader | Public/account entry in Safari; shared protected journeys in applicable React/Flutter clients; touch exploration, rotor/headings/forms, camera alternative, uploads, evidence/approval/delete |
+| Android screen reader/touch | Current approved Chromium/PWA and Flutter Android build with the platform screen reader | Public/account entry in Chromium; shared protected journeys in applicable React/Flutter clients; touch exploration, focus order, capture alternative, tasks/sharing/delete |
 | Zoom/low vision | 200% text, 400% zoom, 320 CSS px, OS magnification sample, text-spacing overrides | No loss/overlap; focus visible; sticky content; dialogs; on-screen keyboard; evidence/diffs |
 | Contrast/colour | Forced colours/high contrast plus representative colour-vision simulations | Navigation, status dimensions, errors, charts/graphs/diffs, disabled/destructive/focus states |
 | Alternative input | Voice control and switch-control sampling on approved platforms | Label-in-name, target discovery, sequential navigation, confirmation, page reorder, graph/list actions |
@@ -151,6 +151,7 @@ At least two independent browser/engine families are required on desktop unless 
 
 | Journey | Keyboard/screen-reader checkpoints | Reflow/touch/cognitive checkpoints | Primary trace |
 |---|---|---|---|
+| Public product/trust/legal/account entry | Landmarks/headings, compact menu state/Escape/focus return, meaningful links, direct privacy/terms routes, configured-or-unavailable contact, correct create-account/sign-in modes | 320 px/400% zoom, text spacing, reduced motion, illustrative/synthetic preview and release-gated legal/contact claims remain understandable | `UX-FLOW-P1-031`, `UX-SCR-P1-046`–`047`, `DEC-044`, `DEC-047`, `DEC-052` |
 | Sign-in/onboarding/workspace | Accessible authentication, safe errors, heading/focus, no recovery bypass, terms/help | No forced upload/share; resume/retry; plain privacy/coverage copy | `UX-FLOW-P1-001`–`002`, `UX-SCR-P1-001`–`007`, `NFR-P1-032` |
 | File/camera capture | Route choice, file control, page management, progress/cancel/status | Camera denied/no camera alternative, 320 px, interruption/offline, no drag-only | `UX-FLOW-P1-003`, `UX-SCR-P1-009`–`011`, `AC-P1-ING-001` |
 | Quarantine/clinical hold | Blocking state announced, ordinary routes absent, restricted actions labelled | Generic non-alarming copy; no clinical detail; no disposition promise | `UX-FLOW-P1-004`, `UX-SCR-P1-012`, `DEC-036` |
@@ -166,7 +167,7 @@ At least two independent browser/engine families are required on desktop unless 
 | Delete/restore | Consequence review, exact confirmation, status/residuals, focus after fence | No dark pattern or invented time; restore boundary; partial failure | `UX-FLOW-P1-016`, `UX-SCR-P1-029`, `AC-P1-DEL-001` |
 | Recovery/continuity absent | Generic safe message and approved alternatives navigable | No evidence solicitation, nominee/trigger/release implication | `UX-FLOW-P1-017`–`018`, `UX-SCR-P1-031`–`032`, `DEC-032`, `DEC-038` |
 
-Every journey is repeated with at least one validation error, async state change, current-policy change, and safe failure. `AC-P1-A11Y-001` passes only when capture, review, search, impact inspection, approval, sharing, export, and deletion complete with keyboard alone and the approved assistive-technology matrix without blocker, focus loss/trap, inaccessible status/error, or information available only visually.
+Every applicable protected journey is repeated in React and Flutter with at least one validation error, async state change, current-policy change, and safe failure; platform-specific routes are exercised only on their owning client. `AC-P1-A11Y-001` passes only when public/account entry, capture, review, search, impact inspection, approval, sharing, export, and deletion complete with keyboard or the applicable mobile assistive technology in the approved matrix without blocker, focus loss/trap, inaccessible status/error, or information available only visually.
 
 ## 7. Testing cadence and methods
 
@@ -207,11 +208,13 @@ Severity is based on user/task impact, frequency, scope, safety/privacy conseque
 
 ## 10. Approval checklist
 
-This contract remains DRAFT until:
+This contract remains a draft build contract and cannot support a public conformance claim until:
 
 1. the product owner and accessibility specialist approve WCAG 2.2 AA, the supported browser/assistive-technology/version matrix, target-size interpretation, defect severity, and exception authority;
 2. design/content/security/privacy approve state language and ensure accessible alternatives do not create disclosure side channels;
 3. quality maps stable automated and manual cases to every `A11Y-P1-*`, `UX-FLOW-P1-*`, `UX-SCR-P1-*`, applicable WCAG criterion, and `NFR-P1-022`–`NFR-P1-025`;
 4. representative disabled-user research validates critical flows with synthetic or specifically consented content;
-5. open-decision routes remain unavailable and testable rather than appearing as incomplete controls; and
+5. configuration-, assurance-, and release-gated routes remain unavailable and testable rather than appearing as incomplete controls; and
 6. the release conformance report and stop-ship evidence are reviewable without raw household data.
+
+For the React public and legal experience, final production operator/contact/domain configuration and legal/privacy approval remain additional release evidence. Accessibility review verifies presentation and operability; it does not approve the legal meaning or transform development-preview wording into production terms.

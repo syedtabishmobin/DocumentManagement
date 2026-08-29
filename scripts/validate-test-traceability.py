@@ -25,6 +25,7 @@ MANIFEST_PATHS = {
     "fixtures": FIXTURE_ROOT / "synthetic-fixtures.v1.json",
     "datasets": FIXTURE_ROOT / "ai-evaluation-datasets.v1.json",
     "profiles": FIXTURE_ROOT / "workload-and-fault-profiles.v1.json",
+    "implementation_evidence": FIXTURE_ROOT / "implementation-evidence.v1.json",
 }
 
 TEST_ID_RE = re.compile(r"^TEST-(UNIT|CON|AI|SEC|E2E|PERF|DR)-P1-(\d{3})$")
@@ -49,13 +50,21 @@ DIGIT_RUN_RE = re.compile(r"(?<!\d)\d{13,19}(?!\d)")
 
 EXPECTED_TEST_RANGES = {
     "UNIT": (1, 12),
-    "CON": (1, 14),
+    "CON": (1, 15),
     "AI": (1, 15),
-    "SEC": (1, 19),
-    "E2E": (1, 23),
+    "SEC": (1, 20),
+    "E2E": (1, 24),
     "PERF": (1, 10),
     "DR": (1, 8),
 }
+
+SOURCE_TEST_RE = re.compile(r"(?:\.(?:test|spec)\.(?:js|jsx|ts|tsx)|_test\.dart)$")
+STORY_HEADING_RE = re.compile(r'^### `(STORY-P1-\d{3})`', re.MULTILINE)
+TEST_TOKEN_RE = re.compile(r"TEST-(UNIT|CON|AI|SEC|E2E|PERF|DR)-P1-(\d{3})")
+TEST_RANGE_RE = re.compile(
+    r"`TEST-(UNIT|CON|AI|SEC|E2E|PERF|DR)-P1-(\d{3})`[–-]"
+    r"`TEST-\1-P1-(\d{3})`"
+)
 
 SUITE_BY_NAMESPACE = {
     "UNIT": "UNIT",
@@ -267,6 +276,178 @@ def ids_from_owner_doc(namespace: str, errors: list[str]) -> set[str]:
     return set(found)
 
 
+def discover_source_tests() -> set[str]:
+    source_root = ROOT / "src"
+    if not source_root.is_dir():
+        return set()
+    generated_parts = {"dist", "build", ".dart_tool", "node_modules"}
+    return {
+        path.relative_to(ROOT).as_posix()
+        for path in source_root.rglob("*")
+        if path.is_file()
+        and SOURCE_TEST_RE.search(path.name)
+        and not generated_parts.intersection(path.relative_to(source_root).parts)
+    }
+
+
+def expand_test_tokens(text: str) -> set[str]:
+    result = {match.group(0) for match in TEST_TOKEN_RE.finditer(text)}
+    for match in TEST_RANGE_RE.finditer(text):
+        namespace, first, last = match.groups()
+        if int(last) < int(first):
+            continue
+        result.update(
+            f"TEST-{namespace}-P1-{number:03d}"
+            for number in range(int(first), int(last) + 1)
+        )
+    return result
+
+
+def backlog_story_test_ownership(errors: list[str]) -> set[tuple[str, str]]:
+    path = ROOT / "docs/10-backlog/02-features-and-stories.md"
+    if not path.is_file():
+        errors.append("missing backlog story source for reciprocal test ownership")
+        return set()
+    text = path.read_text(encoding="utf-8")
+    headings = list(STORY_HEADING_RE.finditer(text))
+    ownership: set[tuple[str, str]] = set()
+    for index, heading in enumerate(headings):
+        story_id = heading.group(1)
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(text)
+        section = text[heading.end():end]
+        rows = [line for line in section.splitlines() if "| Future TEST |" in line]
+        if len(rows) != 1:
+            errors.append(f"{story_id}: expected exactly one Future TEST row, found {len(rows)}")
+            continue
+        tests = expand_test_tokens(rows[0])
+        if not tests:
+            errors.append(f"{story_id}: Future TEST row has no stable test IDs")
+        ownership.update((story_id, test_id) for test_id in tests)
+    return ownership
+
+
+def validate_implementation_evidence(
+    data: Any,
+    registered_tests: set[str],
+    test_by_id: dict[str, dict[str, Any]],
+    errors: list[str],
+    reports: list[str],
+) -> set[str]:
+    require(isinstance(data, dict), "implementation_evidence: manifest root must be an object", errors)
+    if not isinstance(data, dict):
+        return set()
+    require(data.get("product_test_definition_state") == "DRAFT_PLANNED", "implementation_evidence: product test definition state must remain DRAFT_PLANNED", errors)
+
+    proposed = data.get("proposed_upstream_refs", [])
+    require(isinstance(proposed, list) and all(isinstance(value, str) for value in proposed), "implementation_evidence: proposed_upstream_refs must be a string list", errors)
+    proposed_refs = set(proposed if isinstance(proposed, list) else [])
+    known_upstream = tokens_in_paths(
+        path for directory in UPSTREAM_DIRS for path in markdown_json_files(directory)
+    )
+
+    source_entries = data.get("source_tests", [])
+    require(isinstance(source_entries, list) and bool(source_entries), "implementation_evidence: source_tests must be a non-empty list", errors)
+    manifested_paths: list[str] = []
+    for index, entry in enumerate(source_entries if isinstance(source_entries, list) else []):
+        require(isinstance(entry, dict), f"implementation_evidence.source_tests[{index}] must be an object", errors)
+        if not isinstance(entry, dict):
+            continue
+        path_value = entry.get("path")
+        require(isinstance(path_value, str) and bool(path_value), f"implementation_evidence.source_tests[{index}]: missing path", errors)
+        if not isinstance(path_value, str):
+            continue
+        manifested_paths.append(path_value)
+        path = (ROOT / path_value).resolve()
+        require(path.is_file() and path.is_relative_to(ROOT.resolve()), f"implementation evidence path does not exist in repository: {path_value}", errors)
+        scope = entry.get("scope")
+        require(scope in {"PRODUCT_BOUNDED", "FRAMEWORK_ONLY"}, f"{path_value}: invalid scope {scope!r}", errors)
+        require(entry.get("evidence_type") in {"DEVELOPER_UNIT", "DEVELOPER_INTEGRATION", "CONTRACT", "FRAMEWORK_CONFORMANCE"}, f"{path_value}: invalid evidence_type", errors)
+        require(entry.get("product_completion_claim") == "NONE", f"{path_value}: product_completion_claim must be NONE", errors)
+        test_refs = entry.get("test_refs", [])
+        framework_refs = entry.get("framework_acceptance_refs", [])
+        story_refs = entry.get("story_refs", [])
+        acceptance_refs = entry.get("acceptance_refs", [])
+        for field, value in (("test_refs", test_refs), ("framework_acceptance_refs", framework_refs), ("story_refs", story_refs), ("acceptance_refs", acceptance_refs)):
+            require(isinstance(value, list) and all(isinstance(item, str) for item in value), f"{path_value}: {field} must be a string list", errors)
+        dangling = sorted(set(test_refs if isinstance(test_refs, list) else []) - registered_tests)
+        if dangling:
+            errors.append(f"{path_value}: dangling test_refs: {', '.join(dangling)}")
+        if scope == "PRODUCT_BOUNDED":
+            require(bool(test_refs), f"{path_value}: product-bounded evidence requires test_refs", errors)
+            require(bool(story_refs), f"{path_value}: product-bounded evidence requires story_refs", errors)
+            require(bool(acceptance_refs), f"{path_value}: product-bounded evidence requires acceptance_refs", errors)
+            require(not framework_refs, f"{path_value}: product-bounded evidence cannot use framework_acceptance_refs", errors)
+            dangling_upstream = sorted(
+                (set(story_refs) | set(acceptance_refs)) - known_upstream - proposed_refs
+            )
+            if dangling_upstream:
+                errors.append(f"{path_value}: unknown story/acceptance refs: {', '.join(dangling_upstream)}")
+        elif scope == "FRAMEWORK_ONLY":
+            require(bool(framework_refs), f"{path_value}: framework-only evidence requires framework_acceptance_refs", errors)
+            require(not story_refs and not acceptance_refs, f"{path_value}: framework-only evidence cannot claim product story/AC coverage", errors)
+        historical_work = entry.get("historical_work", [])
+        require(isinstance(historical_work, list), f"{path_value}: historical_work must be a list", errors)
+        for work in historical_work if isinstance(historical_work, list) else []:
+            require(isinstance(work, dict), f"{path_value}: historical_work entries must be objects", errors)
+            if isinstance(work, dict):
+                require(
+                    set(work).issubset({"issue_number", "pr_number", "evidence_state"}),
+                    f"{path_value}: historical_work contains an unsupported field",
+                    errors,
+                )
+                require(work.get("evidence_state") in {"BOUNDED_QA_PASS", "FRAMEWORK_QA_PASS"}, f"{path_value}: invalid historical evidence state", errors)
+
+    duplicates = sorted(path for path, count in Counter(manifested_paths).items() if count > 1)
+    if duplicates:
+        errors.append(f"implementation evidence duplicate source paths: {', '.join(duplicates)}")
+    discovered = discover_source_tests()
+    manifested = set(manifested_paths)
+    if discovered != manifested:
+        errors.append(
+            "source test evidence mismatch: "
+            f"missing={sorted(discovered-manifested)} unexpected={sorted(manifested-discovered)}"
+        )
+
+    ownership = backlog_story_test_ownership(errors)
+    supplements = data.get("supplemental_story_test_ownership", [])
+    require(isinstance(supplements, list), "implementation_evidence: supplemental_story_test_ownership must be a list", errors)
+    for index, entry in enumerate(supplements if isinstance(supplements, list) else []):
+        require(isinstance(entry, dict), f"supplemental_story_test_ownership[{index}] must be an object", errors)
+        if not isinstance(entry, dict):
+            continue
+        story_id = entry.get("story_id")
+        test_refs = entry.get("test_refs", [])
+        require(isinstance(story_id, str) and re.fullmatch(r"STORY-P1-\d{3}", story_id or "") is not None, f"supplemental_story_test_ownership[{index}]: invalid story_id", errors)
+        require(isinstance(test_refs, list) and bool(test_refs) and all(isinstance(value, str) for value in test_refs), f"{story_id}: supplemental test_refs must be a non-empty string list", errors)
+        dangling = sorted(set(test_refs if isinstance(test_refs, list) else []) - registered_tests)
+        if dangling:
+            errors.append(f"{story_id}: supplemental ownership has dangling tests: {', '.join(dangling)}")
+        if isinstance(story_id, str):
+            ownership.update((story_id, value) for value in test_refs if isinstance(value, str))
+
+    owned_tests = {test_id for _, test_id in ownership}
+    unowned_tests = sorted(registered_tests - owned_tests)
+    if unowned_tests:
+        errors.append(f"tests without forward story ownership: {', '.join(unowned_tests)}")
+
+    for test_id, item in sorted(test_by_id.items()):
+        trace = set(item.get("trace", []))
+        story_refs = {value for value in trace if isinstance(value, str) and value.startswith("STORY-P1-")}
+        ac_story_refs = {value for value in trace if isinstance(value, str) and value.startswith("AC-STORY-P1-")}
+        for story_id in story_refs:
+            if (story_id, test_id) not in ownership:
+                errors.append(f"{test_id}: reverse story trace {story_id} lacks forward story ownership")
+        for ac_id in ac_story_refs:
+            story_id = ac_id.removeprefix("AC-").rsplit("-", 1)[0]
+            if story_id not in story_refs:
+                errors.append(f"{test_id}: story acceptance trace {ac_id} lacks parent {story_id}")
+
+    require(not any(item.get("status") != "DRAFT" or item.get("automation") != "PLANNED" for item in test_by_id.values()), "product test definitions must all remain DRAFT/PLANNED", errors)
+    reports.append(f"source tests: {len(manifested & discovered)}/{len(discovered)} mapped")
+    reports.append(f"registered tests with story ownership: {len(registered_tests & owned_tests)}/{len(registered_tests)}")
+    return proposed_refs
+
+
 def validate() -> tuple[list[str], list[str]]:
     errors: list[str] = []
     reports: list[str] = []
@@ -282,6 +463,7 @@ def validate() -> tuple[list[str], list[str]]:
     fixture_manifest = manifests["fixtures"]
     dataset_manifest = manifests["datasets"]
     profile_manifest = manifests["profiles"]
+    implementation_evidence = manifests["implementation_evidence"]
 
     tests = test_manifest.get("tests", [])
     fixtures = fixture_manifest.get("fixtures", [])
@@ -335,6 +517,14 @@ def validate() -> tuple[list[str], list[str]]:
                 f"{OWNER_DOCUMENTS[namespace].relative_to(ROOT)} {namespace} definitions mismatch: "
                 f"missing={sorted(expected-documented)} unexpected={sorted(documented-expected)}"
             )
+
+    proposed_upstream_refs = validate_implementation_evidence(
+        implementation_evidence,
+        registries["test"],
+        test_by_id,
+        errors,
+        reports,
+    )
 
     known_decisions = set()
     decision_path = ROOT / "docs/00-context" / "decision-register.md"
@@ -438,7 +628,7 @@ def validate() -> tuple[list[str], list[str]]:
 
     upstream_paths = [path for directory in UPSTREAM_DIRS for path in markdown_json_files(directory)]
     known_upstream = tokens_in_paths(upstream_paths)
-    unknown_trace = sorted(value for value in all_traces if value not in known_upstream)
+    unknown_trace = sorted(value for value in all_traces if value not in known_upstream and value not in proposed_upstream_refs)
     if unknown_trace:
         errors.append(f"unknown upstream trace IDs: {', '.join(unknown_trace)}")
 
@@ -494,7 +684,7 @@ def main() -> int:
         for error in errors:
             print(f"- {error}", file=sys.stderr)
         return 1
-    print("Test traceability validation passed: 101 stable tests; synthetic fixture references and all current upstream coverage are complete.")
+    print("Test traceability validation passed: 104 stable DRAFT/PLANNED tests; reciprocal story ownership, source-test evidence, synthetic fixture references and current upstream coverage are complete.")
     return 0
 
 

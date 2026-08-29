@@ -3,12 +3,12 @@
 | Field | Value |
 |---|---|
 | Document ID | `PROD-FEAT-001` |
-| Version | `0.2` |
-| Status | `DRAFT — derived from draft PRD; product-owner approval required` |
+| Version | `0.3` |
+| Status | `APPROVED DERIVED BUILD BASELINE — implementation and release evidence remain gated` |
 | Product phase | Phase 1 — Personal and Family |
 | Jurisdiction | Australia first; jurisdiction-neutral core |
-| Source baseline | `PROD-PRD-001` version `0.1` and `APPROVED` decisions in `CTX-DEC-001` |
-| Updated | 28 August 2026 — approved Azure, customer-controlled encryption, React/Flutter, deletion, and assurance requirements mapped |
+| Source baseline | `PROD-PRD-001` version `0.3`, stable vision `PROD-VIS-001`, and `APPROVED` decisions in `CTX-DEC-001` |
+| Updated | 30 August 2026 — build-baseline traceability reconciliation |
 
 ## 1. Authority and catalogue rules
 
@@ -22,21 +22,21 @@ Feature IDs are stable. A retired ID must not be reused. Detailed use cases, con
 
 | Label | Meaning in this catalogue |
 |---|---|
-| `REQUIRED` | Proposed as necessary for the complete Phase 1 baseline, subject to PRD approval. |
+| `REQUIRED` | Necessary for the approved complete Phase 1 product baseline; implementation and release evidence are tracked separately. |
 | `CONDITIONAL` | Included only after the named decision and specialist contract are approved. |
 | `RESERVED` | A model or interface extension point is preserved; no Phase 1 end-user capability is promised. |
 | `EXCLUDED` | The PRD expressly excludes the capability from Phase 1. |
 
 ### 1.2 Release sequence
 
-| Proposed slice | Catalogue outcome |
+| Approved slice | Catalogue outcome |
 |---|---|
 | `P1-S1` — Secure household vault | Establish isolated workspaces, governed capture, immutable originals, configurable authorization, security, and audit. |
 | `P1-S2` — Understand and retrieve | Produce reviewable evidence, facts, entities, dependencies, comparisons, and permission-aware cited answers. |
 | `P1-S3` — Monitor and close the loop | Detect governed change, establish applicability and impact, obtain bound approval, act, and close with evidence. |
 | `P1-S4` — Family launch and portability | Complete scoped collaboration, consent, continuity, export, deletion, recovery, residency, and launch controls. |
 
-All four slice definitions and their sequencing depend on approval of `DEC-030`.
+All four slice definitions form the continuous approved implementation program under `DEC-030`, `DEC-041`, and `DEC-054`; this does not establish feature completion or production readiness.
 
 ## 2. `P1-S1` — Secure household vault
 
@@ -50,7 +50,7 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Linked requirements | `REQ-P1-WS-001`, `REQ-P1-WS-002`, `REQ-P1-WS-003` |
 | Primary users | Household owner; family administrator; adult member; managed dependant represented as a subject. |
 | Capabilities | Create eligible personal and family workspaces; maintain one explicit owner; audit membership changes; represent subjects without fabricated login identities; reserve the organisation workspace type without exposing its creation. |
-| Explicit exclusions and decision dependencies | Organisation workspace creation and enterprise administration are `EXCLUDED`. Workspace creation policy and slice sequencing require PRD approval and `DEC-030`; the identity-to-resource structure is constrained by `DEC-002` and `DEC-003`. |
+| Explicit exclusions and decision dependencies | Organisation workspace creation and enterprise administration are `EXCLUDED`. The approved workspace policy and sequence follow `DEC-002`, `DEC-003`, and `DEC-030`; implementation still requires exact eligibility/configuration and evidence. |
 | Failure or degraded behavior | Duplicate or retried creation must reconcile without duplicate ownership or memberships. If ownership or workspace scope cannot be established, creation fails without creating accessible orphan resources. A subject may remain usable without an account. |
 | Product-level acceptance summary | A person can belong to multiple isolated workspaces; a dependant can be linked to evidence without credentials; membership and ownership changes are reconstructable; organisation creation is unavailable in Phase 1. |
 
@@ -78,7 +78,7 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Linked requirements | `REQ-P1-DOC-001`, `REQ-P1-DOC-002`, `REQ-P1-DOC-004`, `REQ-P1-CRYPTO-001` |
 | Primary users | Household owner; family administrator; authorized adult member; workspace service. |
 | Capabilities | Encrypt originals on an authorized customer client with an independent document key and versioned authenticated envelope before transfer; preserve immutable ciphertext with stable artifact identity, hash, media type, size, and acquisition provenance; keep logical-document identity separate from byte equality; support immutable versions; issue short-lived, version- and workspace-scoped ciphertext access that only an authorized client can decrypt. |
-| Explicit exclusions and decision dependencies | Destructive in-place replacement and permanent public artifact URLs are excluded. Immutability and logical versioning are constrained by `DEC-005`; isolation and cloud operation are constrained by `DEC-022`; slice sequencing depends on `DEC-030`. |
+| Explicit exclusions and decision dependencies | Destructive in-place replacement and permanent public artifact URLs are excluded. Immutability and logical versioning follow `DEC-005`; isolation remains active from `DEC-022`, Azure selection follows `DEC-049`, and slice sequencing follows `DEC-030`. |
 | Failure or degraded behavior | Hash mismatch, wrong workspace/version, expired or revoked access, or missing authorization fails without returning content. Reprocessing or metadata failure cannot change the accepted original bytes. |
 | Product-level acceptance summary | The stored hash remains stable through reprocessing; identical bytes do not force unrelated logical documents to merge; authorized users retrieve the requested version while expired, revoked, and cross-workspace requests reveal nothing. |
 
@@ -92,7 +92,7 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Linked requirements | `REQ-P1-DOC-006`, `REQ-P1-ING-001`, `REQ-P1-ING-002`, `REQ-P1-ING-004`, `REQ-P1-PLT-001` |
 | Primary users | Household owner; family administrator; adult member; workspace service. |
 | Capabilities | Support React web/PWA upload plus Flutter iOS/Android file, camera, photo-library, and manual record capture; route all through one asynchronous ingestion state machine; configure validation, preview, native extraction, OCR fallback, and unsupported behavior by format; preserve acquisition attempts; provide idempotent retry and exact-hash duplicate detection. |
-| Explicit exclusions and decision dependencies | React web and concurrent Flutter mobile delivery are approved by `DEC-052`, which supersedes `DEC-021`. Private inbound email and cloud connectors are not promised until `DEC-031` is approved. Enabled formats and the first launch profile depend on `DEC-035`; slice sequencing depends on `DEC-030`. |
+| Explicit exclusions and decision dependencies | React web and concurrent Flutter mobile delivery are approved by `DEC-052`, which supersedes `DEC-021`. `DEC-031` and `DEC-045` authorize disabled-first connector implementation but no live provider transfer without activation evidence. `DEC-035` permits governed synthetic formats while public launch coverage remains release-gated; sequencing follows `DEC-030`. |
 | Failure or degraded behavior | Unsupported or unprocessable formats receive an explicit terminal or reviewable degraded state. Duplicate submissions, late events, and out-of-order retries must not create uncontrolled versions or duplicate side effects, and byte equality must not assert logical identity. |
 | Product-level acceptance summary | Every enabled format has an observable path; capture routes share the same provenance envelope; `AC-P1-ING-001` passes for duplicate submissions, timeouts, and out-of-order events. |
 
@@ -106,7 +106,7 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Linked requirements | `REQ-P1-DOC-007`, `REQ-P1-ING-003` |
 | Primary users | Household owner; family administrator; adult member; workspace service; product operator or support user under separately approved policy. |
 | Capabilities | Validate and scan before extraction; isolate suspicious files from preview, download, parsing, indexing, graph, search, and AI; identify suspected clinical records and prevent them from entering ordinary Phase 1 flows. |
-| Explicit exclusions and decision dependencies | Clinical/treatment records and medical workflows are excluded by `DEC-024`. Whether suspected clinical content is rejected before storage, quarantined for decision, or retained only as an encrypted unprocessed original requires `DEC-036`. Provider-specific scanner behavior is excluded by `DEC-009`. |
+| Explicit exclusions and decision dependencies | Clinical/treatment records and medical workflows are excluded by `DEC-024`. `DEC-036` requires isolated `POLICY_HOLD`, denies ordinary preview/extraction/search/graph/AI/sharing/export, allows deletion, and requires explicit safe reclassification before ordinary processing. Provider-specific scanner behavior remains behind the `DEC-009` abstraction boundary. |
 | Failure or degraded behavior | Scanner timeout, scanner unavailability, suspicious classification, or unresolved clinical suspicion defaults to isolation with truthful status; it must never fall through to ordinary processing. Release or deletion requires the approved policy and authorization. |
 | Product-level acceptance summary | Malware and scanner-failure paths are tested; quarantined content cannot be processed or surfaced; a synthetic clinical fixture is not indexed or misrepresented as in-scope health-insurance evidence. |
 
@@ -120,7 +120,7 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Linked requirements | `REQ-P1-TRUST-001`, `REQ-P1-TRUST-003`, `REQ-P1-TRUST-004`, `REQ-P1-CRYPTO-002`, `REQ-P1-OPS-002`, `REQ-P1-ASSURE-001` |
 | Primary users | Household owner; family administrator; adult member; managed dependant; guest or delegated adviser; workspace service; product operator or support user. |
 | Capabilities | Combine Azure-managed transport/at-rest controls with customer-controlled member/device/recovery key envelopes; enforce least privilege and workspace isolation; revoke and rotate access without exposing content keys to ordinary operators; consume Azure commodity capabilities through provider-neutral adapters; redact ordinary telemetry; create tamper-evident, workspace-scoped security and consequence audit records; maintain an evidence-backed assurance case mapped to the approved standards baseline. |
-| Explicit exclusions and decision dependencies | Standing support access to raw household content, server-held plaintext customer keys, custom cryptographic primitives, duplicated managed-service capabilities, unsupported certification claims, and raw content in logs, analytics, traces, fixtures, errors, or screenshots are excluded. Azure selection follows `DEC-049`, customer-controlled encryption follows `DEC-050`, assurance follows `DEC-051`, and recovery assurance still requires `DEC-038`. |
+| Explicit exclusions and decision dependencies | Standing support access to raw household content, server-held plaintext customer keys, custom cryptographic primitives, duplicated managed-service capabilities, unsupported certification claims, and raw content in logs, analytics, traces, fixtures, errors, or screenshots are excluded. Azure selection follows `DEC-049`, customer-controlled encryption follows `DEC-050`, assurance follows `DEC-051`, and approved `DEC-038` keeps recovery/ownership-transfer success routes unavailable in Phase 1 pending a later governed assurance decision. |
 | Failure or degraded behavior | Sensitive telemetry is dropped or safely redacted rather than emitted. Audit-write or required security-control failure blocks the consequential operation or leaves it explicitly incomplete; support cannot bypass normal authorization. |
 | Product-level acceptance summary | Threat-model and negative-authorization gates pass; critical workflows can be reconstructed from privacy-safe audit records; automated redaction tests cover success and failure paths. |
 
@@ -137,6 +137,20 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Explicit exclusions and decision dependencies | Hard-coded taxonomy/workflows and vendor-bound core records are excluded by `DEC-007` and `DEC-009`. Organisation, business-unit, legal-hold, DLP, records, and information-barrier end-user capabilities are excluded from Phase 1 under `DEC-002`; only extension points are reserved. |
 | Failure or degraded behavior | Dangling IDs, invalid versions, missing required relationships, or unsupported schema versions cannot activate. Unknown reserved types remain inert rather than leaking enterprise behavior into consumer workflows. |
 | Product-level acceptance summary | Reference validation rejects invalid configuration; a later schema can add reserved Phase 2 types without redefining Phase 1 identity, workspace, resource, evidence, fact, or audit identities. |
+
+### `FEAT-P1-031` — Public product, trust, and account-entry experience
+
+| Field | Detail |
+|---|---|
+| Scope | `REQUIRED` |
+| Outcome | `OUT-P1-001`, `OUT-P1-007` — a prospective household can understand Doculyra, its trust boundaries, and how to begin without mistaking a development preview or future integration for a completed production service. |
+| Release slice | `P1-S1` / cross-slice public entry |
+| Linked requirements | `REQ-P1-PLT-001`, `REQ-P1-PLT-003` |
+| Primary users | Prospective household owner; prospective family administrator; unauthenticated visitor. |
+| Capabilities | Present the approved Doculyra identity; explain product, features, evidence-aware assistance, privacy/security, company and contact intent; provide preview privacy and terms routes; and provide direct create-account and sign-in entry to the governed onboarding/authentication flow. |
+| Explicit exclusions and decision dependencies | Public copy cannot claim legal approval, certification, production readiness, real-data eligibility, complete monitoring coverage, active providers, or completed controls without the corresponding evidence. Final operator identity, production legal terms, public domain/DNS, pricing, production support routes, and public launch remain release-gated. |
+| Failure or degraded behavior | Public routes remain navigable without authentication and disclose no workspace/customer data. Missing contact or provider configuration is shown as unavailable rather than simulated; route or content failure does not fall through to an authenticated or customer-data surface. |
+| Product-level acceptance summary | `AC-P1-PUB-001` and applicable `AC-P1-A11Y-001` evidence pass across public navigation, privacy/terms, account entry, unavailable-provider, synthetic-preview, no-leak, and unsupported-claim cases. |
 
 ## 3. `P1-S2` — Understand and retrieve
 
@@ -333,7 +347,7 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Release slice | `P1-S3` |
 | Linked requirements | `REQ-P1-NTF-001`, `REQ-P1-NTF-002`, `REQ-P1-NTF-003` |
 | Primary users | Household owner; family administrator; assigned adult member; scoped guest/delegated adviser; workspace service. |
-| Capabilities | Create causally linked tasks with owner, status, due date, source, evidence requirement, and history; acknowledge, snooze, reassign, complete, reopen, or dismiss according to workflow; deliver through a channel-neutral contract, with in-app proposed as required. |
+| Capabilities | Create causally linked tasks with owner, status, due date, source, evidence requirement, and history; acknowledge, snooze, reassign, complete, reopen, or dismiss according to workflow; deliver required in-app notifications through a channel-neutral contract. |
 | Explicit exclusions and decision dependencies | In-app delivery is required; email/SMS adapters may be implemented but live delivery remains gated by `DEC-037`/`045`. Unapproved channels cannot receive sensitive content. Consequential notification follows `DEC-006`; workflows are configured under `DEC-007`; sequencing follows approved `DEC-030`. |
 | Failure or degraded behavior | Invalid actors and state transitions fail; delivery retries remain idempotent; channel failure leaves task state available and truthfully reports notification status; completion does not discard required evidence. |
 | Product-level acceptance summary | Task causality and history are preserved; authorized transitions behave deterministically; duplicate delivery does not duplicate tasks; channel content obeys the resource privacy policy. |
@@ -386,27 +400,27 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 
 | Field | Detail |
 |---|---|
-| Scope | History-preserving transition and curated continuity are proposed; automated release is `CONDITIONAL`. |
+| Scope | History preservation, ordinary scoped grants, and curated continuity/export are `REQUIRED`; automated release is `EXCLUDED` from Phase 1. |
 | Outcome | `OUT-P1-005`, `OUT-P1-006` — subject history can survive a later access transition, and continuity can be prepared without unsafe automatic disclosure. |
 | Release slice | `P1-S4` |
 | Linked requirements | `REQ-P1-WS-007`, `REQ-P1-SHR-004` |
 | Primary users | Managed dependant; adult member; household owner; family administrator; guest or delegated adviser where explicitly granted. |
 | Capabilities | Preserve evidence, fact, subject, and provenance identity through a later access transition; prepare curated continuity/export packs and time-aware grants; reserve a governed release workflow if later approved. |
-| Explicit exclusions and decision dependencies | No automated incapacity, emergency, or after-death release is authorized before `DEC-032` defines evidence, delay, challenge, consent, revocation, jurisdiction, and audit. Transition rules require an approved consent design and cannot silently reassign history. |
+| Explicit exclusions and decision dependencies | `DEC-032` excludes automated incapacity, emergency, and after-death release from Phase 1. Transition rules still require an approved consent/authority design and cannot silently reassign history; ordinary grants and exports cannot be repurposed as automatic release. |
 | Failure or degraded behavior | Without an approved transition or release policy, history remains preserved but access does not transfer automatically. Ambiguous trigger evidence, consent, or challenge state blocks release and leaves an auditable pending/denied outcome. |
-| Product-level acceptance summary | A tested transition does not recreate or silently reassign evidence/facts/audit; curated packs obey current grants; no event releases restricted content before the `DEC-032` policy and security tests are approved. |
+| Product-level acceptance summary | A tested transition fence does not recreate or silently reassign evidence/facts/audit; curated packs obey current grants; negative evidence proves no event or configuration releases restricted content automatically. |
 
 ### `FEAT-P1-026` — Provider-neutral connector ingestion and processing consent
 
 | Field | Detail |
 |---|---|
-| Scope | `CONDITIONAL` |
+| Scope | Adapter implementation is `REQUIRED / RELEASE GATED`; live provider activation is conditional on exact consent, credentials, route eligibility, and conformance evidence. |
 | Outcome | `OUT-P1-001`, `OUT-P1-006`, `OUT-P1-007` — approved connectors can import evidence while preserving source identity, consent, permissions, versions, deletion, and revocation semantics. |
-| Release slice | `P1-S4` unless `DEC-031` assigns a connector to an earlier slice. |
+| Release slice | `P1-S4`; upload, camera, and manual routes remain earlier required capture paths. |
 | Linked requirements | `REQ-P1-ING-009`, `REQ-P1-TRUST-009` |
 | Primary users | Household owner; family administrator; adult member; workspace service; trusted-source connector; product operator or support user. |
 | Capabilities | Record purpose-limited consent; preserve external item/version and source identity; preserve external permissions where applicable; implement deletion/disconnect semantics; revoke future retrieval and processing; enforce AI/OCR/analytics/support/cross-border processing policy through replaceable adapters. |
-| Explicit exclusions and decision dependencies | No private inbound email or cloud connector is required until `DEC-031` selects it. Provider lock-in is excluded by `DEC-009`; retained-data effects require `DEC-039`; residency and cross-border processing require `DEC-040`; unsupported processing must be disclosed before consent. |
+| Explicit exclusions and decision dependencies | `DEC-045` authorizes consent-driven provider-neutral adapter implementation and `DEC-055` authorizes configuration preparation. No exact provider may operate until its credentials, redirect origins, minimal scopes, consent, token protection, revocation/deletion, route eligibility, audit, and conformance gates pass. Provider lock-in remains excluded by `DEC-009`. |
 | Failure or degraded behavior | Disconnect or consent withdrawal stops future retrieval. Adapter timeout, partial import, permission drift, or provider deletion remains visible and retry-safe; already-ingested evidence follows the approved retention policy rather than being silently retained or destroyed. |
 | Product-level acceptance summary | Provider conformance tests preserve identity, permission, consent, revocation, and deletion semantics; a disconnected connector cannot continue retrieval; future processing changes when consent is withdrawn. |
 
@@ -424,31 +438,31 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Failure or degraded behavior | Duplicate triggers do not spam; channel failure does not falsely mark delivery; stale or failed sources suppress or visibly qualify dependent messages; urgent handling still obeys approved privacy exceptions. |
 | Product-level acceptance summary | Preference, quiet-period, deduplication, escalation, acknowledgement, and stale-source cases pass without unauthorized content exposure or divergence between task and notification state. |
 
-### `FEAT-P1-028` — Explainable document-readiness score
+### `FEAT-P1-028` — Explainable item-level readiness findings with aggregate scoring absent
 
 | Field | Detail |
 |---|---|
-| Scope | `CONDITIONAL` |
-| Outcome | `OUT-P1-001`, `OUT-P1-007` — if approved, users can inspect a decomposable content-health signal without mistaking it for legal compliance or a guarantee. |
+| Scope | `REQUIRED ABSENCE / SAFETY BOUNDARY` |
+| Outcome | `OUT-P1-001`, `OUT-P1-007` — users can inspect authorized item-level findings and limitations without an aggregate or hidden score being mistaken for legal compliance, completeness, risk, or a guarantee. |
 | Release slice | `P1-S4` |
 | Linked requirements | `REQ-P1-HLT-004` |
 | Primary users | Household owner; family administrator; authorized adult member. |
-| Capabilities | Calculate a permission-aware aggregate from inspectable contributing signals; explain the decomposition and uncertainty; use approved terminology and metric validation. |
-| Explicit exclusions and decision dependencies | Release requires `DEC-034` and validated UX/metric design. Legal-compliance, legal-risk, completeness, or safety guarantees are excluded. Hidden restricted items cannot be inferred from the score. |
-| Failure or degraded behavior | If authorization-safe decomposition, metric validity, or approved terminology is unavailable, the aggregate score is omitted while individual authorized findings remain available. |
-| Product-level acceptance summary | Users can inspect every permitted contributor and limitation; changing access cannot leak hidden item existence through score deltas; evaluation proves the score is not presented as compliance or a guarantee. |
+| Capabilities | Present decomposable, permission-aware item findings with their evidence, applicability, freshness, uncertainty, status, limitations, and available governed response. Preserve explicit absence of aggregate, ranking, traffic-light, compliance, completeness, legal-risk, or safety scoring. |
+| Explicit exclusions and decision dependencies | `DEC-034` excludes aggregate and hidden scoring in Phase 1. Hidden restricted items cannot be inferred through totals, deltas, ordering, denominators, badges, colours, or copy. A future aggregate would require a superseding Product Authority decision and complete UX, privacy, metric, and evaluation contracts. |
+| Failure or degraded behavior | If an item finding cannot be explained or disclosed safely, it is suppressed or shown as unavailable/limited according to policy; the product does not substitute an opaque aggregate or last-known score. |
+| Product-level acceptance summary | Users can inspect every permitted item finding and limitation; access changes leak no hidden item existence; negative tests prove no aggregate or hidden score is calculated, displayed, persisted, inferred, or used for ordering. |
 
 ### `FEAT-P1-029` — Complete portability export and controlled deletion
 
 | Field | Detail |
 |---|---|
-| Scope | Export and deletion capability are `REQUIRED`; exact export envelope and purge objectives remain decision-dependent. |
+| Scope | Export and deletion capability and their approved envelope/lifecycle are `REQUIRED`; production execution remains evidence- and release-gated. |
 | Outcome | `OUT-P1-006`, `OUT-P1-007` — authorized users can leave with documented usable data and request deletion without hidden active derivatives or misleading timing. |
 | Release slice | `P1-S4` |
 | Linked requirements | `REQ-P1-TRUST-006`, `REQ-P1-TRUST-007`, `REQ-P1-DEL-001`, `REQ-P1-DEL-002` |
 | Primary users | Household owner; family administrator; adult member; managed dependant subject where policy permits; workspace service; product operator or support user. |
 | Capabilities | Produce access-controlled, resumable, checksummed, machine-readable export manifests; govern archive, trash, account deletion, resource purge, retention exceptions, index/cache/connector removal, backup expiry, and minimized retained audit as separate states. |
-| Explicit exclusions and decision dependencies | Complete originals-plus-structured-data portability requires approval of `DEC-033` and respects third-party rights. Document Trash, restoration, purge coordination, key-envelope destruction, anti-resurrection controls, and content-minimized deletion evidence are approved by `DEC-053`; account deletion and lawful retention exceptions remain under the broader `DEC-039` governance boundary. Restore/support cannot bypass deletion, and deletion cannot falsely promise immediate backup erasure. |
+| Explicit exclusions and decision dependencies | `DEC-033` approves complete authorized originals-plus-structured-data portability subject to third-party rights. Document Trash, restoration, purge coordination, key-envelope destruction, anti-resurrection controls, and content-minimized deletion evidence are approved by `DEC-053`; account deletion and lawful retention exceptions remain under the broader `DEC-039` governance boundary. Restore/support cannot bypass deletion, and deletion cannot falsely promise immediate backup erasure. |
 | Failure or degraded behavior | Interrupted export is resumable and reports completeness; deletion remains in a truthful governed state until each objective is met; failed derivative removal is visible and recoverable; retained audit is minimized rather than silently destroyed or left content-rich. |
 | Product-level acceptance summary | Export manifests are complete against the approved envelope and verify by checksum; purge covers active stores and derivatives; backup timing is disclosed; `AC-P1-DEL-001` passes without restore or support bypass. |
 
@@ -461,26 +475,26 @@ All four slice definitions and their sequencing depend on approval of `DEC-030`.
 | Release slice | `P1-S4` |
 | Linked requirements | `REQ-P1-TRUST-005`, `REQ-P1-TRUST-008`, `REQ-P1-OPS-001` |
 | Primary users | Household owner; family administrator; adult member; product operator or support user; workspace service. |
-| Capabilities | Define isolated Azure `dev`, `stage`, and future `prod` stacks in Bicep; apply an approved residency matrix to originals, records, indexes, backups, logs, analytics, support, AI/OCR, and disaster recovery; test placement and restore; enforce approved recovery evidence, delay/challenge, ownership, and support controls. |
-| Explicit exclusions and decision dependencies | Azure and the Australia East production realm are approved by `DEC-049`; dev/stage are synthetic-only in the current subscription and prod remains unprovisioned pending a separate subscription. Processor/data-class coverage and cross-border exceptions require `DEC-040`. Recovery assurance and support process require `DEC-038`; provider-neutral domain/adaptor boundaries remain required by `DEC-009`, and support has no standing raw-content access. |
+| Capabilities | Define isolated Azure `dev`, `stage`, and future `prod` stacks in Bicep; apply an approved residency matrix to originals, records, indexes, backups, logs, analytics, support, AI/OCR, and disaster recovery; test placement and restore; enforce the approved absence of recovery/ownership-transfer success routes. A richer recovery capability is a later governed extension point, not Phase 1 behavior. |
+| Explicit exclusions and decision dependencies | Azure and the Australia East production realm are approved by `DEC-049`; dev/stage are synthetic-only in the current subscription and prod remains unprovisioned pending a separate subscription. Processor/data-class coverage and cross-border exceptions require `DEC-040`. Approved `DEC-038` keeps recovery and ownership transfer unavailable; a future assurance/support process requires a later governed decision. Provider-neutral domain/adaptor boundaries remain required by `DEC-009`, and support has no standing raw-content access. |
 | Failure or degraded behavior | Unsupported or non-compliant processing is blocked or disclosed before approved consent. Recovery cannot disclose content or transfer authority when evidence, challenge, delay, or policy is unresolved; restore cannot place data outside the approved matrix. |
 | Product-level acceptance summary | Automated placement and restore match the approved matrix; cross-border exceptions are consented and recorded where permitted; recovery and support cannot bypass MFA, encryption, workspace ownership, private-resource, or delegated-access policy. |
 
 ## 6. Research-gap adoption, deferral, and decision map
 
-Every disposition below is a draft catalogue treatment inherited from `PROD-PRD-001` §9. “Adopt” means proposed for Phase 1 subject to PRD approval; it does not turn a research recommendation into approved implementation authority by itself.
+Every disposition below is inherited from the approved `PROD-PRD-001` §9. “Adopt” means the product requirement is in the build baseline; it does not establish implementation completion, provider activation, or release evidence.
 
-| Gap | Catalogue treatment | Features and requirements | Deferred or decision-needed boundary |
+| Gap | Catalogue treatment | Features and requirements | Remaining build/release boundary |
 |---|---|---|---|
-| `GAP-001` | **Adopt** expected-document profiles, alternatives, waiver/exception, fulfilment, and evidence states. | `FEAT-P1-020`; `REQ-P1-HLT-001`, `002`, `005` | PRD approval and the requirement-profile/reference-data contract are required before implementation. |
-| `GAP-002` | **Adopt** bitemporal fact/rule resolution and immutable occurrences/snapshots. | `FEAT-P1-010`, `FEAT-P1-016`, `FEAT-P1-017`; `REQ-P1-FCT-001`–`004`, `REQ-P1-MON-002`, `004` | PRD approval and the data-model ADR are required. |
-| `GAP-003` | **Adopt** field- and passage-level provenance with processor/model/schema version and review state. | `FEAT-P1-009`, `FEAT-P1-013`, `FEAT-P1-014`; `REQ-P1-ING-005`, `REQ-P1-SRCH-002`, `REQ-P1-AI-003` | PRD approval and the evidence/output schemas are required. |
-| `GAP-004` | **Adopt** distinct extraction, fact, fulfilment, approval, and verification states. | `FEAT-P1-009`, `FEAT-P1-019`, `FEAT-P1-020`; `REQ-P1-ING-007`, `REQ-P1-HLT-005`, `REQ-P1-ACT-005`–`008` | PRD approval and the workflow state contracts are required. |
-| `GAP-005` | **Adopt** conformed effective-document views and amendment-aware closure. | `FEAT-P1-015`, `FEAT-P1-019`; `REQ-P1-DOC-008`, `REQ-P1-ACT-008` | PRD approval and the version/obligation data model are required. |
-| `GAP-006` | **Adopt** source coverage, freshness, retrieval/parser health, stale-state behavior, and replay. | `FEAT-P1-017`; `REQ-P1-MON-003`–`007` | Initial Australian source coverage is **decision-needed** under `DEC-035`; the source-monitor operations contract is required. |
-| `GAP-007` | **Split: adopt, defer, and decision-needed.** Adopt scoped grants; propose complete portability; defer automated emergency/after-death release until approved. | `FEAT-P1-024`, `FEAT-P1-025`, `FEAT-P1-029`; `REQ-P1-SHR-001`–`004`, `REQ-P1-TRUST-006` | Complete export is **decision-needed** under `DEC-033`. Automated release is **deferred/conditional** under `DEC-032`; ordinary time-scoped grants and curated packs may proceed only within approved privacy/security contracts. |
-| `GAP-008` | **Decision-needed conditional adoption.** No aggregate score is required until approved. | `FEAT-P1-028`; `REQ-P1-HLT-004` | `DEC-034` and validated UX/metric design are required; otherwise the score is **deferred/omitted** and individual findings remain. |
-| `GAP-009` | **Adopt** policy/evaluation gates for consequential and bulk AI-assisted actions. | `FEAT-P1-014`, `FEAT-P1-019`; `REQ-P1-AI-001`–`006`, `REQ-P1-ACT-005`–`007` | PRD approval plus AI capability, policy, approval, authorization, audit, and evaluation contracts are required. |
+| `GAP-001` | **Adopt** expected-document profiles, alternatives, waiver/exception, fulfilment, and evidence states. | `FEAT-P1-020`; `REQ-P1-HLT-001`, `002`, `005` | Requirement-profile/reference-data contracts and execution evidence remain required. |
+| `GAP-002` | **Adopt** bitemporal fact/rule resolution and immutable occurrences/snapshots. | `FEAT-P1-010`, `FEAT-P1-016`, `FEAT-P1-017`; `REQ-P1-FCT-001`–`004`, `REQ-P1-MON-002`, `004` | Accepted data-model contracts and execution evidence remain required. |
+| `GAP-003` | **Adopt** field- and passage-level provenance with processor/model/schema version and review state. | `FEAT-P1-009`, `FEAT-P1-013`, `FEAT-P1-014`; `REQ-P1-ING-005`, `REQ-P1-SRCH-002`, `REQ-P1-AI-003` | Evidence/output schemas and execution evidence remain required. |
+| `GAP-004` | **Adopt** distinct extraction, fact, fulfilment, approval, and verification states. | `FEAT-P1-009`, `FEAT-P1-019`, `FEAT-P1-020`; `REQ-P1-ING-007`, `REQ-P1-HLT-005`, `REQ-P1-ACT-005`–`008` | Workflow-state contracts and execution evidence remain required. |
+| `GAP-005` | **Adopt** conformed effective-document views and amendment-aware closure. | `FEAT-P1-015`, `FEAT-P1-019`; `REQ-P1-DOC-008`, `REQ-P1-ACT-008` | Version/obligation data contracts and execution evidence remain required. |
+| `GAP-006` | **Adopt** source coverage, freshness, retrieval/parser health, stale-state behavior, and replay. | `FEAT-P1-017`; `REQ-P1-MON-003`–`007` | `DEC-035` permits synthetic development sources; the reviewed public source pack and source-monitor execution evidence remain release-gated. |
+| `GAP-007` | **Split: adopt and explicitly exclude.** Adopt scoped grants and complete portability; automated emergency/incapacity/after-death release is excluded from Phase 1. | `FEAT-P1-024`, `FEAT-P1-025`, `FEAT-P1-029`; `REQ-P1-SHR-001`–`004`, `REQ-P1-TRUST-006` | `DEC-033` approves the complete authorized export envelope. `DEC-032` requires tested absence of automated release; ordinary grants and curated exports remain separate. |
+| `GAP-008` | **Adopt item-level findings; exclude aggregate scoring.** | `FEAT-P1-020`, `FEAT-P1-028`; `REQ-P1-HLT-001`–`005` | `DEC-034` requires explainable item-level findings and prohibits aggregate/hidden readiness, compliance, risk, traffic-light, or ranking scores in Phase 1. |
+| `GAP-009` | **Adopt** policy/evaluation gates for consequential and bulk AI-assisted actions. | `FEAT-P1-014`, `FEAT-P1-019`; `REQ-P1-AI-001`–`006`, `REQ-P1-ACT-005`–`007` | AI capability, policy, approval, authorization, audit, and evaluation contracts/evidence remain required. |
 | `GAP-010` | **Defer end-user capability; reserve core extension points.** | `FEAT-P1-007`; `REQ-P1-CFG-005` | Organisation, records, hold, information-barrier, DLP, and enterprise-governance workflows/UI are deferred to Phase 2 decisions and ADRs. Phase 1 preserves schema extension points only. |
 
 ## 7. Requirement coverage index
@@ -503,9 +517,10 @@ This index is a completeness check, not a substitute for feature-level links.
 | `REQ-P1-AI-001`–`007` | `FEAT-P1-014` |
 | `REQ-P1-TRUST-001`–`009` | `FEAT-P1-002`, `006`, `026`, `029`, `030` |
 | `REQ-P1-CFG-001`–`005` | `FEAT-P1-007`, `022` |
+| `REQ-P1-PLT-001`–`003` | `FEAT-P1-003`, `004`, `007`, `031` |
 
 ## 8. Catalogue-wide exclusions and acceptance boundary
 
-The following PRD exclusions apply to every feature even where not repeated: clinical and treatment records; organisation workspaces and enterprise administration; automatic professional advice; silent consequential changes; unbounded autonomous agents; arbitrary web content as authority; uncited consequential claims; native Phase 1 applications; guaranteed monitoring completeness; provider lock-in; an adviser-specific standalone product; and arbitrary shared office-document editing.
+The following PRD exclusions apply to every feature even where not repeated: clinical and treatment records; organisation workspaces and enterprise administration; automatic professional advice; silent consequential changes; unbounded autonomous agents; arbitrary web content as authority; uncited consequential claims; native desktop applications in Phase 1; guaranteed monitoring completeness; provider lock-in; an adviser-specific standalone product; and arbitrary shared office-document editing. Dedicated Flutter iOS/Android applications remain required by `DEC-052`.
 
 Every user-facing critical flow must also satisfy `AC-P1-A11Y-001`. Every feature is subject to current authorization, additive history, applicability-before-recommendation, bound approval, visible failure, no derivative leakage, no automatic renewal, governed authority, portability/deletion design, and the launch gates in `PROD-PRD-001`. Detailed acceptance criteria and objective thresholds belong in the use-case catalogue, NFRs, AI evaluations, test strategy, and backlog; this catalogue does not weaken or replace them.

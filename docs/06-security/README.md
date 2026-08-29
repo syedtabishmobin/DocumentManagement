@@ -26,4 +26,4 @@
 
 ## Approval boundary
 
-These controls remain draft and cannot close `DEC-032`, `DEC-036`, `DEC-038`, `DEC-039`, or `DEC-040`. A provider's default security claim is not evidence that a control is satisfied. Each implementation slice requires threat-model updates, negative authorization tests, privacy review, and recorded control evidence.
+These controls remain draft and cannot close `DEC-032`, `DEC-036`, `DEC-039`, or `DEC-040`, and cannot override approved `DEC-038`, which keeps account/workspace recovery and ownership transfer unavailable in Phase 1. A provider's default security claim is not evidence that a control is satisfied. Each implementation slice requires threat-model updates, negative authorization tests, privacy review, and recorded control evidence.

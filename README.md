@@ -4,13 +4,13 @@ This repository is the source of truth for an AI-native personal and family docu
 
 ## Current status
 
-The complete Phase 1 specification repository is the approved implementation baseline. It includes the product, architecture, document-intelligence, AI, API/event, security, UX, engineering, operations, backlog, reference-data, and testing packs. The PRD defines four vertical slices, seven outcomes, 100 stable requirements, and an explicit disposition for every research `GAP-*` item. The backlog decomposes that baseline into 12 epics and 48 stories with exact acceptance and test mappings.
+The complete Phase 1 specification repository is controlled build baseline `DOCULYRA-BUILD-P1-2026.08.30.1`, status `BUILD_BASELINE_APPROVED`. It includes the product, architecture, document-intelligence, AI, API/event, security, UX, engineering, operations, backlog, reference-data, and testing packs. The PRD defines four vertical slices, seven outcomes, 101 stable requirements, and an explicit disposition for every research `GAP-*` item. The backlog decomposes that baseline into 12 epics, 31 features, and 49 stories with 98 exact story acceptance criteria and 104 planned tests. Approval authorizes governed queue shaping, not product completion, production release, or real-data processing.
 
 The repository's Markdown/link/ID/checksum, API/event, reference-data, test-traceability, type, unit, and build validators are quality gates. Static success does not constitute legal validation or production release authority.
 
 The product owner approved full Phase 1 implementation under `DEC-041` and the production-oriented Azure development program under `DEC-054`–`055`. The default local profile and deployed Azure development preview accept synthetic data only and keep external connectors, notifications, and hosted AI disabled. Production deployment and real personal-data processing remain gated by the [readiness record](SPECIFICATION-READINESS.md).
 
-The current Azure development website is [Doculyra dev](https://ca-doculyra-dev-web.ashystone-3c89dc27.australiaeast.azurecontainerapps.io). It is a synthetic preview, not a production service. The evidence-based [personal/family implementation status](docs/10-backlog/05-personal-family-implementation-status.md) identifies the remaining work across all 48 stories.
+The current Azure development website is [Doculyra dev](https://ca-doculyra-dev-web.ashystone-3c89dc27.australiaeast.azurecontainerapps.io). It is a synthetic preview, not a production service. The evidence-based [personal/family implementation status](docs/10-backlog/05-personal-family-implementation-status.md) identifies the remaining work across all 49 stories, including the public-entry story.
 
 ## Run locally
 
@@ -86,7 +86,7 @@ The numbered folders under [`docs/`](docs/README.md) define navigation order, no
 | `docs/07-ux` | Information architecture, flows, screen specifications, design system, and accessibility | Draft pack complete; research/conformance evidence pending |
 | `docs/08-engineering` | Stack decisions, repository shape, standards, resilience, local development, and testing standards | React/TypeScript, Flutter, and Azure implementation active |
 | `docs/09-devops` | Environments, delivery, infrastructure, secrets, providers, rollback, recovery, and observability | Azure dev foundations and synthetic app deployed; production and provider activation gated |
-| `docs/10-backlog` | Epics, features, stories, acceptance criteria, dependencies, release slices, traceability, and implementation status | All 48 stories authorized as one program; 0 complete against full gates |
+| `docs/10-backlog` | Epics, features, stories, acceptance criteria, dependencies, release slices, traceability, and implementation status | 12 epics, 31 features and all 49 stories reconciled in the controlled candidate; 0 complete against full gates |
 | `docs/11-reference-data` | Machine-readable document types, rules, jurisdictions, sources, roles, permissions, and statuses | Draft synthetic seed complete; runtime activation prohibited |
 | `docs/12-testing` | Test strategy, AI/security/integration/E2E/performance scenarios and synthetic fixtures | Static/unit/build evidence exists; full mapped release suites remain incomplete |
 

@@ -79,7 +79,7 @@ Trust boundaries and required controls are defined in `SEC-ARCH-001` section 3. 
 | Threat ID | STRIDE / abuse | Threat and affected boundary/assets | Inherent | Required mitigations | Detection and test hook | Draft residual |
 |---|---|---|---|---|---|---|
 | `THR-P1-001` | Spoofing | Credential stuffing, phishing, factor theft, session fixation/replay, or stolen device impersonates a user. | H/C | `SEC-P1-003`–`005`, `AUTH-P1-001`, rate/risk controls, step-up for high impact | Login anomaly, factor/session events; brute-force, fixation, replay, revocation tests | M/H pending identity design |
-| `THR-P1-002` | Spoofing / elevation | Weak recovery or support transfers identity/workspace/private resources to an attacker. | H/C | `SEC-P1-005`, `AUTH-P1-032`, `PRIV-P1-025`; no fallback while `DEC-038` open | Recovery attempts/challenges; account-takeover abuse suite | H/C blocked by `DEC-038` |
+| `THR-P1-002` | Spoofing / elevation | Weak recovery or support transfers identity/workspace/private resources to an attacker. | H/C | `SEC-P1-005`, `AUTH-P1-032`, `PRIV-P1-025`; no fallback under approved `DEC-038` | Recovery attempts/challenges; account-takeover abuse suite | H/C capability blocked by approved `DEC-038` |
 | `THR-P1-003` | Elevation / disclosure | IDOR or missing tenant predicate accesses another workspace through API, store, job, cache, export, or backup tooling. | H/C | `SEC-P1-001`–`002`, `AUTH-P1-001`–`005`, mandatory workspace scope | Cross-workspace canaries; exhaustive ID/resource swapping | L/C if controls prove zero leak |
 | `THR-P1-004` | Disclosure | Membership/admin/relationship is mistaken for blanket resource or sensitive-field access. | H/C | `AUTH-P1-002`, `006`–`007`, `PRIV-P1-003`–`004` | Family-admin/caregiver negative matrix; `AC-P1-SEC-001` | L/C |
 | `THR-P1-005` | Disclosure / inference | Counts, facets, empty states, errors, timing, scores, graph paths, notifications, audit, or model wording reveal restricted existence. | H/C | `AUTH-P1-008`–`011`, `025`, `030`; `PRIV-P1-004` | Differential/timing/enumeration tests; `MET-P1-018` | M/C; ongoing inference risk |
@@ -143,7 +143,7 @@ Trust boundaries and required controls are defined in `SEC-ARCH-001` section 3. 
 
 **Attack:** An attacker exploits email, family relationship, adviser status, death/incapacity claim, or support pressure to obtain identity, ownership, keys, export, or private resources.
 
-**Required defense while open:** no unspecified recovery or automated continuity route, no universal support role, strong privileged separation, denial audit, user-owned ordinary grants/curated export only. `DEC-032` and `DEC-038` require dedicated ceremony threat-model updates before any route is enabled.
+**Required defense:** no unspecified recovery or automated continuity route, no universal support role, strong privileged separation, denial audit, user-owned ordinary grants/curated export only. `DEC-032` remains unresolved for automated continuity; approved `DEC-038` makes recovery/ownership-transfer success unavailable in Phase 1. Any later route requires a new governed decision and dedicated ceremony threat-model update before enablement.
 
 ## 6. Privacy threat analysis
 
@@ -172,7 +172,7 @@ For every `THR-P1-*` item, the implementation backlog must record:
 
 - `DEC-032`: `THR-P1-025` remains blocking for automated continuity release.
 - `DEC-036`: `THR-P1-013` remains blocking for a final suspected-clinical-content flow.
-- `DEC-038`: `THR-P1-002` remains blocking for recovery/ownership transfer.
+- `DEC-038`: the approved Phase 1 decision keeps recovery/ownership transfer unavailable because `THR-P1-002` has no separately approved assurance ceremony; any later capability must reopen that threat under governed change control.
 - `DEC-053`: `THR-P1-023` remains blocking until the 30-day cross-store lifecycle and non-resurrection evidence pass.
 - `DEC-049`/`050`: `THR-P1-016`, `THR-P1-024`, and `THR-P1-031`–`034` remain blocking until Azure placement, client encryption, build integrity, recovery, cross-client protocol, and encrypted-file handling evidence pass.
 

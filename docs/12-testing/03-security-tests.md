@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Document ID | `TST-SEC-001` |
-| Version | `0.2` |
+| Version | `0.3` |
 | Status | **APPROVED IMPLEMENTATION BASELINE — independent production evidence remains required** |
 | Product phase | Phase 1 — Personal and Family |
 | Updated | 28 August 2026 |
@@ -38,6 +38,7 @@ Security tests assert both the allowed outcome and prohibited observations. A sa
 | `TEST-SEC-P1-017` | Web/Flutter release integrity and malicious-update resistance | Signed/provenanced candidates match reviewed source; CSP and dependency controls block unapproved egress; rollback, compromised builder and untrusted plugin cases cannot obtain plaintext silently. |
 | `TEST-SEC-P1-018` | Trash, restore and final purge | Immediate fence, authorized pre-deadline restore, post-deadline denial, crypto-shred, derived cleanup, replay/restore suppression and immutable content-free ledger are verified at clock boundaries. |
 | `TEST-SEC-P1-019` | Azure identity, network and environment isolation | Dev/stage/prod identities, data, secrets, RBAC and routes cannot cross; public exposure, policy drift and non-Australian route attempts fail deployment or runtime gates. |
+| `TEST-SEC-P1-020` | Public product and legal-preview trust boundary | Signed-out routes expose no account/workspace/document data, credential, unsafe egress or hidden-provider state; telemetry stays metadata-only and every missing configuration or unfinished production/legal capability is reported truthfully. |
 
 ## 3. Authorization negative matrix
 

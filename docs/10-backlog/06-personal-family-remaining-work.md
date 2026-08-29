@@ -3,10 +3,10 @@
 | Field | Value |
 |---|---|
 | Document ID | `BLG-REMAIN-001` |
-| Version | `0.1` |
+| Version | `0.2` |
 | Status | **ACTIVE EXECUTION CHECKLIST — not a production approval** |
 | Scope | Phase 1 personal and family only |
-| Generated | 29 August 2026 |
+| Generated | 30 August 2026 |
 | Evidence source | [`BLG-STATUS-001`](05-personal-family-implementation-status.md) |
 
 ## 1. How to read this list
@@ -15,14 +15,14 @@ This register converts the story-by-story evidence audit into a delivery checkli
 
 Priority `P0` items block real personal documents or production release. `P1` items are core Phase 1 outcomes. `P2` items complete integration, parity, portability, operations, and release assurance. Priority is dependency/risk order inside the one approved Phase 1 program, not a reduction of scope.
 
-The 29 August 2026 foundation now has multiple identities/workspaces, idempotent workspace authority records, explicit owner grants, deny-by-default action checks, bounded sessions/CSRF/origin/abuse controls, a truthful recovery-unavailable boundary, and an implemented PostgreSQL workspace persistence adapter with migrations and transactional audit/outbox evidence. The rows below remain open because independent QA, Azure provisioning/conformance, production identity, complete authorization, MFA/passkeys, delegated sharing, client encryption, backup/restore and release assurance are not complete.
+The current foundation has multiple identities/workspaces, idempotent workspace authority records, explicit owner grants, deny-by-default action checks, bounded sessions/CSRF/origin/abuse controls, a truthful recovery-unavailable boundary, and an independently QA-passed PostgreSQL workspace persistence adapter with migrations and transactional audit/outbox evidence. The rows below remain open because product-story acceptance, Azure product activation/conformance, production identity, complete authorization, MFA/passkeys, delegated sharing, client encryption, backup/restore and release assurance are not complete.
 
 ## 2. Remaining product and platform work
 
 | Priority | State | Work item | Story trace |
 |---|---|---|---|
 | `P0` | `INCOMPLETE` | Replace the bounded local identity/session store with production identity, MFA/passkey enrolment, distributed session/revocation controls and complete abuse evidence; retain and fully test the explicit unavailable recovery behavior. | `STORY-P1-001`, `008`, `047` |
-| `P0` | `INCOMPLETE` | Independently verify and activate the implemented transactional PostgreSQL authority adapter only after Azure SKU/identity/private-network/backup/cost gates; then complete remaining identity, relationship, membership, delegated-grant, document/action lifecycle and repair behavior. | `STORY-P1-001`–`003`, `039`, `040` |
+| `P0` | `INCOMPLETE` | Preserve the independently QA-passed transactional PostgreSQL authority adapter; activate it only after Azure SKU/identity/private-network/backup/cost gates, then complete remaining identity, relationship, membership, delegated-grant, document/action lifecycle and repair behaviour. | `STORY-P1-001`–`003`, `039`, `040` |
 | `P0` | `INCOMPLETE` | Extend the local deny-by-default action boundary to document fields, evidence, edges, search, answers, citations, tasks, exports and activity, including delegated grants, revocation propagation, minimal disclosure and side-channel tests. | `STORY-P1-003`, `019`, `020`–`023`, `038`, `039` |
 | `P0` | `INCOMPLETE` | Encrypt every web and Flutter document before upload; implement secure device keys, workspace/customer key envelopes, grant-aware unwrap, rotation, revocation and crypto-shred without a plaintext fallback. | `STORY-P1-004`, `007`, `008`, `039`, `045` |
 | `P0` | `INCOMPLETE` | Replace preview file storage with immutable put-once Azure Blob artifacts, separate logical versions, integrity verification and deletion acknowledgements. | `STORY-P1-007`, `011`, `044`, `045` |
@@ -49,13 +49,14 @@ The 29 August 2026 foundation now has multiple identities/workspaces, idempotent
 | `P1` | `INCOMPLETE` | Complete tasks and notifications with assignment, schedules, preferences, quiet periods, linkage, deduplication, escalation, read state, repair and Flutter parity. | `STORY-P1-036`, `042` |
 | `P1` | `MISSING` | Implement minimal-disclosure “impact exists” responses with policy-specific authorization, anti-enumeration behavior, safe redemption and side-channel tests. | `STORY-P1-038` |
 | `P1` | `INCOMPLETE` | Extend the explicit owner bootstrap grant into exact delegated resource/field/action/purpose/time grants with effective-access preview, secure invitation redemption, expiry/revocation propagation, key-envelope access and immutable audit. | `STORY-P1-039` |
-| `P1` | `INCOMPLETE` | Complete family invitations with single-use delivery, invitee-created password/passkey, enable/suspend login, age/authority/consent rules, dependant transition and provenance. | `STORY-P1-040` |
+| `P1` | `INCOMPLETE` | Implement the `DEC-P1-056` explicit revisioned fail-closed dependant transition fence: atomic deny boundary, preserved provenance, privacy-safe audit, retry/rollback/recovery, permission recalculation and partial/concurrent-failure tests. Advanced independent access-transfer/delegation remains later governed scope. | `STORY-P1-040` |
 | `P2` | `INCOMPLETE` | Implement Microsoft, Google, Dropbox and Box OAuth start/callback, state/PKCE, encrypted token custody, consent persistence, selected-file import, cursors, disconnect, revocation/deletion and conformance. | `STORY-P1-041` |
 | `P2` | `INCOMPLETE` | Implement ACS email delivery with verified test recipients, preferences, minimised templates, bounce/retry state, rate controls and audit; decide whether SMS remains in scope. | `STORY-P1-042` |
 | `P2` | `INCOMPLETE` | Produce the complete authorised export envelope with originals, versions, facts, relationships, tasks, grants, audit, manifest/checksums, encryption and temporary cleanup. | `STORY-P1-044` |
 | `P2` | `INCOMPLETE` | Complete durable 30-day Trash with step-up restore, purge scheduler/ledger, Blob/key/projection/provider/backup acknowledgements, exceptions and non-resurrection tests. | `STORY-P1-045` |
 | `P2` | `INCOMPLETE` | Bring Flutter to critical web-journey parity, add secure key storage, offline/degraded behavior, accessibility, signing and iOS/Android test distribution. | `STORY-P1-004`, `008`, `022`, `036` and all user-facing stories |
 | `P2` | `INCOMPLETE` | Complete production observability, backup/restore, DR, migration/forward-repair, accessibility, privacy/legal review, penetration testing, incident exercises and release evidence. | All stories; especially `STORY-P1-009`, `045`, `046` |
+| `P2` | `INCOMPLETE` | Complete the baselined React public product/trust/legal/account-entry surface with acceptance/security/accessibility evidence, approved production legal/operator/contact content, deployment/DNS evidence and truthful launch claims. | `STORY-P1-049` |
 | `P2` | `REQUIRED ABSENCE EVIDENCE` | Expose and test the absence of account/workspace recovery, ownership transfer, support bypass and weaker key/factor reset routes. | `STORY-P1-047` |
 | `P2` | `REQUIRED ABSENCE EVIDENCE` | Expose and test the absence of automatic emergency, incapacity or after-death release; keep ordinary grants and export separate. | `STORY-P1-048` |
 

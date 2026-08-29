@@ -9,12 +9,12 @@
 | Primary outcomes | `OUT-P1-001`–`OUT-P1-007` |
 | Primary features | `FEAT-P1-001`–`FEAT-P1-006`, `FEAT-P1-008`–`FEAT-P1-025`, `FEAT-P1-027`, `FEAT-P1-029`–`FEAT-P1-030` |
 | Primary journeys | `JRN-P1-001`–`JRN-P1-010` |
-| Open decisions | `DEC-032`, `DEC-034`, `DEC-036`–`DEC-040` |
-| Updated | 26 August 2026 |
+| Approved boundaries | `DEC-032`, `DEC-034`, `DEC-036`–`DEC-040`, `DEC-044`, `DEC-047`, `DEC-049`–`DEC-053`, `DEC-055` |
+| Updated | 30 August 2026 |
 
 ## 1. Purpose and boundary
 
-This document defines the Phase 1 responsive web/PWA information architecture: workspace context, global navigation, resource dossiers, screen hierarchy, route identity, disclosure behavior, responsive adaptation, and conditional surfaces. It does not select a frontend framework, router, component library, device platform, analytics product, or visual brand.
+This document defines the Phase 1 information architecture for the React public website and authenticated web/PWA plus the authenticated Flutter iOS/Android clients: public product/trust/legal entry, workspace context, global navigation, resource dossiers, screen hierarchy, route identity, disclosure behavior, responsive adaptation, and gated surfaces. React and Flutter use their own UI source code under `DEC-052`, but implement the same protected journey, state, evidence, authorization, and accessibility semantics. The public product, privacy, terms, contact, and browser account-entry routes are React-specific under `DEC-044`. This document does not select a router, component library, analytics product, or device-specific navigation implementation. Visual implementation follows the Doculyra identity approved by `DEC-047` while retaining semantic, accessible tokens.
 
 The IA is an authorized projection of product state, not an authorization source. Identity, workspace, subject, membership, owner binding, relationship, grant, approval, and resource remain distinct under `WSP-P1-001`–`WSP-P1-032`. A hidden resource cannot be inferred from a route, tab, breadcrumb, count, facet, error, focus announcement, cached view, or timing difference (`AUTH-P1-008`–`AUTH-P1-011`, `AUTH-P1-025`, `NFR-P1-033`).
 
@@ -60,6 +60,21 @@ flowchart TD
 | Wide | Primary navigation may remain visible; a bounded secondary pane may show evidence, filters, or task context. No critical meaning depends on simultaneous panes. |
 
 Viewport breakpoints are implementation tokens, not device names. The reflow acceptance boundary is 320 CSS px and 400% zoom under `NFR-P1-024`. The PWA does not imply offline content storage: `SEC-P1-016` forbids persisting raw documents, tokens, evidence, or answers offline without a separately approved threat model.
+
+### 3.1 Public product, trust, legal, and account entry
+
+The React public surface is outside the protected workspace shell. It provides a stable path through product purpose, evidence-aware intelligence, features, privacy/security boundaries, company/about, contact availability, privacy, terms, create-account, and sign-in content. Its compact and wide navigation MUST expose the same destinations and account-entry outcomes.
+
+Public content MUST:
+
+1. use the approved Doculyra identity and `Doculyra Home` Phase 1 edition without implying that reserved Business or Enterprise editions are available;
+2. distinguish illustrative product examples from live customer data and label the current synthetic-data development-preview boundary;
+3. describe evidence-aware AI, device-local/default processing, disabled integrations, security, deletion, and availability only to the exact level supported by the approved decision and current environment;
+4. provide direct, stable privacy and terms routes plus a contact route or an accurate unavailable state when production contact delivery is not configured;
+5. route create-account and sign-in actions to the correct browser account-entry mode without treating authentication as authorization to a workspace; and
+6. preserve headings, landmarks, focus, reflow, reduced-motion, contrast, keyboard operation, and meaningful link labels without collecting protected workspace information.
+
+Final production legal wording, operator identity, contact address/domain, public release claims, and conformance evidence remain release-gated. Their absence cannot be hidden by placeholder success or an invented contact destination.
 
 ## 4. Global navigation map
 
@@ -146,7 +161,7 @@ Counts are derived disclosures, not harmless chrome. Each count, badge, facet, t
 | Hidden or stale denominator | Do not calculate a percentage, readiness measure, comparison delta, or ranking. |
 | Differential views | Switching workspace, filter, grant, or time perspective MUST NOT disclose protected existence through count timing or unexplained deltas. |
 
-Home and dossier ordering uses explicit, inspectable fields such as due date, updated time, user choice, or authorized severity. It MUST NOT use a hidden aggregate readiness, compliance, risk, confidence, or restricted-item signal while `DEC-034` is open.
+Home and dossier ordering uses explicit, inspectable fields such as due date, updated time, user choice, or authorized severity. Under approved `DEC-034`, it MUST NOT use a hidden aggregate readiness, compliance, risk, confidence, or restricted-item signal.
 
 ## 8. Navigation-state matrix
 
@@ -178,7 +193,7 @@ Home and dossier ordering uses explicit, inspectable fields such as due date, up
 - `UX-IA-P1-012` — Evidence and citation navigation MUST bind the exact version/anchor and reauthorize artifact, field/region, purpose, deletion state, and current policy at open time.
 - `UX-IA-P1-013` — Search navigation, facets, snippets, result counts, answer claims, citations, and conversation history MUST preserve the `AI-RAG-P1-001`–`AI-RAG-P1-030` authorization and limitation contract.
 - `UX-IA-P1-014` — Work dossiers MUST display applicability, impact class, severity, urgency, confidence, evidence strength, source authority, source health, and coverage as separate labelled dimensions.
-- `UX-IA-P1-015` — No IA surface, sort, badge, progress ring, dashboard tile, percentage, trend, or traffic light may emit or imply aggregate readiness/content-health/compliance/risk while `DEC-034` is open.
+- `UX-IA-P1-015` — Under approved `DEC-034`, no IA surface, sort, badge, progress ring, dashboard tile, percentage, trend, or traffic light may emit or imply aggregate readiness/content-health/compliance/risk.
 - `UX-IA-P1-016` — Home MAY summarize only currently authorized actionable records and service states; it MUST NOT use household-wide hidden denominators or present the absence of visible findings as completeness.
 - `UX-IA-P1-017` — Route IDs MUST be stable opaque identifiers; slugs, titles, names, filenames, document labels, and query text are presentation only and MUST NOT become authorization or identity.
 - `UX-IA-P1-018` — Protected deep links MUST reauthenticate and reauthorize, and their unauthorized/not-found responses MUST follow normalized minimal-disclosure copy and timing.
@@ -187,12 +202,12 @@ Home and dossier ordering uses explicit, inspectable fields such as due date, up
 - `UX-IA-P1-021` — Async work MUST remain findable from its originating dossier and Tasks where authorized, with durable state, last update, safe retry/resume/cancel behavior, and no fabricated completion.
 - `UX-IA-P1-022` — Offline PWA behavior MUST default to shell/status and safe retry intent only; raw documents, evidence, answers, tokens, or protected values MUST NOT be stored offline without a separately approved decision and threat model.
 - `UX-IA-P1-023` — Quarantined and suspected-clinical `POLICY_HOLD` resources MUST have no ordinary preview, download, evidence, search, graph, AI, notification, or analytics route.
-- `UX-IA-P1-024` — While `DEC-036` is open, clinical-hold navigation MUST expose only a generic containment status and separately authorized restricted review/delete entry; it MUST NOT promise a final disposition or retention outcome.
-- `UX-IA-P1-025` — In-app task/notification navigation MAY be enabled; external channel destinations and success states MUST remain unavailable while `DEC-037` is unresolved.
-- `UX-IA-P1-026` — Automated continuity navigation, enrolment, nominee, trigger, release, and guarantee surfaces MUST be absent while `DEC-032` is open.
-- `UX-IA-P1-027` — Recovery, factor bypass, ownership transfer, support override, and resource reassignment surfaces MUST be absent or explicitly unavailable while `DEC-038` is open.
-- `UX-IA-P1-028` — Deletion navigation MUST distinguish archive, trash, restore, deletion request, fence, purge, backup residual, tombstone, and completion evidence without inventing any `DEC-039` duration.
-- `UX-IA-P1-029` — Residency and external-processing copy MUST reflect an approved route decision; while `DEC-040` is open, the IA MUST NOT claim Australian hosting and unknown/ineligible routes MUST block or visibly degrade.
+- `UX-IA-P1-024` — Under approved `DEC-036`, clinical-hold navigation MUST expose only a generic containment status and separately authorized restricted review/delete entry; it MUST NOT imply an ordinary processing path or invent a retention outcome.
+- `UX-IA-P1-025` — In-app task/notification navigation is required; customer external-channel destinations and success states MUST remain unavailable until an exact approved channel is configured and conformed under `DEC-037`.
+- `UX-IA-P1-026` — Automated continuity navigation, enrolment, nominee, trigger, release, and guarantee surfaces MUST be absent because `DEC-032` excludes that capability from Phase 1.
+- `UX-IA-P1-027` — Recovery, factor bypass, ownership transfer, support override, and resource reassignment surfaces MUST be absent or explicitly unavailable under approved `DEC-038` until a separate production assurance decision.
+- `UX-IA-P1-028` — Deletion navigation MUST distinguish archive, Trash, restore, deletion request, fence, purge, backup residual, tombstone, and completion evidence. The production document route uses the `DEC-053` 30-calendar-day Trash boundary; account deletion, lawful retention, local-profile behavior, and other residual durations remain separate and MUST NOT be invented.
+- `UX-IA-P1-029` — Residency and external-processing copy MUST identify the exact approved environment, data class, processor, and route. Azure `dev`/`stage` may identify synthetic-data placement under `DEC-049`; unknown/ineligible routes MUST block or visibly degrade, and no hosted AI route receives plaintext by implication under `DEC-050`/`055`.
 - `UX-IA-P1-030` — Settings MUST be personal/family and action-scoped; it MUST NOT expose configuration publication, source maintenance, support impersonation, enterprise policy, SSO/SCIM, DLP, information-barrier, matter/case, or tenant-admin UI.
 - `UX-IA-P1-031` — Every displayed count, facet, badge, tab, breadcrumb, recent item, route title, and sort order MUST have a testable disclosure classification and authorized denominator.
 - `UX-IA-P1-032` — Navigation and route analytics MUST use opaque screen/flow/workspace class, safe state, interaction, timing, viewport and outcome fields only; raw names, titles, filenames, search/query/answer text, evidence, values, relationship details, unrestricted URLs, tokens, or screen captures are prohibited.
@@ -210,4 +225,4 @@ Home and dossier ordering uses explicit, inspectable fields such as due date, up
 
 ## 11. Validation obligations
 
-Synthetic navigation tests MUST cover multiple workspaces, owner-versus-private-resource boundaries, managed subjects without identities, compact/wide reflow, keyboard-only operation, stale projections, offline shell, source/model/authorization outage, clinical hold, count/facet/timing differentials, direct URL guessing, browser back after revoke, citation expiry, workspace switching mid-flow, deletion fence, and every open-decision surface. The same tests MUST prove that Phase 2/enterprise destinations cannot be discovered in routes, menus, search, help, shortcuts, or analytics.
+Synthetic navigation tests MUST cover the React public-to-account-entry route, direct privacy/terms access, unavailable contact, illustrative-preview disclosure, shared React/Flutter protected journey semantics, multiple workspaces, owner-versus-private-resource boundaries, managed subjects without identities, compact/wide reflow, keyboard-only operation, stale projections, offline shell, source/model/authorization outage, clinical hold, count/facet/timing differentials, direct URL guessing, browser back after revoke, citation expiry, workspace switching mid-flow, deletion fence, and every configuration- or release-gated surface. The same tests MUST prove that Phase 2/enterprise destinations cannot be discovered as active product routes, menus, search, help, shortcuts, or analytics.

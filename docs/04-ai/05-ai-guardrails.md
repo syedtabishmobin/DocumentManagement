@@ -9,7 +9,8 @@
 | Primary requirements | `REQ-P1-AI-002`–`REQ-P1-AI-007`, `REQ-P1-SRCH-002`–`REQ-P1-SRCH-004`, `REQ-P1-TRUST-002`–`REQ-P1-TRUST-009` |
 | Primary acceptance | `AC-P1-AI-001`, `AC-P1-RAG-001`, `AC-P1-E2E-001`, `AC-P1-SEC-001`, `AC-P1-DEL-001` |
 | Threat alignment | `THR-P1-005`–`THR-P1-007`, `THR-P1-010`, `THR-P1-013`–`THR-P1-019`, `THR-P1-021`, `THR-P1-023`–`THR-P1-024`, `THR-P1-026`–`THR-P1-030` |
-| Open decisions | `DEC-031`, `DEC-032`, `DEC-034`, `DEC-035`, `DEC-036`, `DEC-038`, `DEC-039`, `DEC-040` |
+| Open decisions | `DEC-031`, `DEC-032`, `DEC-034`, `DEC-035`, `DEC-036`, `DEC-039`, `DEC-040` |
+| Approved unavailable capability | `DEC-038` keeps account/workspace recovery and ownership transfer unavailable in Phase 1; AI cannot infer or create a bypass |
 | Updated | 26 August 2026 |
 
 ## 1. Purpose and policy stance
@@ -103,7 +104,7 @@ The system MUST:
 - `AI-GRD-P1-024` — Consequential effects require the owning workflow, current authorization, policy, exact reviewed input/effect hash, unexpired/unrevoked approval, target revision, idempotency, limits and reconciliation (`SEC-P1-024`).
 - `AI-GRD-P1-025` — Draft text/form/update output MUST remain visibly a draft with protected payload, source mapping, unresolved fields, preview and no direct send/submit/publish/sign capability.
 - `AI-GRD-P1-026` — Automated emergency/incapacity/death content release is prohibited while `DEC-032` remains open; an AI assessment cannot trigger release or create authority.
-- `AI-GRD-P1-027` — Account recovery/ownership transfer MUST NOT use AI inference or expose resources/grants while `DEC-038` is open.
+- `AI-GRD-P1-027` — Account recovery/ownership transfer MUST NOT use AI inference or expose resources/grants under the approved Phase 1 `DEC-038` unavailability fence.
 - `AI-GRD-P1-028` — Deletion/revocation/cancellation MUST be checked before processing, every protected tool read, result commit, review, release, cache use, replay and rebuild; late outputs cannot resurrect content.
 - `AI-GRD-P1-029` — Time, size, token, candidate, graph fan-out/depth, tool-call, retry, rate, concurrency and cost limits MUST be versioned and enforced outside the model without weakening safety controls.
 - `AI-GRD-P1-030` — Provider/model/tool refusal, timeout, invalid output, dependency failure, cost exhaustion or unknown external outcome MUST yield explicit degraded/reconciliation behavior and never fabricated success.
@@ -144,4 +145,4 @@ Guardrail detections use severity, capability/version, safe finding code, affect
 | `AI-GRD-P1-023`–`AI-GRD-P1-030` | `REQ-P1-ACT-001`–`008`, `REQ-P1-AI-006`; `SEC-P1-024`, `029`; `AUD-P1-016`–`018`; `THR-P1-010`–`011`, `023`, `026`–`027` |
 | `AI-GRD-P1-031`–`AI-GRD-P1-035` | `REQ-P1-TRUST-004`; `AUD-P1-001`–`005`, `014`, `022`, `027`, `030`; `SEC-P1-025`–`026`; `THR-P1-019`–`021`, `028` |
 
-Open-decision behavior is deliberately conservative: no continuity release (`DEC-032`), no aggregate readiness/content-health/compliance/risk scoring (`DEC-034`), no clinical disposition assumption (`DEC-036`), no recovery inference (`DEC-038`), no deletion duration (`DEC-039`), and no external processor/residency route (`DEC-040`). `DEC-035` must approve launch slices and `DEC-031` connector profiles before their guardrail evidence can be considered production-ready.
+Open-decision behavior is deliberately conservative: no continuity release (`DEC-032`), no aggregate readiness/content-health/compliance/risk scoring (`DEC-034`), no clinical disposition assumption (`DEC-036`), no deletion duration (`DEC-039`), and no external processor/residency route (`DEC-040`). Separately, approved `DEC-038` prohibits recovery inference or ownership-transfer success in Phase 1. `DEC-035` must approve launch slices and `DEC-031` connector profiles before their guardrail evidence can be considered production-ready.

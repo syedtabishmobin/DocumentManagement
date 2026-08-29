@@ -3,9 +3,9 @@
 | Field | Value |
 |---|---|
 | Document ID | `GOV-TRACE-001` |
-| Version | `0.3` |
-| Status | `ACTIVE — static traceability complete; implementation and executed release evidence incomplete` |
-| Updated | 29 August 2026 |
+| Version | `0.4` |
+| Status | `BUILD BASELINE IN REVIEW — hierarchy and reverse traceability complete; product execution evidence not started/complete` |
+| Updated | 30 August 2026 |
 | Readiness record | [`GOV-READY-001`](SPECIFICATION-READINESS.md) |
 
 ## 1. Purpose
@@ -13,6 +13,8 @@
 This index traces the Phase 1 product baseline from decisions and research gaps through outcomes, requirements, features, use cases, journeys, and measures. Exact story-level links across architecture, document intelligence, AI, API/event, security, UX/accessibility, NFR, engineering, operations, reference data, and tests are owned by the [backlog traceability matrix](docs/10-backlog/04-traceability-matrix.md). Machine-checked test-to-upstream mappings are owned by the [test scenario manifest](docs/12-testing/fixtures/test-scenarios.v1.json).
 
 Static traceability is complete for the current namespaces. `DEC-041` and `DEC-054` authorize all four implementation slices as one continuous program, but authorization is not completion. The [personal/family implementation status](docs/10-backlog/05-personal-family-implementation-status.md) records current code evidence and remaining work; no story currently meets its complete release gate.
+
+The controlled candidate is [`DOCULYRA-BUILD-P1-2026.08.30.1`](docs/10-backlog/08-build-baselines/DOCULYRA-BUILD-P1-2026.08.30.1.md): vision `PROD-VIS-001`, 7 outcomes, 22 measurable definitions, 12 epics, 31 features, 49 stories, 98 story ACs, and 104 planned tests. Every story is `PLANNED_UNISSUED` until an attributed GitHub execution Issue passes Definition of Ready.
 
 ## 2. Traceability rules
 
@@ -28,13 +30,13 @@ Static traceability is complete for the current namespaces. `DEC-041` and `DEC-0
 
 | Outcome | Primary requirement families | Features | Use cases | Journeys | Measures |
 |---|---|---|---|---|---|
-| `OUT-P1-001` — secure intelligible baseline | `REQ-P1-WS-*`, `REQ-P1-DOC-*`, `REQ-P1-ING-*`, `REQ-P1-TRUST-*`, `REQ-P1-CFG-*` | `FEAT-P1-001`–`010`, `FEAT-P1-030` | `UC-P1-001`–`004`, `UC-P1-012`, `UC-P1-013`, `UC-P1-017`–`019` | `JRN-P1-001`, `JRN-P1-002`, `JRN-P1-009`, `JRN-P1-010` | `MET-P1-001`–`003`, `MET-P1-006`, `MET-P1-019`, `MET-P1-020` |
-| `OUT-P1-002` — find and verify evidence | `REQ-P1-ING-*`, `REQ-P1-FCT-*`, `REQ-P1-GPH-*`, `REQ-P1-SRCH-*`, `REQ-P1-AI-*` | `FEAT-P1-008`–`015` | `UC-P1-002`–`005`, `UC-P1-013` | `JRN-P1-002`, `JRN-P1-003`, `JRN-P1-005` | `MET-P1-003`, `MET-P1-009`–`012`, `MET-P1-018`, `MET-P1-022` |
-| `OUT-P1-003` — explain change impact | `REQ-P1-FCT-*`, `REQ-P1-GPH-*`, `REQ-P1-MON-*`, `REQ-P1-HLT-*`, `REQ-P1-ACT-*` | `FEAT-P1-010`, `FEAT-P1-012`, `FEAT-P1-015`–`020`, `FEAT-P1-022`, `FEAT-P1-023` | `UC-P1-004`, `UC-P1-006`–`008`, `UC-P1-013`, `UC-P1-018` | `JRN-P1-004`, `JRN-P1-005`, `JRN-P1-007` | `MET-P1-004`, `MET-P1-005`, `MET-P1-008`, `MET-P1-013`–`015` |
-| `OUT-P1-004` — approval-to-evidence closure | `REQ-P1-ACT-*`, `REQ-P1-NTF-*`, `REQ-P1-AI-*`, `REQ-P1-TRUST-*` | `FEAT-P1-014`, `FEAT-P1-018`–`023`, `FEAT-P1-027` | `UC-P1-004`, `UC-P1-007`, `UC-P1-008`, `UC-P1-010`, `UC-P1-013` | `JRN-P1-004`, `JRN-P1-005` | `MET-P1-005`–`009`, `MET-P1-017` |
-| `OUT-P1-005` — private family collaboration | `REQ-P1-WS-*`, `REQ-P1-FCT-006`, `REQ-P1-GPH-002`–`004`, `REQ-P1-SHR-*`, `REQ-P1-TRUST-*` | `FEAT-P1-001`, `FEAT-P1-002`, `FEAT-P1-011`–`013`, `FEAT-P1-023`–`025` | `UC-P1-001`, `UC-P1-005`, `UC-P1-009`, `UC-P1-013`, `UC-P1-015`, `UC-P1-016` | `JRN-P1-001`, `JRN-P1-003`, `JRN-P1-006`, `JRN-P1-010` | `MET-P1-006`, `MET-P1-018` |
-| `OUT-P1-006` — portable export and controlled deletion | `REQ-P1-DOC-003`, `REQ-P1-SHR-003`, `REQ-P1-TRUST-004`–`009` | `FEAT-P1-006`, `FEAT-P1-024`, `FEAT-P1-029`, `FEAT-P1-030` | `UC-P1-011`–`013`, `UC-P1-017`, `UC-P1-019` | `JRN-P1-008`, `JRN-P1-010` | `MET-P1-006`, `MET-P1-016`, `MET-P1-018`, `MET-P1-019`, `MET-P1-021` |
-| `OUT-P1-007` — honest, recoverable intelligence | All requirement families, especially `REQ-P1-ING-*`, `REQ-P1-SRCH-*`, `REQ-P1-MON-*`, `REQ-P1-AI-*`, `REQ-P1-TRUST-*` | All features; especially `FEAT-P1-004`–`007`, `FEAT-P1-009`, `FEAT-P1-013`–`019`, `FEAT-P1-027`, `FEAT-P1-030` | All detailed use cases; especially `UC-P1-002`, `UC-P1-005`–`007`, `UC-P1-010`, `UC-P1-012`, `UC-P1-013` | All journeys; especially `JRN-P1-002`, `JRN-P1-003`, `JRN-P1-007`–`010` | `MET-P1-002`, `MET-P1-006`, `MET-P1-009`–`022` |
+| `OUT-P1-001` — secure intelligible baseline | Exact ownership in product/feature catalogues | `FEAT-P1-001`, `003`–`009`, `020`, `026`, `028`, `030`, `031` | Exact reciprocal links in `PROD-UC-001`/`BLG-STORY-001` | `JRN-P1-*` as applicable | `MET-P1-001`, `002`, `003`, `006`, `019`, `020`, `021` |
+| `OUT-P1-002` — find and verify evidence | Exact ownership in product/feature catalogues | `FEAT-P1-003`, `008`–`015` | Exact reciprocal links in `PROD-UC-001`/`BLG-STORY-001` | `JRN-P1-*` as applicable | `MET-P1-001`, `003`, `006`, `009`–`012`, `018`, `021`, `022` |
+| `OUT-P1-003` — explain change impact | Exact ownership in product/feature catalogues | `FEAT-P1-010`, `012`, `014`, `016`–`018`, `020`, `022`, `023` | Exact reciprocal links in `PROD-UC-001`/`BLG-STORY-001` | `JRN-P1-*` as applicable | `MET-P1-004`, `005`, `006`, `008`, `009`, `013`–`015`, `021` |
+| `OUT-P1-004` — approval-to-evidence closure | Exact ownership in product/feature catalogues | `FEAT-P1-014`, `015`, `019`–`021`, `027` | Exact reciprocal links in `PROD-UC-001`/`BLG-STORY-001` | `JRN-P1-*` as applicable | `MET-P1-005`–`009`, `017`, `021` |
+| `OUT-P1-005` — private family collaboration | Exact ownership in product/feature catalogues | `FEAT-P1-001`, `002`, `011`, `021`, `023`–`025`, `027` | Exact reciprocal links in `PROD-UC-001`/`BLG-STORY-001` | `JRN-P1-*` as applicable | `MET-P1-006`, `018`, `021` |
+| `OUT-P1-006` — portable export and controlled deletion | Exact ownership in product/feature catalogues | `FEAT-P1-008`, `025`, `026`, `029`, `030` | Exact reciprocal links in `PROD-UC-001`/`BLG-STORY-001` | `JRN-P1-*` as applicable | `MET-P1-006`, `016`, `019`, `021` |
+| `OUT-P1-007` — honest, recoverable intelligence | Exact ownership in product/feature catalogues | `FEAT-P1-002`, `004`–`007`, `009`, `011`, `013`, `014`, `016`–`019`, `021`, `022`, `026`–`031` | Exact reciprocal links in `PROD-UC-001`/`BLG-STORY-001` | `JRN-P1-*` as applicable | `MET-P1-006`, `009`, `012`, `015`, `021`, `022` |
 
 ## 4. Approved-decision traceability
 
@@ -92,11 +94,11 @@ Static traceability is complete for the current namespaces. `DEC-041` and `DEC-0
 
 ## 7. Detailed traceability and remaining readiness gaps
 
-The static owner namespaces now exist. The detailed [backlog matrix](docs/10-backlog/04-traceability-matrix.md) records 12 epics, 48 stories, 96 story acceptance criteria, all 100 requirements, and 101 exact downstream test mappings. The [test traceability validator](scripts/validate-test-traceability.py) rejects dangling IDs and incomplete requirement/story coverage.
+The static owner namespaces now exist. The detailed [backlog matrix](docs/10-backlog/04-traceability-matrix.md) records 12 epics, 31 features, 49 stories, 98 story acceptance criteria, all 101 requirements, 20 use cases, and 104 exact downstream test mappings. The [test traceability validator](scripts/validate-test-traceability.py) rejects dangling IDs, incomplete reciprocal coverage, and unmapped source-test files.
 
 Remaining gaps are implementation and evidence gaps, not missing ID families:
 
-- full implementation of the 48 authorized stories and correction of the gaps in `BLG-STATUS-001`;
+- full implementation of the 49 baselined stories and correction of the evidence gaps in `BLG-STATUS-001`;
 - approved production reference packs, processors, identity/recovery, residency routes, external providers/channels, and operational targets;
 - execution and review of mapped security, privacy, authorization, accessibility, AI, integration, migration, performance, resilience, restore, and disaster-recovery evidence; and
 - a formal production readiness record naming the exact release revision and evidence set.

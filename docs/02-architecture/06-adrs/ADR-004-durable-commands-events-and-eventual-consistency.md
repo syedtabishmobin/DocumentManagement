@@ -16,14 +16,14 @@ Ingestion, processing, indexing, monitoring, impact, notifications, export, dele
 
 ## Decision drivers and traceability
 
-- Approved decisions: `DEC-001`, `DEC-004`–`DEC-009`, `DEC-022`.
+- Approved decisions: `DEC-001`, `DEC-004`–`DEC-009`, `DEC-022`, `DEC-031`–`040`, `DEC-049`, `DEC-050`, `DEC-053`–`055`, and `DEC-P1-056`.
 - Requirements: `REQ-P1-ING-002`–`004`, `008`–`009`, `REQ-P1-MON-001`, `004`–`007`, `REQ-P1-ACT-001`, `005`–`008`, `REQ-P1-NTF-001`–`004`, `REQ-P1-TRUST-004`, `006`–`007`, `REQ-P1-CFG-004`.
 - Architecture/domain: `ARCH-P1-019`–`024`, `039`–`042`; `DOM-P1-008`–`011`, `040`, `043`–`055`.
 - Logical data: `DATA-P1-007`–`010`, `032`–`040`, `042`–`050`.
 - Security/audit/threat: `SEC-P1-018`, `024`, `027`, `029`; `AUD-P1-001`–`008`, `018`–`023`; `THR-P1-007`, `009`–`011`, `018`, `022`–`023`, `026`–`027`.
 - NFR: `NFR-P1-003`–`006`, `008`, `013`–`018`, `026`–`031`, `041`–`043`.
 
-## Proposed decision
+## Decision
 
 Use synchronous local-authority commands with durable event/audit publication, explicit asynchronous workflow state machines, idempotent consumers, and eventual cross-aggregate convergence.
 
@@ -88,7 +88,7 @@ This ADR does not select:
 
 ## Alternatives considered
 
-| Alternative | Benefit | Why not proposed |
+| Alternative | Benefit | Why not selected |
 |---|---|---|
 | Synchronous end-to-end calls | Simple mental model | Long latency/cascading failure; cannot survive interruption; encourages false completion. |
 | Best-effort event after commit | Low implementation effort | Can silently lose required processing/audit trigger. |
@@ -117,7 +117,7 @@ This ADR does not select:
 - Idempotency retention and ordering boundaries must be defined per operation.
 - Reconciliation may require operator workflows while protecting content.
 
-## Validation before acceptance
+## Validation and conformance obligations
 
 Acceptance requires tests proving:
 
@@ -134,17 +134,19 @@ Acceptance requires tests proving:
 11. late event and restored backup cannot resurrect deletion-fenced data; and
 12. load/chaos evidence meets applicable NFRs without content-bearing observability.
 
-## Open-decision fences
+## Approved decision and activation fences
 
-- `DEC-031`: connector command/event kinds remain disabled until selected and contracted.
-- `DEC-032`: no continuity trigger event can release content.
-- `DEC-036`: suspected-clinical workflow remains isolated/policy-pending; no final disposition event is selected.
-- `DEC-037`: notification events remain channel-neutral and do not promise external delivery.
-- `DEC-039`: deletion state/acknowledgement exists without invented durations.
-- `DEC-040`: event/worker/adapter placement must follow an approved route; no cross-border fallback.
+- `DEC-031`, `DEC-045`, and `DEC-055`: connector command/event contracts may be implemented disabled-first, but no exact provider route activates without consent, credentials, minimal scopes, deletion, residency, and conformance evidence.
+- `DEC-032`: automatic continuity release is excluded from Phase 1; no trigger event can create authority or release content.
+- `DEC-036`: suspected clinical content enters approved `POLICY_HOLD`; events may report content-minimized containment state but cannot create ordinary processing or infer clinical disposition.
+- `DEC-037`: in-app notification behavior is required; customer-facing external delivery remains channel-neutral and activation-gated. Framework Product Authority email does not satisfy this product contract.
+- `DEC-039` is historical local behavior and `DEC-053` governs production documents: immediate fence, 30-day restricted Trash/restore, then coordinated non-resurrecting purge. Account/workspace retention remains separate.
+- `DEC-040`'s production-provider non-selection is superseded by `DEC-049`; event, worker, adapter, telemetry, backup, support and failover routes must use the approved Azure/Australian placement model and remain blocked without per-role eligibility evidence.
+- `DEC-050`/`055`: no event or workflow may imply a hosted plaintext document-intelligence route; missing device-local capability remains explicit.
+- `DEC-P1-056`: managed-dependant transition attempts are explicit and revisioned but fail closed. No credential, key, membership, grant, inherited/delegated authority, ownership, consent, export authority, or resource transfer may be emitted; partial/retried work recovers to the last authorised state and recalculates permissions.
 
 ## Revisit and supersession triggers
 
 Revisit if approved consistency/latency/RPO requirements cannot be met; event volume/cost makes the model impractical; a selected workflow/transaction mechanism offers stronger portable guarantees; an incident exposes idempotency/reconciliation gaps; or Phase 2 requires new cross-aggregate atomic boundaries.
 
-Until explicitly accepted, this ADR does not authorize an event platform, outbox implementation, workflow engine, or service topology.
+Acceptance of this ADR establishes the durability and consistency semantics. It does not by itself activate a platform or production route: `ADR-ARCH-007` selects the named Azure/PostgreSQL/Service Bus adapter baseline, while environment, migration, conformance and release gates control activation.

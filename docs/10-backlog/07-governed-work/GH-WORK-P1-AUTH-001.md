@@ -18,16 +18,16 @@ No Product Authority decision is required. Exact paid SKU and production activat
 
 | ID | Criterion | Implementation evidence | Verification owner/status |
 |---|---|---|---|
-| `AUTH-DUR-AC-01` | Approved adapter contract and canonical invariants | `workspace-state.ts`, `postgres-workspace.persistence.ts`, `0001_workspace_authority.sql`, `ADR-ARCH-004/007` | Developer evidence implemented; independent architecture/data review pending |
-| `AUTH-DUR-AC-02` | Atomic creation, stable replay, conflicting-key failure | Serializable transaction, unique hashed receipt, correlated audit/outbox; PostgreSQL-compatible and real-service integration tests | Developer tests implemented; CI run pending PR |
-| `AUTH-DUR-AC-03` | Concurrent creation/update and optimistic concurrency | Per-workspace storage revisions, compare-and-update, bounded serialization retry, cross-connection CI test | Developer tests implemented; independent concurrency retest pending |
-| `AUTH-DUR-AC-04` | Restart/interruption causes no partial/fabricated/cross-workspace authority | New adapter instance reload plus thrown-operation rollback and invariant counts | Developer tests implemented; independent resilience retest pending |
-| `AUTH-DUR-AC-05` | Current membership/grant/epoch remains deny by default | Existing policy reused; durable reload and foreign-workspace negative tests | Developer regression implemented; security QA pending |
-| `AUTH-DUR-AC-06` | Versioned, idempotent synthetic migration with verification and repair | Immutable SQL/checksums, explicit synthetic import, source-digest ledger, count/invariant verification, forward-repair policy | Developer tests implemented; migration QA pending |
-| `AUTH-DUR-AC-07` | Content-minimized durable audit/event evidence | Dedicated outbox table; IDs/type/revision/correlation only; audit/outbox committed together | Developer tests implemented; security/privacy review pending |
-| `AUTH-DUR-AC-08` | Developer tests and independent QA | Unit/integration suites and CI PostgreSQL 17 service | Developer portion implemented; independent QA deliberately not self-attested |
-| `AUTH-DUR-AC-09` | Repository, infrastructure, migration and security gates pass | `pnpm verify`, Bicep compile, PostgreSQL CI integration | Local gate and PR CI evidence to be linked |
-| `AUTH-DUR-AC-10` | Status, traceability, operations and residual work truthful | This map, `OPS-PG-AUTH-001`, onboarding/status/remaining-work/IaC updates | Implemented in change; PR/Issue links pending |
+| `AUTH-DUR-AC-01` | Approved adapter contract and canonical invariants | `workspace-state.ts`, `postgres-workspace.persistence.ts`, `0001_workspace_authority.sql`, `ADR-ARCH-004/007` | PASS on independently accepted candidate `4bb43cc51cca34751bf2f46f160a2f210728396c` |
+| `AUTH-DUR-AC-02` | Atomic creation, stable replay, conflicting-key failure | Serializable transaction, unique hashed receipt, correlated audit/outbox; PostgreSQL-compatible and real-service integration tests | PASS on candidate and protected CI run `33246814008` |
+| `AUTH-DUR-AC-03` | Concurrent creation/update and optimistic concurrency | Per-workspace storage revisions, compare-and-update, bounded serialization retry, cross-connection CI test | PASS after independent concurrency retest |
+| `AUTH-DUR-AC-04` | Restart/interruption causes no partial/fabricated/cross-workspace authority | New adapter instance reload plus thrown-operation rollback and invariant counts | PASS after independent resilience retest and defect #6 closure |
+| `AUTH-DUR-AC-05` | Current membership/grant/epoch remains deny by default | Existing policy reused; durable reload and foreign-workspace negative tests | PASS after independent security retest |
+| `AUTH-DUR-AC-06` | Versioned, idempotent synthetic migration with verification and repair | Immutable SQL/checksums, explicit synthetic import, source-digest ledger, count/invariant verification, forward-repair policy | PASS after independent migration retest |
+| `AUTH-DUR-AC-07` | Content-minimized durable audit/event evidence | Dedicated outbox table; IDs/type/revision/correlation only; audit/outbox committed together | PASS after independent security/privacy review |
+| `AUTH-DUR-AC-08` | Developer tests and independent QA | Unit/integration suites and CI PostgreSQL 17 service | PASS; defects #5–#8 independently closed |
+| `AUTH-DUR-AC-09` | Repository, infrastructure, migration and security gates pass | `pnpm verify`, Bicep compile, PostgreSQL CI integration | PASS in protected CI run `33246814008` |
+| `AUTH-DUR-AC-10` | Status, traceability, operations and residual work truthful | This map, `OPS-PG-AUTH-001`, onboarding/status/remaining-work/IaC updates | PASS; PR #4 merged and Issue #2 closed |
 
 ## Independent QA history
 
@@ -38,7 +38,9 @@ The first independent review of candidate `6f25df79d9cb3925d30eaf4ca90f6e568464b
 - [Issue #7](https://github.com/syedtabishmobin/DocumentManagement/issues/7): non-local profiles allowed TLS without server-certificate verification (`AUTH-DUR-AC-09`).
 - [Issue #8](https://github.com/syedtabishmobin/DocumentManagement/issues/8): a digest replay could report verified reuse after target corruption (`AUTH-DUR-AC-06`, `10`).
 
-The first remediation candidate strengthened persisted graph invariants, required membership workspace scope during authorization, required `verify-full` TLS outside local development, prevented connection-string TLS overrides, revalidated replay state and retained migration evidence, and recorded `REPAIR_REQUIRED` instead of false success. Independent retest resolved #5, #7 and #8 but kept #6 open because the corrupted foreign-workspace membership was still returned by `listWorkspaces()` after restart even though direct authorization denied it. The follow-up remediation applies the same workspace-scope predicate to workspace listing and adds unit-compatible and real-PostgreSQL negative coverage. PR #4 remains blocked until independent QA retests the exact follow-up commit and records its result.
+The first remediation candidate strengthened persisted graph invariants, required membership workspace scope during authorization, required `verify-full` TLS outside local development, prevented connection-string TLS overrides, revalidated replay state and retained migration evidence, and recorded `REPAIR_REQUIRED` instead of false success. Independent retest resolved #5, #7 and #8 but kept #6 open because the corrupted foreign-workspace membership was still returned by `listWorkspaces()` after restart even though direct authorization denied it. The follow-up remediation applied the same workspace-scope predicate to workspace listing and added unit-compatible and real-PostgreSQL negative coverage.
+
+Independent QA then accepted exact candidate `4bb43cc51cca34751bf2f46f160a2f210728396c`, closed defects #5–#8, and confirmed all ten criteria. Protected CI run `33246814008` passed; PR #4 was squash-merged as `6c047bd01e73ab321f3234228ca58819c5ea7ca3`, and Issue #2 closed. This final evidence is bounded component evidence, not story or release completion.
 
 ## Release boundary
 

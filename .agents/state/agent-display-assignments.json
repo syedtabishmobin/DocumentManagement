@@ -22,6 +22,39 @@
       "parentDisplayAgentId": "ORCH-001",
       "workItem": "issue-18/pr-19",
       "status": "ACTIVE"
+    },
+    {
+      "displayAgentId": "ORCH-002",
+      "displayRole": "Framework Delivery Orchestrator",
+      "displayRunId": "RUN-20260830-0050",
+      "runtimeAgentId": "codex-01a04b98-20f5-7831-8b62-3fe5bd5f4add",
+      "runtimeRunId": "run-build-baseline-20260830",
+      "roleId": "delivery-orchestrator",
+      "parentDisplayAgentId": "NONE",
+      "workItem": "issue-32",
+      "status": "ACTIVE"
+    },
+    {
+      "displayAgentId": "ORCH-003",
+      "displayRole": "Framework Delivery Orchestrator",
+      "displayRunId": "RUN-20260830-0051",
+      "runtimeAgentId": "codex-01a04b98-20f5-7831-8b62-3fe5bd5f4add",
+      "runtimeRunId": "run-decision-dependant-transition-20260830",
+      "roleId": "delivery-orchestrator",
+      "parentDisplayAgentId": "ORCH-002",
+      "workItem": "issue-33",
+      "status": "COMPLETED"
+    },
+    {
+      "displayAgentId": "QA-E2E-004",
+      "displayRole": "Independent End-to-End QA",
+      "displayRunId": "RUN-20260830-0052",
+      "runtimeAgentId": "codex-01a04ea7-f8a0-77d2-90c5-81d9d21166a0",
+      "runtimeRunId": "run-qa-baseline-20260830",
+      "roleId": "qa-release-lead",
+      "parentDisplayAgentId": "ORCH-002",
+      "workItem": "issue-32/pr-34",
+      "status": "ACTIVE"
     }
   ]
 }

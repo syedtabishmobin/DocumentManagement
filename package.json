@@ -17,7 +17,10 @@
     "agent:tree": "python3 scripts/agent_ops.py tree",
     "agent:summary": "python3 scripts/agent_ops.py summary",
     "agent:prune": "python3 scripts/agent_ops.py prune",
-    "verify:spec": "python3 scripts/validate-specifications.py && python3 scripts/validate-api-contracts.py && python3 scripts/validate-reference-data.py && python3 scripts/validate-test-traceability.py",
+    "verify:baseline": "python3 scripts/validate_build_baseline.py",
+    "trace:audit": "python3 scripts/product_traceability_audit.py",
+    "build:graph": "python3 scripts/build_dependency_graph.py",
+    "verify:spec": "python3 scripts/validate-specifications.py && python3 scripts/validate-api-contracts.py && python3 scripts/validate-reference-data.py && python3 scripts/validate-test-traceability.py && pnpm verify:baseline",
     "verify": "pnpm verify:framework && pnpm verify:spec && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {

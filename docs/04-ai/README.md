@@ -3,8 +3,8 @@
 | Field | Value |
 |---|---|
 | Document ID | `AI-IDX-001` |
-| Status | Active navigation aid; all linked contracts remain DRAFT |
-| Updated | 26 August 2026 |
+| Status | Active navigation aid; linked contracts are build-baseline inputs with release evidence still gated |
+| Updated | 30 August 2026 |
 
 ## Reading order
 
@@ -28,4 +28,20 @@
 
 ## State-effect boundary
 
-Model output is untrusted structured input. It cannot grant authorization, become canonical truth, publish a consequential rule, approve an action, or mutate domain state until schema, evidence, policy, current-authorization, and human-review requirements pass. Provider choice remains deferred, and ordinary telemetry contains no raw document, query, evidence, prompt, or generated content.
+Model output is untrusted structured input. It cannot grant authorization, become canonical truth, publish a consequential rule, approve an action, or mutate domain state until schema, evidence, policy, current-authorization, and human-review requirements pass. Azure is the approved managed infrastructure provider under `DEC-049`, while model, OCR, embedding, reranking, and other AI processors remain replaceable behind the registered contracts. Under `DEC-050` and `DEC-055`, authorized plaintext document intelligence and RAG run on the customer device by default; no hosted model receives plaintext by implication. A hosted or external processor route remains unavailable until its exact purpose, consent, data class, region, credentials, retention, evaluation, and conformance evidence are approved and configured. Ordinary telemetry contains no raw document, query, evidence, prompt, tool payload, or generated content.
+
+## Approved boundaries and remaining release gates
+
+The decision fences referenced by the linked contracts are approved product boundaries, not unanswered build-scope questions:
+
+- `DEC-031` keeps inbound email and cloud-document ingestion disabled until an exact provider route is configured and conformed.
+- `DEC-032` excludes automated emergency, incapacity, and after-death release from Phase 1.
+- `DEC-034` requires item-level findings and prohibits aggregate or hidden readiness/compliance/risk scoring.
+- `DEC-035` permits governed synthetic Australian-first fixtures while keeping public launch coverage claims release-gated.
+- `DEC-036` requires suspected clinical material to remain in isolated `POLICY_HOLD` outside ordinary AI, OCR, search, graph, sharing, export, and analytics routes.
+- `DEC-037` requires in-app notifications; customer-facing external channels remain configuration- and release-gated.
+- `DEC-038` keeps account recovery and ownership transfer unavailable until a separate production assurance decision.
+- `DEC-039` continues to define the local synthetic deletion profile; production document Trash and purge follow `DEC-053`.
+- `DEC-040`'s local outbound-denied boundary is refined by `DEC-049`, `DEC-050`, and `DEC-055`: Azure `dev`/`stage` may use synthetic data, customer content remains client-encrypted, and device-local intelligence is the default.
+
+Exact production model/provider selection, calibration thresholds, dataset and slice sufficiency, latency/cost ceilings, processor eligibility, and public launch claims remain release inputs. An unset gate means disabled, synthetic-only, or review-only behavior; it does not authorize an implementation default or weaken a safety control.
