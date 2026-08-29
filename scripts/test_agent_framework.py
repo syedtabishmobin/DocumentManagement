@@ -124,8 +124,10 @@ class FrameworkTests(unittest.TestCase):
             repeated = notification_ledger.reconcile_delivery(self.event, config, ledger_path, message_id, "Delivered")
             self.assertEqual(delivered["status"], "SENT")
             self.assertEqual(repeated["status"], "SENT")
-            with self.assertRaisesRegex(ValueError, "cannot be downgraded"):
-                notification_ledger.reconcile_delivery(self.event, config, ledger_path, message_id, "Bounced")
+            conflicting = notification_ledger.reconcile_delivery(self.event, config, ledger_path, message_id, "Bounced")
+            self.assertEqual(conflicting["status"], "SENT")
+            self.assertEqual(conflicting["deliveryStatus"], "Delivered")
+            self.assertEqual(conflicting["deliveryReconciliationStatus"], "CONFLICTING_TERMINAL_IGNORED")
 
     def test_pending_and_negative_delivery_are_truthful(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -150,6 +152,54 @@ class FrameworkTests(unittest.TestCase):
             failed = notification_ledger.record_reconciliation_failure(self.event, ledger_path, "DELIVERY_RECONCILIATION_EXTERNAL_ACTION_REQUIRED")
             self.assertEqual(failed["status"], "SUBMITTED")
             self.assertEqual(failed["deliveryReconciliationStatus"], "EXTERNAL_ACTION_REQUIRED")
+
+    def test_delivery_query_failure_preserves_each_existing_terminal_state(self) -> None:
+        for terminal in ("Delivered", *sorted(notification_ledger.NEGATIVE_DELIVERY_STATUSES)):
+            with self.subTest(terminal=terminal), tempfile.TemporaryDirectory() as directory:
+                ledger_path = self.ledger(directory)
+                config = self.operational_config()
+                reservation = notification_ledger.reserve(self.event, config, self.contacts, ledger_path)
+                message_id = reservation["plan"]["providerOperationId"]
+                notification_ledger.mark_submitted(self.event, config, ledger_path, message_id, "Succeeded")
+                terminal_entry = notification_ledger.reconcile_delivery(self.event, config, ledger_path, message_id, terminal)
+                original_evidence = terminal_entry["evidence"]
+                failed = notification_ledger.record_reconciliation_failure(self.event, ledger_path, "DELIVERY_RECONCILIATION_EXTERNAL_ACTION_REQUIRED")
+                self.assertEqual(failed["status"], "SENT" if terminal == "Delivered" else "FAILED")
+                self.assertEqual(failed["deliveryStatus"], terminal)
+                self.assertEqual(failed["evidence"], original_evidence)
+                self.assertEqual(failed["deliveryReconciliationStatus"], "EXTERNAL_ACTION_REQUIRED")
+
+    def test_first_terminal_delivery_evidence_is_immutable_in_both_orders(self) -> None:
+        for terminal in ("Delivered", *sorted(notification_ledger.NEGATIVE_DELIVERY_STATUSES)):
+            with self.subTest(duplicate=terminal), tempfile.TemporaryDirectory() as directory:
+                ledger_path = self.ledger(directory)
+                config = self.operational_config()
+                reservation = notification_ledger.reserve(self.event, config, self.contacts, ledger_path)
+                message_id = reservation["plan"]["providerOperationId"]
+                notification_ledger.mark_submitted(self.event, config, ledger_path, message_id, "Succeeded")
+                first = notification_ledger.reconcile_delivery(self.event, config, ledger_path, message_id, terminal, observed_at="2026-08-29T12:00:00Z")
+                repeated = notification_ledger.reconcile_delivery(self.event, config, ledger_path, message_id, terminal, observed_at="2026-08-29T12:01:00Z")
+                self.assertEqual(repeated["status"], first["status"])
+                self.assertEqual(repeated["deliveryStatus"], terminal)
+                self.assertEqual(repeated["deliveryObservedAt"], "2026-08-29T12:00:00Z")
+                self.assertEqual(repeated["evidence"], first["evidence"])
+        pairs = (("Bounced", "Suppressed"), ("Suppressed", "Bounced"), ("Delivered", "Failed"), ("Failed", "Delivered"))
+        for first, second in pairs:
+            with self.subTest(first=first, second=second), tempfile.TemporaryDirectory() as directory:
+                ledger_path = self.ledger(directory)
+                config = self.operational_config()
+                reservation = notification_ledger.reserve(self.event, config, self.contacts, ledger_path)
+                message_id = reservation["plan"]["providerOperationId"]
+                notification_ledger.mark_submitted(self.event, config, ledger_path, message_id, "Succeeded")
+                original = notification_ledger.reconcile_delivery(self.event, config, ledger_path, message_id, first, observed_at="2026-08-29T12:00:00Z")
+                original_evidence = original["evidence"]
+                repeated = notification_ledger.reconcile_delivery(self.event, config, ledger_path, message_id, first, observed_at="2026-08-29T12:01:00Z")
+                conflicting = notification_ledger.reconcile_delivery(self.event, config, ledger_path, message_id, second, observed_at="2026-08-29T12:02:00Z")
+                self.assertEqual(repeated["deliveryObservedAt"], "2026-08-29T12:00:00Z")
+                self.assertEqual(conflicting["deliveryStatus"], first)
+                self.assertEqual(conflicting["deliveryObservedAt"], "2026-08-29T12:00:00Z")
+                self.assertEqual(conflicting["evidence"], original_evidence)
+                self.assertEqual(conflicting["lastConflictingDeliveryStatus"], second)
 
     def test_bounded_retry_exhaustion_cannot_spam(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -206,6 +256,54 @@ class FrameworkTests(unittest.TestCase):
             self.assertEqual(result["result"], "SENT")
             self.assertEqual(result["deliveryStatus"], "Delivered")
 
+    def test_delivery_check_fails_closed_for_malformed_or_mismatched_provider_output(self) -> None:
+        malformed = (
+            {},
+            {"status": "DELIVERED", "providerMessageId": "wrong", "deliveryStatus": "Delivered"},
+            {"status": "DELIVERED", "providerMessageId": None, "deliveryStatus": "Delivered"},
+            {"status": "DELIVERED", "deliveryStatus": "Delivered"},
+            {"status": "DELIVERED", "providerMessageId": "placeholder"},
+            {"status": "FAILED", "providerMessageId": "placeholder", "deliveryStatus": "Delivered"},
+            {"status": "PENDING", "providerMessageId": "placeholder", "deliveryStatus": "Bounced"},
+            {"status": "DELIVERED", "providerMessageId": "placeholder", "deliveryStatus": "Delivered", "unexpected": True},
+        )
+        for response in malformed:
+            with self.subTest(response=response), tempfile.TemporaryDirectory() as directory:
+                ledger_path = self.ledger(directory)
+                config = self.operational_config()
+                reservation = notification_ledger.reserve(self.event, config, self.contacts, ledger_path)
+                message_id = reservation["plan"]["providerOperationId"]
+                notification_ledger.mark_submitted(self.event, config, ledger_path, message_id, "Succeeded")
+                candidate = copy.deepcopy(response)
+                if candidate.get("providerMessageId") == "placeholder":
+                    candidate["providerMessageId"] = message_id
+                with patch.object(notification_ledger, "_transport", return_value=candidate):
+                    result = notification_ledger.check_delivery(self.event, config, ledger_path)
+                entry = notification_ledger.load(ledger_path)["events"][0]
+                self.assertEqual(result["result"], "EXTERNAL_ACTION_REQUIRED")
+                self.assertEqual(entry["status"], "SUBMITTED")
+                self.assertEqual(entry["deliveryReconciliationStatus"], "EXTERNAL_ACTION_REQUIRED")
+
+    def test_delivery_check_timeout_from_submitted_or_terminal_preserves_truth(self) -> None:
+        for terminal in (None, "Delivered", "Bounced"):
+            with self.subTest(terminal=terminal), tempfile.TemporaryDirectory() as directory:
+                ledger_path = self.ledger(directory)
+                config = self.operational_config()
+                reservation = notification_ledger.reserve(self.event, config, self.contacts, ledger_path)
+                message_id = reservation["plan"]["providerOperationId"]
+                notification_ledger.mark_submitted(self.event, config, ledger_path, message_id, "Succeeded")
+                terminal_entry = notification_ledger.reconcile_delivery(self.event, config, ledger_path, message_id, terminal) if terminal else None
+                original_evidence = terminal_entry["evidence"] if terminal_entry else None
+                with patch.object(notification_ledger, "_transport", side_effect=RuntimeError("synthetic timeout")):
+                    result = notification_ledger.check_delivery(self.event, config, ledger_path)
+                entry = notification_ledger.load(ledger_path)["events"][0]
+                self.assertEqual(result["result"], "EXTERNAL_ACTION_REQUIRED")
+                self.assertEqual(entry["status"], "SUBMITTED" if terminal is None else ("SENT" if terminal == "Delivered" else "FAILED"))
+                self.assertEqual(entry["deliveryReconciliationStatus"], "EXTERNAL_ACTION_REQUIRED")
+                if terminal:
+                    self.assertEqual(entry["deliveryStatus"], terminal)
+                    self.assertEqual(entry["evidence"], original_evidence)
+
     def test_blocking_message_contains_all_required_decision_sections(self) -> None:
         body = notification_ledger.compose_plain_text(self.event)
         for marker in ("Authoritative record:", "Action required:", "Recommendation:", "Alternatives and impacts:", "Work blocked:", "Work continuing:", "Work remaining after this action:"):
@@ -243,6 +341,49 @@ class FrameworkTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "UAT_READY event missing fields"):
             notification_ledger.validate_event(event, self.config)
 
+    def test_notification_event_rejects_non_durable_routes_and_sensitive_content_canaries(self) -> None:
+        unsafe_urls = (
+            "http://github.com/syedtabishmobin/DocumentManagement/issues/18",
+            "https://user:pass@github.com/syedtabishmobin/DocumentManagement/issues/18",
+            "https://github.com/syedtabishmobin/DocumentManagement/settings/secrets/actions",
+            "https://github.com/syedtabishmobin/DocumentManagement/issues/18?token=synthetic",
+            "https://github.com/syedtabishmobin/DocumentManagement/issues/18#fragment",
+            "https://github.com/other/repository/issues/18",
+        )
+        for value in unsafe_urls:
+            with self.subTest(url=value):
+                event = copy.deepcopy(self.event)
+                event["authoritativeUrl"] = value
+                with self.assertRaisesRegex(ValueError, "authoritativeUrl"):
+                    notification_ledger.validate_event(event, self.config)
+        canaries = (
+            "Raw prompt: synthetic customer request",
+            "Authorization: Bearer synthetic-token-value",
+            "client_secret=synthetic-value",
+            "Tool output: synthetic provider payload",
+            "Customer content: synthetic document body",
+        )
+        for value in canaries:
+            with self.subTest(value=value):
+                event = copy.deepcopy(self.event)
+                event["reason"] = value
+                with self.assertRaisesRegex(ValueError, "prohibited"):
+                    notification_ledger.validate_event(event, self.config)
+
+    def test_notification_event_accepts_each_configured_durable_route_class(self) -> None:
+        urls = (
+            "https://github.com/syedtabishmobin/DocumentManagement/issues/18",
+            "https://github.com/syedtabishmobin/DocumentManagement/pull/19",
+            "https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33254027462",
+            "https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33254027462/job/99104523095",
+            "https://github.com/syedtabishmobin/DocumentManagement/commit/c590b2437b6e0e1feaa7ab530dc5ffa509a28295",
+        )
+        for value in urls:
+            with self.subTest(url=value):
+                event = copy.deepcopy(self.event)
+                event["authoritativeUrl"] = value
+                notification_ledger.validate_event(event, self.config)
+
     def test_github_agent_attribution_round_trip_and_missing_field_rejection(self) -> None:
         values = {
             "agent_id": "codex-test",
@@ -258,6 +399,33 @@ class FrameworkTests(unittest.TestCase):
         values.pop("run_id")
         with self.assertRaisesRegex(ValueError, "run_id"):
             github_attribution.render(values)
+
+    def test_github_agent_attribution_rejects_unregistered_mismatched_and_duplicate_claims(self) -> None:
+        values = {
+            "agent_id": "codex-test",
+            "run_id": "run-test",
+            "role_id": "qa-release-lead",
+            "work_item": "issue-18",
+            "capability_ids": "telemetry-validation",
+            "skill_ids": "telemetry-validation",
+            "tool_ids": "github-issues,pnpm-node",
+        }
+        variants = (
+            ("role_id", "nonexistent-role", "not registered"),
+            ("capability_ids", "critical-decision", "not authorised"),
+            ("capability_ids", "nonexistent-capability", "unregistered"),
+            ("skill_ids", "nonexistent-skill", "unregistered"),
+            ("skill_ids", "defect-evidence", "not matched"),
+            ("tool_ids", "nonexistent-tool", "unregistered"),
+            ("tool_ids", "github-issues,github-issues", "duplicate"),
+            ("tool_ids", "github-issues,", "empty"),
+        )
+        for field, value, message in variants:
+            with self.subTest(field=field, value=value):
+                candidate = dict(values)
+                candidate[field] = value
+                with self.assertRaisesRegex(ValueError, message):
+                    github_attribution.render(candidate)
 
 
 if __name__ == "__main__":

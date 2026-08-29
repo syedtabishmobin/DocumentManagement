@@ -8,6 +8,7 @@ import fcntl
 import hashlib
 import json
 import os
+import re
 import subprocess
 import tempfile
 import uuid
@@ -15,9 +16,12 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable
 
+from validate_observability import FORBIDDEN_VALUE_PATTERNS, validate_url
+
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = ROOT / ".agents/config/notifications.json"
 DEFAULT_CONTACTS = ROOT / ".agents/config/contacts.json"
+OBSERVABILITY_CONFIG = ROOT / ".agents/project/observability.json"
 REQUIRED_EVENT_FIELDS = {"key", "eventType", "projectId", "subject", "authoritativeUrl", "requiredAction", "reason", "appliesTo", "recommendation", "alternatives", "blocked", "continuing", "remaining"}
 UAT_REQUIRED_FIELDS = {"releaseEvidence", "accessInstructions", "deliveredScope", "acceptanceSummary", "residualRisks", "businessAcceptanceStatus", "recommendedUatScenarios"}
 STATUSES = {"RESERVED", "SUBMITTED", "SENT", "FAILED", "EXTERNAL_ACTION_REQUIRED"}
@@ -41,11 +45,39 @@ def provider_operation_id(event: dict[str, Any]) -> str:
 def _non_empty_text(value: Any, name: str) -> None:
     if not isinstance(value, str) or not value.strip() or len(value) > 20_000:
         raise ValueError(f"{name} must be non-empty minimized text")
+    if "\n" in value or "\r" in value or any(pattern.search(value) for pattern in FORBIDDEN_VALUE_PATTERNS):
+        raise ValueError(f"{name} contains prohibited prompt, content, credential, or payload material")
 
 
 def _text_list(value: Any, name: str, *, allow_empty: bool = False) -> None:
-    if not isinstance(value, list) or (not allow_empty and not value) or any(not isinstance(item, str) or not item.strip() or len(item) > 2_000 for item in value):
+    if not isinstance(value, list) or len(value) > 20 or (not allow_empty and not value):
         raise ValueError(f"{name} must be a bounded list of non-empty text")
+    for item in value:
+        _non_empty_text(item, name)
+        if len(item) > 2_000:
+            raise ValueError(f"{name} must be a bounded list of non-empty text")
+    if len(value) != len(set(value)):
+        raise ValueError(f"{name} must not contain duplicate entries")
+
+
+def _durable_github_url(value: Any, name: str) -> None:
+    if not isinstance(value, str):
+        raise ValueError(f"{name} must be a durable configured-repository GitHub URL")
+    observability = load(OBSERVABILITY_CONFIG)
+    privacy = observability.get("privacy", {})
+    try:
+        patterns = tuple(re.compile(pattern) for pattern in privacy.get("evidenceRoutePatterns", []))
+    except re.error as exc:
+        raise ValueError("configured evidence route pattern is invalid") from exc
+    errors = validate_url(
+        value,
+        set(privacy.get("evidenceHosts", [])),
+        set(privacy.get("evidenceRepositories", [])),
+        patterns,
+        name,
+    )
+    if errors:
+        raise ValueError(errors[0])
 
 
 def validate_event(event: dict[str, Any], config: dict[str, Any]) -> None:
@@ -54,9 +86,11 @@ def validate_event(event: dict[str, Any], config: dict[str, Any]) -> None:
         raise ValueError(f"notification event missing fields: {', '.join(missing)}")
     if event["eventType"] not in config["events"] or event["projectId"] != config["projectId"]:
         raise ValueError("event type or project does not match notification configuration")
-    if not str(event["authoritativeUrl"]).startswith("https://github.com/syedtabishmobin/DocumentManagement/"):
-        raise ValueError("authoritativeUrl must be a direct configured-repository GitHub URL")
+    if len(json.dumps(event, separators=(",", ":")).encode("utf-8")) > 32_768:
+        raise ValueError("notification event exceeds the minimized size limit")
+    _durable_github_url(event["authoritativeUrl"], "authoritativeUrl")
     prefix = "[Doculyra][ACTION REQUIRED]" if event["eventType"] == "BLOCKING_DECISION" else "[Doculyra][UAT READY]"
+    _non_empty_text(event["subject"], "subject")
     if not event["subject"].startswith(prefix) or len(event["subject"]) > 200:
         raise ValueError(f"subject must start with {prefix} and remain bounded")
     for field in ("requiredAction", "reason", "recommendation"):
@@ -73,8 +107,7 @@ def validate_event(event: dict[str, Any], config: dict[str, Any]) -> None:
             _non_empty_text(event[field], field)
         for field in ("deliveredScope", "residualRisks", "recommendedUatScenarios"):
             _text_list(event[field], field, allow_empty=field == "residualRisks")
-        if not str(event["releaseEvidence"]).startswith("https://github.com/syedtabishmobin/DocumentManagement/"):
-            raise ValueError("releaseEvidence must be a durable configured-repository GitHub URL")
+        _durable_github_url(event["releaseEvidence"], "releaseEvidence")
 
 
 def resolve_recipients(contacts: dict[str, Any]) -> dict[str, list[str]]:
@@ -265,12 +298,18 @@ def reconcile_delivery(event: dict[str, Any], config: dict[str, Any], ledger_pat
             raise ValueError("delivery report does not match a submitted notification")
         if existing["status"] not in {"SUBMITTED", "SENT", "FAILED"}:
             raise ValueError("delivery reconciliation requires submitted provider evidence")
-        if existing["status"] == "SENT" and delivery_status != "Delivered":
-            raise ValueError("a confirmed SENT event cannot be downgraded")
-        if existing["status"] == "FAILED" and delivery_status == "Delivered":
-            raise ValueError("a terminal failed delivery requires explicit investigation before reversal")
         existing["lastDeliveryCheckAt"] = current.isoformat()
         existing["lastUpdatedAt"] = current.isoformat()
+        if existing["status"] in {"SENT", "FAILED"}:
+            first_terminal = existing.get("deliveryStatus")
+            if delivery_status == "PENDING" or delivery_status == first_terminal:
+                return existing
+            existing.update({
+                "deliveryReconciliationStatus": "CONFLICTING_TERMINAL_IGNORED",
+                "deliveryReconciliationEvidence": "FIRST_TERMINAL_PROVIDER_EVIDENCE_PRESERVED",
+                "lastConflictingDeliveryStatus": delivery_status,
+            })
+            return existing
         if delivery_status == "PENDING":
             existing["evidence"] = "DELIVERY_REPORT_PENDING"
             return existing
@@ -312,14 +351,16 @@ def record_reconciliation_failure(event: dict[str, Any], ledger_path: Path, evid
 
     def update(ledger: dict[str, Any]) -> dict[str, Any]:
         existing = _existing(ledger, event["key"])
-        if not existing or existing.get("fingerprint") != event_fingerprint(event) or existing["status"] != "SUBMITTED":
+        if not existing or existing.get("fingerprint") != event_fingerprint(event) or existing["status"] not in {"SUBMITTED", "SENT", "FAILED"}:
             raise ValueError("reconciliation failure requires the matching submitted notification")
         existing.update({
             "lastDeliveryCheckAt": current.isoformat(),
             "lastUpdatedAt": current.isoformat(),
             "deliveryReconciliationStatus": "EXTERNAL_ACTION_REQUIRED",
-            "evidence": evidence,
+            "deliveryReconciliationEvidence": evidence,
         })
+        if existing["status"] == "SUBMITTED":
+            existing["evidence"] = evidence
         return existing
 
     return _locked_ledger(ledger_path, update)
@@ -364,6 +405,41 @@ def _transport(config: dict[str, Any], arguments: list[str], environment: dict[s
         raise RuntimeError("provider transport returned an invalid response") from exc
 
 
+def _submission_response(response: Any, expected_provider_id: str) -> tuple[str, str]:
+    if not isinstance(response, dict) or set(response) != {"status", "providerMessageId", "providerStatus"}:
+        raise ValueError("provider submission response has an invalid shape")
+    if response["status"] != "SUBMITTED" or response["providerMessageId"] != expected_provider_id:
+        raise ValueError("provider submission response does not match the reserved operation")
+    if not isinstance(response["providerStatus"], str) or not response["providerStatus"].strip() or len(response["providerStatus"]) > 120:
+        raise ValueError("provider submission status is invalid")
+    return response["providerMessageId"], response["providerStatus"]
+
+
+def _delivery_response(response: Any, expected_provider_id: str) -> tuple[str, str | None, str | None, bool | None]:
+    allowed_fields = {"status", "providerMessageId", "deliveryStatus", "observedAt", "hardBounce"}
+    if not isinstance(response, dict) or not set(response).issubset(allowed_fields) or set(response) < {"status", "providerMessageId"}:
+        raise ValueError("provider delivery response has an invalid shape")
+    if response["providerMessageId"] != expected_provider_id or response["status"] not in {"PENDING", "DELIVERED", "FAILED"}:
+        raise ValueError("provider delivery response does not match the submitted operation")
+    delivery_status = response.get("deliveryStatus")
+    if response["status"] == "PENDING":
+        if delivery_status is not None or "observedAt" in response or "hardBounce" in response:
+            raise ValueError("pending delivery response contains terminal evidence")
+        return "PENDING", None, None, None
+    if delivery_status not in {"Delivered", *NEGATIVE_DELIVERY_STATUSES}:
+        raise ValueError("terminal delivery response has an invalid status")
+    expected_result = "DELIVERED" if delivery_status == "Delivered" else "FAILED"
+    if response["status"] != expected_result:
+        raise ValueError("provider delivery result conflicts with its terminal status")
+    observed_at = response.get("observedAt")
+    hard_bounce = response.get("hardBounce")
+    if observed_at is not None and (not isinstance(observed_at, str) or not observed_at.strip() or len(observed_at) > 120):
+        raise ValueError("provider delivery observation time is invalid")
+    if hard_bounce is not None and not isinstance(hard_bounce, bool):
+        raise ValueError("provider hard-bounce evidence is invalid")
+    return delivery_status, delivery_status, observed_at, hard_bounce
+
+
 def dispatch(event: dict[str, Any], config: dict[str, Any], contacts: dict[str, Any], ledger_path: Path, *, conformance: bool, retry: bool, contacts_path: Path = DEFAULT_CONTACTS) -> dict[str, Any]:
     reservation = reserve(event, config, contacts, ledger_path, conformance=conformance, retry=retry)
     if not reservation["acquired"]:
@@ -377,7 +453,8 @@ def dispatch(event: dict[str, Any], config: dict[str, Any], contacts: dict[str, 
     environment["DM_EXTERNAL_NOTIFICATIONS"] = "enabled"
     try:
         response = _transport(config, ["submit", "--plan", str(plan_path), "--contacts", str(contacts_path)], environment)
-        entry = mark_submitted(event, config, ledger_path, response["providerMessageId"], response["providerStatus"])
+        provider_message_id, provider_status = _submission_response(response, reservation["plan"]["providerOperationId"])
+        entry = mark_submitted(event, config, ledger_path, provider_message_id, provider_status)
         return {"key": event["key"], "result": entry["status"], "providerMessageId": entry["providerMessageId"], "attemptCount": entry["attemptCount"]}
     except (RuntimeError, KeyError, ValueError):
         record_failure(event, config, ledger_path, "PROVIDER_SUBMISSION_EXTERNAL_ACTION_REQUIRED")
@@ -395,11 +472,11 @@ def check_delivery(event: dict[str, Any], config: dict[str, Any], ledger_path: P
     environment["DM_EXTERNAL_NOTIFICATIONS"] = "enabled"
     try:
         response = _transport(config, ["delivery", "--provider-message-id", existing["providerMessageId"], "--contacts", str(contacts_path)], environment)
-    except RuntimeError:
+        delivery_status, _, observed_at, hard_bounce = _delivery_response(response, existing["providerMessageId"])
+        entry = reconcile_delivery(event, config, ledger_path, existing["providerMessageId"], delivery_status, observed_at=observed_at, hard_bounce=hard_bounce)
+    except (RuntimeError, KeyError, TypeError, ValueError):
         record_reconciliation_failure(event, ledger_path, "DELIVERY_RECONCILIATION_EXTERNAL_ACTION_REQUIRED")
         return {"key": event["key"], "result": "EXTERNAL_ACTION_REQUIRED", "reason": "DELIVERY_RECONCILIATION_EXTERNAL_ACTION_REQUIRED"}
-    delivery_status = "PENDING" if response["status"] == "PENDING" else response["deliveryStatus"]
-    entry = reconcile_delivery(event, config, ledger_path, response["providerMessageId"], delivery_status, observed_at=response.get("observedAt"), hard_bounce=response.get("hardBounce"))
     return {"key": event["key"], "result": entry["status"], "deliveryStatus": entry.get("deliveryStatus", "PENDING"), "providerMessageId": entry["providerMessageId"]}
 
 

@@ -225,6 +225,8 @@ The blocking subject is `[Doculyra][ACTION REQUIRED][<Decision ID>] <short title
 
 The ACS Email transport, recipient allow-list, atomic ledger, bounded retry and Azure Monitor delivery reconciliation are implemented under Issue #18. Activation remains `CONFIGURED_DISABLED` and conformance is `BLOCKED_EXTERNAL_VALIDATION`: authorised Azure login, live resource/role/sender/diagnostic verification, Bicep what-if/deployment and two terminal delivery tests have not completed. Normal plans therefore still return `EXTERNAL_ACTION_REQUIRED`. Do not claim an email was delivered from ACS submission alone.
 
+Notification state: implementation=IMPLEMENTED; activation=CONFIGURED_DISABLED; deliveryConformance=BLOCKED_EXTERNAL_VALIDATION; sendAllowed=false.
+
 After authorised Azure login, use the exact Issue #18 conformance sequence from the repository root:
 
 ```bash
