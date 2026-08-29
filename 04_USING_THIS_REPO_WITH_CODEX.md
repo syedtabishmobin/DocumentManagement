@@ -232,11 +232,11 @@ When a genuine human-owned blocking decision is first reached:
 
 The blocking subject is `[Doculyra][ACTION REQUIRED][<Decision ID>] <short title>`. A UAT-ready subject is `[Doculyra][UAT READY][<Release Candidate>] <short summary>`.
 
-The ACS Email transport, recipient allow-list, atomic ledger, bounded retry and Azure Monitor delivery reconciliation are implemented under Issue #18. Activation remains `CONFIGURED_DISABLED` and conformance is `BLOCKED_EXTERNAL_VALIDATION`: authorised Azure login, live resource/role/sender/diagnostic verification, Bicep what-if/deployment and two terminal delivery tests have not completed. Normal plans therefore still return `EXTERNAL_ACTION_REQUIRED`. Do not claim an email was delivered from ACS submission alone.
+The ACS Email transport, recipient allow-list, atomic ledger, bounded retry and Azure Monitor delivery reconciliation are operational under Issue #18. Live conformance verified the Azure-managed sender/domain, managed-identity RBAC, resource-specific diagnostics, one terminal `Delivered` result for each safe blocking/UAT packet, one provider submission per correlation ID, and recipient-side receipt. Provider acceptance remains only `SUBMITTED`; only terminal delivery reconciliation may record `SENT`.
 
-Notification state: implementation=IMPLEMENTED; activation=CONFIGURED_DISABLED; deliveryConformance=BLOCKED_EXTERNAL_VALIDATION; sendAllowed=false.
+Notification state: implementation=IMPLEMENTED; activation=ENABLED; deliveryConformance=PASS; sendAllowed=true.
 
-After authorised Azure login, use the exact Issue #18 conformance sequence from the repository root:
+To inspect the retained Issue #18 terminal and deduplication evidence from the repository root:
 
 ```bash
 pnpm --filter @document-management/api build
@@ -248,16 +248,16 @@ export DM_AZURE_COMMUNICATION_ENDPOINT=https://acs-doculyra-dev.australia.commun
 export DM_EMAIL_FROM=DoNotReply@9900614b-2e01-4d86-93aa-379c583ada57.azurecomm.net
 export DM_LOG_ANALYTICS_WORKSPACE_ID=<customer-id-of-log-doculyra-dev-workspace>
 
-python3 scripts/notification_ledger.py dispatch .agents/state/events/issue-18-blocking-notification-conformance.json --conformance
+python3 scripts/notification_ledger.py dispatch .agents/state/events/issue-18-blocking-notification-conformance.json
 python3 scripts/notification_ledger.py check-delivery .agents/state/events/issue-18-blocking-notification-conformance.json
-python3 scripts/notification_ledger.py dispatch .agents/state/events/issue-18-blocking-notification-conformance.json --conformance
+python3 scripts/notification_ledger.py dispatch .agents/state/events/issue-18-blocking-notification-conformance.json
 
-python3 scripts/notification_ledger.py dispatch .agents/state/events/issue-18-uat-ready-notification-conformance.json --conformance
+python3 scripts/notification_ledger.py dispatch .agents/state/events/issue-18-uat-ready-notification-conformance.json
 python3 scripts/notification_ledger.py check-delivery .agents/state/events/issue-18-uat-ready-notification-conformance.json
-python3 scripts/notification_ledger.py dispatch .agents/state/events/issue-18-uat-ready-notification-conformance.json --conformance
+python3 scripts/notification_ledger.py dispatch .agents/state/events/issue-18-uat-ready-notification-conformance.json
 ```
 
-Wait for Azure Monitor ingestion and repeat `check-delivery` while the result is `SUBMITTED`/pending. The repeated `dispatch` commands must return the existing terminal/submitted result without invoking ACS again. Never use `--retry` unless the Issue records why the prior attempt is safe to retry; attempts are capped at three and reuse the same provider operation ID.
+The repeated `dispatch` commands must return the existing terminal result without invoking ACS again. Before any future live re-conformance message, first place the adapter into a reviewed configured-disabled conformance state, use a new safe event identity, and obtain the required governed authorisation. Never use `--retry` unless the Issue records why the prior attempt is safe to retry; attempts are capped at three and reuse the same provider operation ID.
 
 ## 9. Secrets, privacy, and least privilege
 

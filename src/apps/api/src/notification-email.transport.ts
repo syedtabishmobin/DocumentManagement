@@ -80,7 +80,10 @@ export function validateTransportConfiguration(configuration: TransportConfigura
   } catch {
     throw new Error("ACS endpoint must be a valid URL");
   }
-  if (endpoint.protocol !== "https:" || !endpoint.hostname.endsWith(".communication.azure.com") || endpoint.pathname !== "/" || endpoint.username || endpoint.password || endpoint.search || endpoint.hash) {
+  // Compare the raw value with the normalized origin as well as checking the
+  // parsed port. URL normalization erases an explicit default :443, while a
+  // nonstandard port survives in origin; both forms are forbidden.
+  if (configuration.endpoint !== endpoint.origin || endpoint.port || endpoint.protocol !== "https:" || !endpoint.hostname.endsWith(".communication.azure.com") || endpoint.pathname !== "/" || endpoint.username || endpoint.password || endpoint.search || endpoint.hash) {
     throw new Error("ACS endpoint must be a credential-free Azure Communication Services HTTPS endpoint");
   }
   if (!validAddress(configuration.senderAddress)) throw new Error("ACS sender address is invalid");

@@ -1,57 +1,43 @@
 # FINAL AUTONOMOUS READINESS REPORT
 
-Governed work: [Issue #18](https://github.com/syedtabishmobin/DocumentManagement/issues/18) / [PR #19](https://github.com/syedtabishmobin/DocumentManagement/pull/19). This is framework-readiness evidence only; the Doculyra product-development queue has not started.
+Governed work: [Issue #18](https://github.com/syedtabishmobin/DocumentManagement/issues/18), merged repository implementation [PR #19](https://github.com/syedtabishmobin/DocumentManagement/pull/19), and live-conformance continuation. This is framework-readiness evidence only; the product-development queue has not started.
 
 ## Notification implementation status
 
-**IMPLEMENTED / CONFIGURED_DISABLED / BLOCKED_EXTERNAL_VALIDATION.** The existing vendor-neutral framework was extended, not rebuilt. It now has an ACS Email transport, atomic reservation ledger, deterministic payload-bound provider operation ID, bounded retry, recipient allow-list, immutable first-terminal delivery evidence, Azure Monitor reconciliation, safe blocking/UAT conformance packets, and truthful `EXTERNAL_ACTION_REQUIRED` handling. Normal `sendAllowed` remains `false`.
+**IMPLEMENTED / ENABLED / LIVE CONFORMANCE PASS.** The existing framework was extended with an ACS Email transport, structured recipient allow-list, atomic ledger, deterministic payload-bound provider operation IDs, bounded retries, Azure Monitor reconciliation and truthful terminal state. Provider acceptance is never represented as delivery.
 
 ## Azure/ACS configuration used
 
-- Adapter: Azure Communication Services Email via the official JavaScript SDK.
-- Runtime variables: `DM_AZURE_COMMUNICATION_ENDPOINT`, `DM_EMAIL_FROM`, `AZURE_CLIENT_ID`, and `DM_LOG_ANALYTICS_WORKSPACE_ID`.
-- Delivery evidence: Azure Monitor `ACSEmailStatusUpdateOperational` logs in the configured Log Analytics workspace.
-- Infrastructure: existing user-assigned runtime identity, Communication and Email Service Owner assignment, Log Analytics Data Reader assignment, `doculyra-email-delivery` diagnostic setting, and engagement tracking disabled.
-- Recipient routing: project owner first, global owner as CC only when distinct after trim/lowercase normalization. The current effective route is exactly one To recipient and no CC.
+The dev ACS and Email Communication Services resources use the verified Azure-managed domain and configured `DoNotReply` sender in Australia. The API uses its existing user-assigned runtime identity. Bicep adopts the existing Communication and Email Service Owner assignment, adds Log Analytics Data Reader at workspace scope, and configures only ACS email send/status operational diagnostics. The infrastructure deployment completed under correlation `b82ba6e3-6f27-4cb3-a9fb-cf348852457a`; scoped activation produced healthy/running API revision `ca-doculyra-dev-api--0000008` without changing its immutable image.
 
 ## Security/authentication status
 
-Repository code and Bicep use managed identity for the Azure-hosted runtime. Azure CLI credential is fenced to an explicitly authorised local conformance profile. No SMTP password, connection string, API key, OAuth token, private certificate, or mail credential is committed. Endpoint/sender/recipient and evidence URLs fail closed on drift; prompts, customer/document contents, arbitrary tool/provider payloads, credentials, and unknown event fields are prohibited.
-
-**Repository security status: PASS. Live identity/RBAC status: NOT VERIFIED because authorised Azure management authentication is blocked externally.**
+**PASS.** Hosted authentication is managed identity; Azure CLI credential is fenced to explicitly authorised local conformance. No mail credential, connection string, key, token or certificate is committed. Engagement tracking is disabled. The structured route resolves exactly one To recipient and no duplicate CC because project/global contacts normalize to the same address.
 
 ## Blocking-decision email test result
 
-**REPOSITORY PACKET: PASS. LIVE DELIVERY: BLOCKED_EXTERNAL_ACTION.** The plan resolves one To recipient, `cc=[]`, `sendAllowed=false`, and `EXTERNAL_ACTION_REQUIRED`. The packet contains the direct Issue #18 URL, decision/action required, rationale, recommendation and alternative, blocked work, continuing work, and remaining work. No email delivery is claimed.
+**PASS.** Provider operation `19f9db55-c611-5fbf-ad9a-7680d1cc1bc5` was submitted once, reconciled as recipient-level `Delivered`, and confirmed received by Product Authority. The safe packet contains the direct Issue #18 link, required decision/action, reason, scope, recommendation and alternative, blocked and continuing work, and remaining work.
 
 ## UAT-ready email test result
 
-**REPOSITORY PACKET: PASS. LIVE DELIVERY: BLOCKED_EXTERNAL_ACTION.** The safe synthetic plan resolves one To recipient, `cc=[]`, `sendAllowed=false`, and `EXTERNAL_ACTION_REQUIRED`. It contains Stage/access instructions, delivered framework scope, QA/test summary, residual risk, BA status, recommended UAT scenarios, and durable evidence without claiming a Doculyra release. No email delivery is claimed.
+**PASS.** Provider operation `deac8f93-61a8-51bd-8510-6ac2744d8ddb` was submitted once, reconciled as recipient-level `Delivered`, and confirmed received by Product Authority. The synthetic packet contains Stage/access information, delivered framework scope, QA summary, residual risk, BA status, recommended scenarios and durable evidence; it does not claim a product release.
 
 ## Deduplication test result
 
-**PASS for repository/conformance logic; live repeat-dispatch proof remains AC-14.** Six final focused checks passed recipient deduplication, one-winner atomic reservation, deterministic payload binding, same-key payload immutability, bounded retry exhaustion, and one transport invocation across duplicate dispatch. Provider acceptance records `SUBMITTED`; only recipient-level `Delivered` evidence records `SENT`.
+**PASS.** Both ledger entries have `attemptCount=1` and immutable terminal `SENT` evidence. Repeated dispatch returned each existing operation/result without a second provider call. Azure Monitor `ACSEmailSendMailOperational` contains exactly one submission row for each correlation ID, with one unique To recipient and zero CC recipients. Bounded retry and same-key payload immutability remain covered by automated tests.
 
 ## GitHub attribution evidence
 
-**PASS.** Material records enforce this exact order: Level 1 compact visible identity → Level 2 collapsible execution details → non-empty substantive body → Level 3 final hidden metadata. Display and runtime identities remain separate. Independent `QA-SEC-003` passed 76/76 focused cases and closed defect [#24](https://github.com/syedtabishmobin/DocumentManagement/issues/24#issuecomment-5462900337). The exact [Issue #18 matrix](https://github.com/syedtabishmobin/DocumentManagement/issues/18#issuecomment-5462900525) and PR #19 review identify their QA producer and bind evidence to candidate `0b14ddf2bbea1254ee325c452d55c3193fc2dd34`. Defects #20-#24 are closed.
+Material records use Level 1 compact display identity, immediately adjacent Level 2 execution details, substantive body, then final hidden v2 metadata. Display/runtime IDs remain separate. Live continuation evidence and fix-ready updates use `ORCH-001`; independent QA defect #28 and final acceptance use separately assigned `QA-SEC-003`. The #28 fix rejects both explicit default and nonstandard endpoint ports before/alongside URL normalization.
 
 ## Observability status
 
-`pnpm verify:observability` passes 35/35 tests. `pnpm agent:status --online` reports GitHub state as `MEASURED`, no pending decisions, no open defects, PR #19, DEV synthetic preview, Stage defined/not provisioned, UAT not ready, notification configured-disabled/external-validation-blocked, and token/cost telemetry `UNAVAILABLE`. Display identity is visible for the Issue #18 run; retained Issue #11 history truthfully reports display identity unavailable because it predates assignments. No token or cost precision is fabricated.
-
-Independent repository QA passed `NOTIFY-AC-01` through `NOTIFY-AC-13` on exact candidate `0b14ddf2bbea1254ee325c452d55c3193fc2dd34`. Local `pnpm verify` passed 31 framework and 35 observability tests plus specifications, contracts, traceability, TypeScript, application tests, and builds. Protected [run 33256844611](https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33256844611) passed PostgreSQL 17.11 API 37/37, Bicep, Android, and iOS.
+The event/query model, privacy controls and online GitHub join remain operational. Native token/cost values remain truthfully `UNAVAILABLE`; no precision is fabricated. Sender/domain, RBAC, managed-identity Log Analytics access, diagnostics, deployment, provider delivery, recipient receipt and deduplication now have durable evidence.
 
 ## Outstanding external/admin actions
 
-1. Refresh the authorised Azure management login for the configured development tenant and subscription, completing MFA/security-defaults requirements that currently return `AADSTS530035`.
-2. Verify the configured ACS Email resource, verified sender/domain, user-assigned managed-identity RBAC, Log Analytics workspace, and email diagnostic categories.
-3. Run an authorised Bicep what-if/deployment if the live resources differ from the reviewed IaC.
-4. Dispatch and terminally reconcile the safe blocking-decision and synthetic UAT-ready packets; repeat each dispatch and retain evidence that ACS was not invoked twice.
-5. Only then change delivery conformance/activation truth and rerun the complete readiness gate. Alternatively, Product Authority may explicitly accept GitHub-only fallback in the authoritative Issue; no such acceptance exists.
+No Azure or Product Authority action remains. Exact-candidate independent QA is the sole open readiness gate; the implementation agent cannot self-approve it.
 
 ## Overall autonomous queue readiness: PARTIAL
 
-Repository implementation, privacy/security checks, protected CI, notification packet composition, deduplication logic, observability, three-level GitHub attribution, and independent repository QA pass. The sole non-PASS reason is unavailable live Product Authority email conformance: Azure access/resource state and both recipient-terminal deliveries with repeat-dispatch deduplication are not yet proven. Activation remains disabled and the product queue must not start.
-
-Recommendation: merge only the independently accepted configured-disabled framework candidate when repository governance permits, keep Issue #18 open for `NOTIFY-AC-14`, complete the exact Azure/admin actions above, and start the governed queue only after the gate truthfully reaches PASS.
+Live notification conformance passes. Readiness remains temporarily partial until independent QA accepts the exact final activation/evidence candidate and the protected PR workflow permits merge. Do not start product work.

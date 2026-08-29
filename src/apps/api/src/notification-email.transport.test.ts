@@ -49,6 +49,19 @@ describe("ACS Email transport", () => {
     expect(() => validateTransportConfiguration({ ...configuration, credentialMode: "UNSAFE" as TransportConfiguration["credentialMode"] })).toThrow("unsupported credential");
   });
 
+  it("accepts only a canonical ACS HTTPS origin without an explicit port", () => {
+    expect(() => validateTransportConfiguration(configuration)).not.toThrow();
+    for (const endpoint of [
+      "https://acs-doculyra-test.australia.communication.azure.com:443",
+      "https://acs-doculyra-test.australia.communication.azure.com:444",
+      "https://acs-doculyra-test.australia.communication.azure.com/path",
+      "https://acs-doculyra-test.australia.communication.azure.com?token=synthetic",
+      "http://acs-doculyra-test.australia.communication.azure.com",
+    ]) {
+      expect(() => validateTransportConfiguration({ ...configuration, endpoint })).toThrow("credential-free");
+    }
+  });
+
   it("rejects a plan whose recipients differ from the allow-list", () => {
     expect(() => validateDispatchPlan({ ...plan, recipients: { to: ["other@example.test"], cc: [] } }, configuration)).toThrow("outside the configured allow-list");
   });

@@ -2,7 +2,7 @@
   "schemaVersion": "1.0.0",
   "environments": [
     {"id": "agent-local", "status": "AVAILABLE", "dataPolicy": "SYNTHETIC_ONLY", "promotionTarget": "dev"},
-    {"id": "dev", "status": "SYNTHETIC_PREVIEW_AVAILABLE", "provider": "AZURE", "region": "australiaeast", "promotionTarget": "stage", "externalAdapters": "CONFIGURED_DISABLED"},
+    {"id": "dev", "status": "SYNTHETIC_PREVIEW_AVAILABLE", "provider": "AZURE", "region": "australiaeast", "promotionTarget": "stage", "externalAdapters": "ACS_EMAIL_OPERATIONAL_OTHER_ADAPTERS_CONFIGURED_DISABLED"},
     {"id": "stage", "status": "DEFINED_NOT_PROVISIONED", "provider": "AZURE", "region": "australiaeast", "promotionTarget": "prod", "uatGateRequired": true},
     {"id": "prod", "status": "DEFINED_NOT_PROVISIONED", "provider": "AZURE", "region": "australiaeast", "promotionTarget": null, "explicitProductAuthorityApprovalRequired": true}
   ],
