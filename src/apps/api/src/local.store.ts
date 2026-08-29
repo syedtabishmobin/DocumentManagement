@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, Optional } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -28,41 +28,23 @@ import type {
 } from "@document-management/contracts";
 import { classifyDocument, extractProfileFacts, normalizeQuestion } from "@document-management/domain";
 import { evaluateAuthorization } from "./authorization.policy.js";
+import { PostgresWorkspacePersistence } from "./postgres-workspace.persistence.js";
+import {
+  WORKSPACE_PERSISTENCE,
+  type AuthorityOutboxEvent,
+  type WorkspaceActor,
+  type WorkspaceDatabase,
+  type WorkspacePersistence,
+  type WorkspaceState,
+} from "./workspace-state.js";
 
-interface LocalState {
-  workspace: Workspace;
-  ownerBindings: WorkspaceOwnerBinding[];
-  documents: DocumentRecord[];
-  facts: FactRecord[];
-  tasks: TaskRecord[];
-  notifications: NotificationRecord[];
-  members: Member[];
-  subjects: SubjectRecord[];
-  subjectIdentityLinks: SubjectIdentityLink[];
-  accessGrants: AccessGrant[];
-  authorizationEpoch: AuthorizationEpoch;
-  audit: AuditRecord[];
-  dependencies: DependencyRecord[];
-}
+export type { WorkspaceActor } from "./workspace-state.js";
 
-interface WorkspaceCreationReceipt {
-  identityId: string;
-  idempotencyKeyHash: string;
-  requestFingerprint: string;
-  workspaceId: string;
-  createdAt: string;
-}
-
-interface LocalDatabase {
+type LegacyWorkspaceDatabase = {
   schemaVersion: 2;
-  workspaces: LocalState[];
-  workspaceCreationReceipts: WorkspaceCreationReceipt[];
-}
-
-export interface WorkspaceActor {
-  identityId: string;
-  displayName: string;
-}
+  workspaces: WorkspaceState[];
+  workspaceCreationReceipts?: WorkspaceDatabase["workspaceCreationReceipts"];
+};
 
 const now = (): string => new Date().toISOString();
 const trashDeadline = (deletedAt: string): string => {
@@ -78,19 +60,19 @@ const ownerActions: WorkspaceAction[] = [
   "task.read", "task.create", "task.edit", "connector.read", "export.create", "audit.read",
 ];
 
-function auditRecord(workspaceId: string, actor: WorkspaceActor, type: string, resourceType: AuditRecord["resourceType"], detail: string, resourceId?: string): AuditRecord {
+function auditRecord(workspaceId: string, actor: WorkspaceActor, type: string, resourceType: AuditRecord["resourceType"], detail: string, resourceId?: string, correlationId = randomUUID()): AuditRecord {
   return {
     id: randomUUID(), workspaceId, type, resourceType, ...(resourceId ? { resourceId } : {}),
     actor: actor.displayName, actorId: actor.identityId, action: type, outcome: "SUCCEEDED",
-    policyVersion: "policy.local-explicit-grant@0.1", correlationId: randomUUID(), detail, at: now(),
+    policyVersion: "policy.local-explicit-grant@0.1", correlationId, detail, at: now(),
   };
 }
 
-function advanceAuthorizationEpoch(state: LocalState, cause: AuthorizationEpoch["cause"]): void {
+function advanceAuthorizationEpoch(state: WorkspaceState, cause: AuthorizationEpoch["cause"]): void {
   state.authorizationEpoch = { workspaceId: state.workspace.id, value: state.authorizationEpoch.value + 1, cause, advancedAt: now() };
 }
 
-function initialState(actor: WorkspaceActor, name: string, type: Workspace["type"]): LocalState {
+function initialState(actor: WorkspaceActor, name: string, type: Workspace["type"]): WorkspaceState {
   const createdAt = now();
   const workspaceId = randomUUID();
   const ownerMembershipId = randomUUID();
@@ -160,7 +142,7 @@ function initialState(actor: WorkspaceActor, name: string, type: Workspace["type
   };
 }
 
-function ensureDocumentIntelligence(state: LocalState): boolean {
+function ensureDocumentIntelligence(state: WorkspaceState): boolean {
   let changed = false;
   state.facts ??= [];
   state.dependencies ??= [];
@@ -227,7 +209,7 @@ function documentSummary(document: DocumentRecord): DocumentRecord {
   };
 }
 
-function normalizeWorkspaceState(input: LocalState): LocalState {
+function normalizeWorkspaceState(input: WorkspaceState): WorkspaceState {
   const state = input;
   state.workspace.status ??= "ACTIVE";
   state.workspace.ownerBindingId ??= randomUUID();
@@ -276,11 +258,48 @@ function normalizeWorkspaceState(input: LocalState): LocalState {
   return state;
 }
 
-function normalizeDatabase(input: LocalDatabase | LocalState): LocalDatabase {
-  if ("schemaVersion" in input && input.schemaVersion === 2) {
-    return { ...input, workspaces: input.workspaces.map(normalizeWorkspaceState), workspaceCreationReceipts: input.workspaceCreationReceipts ?? [] };
+export function normalizeWorkspaceDatabase(input: WorkspaceDatabase | LegacyWorkspaceDatabase | WorkspaceState): WorkspaceDatabase {
+  if ("schemaVersion" in input && (input.schemaVersion === 2 || input.schemaVersion === 3)) {
+    return {
+      schemaVersion: 3,
+      workspaces: input.workspaces.map(normalizeWorkspaceState),
+      workspaceCreationReceipts: input.workspaceCreationReceipts ?? [],
+      authorityOutbox: "authorityOutbox" in input ? input.authorityOutbox : [],
+    };
   }
-  return { schemaVersion: 2, workspaces: [normalizeWorkspaceState(input as LocalState)], workspaceCreationReceipts: [] };
+  return { schemaVersion: 3, workspaces: [normalizeWorkspaceState(input as WorkspaceState)], workspaceCreationReceipts: [], authorityOutbox: [] };
+}
+
+function appendAuthorityOutbox(database: WorkspaceDatabase, state: WorkspaceState, audit: AuditRecord): void {
+  if (!audit.correlationId || !audit.actorId) throw new Error("Authority audit requires correlation and actor identity before publication");
+  database.authorityOutbox.push({
+    id: randomUUID(),
+    workspaceId: state.workspace.id,
+    aggregateType: "WORKSPACE_AUTHORITY",
+    aggregateId: state.workspace.id,
+    aggregateRevision: state.authorizationEpoch.value,
+    eventType: audit.type,
+    schemaVersion: 1,
+    correlationId: audit.correlationId,
+    actorId: audit.actorId,
+    resourceType: audit.resourceType,
+    ...(audit.resourceId ? { resourceId: audit.resourceId } : {}),
+    occurredAt: audit.at,
+  });
+}
+
+function recordAuthorityTransition(
+  database: WorkspaceDatabase,
+  state: WorkspaceState,
+  actor: WorkspaceActor,
+  type: string,
+  resourceType: AuditRecord["resourceType"],
+  detail: string,
+  resourceId?: string,
+): void {
+  const audit = auditRecord(state.workspace.id, actor, type, resourceType, detail, resourceId);
+  state.audit.push(audit);
+  appendAuthorityOutbox(database, state, audit);
 }
 
 @Injectable()
@@ -289,29 +308,42 @@ export class LocalStore {
   private readonly statePath = join(this.root, "state.json");
   private readonly artifactRoot = join(this.root, "artifacts");
   private writeChain: Promise<unknown> = Promise.resolve();
+  private readonly persistence?: WorkspacePersistence;
 
-  private async loadDatabaseRaw(): Promise<LocalDatabase> {
+  constructor(@Optional() @Inject(WORKSPACE_PERSISTENCE) persistence?: WorkspacePersistence) {
+    if (persistence) {
+      this.persistence = persistence;
+      return;
+    }
+    const adapter = process.env.DM_AUTHORITY_STORE ?? "file";
+    if (adapter === "postgres") this.persistence = PostgresWorkspacePersistence.fromEnvironment();
+    else if (adapter !== "file") throw new Error(`Unsupported DM_AUTHORITY_STORE value: ${adapter}`);
+  }
+
+  private async loadDatabaseRaw(): Promise<WorkspaceDatabase> {
     try {
-      return normalizeDatabase(JSON.parse(await readFile(this.statePath, "utf8")) as LocalDatabase | LocalState);
+      return normalizeWorkspaceDatabase(JSON.parse(await readFile(this.statePath, "utf8")) as WorkspaceDatabase | LegacyWorkspaceDatabase | WorkspaceState);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-      return { schemaVersion: 2, workspaces: [], workspaceCreationReceipts: [] };
+      return { schemaVersion: 3, workspaces: [], workspaceCreationReceipts: [], authorityOutbox: [] };
     }
   }
 
-  private async saveDatabaseRaw(database: LocalDatabase): Promise<void> {
+  private async saveDatabaseRaw(database: WorkspaceDatabase): Promise<void> {
     await mkdir(dirname(this.statePath), { recursive: true });
     const temporary = `${this.statePath}.${process.pid}.${randomUUID()}.tmp`;
     await writeFile(temporary, `${JSON.stringify(database, null, 2)}\n`, { mode: 0o600 });
     await rename(temporary, this.statePath);
   }
 
-  private async readDatabase(): Promise<LocalDatabase> {
+  private async readDatabase(): Promise<WorkspaceDatabase> {
+    if (this.persistence) return this.persistence.read();
     await this.writeChain;
     return this.loadDatabaseRaw();
   }
 
-  private async mutate<T>(operation: (database: LocalDatabase) => Promise<T> | T): Promise<T> {
+  private async mutate<T>(operation: (database: WorkspaceDatabase) => Promise<T> | T): Promise<T> {
+    if (this.persistence) return this.persistence.mutate(operation);
     const run = this.writeChain.then(async () => {
       const database = await this.loadDatabaseRaw();
       const result = await operation(database);
@@ -322,7 +354,7 @@ export class LocalStore {
     return run;
   }
 
-  private state(database: LocalDatabase, workspaceId: string): LocalState {
+  private state(database: WorkspaceDatabase, workspaceId: string): WorkspaceState {
     const state = database.workspaces.find((candidate) => candidate.workspace.id === workspaceId);
     if (!state) throw new NotFoundException("Workspace not available");
     return state;
@@ -344,7 +376,11 @@ export class LocalStore {
   async listWorkspaces(identityId: string): Promise<WorkspaceSummary[]> {
     const database = await this.readDatabase();
     return database.workspaces
-      .filter((state) => state.members.some((member) => member.identityId === identityId && member.state === "ACTIVE"))
+      .filter((state) => state.members.some((member) =>
+        member.workspaceId === state.workspace.id &&
+        member.identityId === identityId &&
+        member.state === "ACTIVE",
+      ))
       .map(({ workspace }) => ({ id: workspace.id, name: workspace.name, type: workspace.type, status: workspace.status, revision: workspace.revision }));
   }
 
@@ -366,7 +402,7 @@ export class LocalStore {
       candidate.subjectIdentityLinks.push({ id: randomUUID(), workspaceId: candidate.workspace.id, subjectId: subject.id, identityId: actor.identityId, evidenceKind: "WORKSPACE_CREATION", state: "ACTIVE", validFrom: candidate.workspace.createdAt, recordedAt, revision: 1 });
       candidate.accessGrants.push({ id: randomUUID(), workspaceId: candidate.workspace.id, grantorIdentityId: actor.identityId, granteeIdentityId: actor.identityId, purposeId: "PUR-P1-001", resourceKind: "WORKSPACE", resourceIds: [candidate.workspace.id], actions: ownerActions, startsAt: recordedAt, state: "ACTIVE", policyVersion: "policy.local-explicit-grant@0.1", onwardDelegation: false, exportAllowed: true, createdAt: recordedAt, revision: 1 });
       candidate.authorizationEpoch = { workspaceId: candidate.workspace.id, value: candidate.authorizationEpoch.value + 1, cause: "SECURITY_CHANGED", advancedAt: recordedAt };
-      candidate.audit.push(auditRecord(candidate.workspace.id, actor, "LEGACY_OWNER_LINKED", "MEMBERSHIP", "Linked the existing local owner to the migrated workspace authority records", owner.id));
+      recordAuthorityTransition(database, candidate, actor, "LEGACY_OWNER_LINKED", "MEMBERSHIP", "Linked the existing local owner to the migrated workspace authority records", owner.id);
       return { id: candidate.workspace.id, name: candidate.workspace.name, type: candidate.workspace.type, status: candidate.workspace.status, revision: candidate.workspace.revision };
     });
   }
@@ -383,6 +419,7 @@ export class LocalStore {
       const state = initialState(actor, name, type);
       database.workspaces.push(state);
       database.workspaceCreationReceipts.push({ identityId: actor.identityId, idempotencyKeyHash: keyHash, requestFingerprint: fingerprint, workspaceId: state.workspace.id, createdAt: state.workspace.createdAt });
+      appendAuthorityOutbox(database, state, state.audit[0]!);
       return state.workspace;
     });
   }
@@ -525,7 +562,7 @@ export class LocalStore {
         relationship: input.relationship, ...(input.dateOfBirth ? { dateOfBirth: input.dateOfBirth } : {}), createdAt: now(), revision: 1,
       };
       state.subjects.push(subject);
-      state.audit.push(auditRecord(state.workspace.id, actor, "SUBJECT_CREATED", "PERSON", "Added a person to the household", subject.id));
+      recordAuthorityTransition(database, state, actor, "SUBJECT_CREATED", "PERSON", "Added a person to the household", subject.id);
       return subject;
     });
   }
@@ -602,7 +639,7 @@ export class LocalStore {
       const member: Member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName, role, state: "ACTIVE", invitationState: "PENDING", permissions: defaultPermissions(), createdAt, revision: 1 };
       state.members.push(member);
       advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
-      state.audit.push(auditRecord(state.workspace.id, actor, "MEMBERSHIP_INVITATION_PREPARED", "MEMBERSHIP", "Prepared membership without fabricating an identity or active resource grant", member.id));
+      recordAuthorityTransition(database, state, actor, "MEMBERSHIP_INVITATION_PREPARED", "MEMBERSHIP", "Prepared membership without fabricating an identity or active resource grant", member.id);
       return member;
     });
   }
@@ -614,12 +651,12 @@ export class LocalStore {
       const createdAt = now();
       const subject: SubjectRecord = { id: randomUUID(), workspaceId: state.workspace.id, displayName: input.displayName, kind: input.kind, relationship: input.relationship, ...(input.dateOfBirth ? { dateOfBirth: input.dateOfBirth } : {}), createdAt, revision: 1 };
       state.subjects.push(subject);
-      state.audit.push(auditRecord(state.workspace.id, actor, "PERSON_CREATED", "PERSON", "Added a person to the household", subject.id));
+      recordAuthorityTransition(database, state, actor, "PERSON_CREATED", "PERSON", "Added a person to the household", subject.id);
       if (input.loginEnabled) {
         const member: Member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName: input.displayName, role: input.role, state: "ACTIVE", invitationState: "PENDING", permissions: input.permissions, ...(input.email ? { email: input.email } : {}), ...(input.mobile ? { mobile: input.mobile } : {}), createdAt, revision: 1 };
         state.members.push(member);
         advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
-        state.audit.push(auditRecord(state.workspace.id, actor, "INVITATION_PREPARED", "MEMBERSHIP", "Prepared a membership invitation without creating credentials or a resource grant", member.id));
+        recordAuthorityTransition(database, state, actor, "INVITATION_PREPARED", "MEMBERSHIP", "Prepared a membership invitation without creating credentials or a resource grant", member.id);
       }
       return subject;
     });
@@ -648,7 +685,7 @@ export class LocalStore {
         member.state = "REVOKED"; member.invitationState = "SUSPENDED"; member.revision += 1;
       }
       advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
-      state.audit.push(auditRecord(state.workspace.id, actor, "PERSON_UPDATED", "PERSON", input.loginEnabled ? "Updated person and prospective membership settings; resource grants remain separate" : "Updated person details and disabled membership participation", subject.id));
+      recordAuthorityTransition(database, state, actor, "PERSON_UPDATED", "PERSON", input.loginEnabled ? "Updated person and prospective membership settings; resource grants remain separate" : "Updated person details and disabled membership participation", subject.id);
       return subject;
     });
   }
@@ -664,7 +701,7 @@ export class LocalStore {
       state.members = state.members.map((member) => member.subjectId === id ? { ...member, state: "REVOKED", invitationState: "SUSPENDED", revision: member.revision + 1 } : member);
       state.subjectIdentityLinks = state.subjectIdentityLinks.map((link) => link.subjectId === id && link.state === "ACTIVE" ? { ...link, state: "REVOKED", revision: link.revision + 1 } : link);
       advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
-      state.audit.push(auditRecord(state.workspace.id, actor, "PERSON_REMOVED", "PERSON", "Removed the active subject view while preserving revoked participation history", id));
+      recordAuthorityTransition(database, state, actor, "PERSON_REMOVED", "PERSON", "Removed the active subject view while preserving revoked participation history", id);
     });
   }
 
@@ -750,9 +787,9 @@ export class LocalStore {
     });
   }
 
-  async exportWorkspace(workspaceId: string): Promise<LocalState> {
+  async exportWorkspace(workspaceId: string): Promise<WorkspaceState> {
     const state = this.state(await this.readDatabase(), workspaceId);
-    return { ...state, documents: state.documents.map(({ extractedText: _content, ...document }) => document) } as LocalState;
+    return { ...state, documents: state.documents.map(({ extractedText: _content, ...document }) => document) } as WorkspaceState;
   }
 
   async recordRecoveryBlocked(workspaceId: string, actor: WorkspaceActor): Promise<{ caseId: string; workspaceId: string; caseKind: "WORKSPACE_RECOVERY"; state: "POLICY_BLOCKED"; decisionFence: "DEC-038"; createdAt: string; revision: 1 }> {
@@ -760,7 +797,7 @@ export class LocalStore {
       const state = this.state(database, workspaceId);
       const createdAt = now();
       const caseId = randomUUID();
-      state.audit.push(auditRecord(workspaceId, actor, "RECOVERY_POLICY_BLOCKED", "WORKSPACE", "Recovery and ownership transfer remain unavailable under DEC-038", workspaceId));
+      recordAuthorityTransition(database, state, actor, "RECOVERY_POLICY_BLOCKED", "WORKSPACE", "Recovery and ownership transfer remain unavailable under DEC-038", workspaceId);
       return { caseId, workspaceId, caseKind: "WORKSPACE_RECOVERY", state: "POLICY_BLOCKED", decisionFence: "DEC-038", createdAt, revision: 1 };
     });
   }

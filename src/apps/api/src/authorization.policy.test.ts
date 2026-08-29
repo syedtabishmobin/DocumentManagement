@@ -64,4 +64,19 @@ describe("evaluateAuthorization", () => {
     const expired: WorkspaceAuthority = { ...authority, accessGrants: [{ ...grant, expiresAt: "2026-08-29T00:00:30.000Z" }] };
     expect(evaluateAuthorization(expired, { identityId: "id_a", workspaceId: workspace.id, purposeId: "PUR-P1-001", action: "document.read", resourceKind: "DOCUMENT", resourceId: "doc_a", at: "2026-08-29T00:01:00.000Z" })).toMatchObject({ decision: "DENY", reason: "NO_CURRENT_GRANT" });
   });
+
+  it("denies a current identity whose membership belongs to another workspace", () => {
+    expect(evaluateAuthorization({
+      ...authority,
+      members: [{ ...member, workspaceId: "workspace_foreign" }],
+    }, {
+      identityId: member.identityId!,
+      workspaceId: workspace.id,
+      purposeId: "PUR-P1-001",
+      action: "workspace.read",
+      resourceKind: "WORKSPACE",
+      resourceId: workspace.id,
+      at: "2026-08-29T00:01:00.000Z",
+    })).toMatchObject({ decision: "DENY", reason: "MEMBERSHIP_UNAVAILABLE" });
+  });
 });

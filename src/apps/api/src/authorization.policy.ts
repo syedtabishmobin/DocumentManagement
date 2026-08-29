@@ -40,7 +40,11 @@ export function evaluateAuthorization(authority: WorkspaceAuthority, context: Au
   });
 
   if (authority.workspace.id !== context.workspaceId || authority.workspace.status !== "ACTIVE") return denied("WORKSPACE_UNAVAILABLE");
-  const membership = authority.members.find((candidate) => candidate.identityId === context.identityId && candidate.state === "ACTIVE");
+  const membership = authority.members.find((candidate) =>
+    candidate.workspaceId === context.workspaceId &&
+    candidate.identityId === context.identityId &&
+    candidate.state === "ACTIVE",
+  );
   if (!membership) return denied("MEMBERSHIP_UNAVAILABLE");
 
   const at = new Date(context.at ?? new Date().toISOString()).getTime();

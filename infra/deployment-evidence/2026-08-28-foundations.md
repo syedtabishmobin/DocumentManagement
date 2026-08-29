@@ -20,6 +20,8 @@ The following properties were queried from the deployed resources after successf
 - Blob permanent-delete bypass: disabled; versioning and 30-day change feed: enabled.
 - Storage transport: HTTPS/TLS-only with public Blob access disabled and infrastructure encryption required.
 - Cosmos DB: local authentication disabled, key-based metadata writes disabled, continuous seven-day backup enabled; free tier enabled only for dev.
+
+> Supersession note — 29 August 2026: this line records what the 28 August deployment created. `ADR-ARCH-007` selects PostgreSQL, and the current Bicep/application source no longer declares or uses Cosmos DB. Live Cosmos retirement remains a separately authorised Azure operation after dependency verification; this historical evidence is intentionally not rewritten as if that deletion already occurred.
 - Key Vault: RBAC authorization and soft delete enabled with 90-day retention. Purge protection remains reserved for production because enabling it is irreversible.
 - Monthly resource-group budget: AUD 25 for dev and AUD 75 for stage, with notification contacts supplied at deployment time rather than committed to source.
 - Dev application deployment switch: `true`; stage and prod remain `false`.
