@@ -28,7 +28,7 @@ The dev ACS and Email Communication Services resources use the verified Azure-ma
 
 ## GitHub attribution evidence
 
-Material records use Level 1 compact display identity, immediately adjacent Level 2 execution details, substantive body, then final hidden v2 metadata. Display/runtime IDs remain separate. Live continuation evidence and defects #25/#26 use `ORCH-001`; final acceptance must be produced by separately assigned `QA-SEC-003`.
+Material records use Level 1 compact display identity, immediately adjacent Level 2 execution details, substantive body, then final hidden v2 metadata. Display/runtime IDs remain separate. Live continuation evidence and fix-ready updates use `ORCH-001`; independent QA defect #28 and final acceptance use separately assigned `QA-SEC-003`. The #28 fix rejects both explicit default and nonstandard endpoint ports before/alongside URL normalization.
 
 ## Observability status
 
