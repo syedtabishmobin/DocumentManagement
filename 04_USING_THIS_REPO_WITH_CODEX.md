@@ -58,6 +58,7 @@ GitHub Issues is the work-management/control plane. Use:
 | `docs/` | Approved product, architecture, security, UX, engineering, operations, backlog and test contracts |
 | `src/` | React web, NestJS API, Flutter mobile, and shared packages |
 | `infra/` | Azure Bicep and deployment evidence |
+| `migrations/` | Immutable canonical PostgreSQL migrations and migration operating notes |
 | `.github/` | CI, Issue forms, PR template, and path ownership |
 
 Do not place project owner addresses in role prompts or prose. The only authoritative values and normalized routing are in `.agents/config/contacts.json`.
@@ -118,6 +119,8 @@ flutter build apk --debug
 
 The root `pnpm verify` runs framework/specification validation, TypeScript checks, tests, and builds. GitHub Actions additionally compiles Bicep and verifies Flutter Android/iOS.
 
+Workspace authority persistence defaults to the file-backed synthetic profile. The PostgreSQL adapter selected by `ADR-ARCH-007` is explicit and fail-closed. Its migration/verification commands, secret/TLS requirements, synthetic import, repair rules and activation fences are in `docs/09-devops/07-postgresql-authority-persistence.md`. Do not place `DM_POSTGRES_URL` in a prompt, Issue, source file or Bicep parameter.
+
 ## 6. GitHub, branches, ownership, and review
 
 Repository: `syedtabishmobin/DocumentManagement` (public), default branch `main`.
@@ -141,6 +144,8 @@ The implemented environment model is:
 - `prod`: defined but not provisioned or approved.
 
 GitHub Environments are not currently configured. Azure environment truth and activation fences are in `docs/09-devops/`, `infra/environments/`, and `.agents/project/environments.json`. External connectors, external notifications, and hosted AI remain disabled unless their exact adapter, conformance, security/privacy, and release gates pass.
+
+The PostgreSQL code adapter and canonical migrations exist, but Azure PostgreSQL provisioning and runtime activation are not enabled. The current dev preview explicitly remains on `DM_AUTHORITY_STORE=file`. Exact database SKU/capacity, managed identity/database administration, private network, backup/restore, cost and release evidence remain required before activation. The historical deployed Cosmos resource is no longer declared or used and needs a separately authorised live dependency check and retirement operation.
 
 A release candidate cannot be called UAT-ready until Stage QA and BA/business acceptance pass. The UAT record must include access instructions, delivered scope, test/evaluation summary, known residual risks, BA status, recommended scenarios, and durable evidence links.
 

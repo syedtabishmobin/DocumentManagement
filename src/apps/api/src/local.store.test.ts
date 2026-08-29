@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -50,6 +50,10 @@ describe("LocalStore", () => {
     expect(dashboard.accessGrants).toEqual([expect.objectContaining({ granteeIdentityId: actor.identityId, resourceKind: "WORKSPACE", exportAllowed: true })]);
     expect(dashboard.authorizationEpoch).toMatchObject({ value: 1, cause: "WORKSPACE_CREATED" });
     await expect(store.requireAuthorization(actor, workspaceId, "document.create", "WORKSPACE", workspaceId)).resolves.toBeUndefined();
+    const persisted = JSON.parse(await readFile(join(directory, "state.json"), "utf8")) as { schemaVersion: number; authorityOutbox: Array<{ eventType: string; correlationId: string }> };
+    expect(persisted.schemaVersion).toBe(3);
+    expect(persisted.authorityOutbox).toEqual(expect.arrayContaining([expect.objectContaining({ eventType: "WORKSPACE_CREATED" })]));
+    expect(persisted.authorityOutbox.every((event) => Boolean(event.correlationId))).toBe(true);
   });
 
   it("claims a legacy single-workspace owner without fabricating a second workspace", async () => {

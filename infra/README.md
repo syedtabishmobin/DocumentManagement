@@ -2,7 +2,9 @@
 
 The Bicep entry point defines three isolated environments. `dev` and `stage` are authorized for synthetic/test data in the current subscription. `prod.bicepparam` is deliberately deployable only after a separate production subscription and release gate are approved.
 
-Foundation deployment creates Australian-region resource groups, diagnostics, a private artifact registry, ciphertext-only storage with 30-day soft deletion, Key Vault for platform secrets (never customer plaintext keys), serverless Cosmos DB, and budget alerts. Application deployment is a separate switch and requires immutable reviewed web/API image references. Dev currently deploys a synthetic-only web/API preview and mounts a dedicated Azure Files share for preview state; that share is not eligible for real customer content or the production artifact route.
+Foundation deployment creates Australian-region resource groups, diagnostics, a private artifact registry, ciphertext-only storage with 30-day soft deletion, Key Vault for platform secrets (never customer plaintext keys), and budget alerts. Application deployment is a separate switch and requires immutable reviewed web/API image references. Dev currently deploys a synthetic-only web/API preview and mounts a dedicated Azure Files share for preview state; that share is not eligible for real customer content or the production artifact route.
+
+`ADR-ARCH-007` selects Azure Database for PostgreSQL Flexible Server for canonical and workflow records. The repository now contains the provider-neutral workspace persistence port, PostgreSQL adapter, and versioned canonical migrations. PostgreSQL infrastructure provisioning and runtime activation remain disabled until exact SKU, managed identity/database administration, private networking, backup, cost, and release inputs are approved. The previously deployed Cosmos DB resource is historical drift and must be retired through an authorised Azure change only after a live dependency check; it is no longer declared or used by the application source.
 
 ```sh
 export DOCULYRA_BUDGET_EMAIL='<notification-address>'

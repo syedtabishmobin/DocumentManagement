@@ -11,7 +11,6 @@ param tags object
 var compactPrefix = replace(resourcePrefix, '-', '')
 var ciphertextStorageName = take('st${compactPrefix}${environment}${suffix}', 24)
 var registryName = take('cr${compactPrefix}${environment}${suffix}', 50)
-var cosmosName = take('cos-${resourcePrefix}-${environment}-${suffix}', 44)
 var keyVaultName = take('kv-${resourcePrefix}-${environment}-${suffix}', 24)
 
 resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
@@ -176,75 +175,10 @@ resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
   } : {})
 }
 
-resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-05-15' = {
-  name: cosmosName
-  location: location
-  tags: tags
-  kind: 'GlobalDocumentDB'
-  properties: {
-    databaseAccountOfferType: 'Standard'
-    disableKeyBasedMetadataWriteAccess: true
-    disableLocalAuth: true
-    enableAutomaticFailover: false
-    enableFreeTier: environment == 'dev'
-    minimalTlsVersion: 'Tls12'
-    publicNetworkAccess: 'Enabled'
-    capabilities: [
-      { name: 'EnableServerless' }
-    ]
-    consistencyPolicy: {
-      defaultConsistencyLevel: 'Session'
-    }
-    locations: [
-      {
-        locationName: location
-        failoverPriority: 0
-        isZoneRedundant: false
-      }
-    ]
-    backupPolicy: {
-      type: 'Continuous'
-      continuousModeProperties: {
-        tier: 'Continuous7Days'
-      }
-    }
-  }
-}
-
-resource database 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases@2024-05-15' = {
-  parent: cosmos
-  name: 'doculyra'
-  properties: {
-    resource: { id: 'doculyra' }
-  }
-}
-
-resource records 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers@2024-05-15' = {
-  parent: database
-  name: 'records'
-  properties: {
-    resource: {
-      id: 'records'
-      partitionKey: {
-        paths: ['/workspaceId']
-        kind: 'Hash'
-        version: 2
-      }
-      indexingPolicy: {
-        automatic: true
-        indexingMode: 'consistent'
-        includedPaths: [{ path: '/*' }]
-        excludedPaths: [{ path: '/ciphertext/*' }]
-      }
-    }
-  }
-}
-
 output logAnalyticsName string = logs.name
 output registryName string = registry.name
 output ciphertextStorageName string = storage.name
 output syntheticPreviewShareName string = syntheticPreviewShare.name
 output keyVaultName string = keyVault.name
-output cosmosAccountName string = cosmos.name
 output pairedRecoveryLocation string = pairedLocation
 output ciClientId string = ciIdentity.properties.clientId

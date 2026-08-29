@@ -15,14 +15,14 @@ This register converts the story-by-story evidence audit into a delivery checkli
 
 Priority `P0` items block real personal documents or production release. `P1` items are core Phase 1 outcomes. `P2` items complete integration, parity, portability, operations, and release assurance. Priority is dependency/risk order inside the one approved Phase 1 program, not a reduction of scope.
 
-The 29 August 2026 local foundation now has multiple identities/workspaces, idempotent workspace authority records, explicit owner grants, deny-by-default action checks, bounded sessions/CSRF/origin/abuse controls, and a truthful recovery-unavailable boundary. The rows below remain open because that local synthetic-preview evidence is not production durability, complete authorization, MFA/passkeys, delegated sharing, client encryption, or release assurance.
+The 29 August 2026 foundation now has multiple identities/workspaces, idempotent workspace authority records, explicit owner grants, deny-by-default action checks, bounded sessions/CSRF/origin/abuse controls, a truthful recovery-unavailable boundary, and an implemented PostgreSQL workspace persistence adapter with migrations and transactional audit/outbox evidence. The rows below remain open because independent QA, Azure provisioning/conformance, production identity, complete authorization, MFA/passkeys, delegated sharing, client encryption, backup/restore and release assurance are not complete.
 
 ## 2. Remaining product and platform work
 
 | Priority | State | Work item | Story trace |
 |---|---|---|---|
 | `P0` | `INCOMPLETE` | Replace the bounded local identity/session store with production identity, MFA/passkey enrolment, distributed session/revocation controls and complete abuse evidence; retain and fully test the explicit unavailable recovery behavior. | `STORY-P1-001`, `008`, `047` |
-| `P0` | `INCOMPLETE` | Replace local JSON authority records with transactional durable multi-workspace persistence and complete identity, person, relationship, membership, role, grant, document and action lifecycle/concurrency/repair behavior. | `STORY-P1-001`–`003`, `039`, `040` |
+| `P0` | `INCOMPLETE` | Independently verify and activate the implemented transactional PostgreSQL authority adapter only after Azure SKU/identity/private-network/backup/cost gates; then complete remaining identity, relationship, membership, delegated-grant, document/action lifecycle and repair behavior. | `STORY-P1-001`–`003`, `039`, `040` |
 | `P0` | `INCOMPLETE` | Extend the local deny-by-default action boundary to document fields, evidence, edges, search, answers, citations, tasks, exports and activity, including delegated grants, revocation propagation, minimal disclosure and side-channel tests. | `STORY-P1-003`, `019`, `020`–`023`, `038`, `039` |
 | `P0` | `INCOMPLETE` | Encrypt every web and Flutter document before upload; implement secure device keys, workspace/customer key envelopes, grant-aware unwrap, rotation, revocation and crypto-shred without a plaintext fallback. | `STORY-P1-004`, `007`, `008`, `039`, `045` |
 | `P0` | `INCOMPLETE` | Replace preview file storage with immutable put-once Azure Blob artifacts, separate logical versions, integrity verification and deletion acknowledgements. | `STORY-P1-007`, `011`, `044`, `045` |

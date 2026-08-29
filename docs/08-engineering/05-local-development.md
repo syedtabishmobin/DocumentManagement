@@ -3,16 +3,14 @@
 | Field | Value |
 |---|---|
 | Document ID | `ENG-DEV-001` |
-| Version | `0.1` |
-| Status | **DRAFT — no application toolchain, service, or dependency selected** |
+| Version | `0.2` |
+| Status | **ACTIVE IMPLEMENTATION STANDARD under `ADR-ARCH-006`–`009`** |
 | Product phase | Phase 1 — Personal and Family |
-| Updated | 26 August 2026 |
+| Updated | 29 August 2026 |
 
 ## 1. Purpose and present boundary
 
-This document defines how a future local environment must be safe, deterministic, synthetic, contract-compatible, and honest about production differences. It does not create application scaffolding, install dependencies, select a language/framework/container/runtime/cloud, emulate a named provider, or authorize access to any production system.
-
-Today, the only executable local workflow in scope is validation of specification, API/event, and reference-data sources. Future commands and profiles below are required capabilities whose exact syntax/toolchain must be decided later.
+This document defines how the implemented local environment remains safe, deterministic, synthetic, contract-compatible, and honest about production differences. `ADR-ARCH-006`–`009` select the current TypeScript/React/NestJS, Flutter, Azure/Bicep and adapter boundaries; this standard does not authorise production systems, real customer data or external provider activation.
 
 ## 2. Local profiles
 
@@ -108,12 +106,15 @@ Reset tooling must print/return the resolved environment/profile/instance and re
 The current repository gates, run from the repository root, are:
 
 ```sh
-python3 scripts/validate-specifications.py
-python3 scripts/validate-api-contracts.py
-python3 scripts/validate-reference-data.py
+pnpm verify:framework
+pnpm verify:spec
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm verify
 ```
 
-These exact commands validate sources without selecting an application language.
+PostgreSQL authority migration, synthetic import and verification use the commands and activation controls in `docs/09-devops/07-postgresql-authority-persistence.md`. Ordinary local tests use PostgreSQL-compatible in-memory integration; CI runs the affected suite against an ephemeral PostgreSQL 17 service. Neither is Azure/production conformance.
 
 After a toolchain is approved, the root developer interface must expose documented non-interactive capabilities for:
 
@@ -160,7 +161,7 @@ A local pass never substitutes for representative integration, security, privacy
 
 | Rule ID | Draft normative rule |
 |---|---|
-| `ENG-DEV-P1-001` | Local development MUST remain specification-only until implementation readiness and technology decisions permit code. |
+| `ENG-DEV-P1-001` | Local development MUST follow the accepted Phase 1 implementation decisions while remaining synthetic, outbound-denied and separately gated from provider activation. |
 | `ENG-DEV-P1-002` | Local profiles MUST be named, versioned, documented, and default to synthetic, local-only, outbound-denied behavior. |
 | `ENG-DEV-P1-003` | Production endpoints, accounts, data, credentials, keys, notifications, connectors, and effects MUST NOT be reachable from an ordinary local profile. |
 | `ENG-DEV-P1-004` | Fixtures MUST be synthetic by default and MUST carry stable ID/version, generator/seed, classification, purpose, scope, provenance, expectations, and limitations. |
@@ -186,11 +187,11 @@ A local pass never substitutes for representative integration, security, privacy
 | `ENG-DEV-P1-024` | Local debug logs/errors/traces MUST follow the production privacy allow-list even for synthetic content. |
 | `ENG-DEV-P1-025` | Local service labels/UI outputs MUST clearly state synthetic/non-production status and MUST NOT claim legal, source, delivery, recovery, or residency assurance. |
 | `ENG-DEV-P1-026` | Repository quality commands MUST be non-interactive, deterministic, root-discoverable, composable, and shared with CI. |
-| `ENG-DEV-P1-027` | The three current standard-library validators MUST pass together before engineering source changes are considered consistent. |
+| `ENG-DEV-P1-027` | Framework, specification, API-contract, reference-data and traceability validators MUST pass together through the root verification gate before engineering source changes are considered consistent. |
 | `ENG-DEV-P1-028` | Future root verification MUST include generation drift, static/security/dependency/secret checks, unit, contract, integration, and mapped critical tests. |
 | `ENG-DEV-P1-029` | A local profile MUST publish semantic, security, data, async, residency, performance/cost, accessibility, and external-capability parity limitations. |
 | `ENG-DEV-P1-030` | Local convenience MUST NOT weaken domain invariants, authorization, audit, original integrity, deletion, route eligibility, open-decision fences, or stop-ship tests. |
 
 ## 12. Local-profile readiness
 
-No future local application profile is ready until its manifest, synthetic fixture inventory, fake-port contracts, secret/network guard, migration/reset safety, deterministic build/generation, quality commands, failure controls, privacy-safe diagnostics, and parity declaration are reviewed. The three current validators remain the only executable baseline defined by this document today.
+No local application profile is release evidence until its manifest, synthetic fixture inventory, fake-port contracts, secret/network guard, migration/reset safety, deterministic build/generation, quality commands, failure controls, privacy-safe diagnostics, and parity declaration are reviewed. The current root/CI commands are the executable development baseline; representative security, recovery, accessibility, performance and provider conformance remain separate gates.

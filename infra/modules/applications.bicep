@@ -159,6 +159,7 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'DM_API_PORT', value: '3000' }
             { name: 'DM_BIND_HOST', value: '0.0.0.0' }
             { name: 'DM_DATA_DIR', value: '/data' }
+            { name: 'DM_AUTHORITY_STORE', value: 'file' }
             { name: 'DM_OUTBOUND_NETWORK', value: 'deny' }
             { name: 'DM_EXTERNAL_CONNECTORS', value: 'disabled' }
             { name: 'DM_CONNECTOR_ADAPTERS_READY', value: 'false' }

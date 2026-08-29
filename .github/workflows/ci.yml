@@ -16,6 +16,23 @@ jobs:
   specifications-and-typescript:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: doculyra_test
+          POSTGRES_USER: doculyra_test
+          POSTGRES_PASSWORD: synthetic-test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U doculyra_test -d doculyra_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DM_TEST_POSTGRES_URL: postgresql://doculyra_test:synthetic-test-password@127.0.0.1:5432/doculyra_test
+      DM_TEST_POSTGRES_ALLOW_SCHEMA_RESET: enabled
     steps:
       - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v5
