@@ -3,9 +3,9 @@
 | Field | Value |
 |---|---|
 | Baseline ID | `DOCULYRA-BUILD-P1-2026.08.30.1` |
-| Status | `IN_REVIEW — DEC-P1-056 resolved; independent exact-candidate review not started` |
+| Status | `IN_REVIEW — DEC-P1-056 resolved; independent retest of defects #36–#38 pending` |
 | Recorded | 30 August 2026, Australia/Sydney |
-| Candidate revision | `5ca299d5def0e7a579075f01e6497122fd413495` |
+| Candidate revision | `6587824d23622253e6877d11aea72a20337410ae` |
 | Governed work | [Issue #32](https://github.com/syedtabishmobin/DocumentManagement/issues/32) |
 | Blocking decision | None; [`DEC-P1-056`](https://github.com/syedtabishmobin/DocumentManagement/issues/33#issuecomment-5463877570) approved the Phase 1 fail-closed fence |
 | Machine record | [`build-baseline.v1.json`](../build-baseline.v1.json) |
@@ -104,7 +104,7 @@ Framework observability, three-level GitHub attribution, and Product Authority A
 | Architecture Guardian + Security/Privacy + Data/Domain | Consultation complete; corrections authored and `DEC-P1-056` resolved; exact-candidate review pending |
 | AI Architect / Evaluator + UX/Product Design | Consultation complete; AI/UX/public-entry corrections authored |
 | Repository & Traceability Steward + QA/Release | Consultation complete; exact-candidate independent review deliberately withheld |
-| Independent baseline reviewer | `NOT_STARTED` |
+| Independent baseline reviewer | Preliminary review FAILED with defects #36–#38; remediation content revision `6587824d23622253e6877d11aea72a20337410ae` awaits independent retest |
 
 ## Approval checklist
 
