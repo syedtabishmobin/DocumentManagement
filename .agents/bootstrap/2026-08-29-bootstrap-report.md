@@ -1,10 +1,12 @@
 # Doculyra Agent Engineering Framework bootstrap report
 
+**Status: COMPLETE.** Final completion was reassessed after independently verified Issue #2 merged to `main` as `6c047bd` and is governed by [Issue #9](https://github.com/syedtabishmobin/DocumentManagement/issues/9). General product development is intentionally stopped at this boundary so Agent Operations & Observability can be installed next.
+
 ## 1. Baseline and discovery
 
-Bootstrap scope was framework/governance only; no unrelated product feature development occurred. Baseline: clean `main`/`origin/main` at `7b62573`. Full evidence and dispositions are in `.agents/bootstrap/discovery-2026-08-29.json`.
+Bootstrap scope was framework/governance only; no unrelated product feature development occurred during bootstrap. Initial baseline: clean `main`/`origin/main` at `7b62573`; completion baseline: clean merged `main` at `6c047bd`. Full initial evidence and dispositions are in `.agents/bootstrap/discovery-2026-08-29.json`.
 
-The existing specification-first system, application preview, tests, Azure/Bicep foundations, and CI were inspected and retained. Live GitHub discovery found a private repository with Issues enabled, zero Issues/PRs, generic labels only, three active workflows with recent successful runs, no GitHub Environments, no branch protection, and plan-unavailable rulesets. Actions exposes only Azure workload-identity/registry secret names; no repository variables were configured.
+The existing specification-first system, application preview, tests, Azure/Bicep foundations, and CI were inspected and retained. Initial live GitHub discovery found a private repository with Issues enabled, zero Issues/PRs, generic labels only, three active workflows with recent successful runs, no GitHub Environments, no branch protection, and plan-unavailable rulesets. Actions exposed only Azure workload-identity/registry secret names; no repository variables were configured. Current public/protected state is recorded in sections 8 and 13.
 
 ## 2. Existing assets and decisions reused
 
@@ -42,7 +44,7 @@ Small skills implement repository discovery, critical decisions, acceptance/test
 - `REPLACE_SELECTIVELY`: stale operating-path/command descriptions only.
 - `REBUILD`: none. No sound product implementation was rewritten.
 
-Native subagent capability was not exposed in this session, so persistent/specialist perspectives were applied in the primary agent context and recorded without claiming independent consultation. Independent QA remains mandatory for delivery work.
+Independent QA for the first governed work item ran in a separate Codex task and isolated worktree, bound to immutable candidate commits. It independently found defects #5–#8, blocked the first candidate, retested fixes (including a second-round workspace-existence leak), recorded durable evidence, and confirmed all acceptance criteria before merge. GitHub correctly rejected a formal approval from the same signed-in account that authored the PR; no approval was claimed. The documented temporary branch policy requires zero approving reviews, so the independent QA evidence plus protected checks permitted merge.
 
 ## 8. Human decisions
 
@@ -58,7 +60,7 @@ Root `04_USING_THIS_REPO_WITH_CODEX.md` is durable, linked from `AGENTS.md`, and
 
 ## 11. First governed work queue
 
-The ordered queue is in `.agents/project/first-governed-work-queue.md`: remote enforcement decision, transactional durable authority persistence, complete authorization coverage, client encryption/immutable artifacts, durable ingestion/quarantine/audit, Stage/release wiring, then the ACS Product Authority notification adapter. The first application item is now authoritative [GitHub Issue #2](https://github.com/syedtabishmobin/DocumentManagement/issues/2). No live connector activation is recommended before those foundations and conformance gates.
+The ordered queue is in `.agents/project/first-governed-work-queue.md`. Remote enforcement (Issue #1) and transactional durable authority persistence (Issue #2 / PR #4) are complete. The remaining application sequence starts with complete current-authorization coverage, but that queue is intentionally paused: Agent Operations & Observability is the next installation activity. No live connector or PostgreSQL provider activation is recommended before its applicable foundations and conformance gates.
 
 ## 12. External/admin actions
 
@@ -66,15 +68,17 @@ The ordered queue is in `.agents/project/first-governed-work-queue.md`: remote e
 - Wire deployment workflows to `dev`/`stage`/`prod` GitHub Environments without granting production credentials to change/test jobs; this remains pending until those deployment identities and Stage/production gates are ready.
 - Implement and synthetically conformance-test the ACS notification adapter before changing send status; until then notifications remain `EXTERNAL_ACTION_REQUIRED`.
 
+No external/admin action blocks framework bootstrap completion. The pending environment and notification actions remain truthful future release/capability work and are not reported as operational.
+
 ## 13. Validation
 
 - `pnpm verify:framework`: PASS — framework structure and six focused invariants, including the complete UAT-ready packet gate.
-- `pnpm verify`: PASS using the bundled Node/pnpm runtime — framework, 128-document specification/link/ID checks, 83 OpenAPI operations, 32 event schemas/examples, 12 reference schemas/catalogues, 101 traced tests, TypeScript checks, 28 TypeScript unit tests, and all web/API/package builds.
+- `pnpm verify`: PASS using the bundled Node/pnpm runtime — framework, 131-document specification/link/ID checks, 83 OpenAPI operations, 32 event schemas/examples, 12 reference schemas/catalogues, 101 traced tests, TypeScript checks, 41 local TypeScript tests, and all web/API/package builds. The two PostgreSQL-service integration tests are intentionally skipped without `DM_POSTGRES_TEST_URL` locally and pass in protected PostgreSQL 17 CI.
 - Flutter `analyze`: PASS; Flutter tests: PASS (4 tests). Local Android artifact build is `BLOCKED_LOCAL_TOOLING` because this Mac has no Android SDK; the GitHub Android runner owns the artifact gate after push. The iOS simulator artifact gate also remains owned by GitHub CI.
 - `az bicep build --file infra/main.bicep`: PASS.
 - All `.github` YAML files parse successfully; `git diff --check`: PASS.
 - The skill-creator supplied `quick_validate.py` could not start because neither available Python runtime includes its undeclared `PyYAML` dependency. No package was installed into the repository. The repository validator independently enforces skill frontmatter, names, descriptions, directory matching and capability registration and passed for all six skills.
-- Remote labels, decision Issue #1 and governed work Issue #2 were created successfully. Remote CI evidence is confirmed after the bootstrap commit is pushed.
+- The repository is public; `main` protection matches `DEC-FWK-001`; no GitHub Environments exist; no Issue or pull request is open at completion. Issue #2 and defects #5–#8 are closed, PR #4 is merged, and its three protected checks passed against candidate `4bb43cc` before squash merge `6c047bd`.
 
 ## 14. Changed files
 
@@ -89,3 +93,5 @@ Durable bootstrap artifacts include:
 - reconciled repository-structure, CI/CD and provider-notification documentation.
 
 The onboarding guide is explicitly included in both completion validation and this changed-files report.
+
+Final bootstrap-status reconciliation changes only this report, `.agents/project/current-state.md`, and `.agents/project/first-governed-work-queue.md`. `04_USING_THIS_REPO_WITH_CODEX.md` and its mandatory root `AGENTS.md` link were revalidated unchanged against the implemented repository paths, GitHub control plane, commands, capabilities, environments and notification status.
