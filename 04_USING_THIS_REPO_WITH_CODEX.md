@@ -120,13 +120,15 @@ The root `pnpm verify` runs framework/specification validation, TypeScript check
 
 ## 6. GitHub, branches, ownership, and review
 
-Repository: `syedtabishmobin/DocumentManagement` (private), default branch `main`.
+Repository: `syedtabishmobin/DocumentManagement` (public), default branch `main`.
 
 - Start from current `main`; use `codex/<issue>-<short-name>` for ordinary Codex work.
 - Keep one coherent change per branch and link the PR to the Issue.
 - `.github/CODEOWNERS` identifies sensitive paths. Approval authority still follows `CODEX.md`, the decision register, and `.agents/project/team.json`.
 - The required quality workflow is `.github/workflows/ci.yml` (`Phase 1 quality gates`).
-- Remote branch-protection/ruleset enforcement is not currently available on this private repository's GitHub plan. The desired policy is recorded in `.agents/project/github.json`; until the linked external action is resolved, reviewers must enforce the PR/check requirements procedurally.
+- `main` is remotely protected under `DEC-FWK-001`: use a pull request; all three Phase 1 jobs must pass against current `main`; linear history and resolved conversations are required; administrators cannot bypass; force-push and branch deletion are disabled.
+- Required approving reviews are temporarily zero because only one authorised reviewer is configured. When a second authorised reviewer is added, change this to one independent approval and enable required CODEOWNER review.
+- Head branches are deleted automatically after merge.
 - Never let generated code or the implementation agent approve its own release.
 
 ## 7. Environments and release gates
