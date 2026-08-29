@@ -8,7 +8,7 @@ Governed work: [Issue #18](https://github.com/syedtabishmobin/DocumentManagement
 
 ## Azure/ACS configuration used
 
-The dev ACS and Email Communication Services resources use the verified Azure-managed domain and configured `DoNotReply` sender in Australia. The API uses its existing user-assigned runtime identity. Bicep adopts the existing Communication and Email Service Owner assignment, adds Log Analytics Data Reader at workspace scope, and configures only ACS email send/status operational diagnostics. The infrastructure deployment completed under correlation `b82ba6e3-6f27-4cb3-a9fb-cf348852457a`; scoped activation produced healthy/running API revision `ca-doculyra-dev-api--0000008` without changing its immutable image.
+The dev ACS and Email Communication Services resources use the verified Azure-managed domain and configured `DoNotReply` sender in Australia. The API uses its existing user-assigned runtime identity. Bicep adopts the existing Communication and Email Service Owner assignment, adds Log Analytics Data Reader at workspace scope, and configures only ACS email send/status operational diagnostics. The infrastructure deployment completed under correlation `b82ba6e3-6f27-4cb3-a9fb-cf348852457a`. Final image alignment produced running/provisioned API revision `ca-doculyra-dev-api--0000009` on independently accepted merged image `dev-8e39e77a9a94d43cb5f96ea2c76e53de96c95473`, with managed identity and notifications enabled and `/api/health` passing.
 
 ## Security/authentication status
 
