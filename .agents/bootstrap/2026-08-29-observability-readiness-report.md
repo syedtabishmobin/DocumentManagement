@@ -1,6 +1,8 @@
 # OBSERVABILITY READINESS REPORT
 
-Governed by [Issue #11](https://github.com/syedtabishmobin/DocumentManagement/issues/11) and candidate [PR #12](https://github.com/syedtabishmobin/DocumentManagement/pull/12). This report covers the Agent Operations & Observability installation only; no general product-development queue item was started.
+Originally governed by [Issue #11](https://github.com/syedtabishmobin/DocumentManagement/issues/11) and merged [PR #12](https://github.com/syedtabishmobin/DocumentManagement/pull/12), then reconciled by notification-adapter [Issue #18](https://github.com/syedtabishmobin/DocumentManagement/issues/18) and [PR #19](https://github.com/syedtabishmobin/DocumentManagement/pull/19). This report covers framework readiness only; no general product-development queue item was started.
+
+Notification state: implementation=IMPLEMENTED; activation=CONFIGURED_DISABLED; deliveryConformance=BLOCKED_EXTERNAL_VALIDATION; sendAllowed=false.
 
 ## 1. Repository/framework state discovered
 
@@ -9,16 +11,17 @@ Governed by [Issue #11](https://github.com/syedtabishmobin/DocumentManagement/is
 - Existing `OPS-OBS-001` is a strong privacy-safe product telemetry standard. Azure development infrastructure already provisions Log Analytics and Application Insights, but agent operations are not routed there.
 - Installed Codex CLI `0.150.0-alpha.8` exposes stable multi-agent support and the interactive `codex agents` view. `runtime_metrics` was observed under development and disabled.
 - Official Codex configuration supports OpenTelemetry logs/metrics/traces, but OTel routing is user-level; project `.codex/config.toml` cannot enforce it. Native export remains disabled because no privacy-filtered destination has passed conformance. See [OpenAI advanced configuration](https://learn.chatgpt.com/docs/config-file/config-advanced) and [OpenAI configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).
-- Blocking-decision and UAT-ready notification contracts exist, but ACS Email implementation is `MISSING`, activation is `CONFIGURED_DISABLED`, delivery conformance is `NOT_RUN`, and send is prohibited.
+- Blocking-decision and UAT-ready notification contracts now use an implemented ACS Email managed-identity transport, atomic ledger, bounded retry, recipient allow-list and Azure Monitor reconciliation. Activation remains `CONFIGURED_DISABLED`, delivery conformance is `BLOCKED_EXTERNAL_VALIDATION`, and normal send is prohibited until live checks pass.
 
 ## 2. Files/config changed
 
-- Framework/profile: `.agents/framework/operations-observability.md`, `.agents/framework-manifest.json` (v1.2.0), `.agents/project/observability.json`, profile/team/role/capability/tool registries.
+- Framework/profile: `.agents/framework/operations-observability.md`, `.agents/framework-manifest.json` (v1.3.0), `.agents/project/observability.json`, profile/team/role/capability/tool registries.
 - Definitions: `.agents/observability/README.md`, event schema, metric catalogue, query catalogue, privacy/retention policies and Codex OTel adapter contract.
 - Skills: `observability-status`, `telemetry-validation`, and `cost-performance-analysis`.
 - Runtime/query/test: `scripts/agent_ops.py`, `scripts/validate_observability.py`, `scripts/observability_smoke_test.py`, package scripts and framework validator integration.
 - Regression stabilization: `src/apps/api/src/postgres-workspace.integration.test.ts` now proves concurrent migration applicants before verify-only runtime concurrency and serializes destructive shared-schema fixtures.
 - Operations: `.gitignore`, `AGENTS.md`, `WORKFLOW.md`, `04_USING_THIS_REPO_WITH_CODEX.md`, `scripts/README.md`, current-state/queue reconciliation, this report and the observability discovery record.
+- Notification extension: ACS Email TypeScript transport/CLI/tests, Python ledger/validation/tests, three-level GitHub attribution plus display assignments, Bicep managed-identity/diagnostic configuration, safe synthetic conformance packets and notification discovery evidence.
 - Volatile `.agent-ops/runtime/events.jsonl` is intentionally excluded from version control.
 
 ## 3. Event/metric model implemented
@@ -33,7 +36,7 @@ Lifecycle validation is per run, enforces legal state transitions and stable acy
 
 ## 4. Agent/capability/skill/tool attribution status
 
-**PASS for framework events.** A live Issue #11 event was queried with agent ID, operations role, work item, capabilities, seven invoked skills, four tools, two adapters, branch/worktree, environment, state and duration. Synthetic tests prove a root/QA child tree, terminal child state, blocked parent, decision and notification state.
+**PASS.** A live Issue #11 event was queried with agent ID, operations role, work item, capabilities, seven invoked skills, four tools, two adapters, branch/worktree, environment, state and duration. Synthetic tests prove a root/QA child tree, terminal child state, blocked parent, decision and notification state. Defect #24 is independently closed: material records begin with a visible role/display identity, place collapsible parent/work/capability/skill/tool/revision/environment details immediately next, require a substantive body, and end with hidden v2 metadata that separates display and runtime identities. Assignments and role/capability/skill/tool claims are registry-validated; implementation `ORCH-001` and independent QA `QA-SEC-003` remain distinct.
 
 Native Codex may expose model/session/runtime fields separately; unavailable values are not inferred. GitHub context is joined on demand and remains authoritative for Issues, decisions, defects, PRs and CI.
 
@@ -76,17 +79,17 @@ The final pre-merge online status proof returned one active Issue #11 agent on P
 
 ## 8. Notification-path validation
 
-- Blocking decision fixture: one normalized To recipient, no duplicate CC, existing deduplication key, `sendAllowed=false`, result `EXTERNAL_ACTION_REQUIRED`.
-- Complete synthetic UAT-ready fixture: one normalized To recipient, no duplicate CC, new deduplication key, `sendAllowed=false`, result `EXTERNAL_ACTION_REQUIRED`.
-- False `SENT` remains rejected by existing framework tests unless implementation, activation, delivery conformance and provider message ID all pass.
+- Blocking decision fixture: one normalized To recipient, no duplicate CC, stable deduplication key, `sendAllowed=false`, result `EXTERNAL_ACTION_REQUIRED`; its packet contains the direct Issue, decision, recommendation/options, blocked/continuing work and remaining work.
+- Complete synthetic UAT-ready fixture: one normalized To recipient, no duplicate CC, stable deduplication key, `sendAllowed=false`, result `EXTERNAL_ACTION_REQUIRED`; its packet contains Stage/access, scope, QA summary, residual risk, BA status, scenarios and durable evidence.
+- The ACS transport and ledger are implemented with managed identity, a stable provider operation ID, bounded retries, immutable first-terminal evidence and fail-closed reconciliation. Provider submission remains `SUBMITTED`; only recipient-level `Delivered` evidence may produce `SENT`.
 
 GitHub remains the authoritative phone-accessible decision/UAT record. Email is **not operational** and no delivery is claimed.
 
 ## 9. External/admin actions still required
 
-1. Implement the existing vendor-neutral notification port with the prepared Azure Communication Services Email resources.
-2. Configure managed-identity send permission, a synthetic-recipient allow-list, preferences/minimisation, delivery-state reconciliation, bounce/failure handling, audit and rate controls without committing addresses or credentials outside structured/secret configuration.
-3. Run and retain a successful synthetic delivery conformance test for both blocking-decision and UAT-ready messages, then update `.agents/config/notifications.json` truthfully.
+1. Refresh authorised Azure management login after the observed `AADSTS530035` security-defaults block and verify the configured development subscription.
+2. Verify the existing ACS Email sender/domain, user-assigned managed-identity roles, Log Analytics workspace and ACS Email diagnostic categories; run Bicep what-if/deployment if required.
+3. Run and retain terminal delivery evidence for the blocking-decision and synthetic UAT-ready conformance messages, then repeat each dispatch to prove no duplicate send and update configuration truthfully.
 4. Alternative: Product Authority may explicitly accept GitHub-only fallback for autonomous queue execution. No such acceptance is currently recorded.
 5. Optional future durability: design a privacy-filtering Codex OTel collector/export path to the existing Azure monitoring estate and approve its identity, data fields, residency, retention and cost before activation. This is not required for the approved local mechanism.
 
@@ -94,18 +97,18 @@ GitHub remains the authoritative phone-accessible decision/UAT record. Email is 
 
 **PARTIAL**
 
-The event/config model, local destination, lifecycle/attribution queries, privacy controls, validation, GitHub join and environment/quality/decision visibility pass. Autonomous queue readiness does not pass because the mandatory Product Authority email path is unavailable and no GitHub-only fallback has been accepted.
+The event/config model, local destination, lifecycle/attribution queries, privacy controls, validation, GitHub join, environment/quality/decision visibility, disabled notification implementation, and exact PR #19 repository candidate pass independent QA. Autonomous queue readiness does not pass solely because live Azure sender/domain/identity/diagnostic state, terminal delivery of both safe packets, and repeat-dispatch deduplication have not been verified, and no GitHub-only fallback has been accepted.
 
-Validation evidence: local `pnpm verify` passed framework/observability, 140-document specifications, API/event/reference/traceability contracts, TypeScript typechecks, 41 local tests with two honestly skipped PostgreSQL-service tests, and all builds. `pnpm verify:observability` passes 34 focused tests. Independent QA passed a separate 22-case adversarial suite and every OBS-AC-01–12 criterion on exact candidate `c025420aacb522f25952750e72b067bdbf86892c`. Protected [run 33250411214 attempt 1](https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33250411214/attempts/1) passed specifications/TypeScript, 31/31 API tests including both PostgreSQL 17 integrations, Bicep, Android and iOS; [attempt 2](https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33250411214/attempts/2) repeated the PostgreSQL/specification/Bicep job successfully. Local Flutter tooling is unavailable. The skill-creator `quick_validate.py` could not start because its environment lacks `PyYAML`; no dependency was added. The repository's dependency-free validator passed all skill frontmatter, naming, descriptions, directory matching and capability registration.
+Current notification-readiness evidence: local `pnpm verify` passed 31 framework tests, 35 observability tests, 140-document specifications, API/event/reference/traceability contracts, TypeScript typechecks, 35 local API tests with two honestly skipped PostgreSQL-service tests, and all builds. Independent `QA-SEC-003` passed 76/76 focused replacement-candidate checks and `NOTIFY-AC-01` through `NOTIFY-AC-13` on exact candidate `0b14ddf2bbea1254ee325c452d55c3193fc2dd34`. Protected [run 33256844611](https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33256844611) passed PostgreSQL 17.11 API 37/37, Bicep, Android, iOS, framework, observability, specifications and TypeScript. The exact [Issue #18 QA matrix](https://github.com/syedtabishmobin/DocumentManagement/issues/18#issuecomment-5462900525), [defect #24 closure](https://github.com/syedtabishmobin/DocumentManagement/issues/24#issuecomment-5462900337), and PR #19 review preserve independent attribution. Defects #20-#24 are closed.
 
 Independent QA originally blocked candidate `4dc03a0` with lifecycle/parent-graph [defect #13](https://github.com/syedtabishmobin/DocumentManagement/issues/13), prompt/retention [defect #14](https://github.com/syedtabishmobin/DocumentManagement/issues/14), usage/currency [defect #15](https://github.com/syedtabishmobin/DocumentManagement/issues/15), partial-GitHub [defect #16](https://github.com/syedtabishmobin/DocumentManagement/issues/16), and later protected-CI migration-race [defect #17](https://github.com/syedtabishmobin/DocumentManagement/issues/17). Exact-SHA independent retest passed and closed all five defects. The durable acceptance matrix is recorded on [Issue #11](https://github.com/syedtabishmobin/DocumentManagement/issues/11#issuecomment-5462210886) and [PR #12](https://github.com/syedtabishmobin/DocumentManagement/pull/12#issuecomment-5462210905).
 
 ## 11. Exact reasons for non-PASS result
 
-The sole gate-blocking reason is notification readiness: ACS Email implementation is missing, send is configured-disabled, delivery conformance has not run, and the Doculyra project addendum explicitly requires operational email or Product Authority acceptance of GitHub-only fallback before autonomous queue execution.
+The sole gate-blocking reason is live notification conformance: the ACS Email adapter is implemented and configured-disabled, `sendAllowed=false`, and delivery conformance remains `BLOCKED_EXTERNAL_VALIDATION` after Azure management authentication was blocked by security defaults. Sender/domain, managed-identity RBAC, diagnostics, authorised deployment, recipient-level terminal delivery for both safe packets, and repeat-dispatch deduplication are not yet proven. The Doculyra project addendum requires terminally reconciled operational email or Product Authority acceptance of GitHub-only fallback before autonomous queue execution.
 
 Exact token/cost and context-efficiency data is unavailable, but this is labelled `UNAVAILABLE` and the global addendum says it must not alone block safe governed development. The approved local store satisfies the destination requirement without a new external provider.
 
 ## 12. Recommendation for starting the governed Doculyra work queue
 
-Do **not** start the autonomous product queue yet. The framework-only observability layer has independent technical acceptance; make notification-adapter implementation and delivery conformance the next governed item—or record explicit Product Authority acceptance of GitHub-only fallback. Re-run `pnpm agent:status --online` and both notification plans; only after the queue gate changes truthfully to pass should the existing application queue resume at current-authorization coverage.
+Do **not** start the autonomous product queue yet. Repository implementation and independent QA are complete. Refresh authorised Azure access and run the two governed terminal delivery/deduplication checks—or record explicit Product Authority acceptance of GitHub-only fallback. Re-run `pnpm agent:status --online` and both notification plans; only after the queue gate changes truthfully to pass should the existing application queue resume at current-authorization coverage.

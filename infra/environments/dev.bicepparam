@@ -19,6 +19,7 @@ param boxClientSecretConfigured = true
 param azureCommunicationServiceName = 'acs-doculyra-dev'
 param azureCommunicationEndpoint = 'https://acs-doculyra-dev.australia.communication.azure.com'
 param emailFromAddress = 'DoNotReply@9900614b-2e01-4d86-93aa-379c583ada57.azurecomm.net'
+param configureNotificationAdapterInfrastructure = true
 param monthlyBudgetAud = 25
 param alertEmail = readEnvironmentVariable('DOCULYRA_BUDGET_EMAIL', '')
 param budgetStartDate = '2026-08-01'

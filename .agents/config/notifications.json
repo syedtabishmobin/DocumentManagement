@@ -6,12 +6,34 @@
   "inboundEmailControlChannel": false,
   "adapter": {
     "kind": "AZURE_COMMUNICATION_SERVICES_EMAIL",
-    "implementation": "MISSING",
+    "implementation": "IMPLEMENTED",
     "activation": "CONFIGURED_DISABLED",
     "authentication": "MANAGED_IDENTITY_REQUIRED",
-    "deliveryConformance": "NOT_RUN",
+    "deliveryConformance": "BLOCKED_EXTERNAL_VALIDATION",
     "sendAllowed": false,
-    "externalAction": "Implement the channel-neutral runtime adapter, synthetic-recipient allow-list, delivery reconciliation, failure/bounce handling, audit and conformance test before enabling email."
+    "conformanceSendAllowed": true,
+    "transportCommand": [
+      "node",
+      "src/apps/api/dist/notification-email.cli.js"
+    ],
+    "configuration": {
+      "endpointEnvironmentVariable": "DM_AZURE_COMMUNICATION_ENDPOINT",
+      "senderEnvironmentVariable": "DM_EMAIL_FROM",
+      "managedIdentityClientIdEnvironmentVariable": "AZURE_CLIENT_ID",
+      "logAnalyticsWorkspaceIdEnvironmentVariable": "DM_LOG_ANALYTICS_WORKSPACE_ID",
+      "recipientAllowList": ".agents/config/contacts.json",
+      "deliverySource": "AZURE_MONITOR_ACS_EMAIL_STATUS_LOGS",
+      "userEngagementTracking": "DISABLED"
+    },
+    "delivery": {
+      "reservationLeaseSeconds": 300,
+      "maxDispatchAttempts": 3,
+      "maxProviderRetries": 2,
+      "providerTimeoutSeconds": 180,
+      "terminalSuccessStatus": "Delivered",
+      "terminalFailureStatuses": ["Bounced", "Quarantined", "FilteredSpam", "Suppressed", "Failed"]
+    },
+    "externalAction": "Refresh authorised Azure management authentication, verify/deploy managed-identity ACS and Log Analytics permissions plus ACS email diagnostic settings, then deliver and reconcile both Issue #18 conformance events before activation."
   },
   "events": {
     "BLOCKING_DECISION": {

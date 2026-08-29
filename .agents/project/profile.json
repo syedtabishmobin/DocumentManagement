@@ -8,7 +8,7 @@
   "sourceControl": "GITHUB",
   "workManagement": "GITHUB_ISSUES",
   "remoteHumanDecisionChannel": "GITHUB_ISSUES",
-  "frameworkVersion": "1.2.0",
+  "frameworkVersion": "1.3.0",
   "contacts": ".agents/config/contacts.json",
   "notifications": ".agents/config/notifications.json",
   "sourceOfTruth": ".agents/project/source-of-truth.json",

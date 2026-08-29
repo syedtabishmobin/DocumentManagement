@@ -5,12 +5,14 @@
 Run `pnpm verify:framework` from the repository root. It executes:
 
 - `python3 scripts/validate_agent_framework.py`, which validates framework/profile separation, required paths, structured configuration, source links, small skills, notification routing/ledger, GitHub controls, CI integration, and bootstrap completion; and
-- `python3 scripts/test_agent_framework.py`, which exercises notification deduplication and validator invariants; and
+- `python3 scripts/test_agent_framework.py`, which exercises recipient allow-list, atomic reservation, bounded retry, notification content, submission/delivery truth, deduplication, attribution and validator invariants; and
 - `pnpm verify:observability`, which validates the Agent Operations contracts and runs privacy, lifecycle, tree, state, usage-provenance and no-double-count smoke tests.
 
 Validate a structured record with `python3 scripts/validate_agent_framework.py --record <type> <file.json>`.
 
-Use `python3 scripts/notification_ledger.py plan <event.json>` to resolve deduplicated recipients and truthful adapter status. Use `python3 scripts/notification_ledger.py record <event.json> --status <status> --evidence <url>` to record an exactly-once result. `SENT` is rejected unless configuration is operational and a provider message ID is supplied.
+Use `python3 scripts/notification_ledger.py plan <event.json>` to resolve deduplicated recipients and truthful adapter status. `dispatch` atomically reserves and invokes the built ACS transport; `check-delivery` reconciles recipient-level Azure Monitor evidence. Provider acceptance records `SUBMITTED`, not `SENT`. Direct `record SENT` is prohibited. `--conformance` is restricted to the governed adapter test path and `--retry` is bounded to the same event/provider operation identity.
+
+Register the display/runtime run pairing in `.agents/state/agent-display-assignments.json`, then use `python3 scripts/github_attribution.py wrap --body-file <body.md> ...` to generate the complete three-level material GitHub record. It begins with the visible role/display agent and display run, places collapsible parent/work/capability/skill/tool/revision/environment details immediately next, requires and preserves a non-empty full body after those details, and ends with hidden v2 metadata containing separate display and runtime identities. Run `python3 scripts/github_attribution.py validate <wrapped.md>` before publication; legacy v1-only, bodyless, or out-of-order records do not satisfy the material-record gate.
 
 Use `pnpm agent:status`, `pnpm agent:tree`, and `pnpm agent:summary` for the local Agent Operations interface. Add `--online` to status for current GitHub context. `pnpm agent:prune` physically removes events outside retention. `scripts/agent_ops.py emit` validates and appends metadata-only events to the Git-ignored local store.
 

@@ -20,6 +20,8 @@ COPY --from=build /workspace/node_modules ./node_modules
 COPY --from=build /workspace/src/packages ./src/packages
 COPY --from=build /workspace/src/apps/api ./src/apps/api
 COPY --from=build /workspace/migrations ./migrations
+COPY --from=build /workspace/.agents/config/contacts.json ./.agents/config/contacts.json
+COPY --from=build /workspace/.agents/config/notifications.json ./.agents/config/notifications.json
 USER node
 EXPOSE 3000
 CMD ["node", "src/apps/api/dist/main.js"]

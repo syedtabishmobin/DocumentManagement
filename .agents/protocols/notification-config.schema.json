@@ -8,7 +8,28 @@
     "projectId": {"type": "string"},
     "recipientConfiguration": {"type": "string"},
     "authoritativeDecisionChannel": {"type": "string"},
-    "adapter": {"type": "object", "required": ["kind", "implementation", "activation", "deliveryConformance", "sendAllowed"]},
+    "adapter": {
+      "type": "object",
+      "required": ["kind", "implementation", "activation", "authentication", "deliveryConformance", "sendAllowed", "conformanceSendAllowed", "transportCommand", "configuration", "delivery"],
+      "properties": {
+        "kind": {"const": "AZURE_COMMUNICATION_SERVICES_EMAIL"},
+        "implementation": {"enum": ["MISSING", "IMPLEMENTED"]},
+        "activation": {"enum": ["CONFIGURED_DISABLED", "ENABLED"]},
+        "authentication": {"const": "MANAGED_IDENTITY_REQUIRED"},
+        "deliveryConformance": {"enum": ["NOT_RUN", "BLOCKED_EXTERNAL_VALIDATION", "PASS", "FAIL"]},
+        "sendAllowed": {"type": "boolean"},
+        "conformanceSendAllowed": {"type": "boolean"},
+        "transportCommand": {"type": "array", "minItems": 1, "maxItems": 10, "items": {"type": "string"}},
+        "configuration": {
+          "type": "object",
+          "required": ["endpointEnvironmentVariable", "senderEnvironmentVariable", "managedIdentityClientIdEnvironmentVariable", "logAnalyticsWorkspaceIdEnvironmentVariable", "recipientAllowList", "deliverySource", "userEngagementTracking"]
+        },
+        "delivery": {
+          "type": "object",
+          "required": ["reservationLeaseSeconds", "maxDispatchAttempts", "maxProviderRetries", "providerTimeoutSeconds", "terminalSuccessStatus", "terminalFailureStatuses"]
+        }
+      }
+    },
     "events": {"type": "object", "required": ["BLOCKING_DECISION", "UAT_READY"]},
     "ledger": {"type": "string"},
     "nonOperationalResult": {"const": "EXTERNAL_ACTION_REQUIRED"}

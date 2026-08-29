@@ -14,9 +14,15 @@ importers:
 
   src/apps/api:
     dependencies:
+      '@azure/communication-email':
+        specifier: ^1.1.0
+        version: 1.1.0
       '@azure/identity':
         specifier: ^4.13.2
         version: 4.13.2
+      '@azure/monitor-query-logs':
+        specifier: ^1.0.0
+        version: 1.0.0
       '@azure/storage-blob':
         specifier: ^12.33.0
         version: 12.33.0
@@ -132,9 +138,21 @@ importers:
 
 packages:
 
+  '@azure-rest/core-client@2.8.0':
+    resolution: {integrity: sha512-F1ybHeN+++QhyFCF/ehLUEvrOB6fehPdFBFtGdj0C3B2lpQ9zkPiO5JDgsqc6IfjuUe6b3dAbXK0a7+VgSGfhw==}
+    engines: {node: '>=22.0.0'}
+
   '@azure/abort-controller@2.2.0':
     resolution: {integrity: sha512-fNAjWnA/nZ2jz31kxR/AqRaUT8ewHBw/WuBIosK0moMy1C9e5ValbDfFdIxJzVOOYaYkV/b2F1S4H/aHiqfVQg==}
     engines: {node: '>=22.0.0'}
+
+  '@azure/communication-common@2.5.0':
+    resolution: {integrity: sha512-6Z5OSOk8tWlOAZHAxgHGfLt8V755BHOvMks/7xLx2auQLmS+DJObgtq+1yE9gVYLu66tzpX/J779H8D9HDVNAQ==}
+    engines: {node: '>=22.0.0'}
+
+  '@azure/communication-email@1.1.0':
+    resolution: {integrity: sha512-n9ATpXyxb4MIhEp/Vtv5BU8GdUZH0vYpm/1pKXVu9AeiQ78MG3OIaiQQ2PmQfA0XPdTx5/g+tUxkwVuD6U4u4w==}
+    engines: {node: '>=20.0.0'}
 
   '@azure/core-auth@1.11.0':
     resolution: {integrity: sha512-IUZydyTUkDnYdstOW9pFOOUQlBjAepK5teihDE3x6yxsPJs/hsAaaYpeGxdxrgtOiJbBKSjKW7MDk7AEhb4LRg==}
@@ -186,6 +204,10 @@ packages:
   '@azure/logger@1.4.0':
     resolution: {integrity: sha512-rbAE25KUfjU/s3XHUdJgceoCP5dEOpMx85J04kF+QMdta73XkuG9JGHHinch+XIoKpBdqljin+KqURpJriSzLA==}
     engines: {node: '>=22.0.0'}
+
+  '@azure/monitor-query-logs@1.0.0':
+    resolution: {integrity: sha512-5mZzLGZKAZ1vrVm0le2Jh+5VXu/4U+1tSpmgssdMyYzT+VA9J1EstXpni6q/unsTtkJAdo4jsVpigfr95Sl7hg==}
+    engines: {node: '>=20.0.0'}
 
   '@azure/msal-browser@5.19.0':
     resolution: {integrity: sha512-DHe9iRcyByGJuLPkl0K31a1JjOdRY2zX38Q07mQpSbR8zOj1EIgsWfTXhSQVyyijUxlcofVy/br7qWJbrMwVXQ==}
@@ -1143,6 +1165,10 @@ packages:
   jws@4.0.1:
     resolution: {integrity: sha512-EKI/M/yqPncGUUh44xz0PxSidXFr/+r0pA70+gIYhjv+et7yxM+s29Y+VGDkovRofQem0fs7Uvf4+YmAdyRduA==}
 
+  jwt-decode@4.0.0:
+    resolution: {integrity: sha512-+KJGIyHgkGuIq3IEBNftfhW/LfWhXUIY6OmyVWjliu5KH1y0fw7VQ8YndE2O4qZdMSd9SqbnC8GOcZEy0Om7sA==}
+    engines: {node: '>=18'}
+
   load-esm@1.0.3:
     resolution: {integrity: sha512-v5xlu8eHD1+6r8EHTg6hfmO97LN8ugKtiXcy5e6oN72iD2r6u0RPfLl6fxM+7Wnh2ZRq15o0russMst44WauPA==}
     engines: {node: '>=13.2.0'}
@@ -1728,9 +1754,49 @@ packages:
 
 snapshots:
 
+  '@azure-rest/core-client@2.8.0':
+    dependencies:
+      '@azure/abort-controller': 2.2.0
+      '@azure/core-auth': 1.11.0
+      '@azure/core-rest-pipeline': 1.25.0
+      '@azure/core-tracing': 1.4.0
+      '@typespec/ts-http-runtime': 0.3.8
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - supports-color
+
   '@azure/abort-controller@2.2.0':
     dependencies:
       tslib: 2.8.1
+
+  '@azure/communication-common@2.5.0':
+    dependencies:
+      '@azure-rest/core-client': 2.8.0
+      '@azure/abort-controller': 2.2.0
+      '@azure/core-auth': 1.11.0
+      '@azure/core-rest-pipeline': 1.25.0
+      '@azure/core-tracing': 1.4.0
+      '@azure/core-util': 1.14.0
+      '@azure/logger': 1.4.0
+      events: 3.3.0
+      jwt-decode: 4.0.0
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@azure/communication-email@1.1.0':
+    dependencies:
+      '@azure/abort-controller': 2.2.0
+      '@azure/communication-common': 2.5.0
+      '@azure/core-auth': 1.11.0
+      '@azure/core-client': 1.11.0
+      '@azure/core-lro': 2.7.2
+      '@azure/core-rest-pipeline': 1.25.0
+      '@azure/core-util': 1.14.0
+      '@azure/logger': 1.4.0
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - supports-color
 
   '@azure/core-auth@1.11.0':
     dependencies:
@@ -1822,6 +1888,20 @@ snapshots:
   '@azure/logger@1.4.0':
     dependencies:
       '@typespec/ts-http-runtime': 0.3.8
+      tslib: 2.8.1
+    transitivePeerDependencies:
+      - supports-color
+
+  '@azure/monitor-query-logs@1.0.0':
+    dependencies:
+      '@azure-rest/core-client': 2.8.0
+      '@azure/core-auth': 1.11.0
+      '@azure/core-client': 1.11.0
+      '@azure/core-paging': 1.7.0
+      '@azure/core-rest-pipeline': 1.25.0
+      '@azure/core-tracing': 1.4.0
+      '@azure/core-util': 1.14.0
+      '@azure/logger': 1.4.0
       tslib: 2.8.1
     transitivePeerDependencies:
       - supports-color
@@ -2776,6 +2856,8 @@ snapshots:
     dependencies:
       jwa: 2.0.1
       safe-buffer: 5.2.1
+
+  jwt-decode@4.0.0: {}
 
   load-esm@1.0.3: {}
 

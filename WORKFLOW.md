@@ -15,7 +15,7 @@ This file is the executable repository workflow. Reusable policy is in `.agents/
 1. Confirm the specification-readiness gate and all activation fences before application implementation.
 2. Use the persistent roles in `.agents/project/team.json`; consult specialists selected by risk and changed contracts.
 3. Resolve discoverable facts. For a consequential unresolved human choice, update a `type:decision` GitHub Issue with evidence, options, impacts, recommendation, blocked scope, and work that continues.
-4. Reserve the notification event in the exactly-once ledger. Email is notification only; the linked GitHub Issue is authoritative.
+4. Plan and atomically reserve the notification event in the exactly-once ledger. Email is notification only; the linked GitHub Issue is authoritative. Provider acceptance is SUBMITTED; only terminal recipient evidence is SENT.
 5. Decompose work by contracts and dependencies. Parallel work must use isolated worktrees/branches and non-overlapping ownership.
 
 ## 3. Implement and verify
@@ -24,7 +24,7 @@ This file is the executable repository workflow. Reusable policy is in `.agents/
 2. Developers own implementation and unit tests. Update contracts, traceability, operational evidence, and status in the same change.
 3. Run `pnpm verify:framework`, then the narrow affected checks, then `pnpm verify` before review.
 4. Independent QA verifies acceptance criteria and affected regression paths. A failed criterion becomes an evidence-backed defect routed to the owning component; the fixer does not provide final independent retest.
-5. Use a pull request linked to the Issue. Complete `.github/pull_request_template.md`; do not merge with unresolved blocking evidence.
+5. Use a pull request linked to the Issue. Complete `.github/pull_request_template.md`; wrap every material agent-authored GitHub record with the configured visible identity, collapsible execution details and final hidden metadata; do not merge with unresolved blocking evidence.
 6. Record material capability, skill, tool, test, gate, defect, handoff, retry, blocker and decision transitions. Validate with `pnpm verify:observability`; never persist raw prompts or tool/customer content.
 
 ## 4. Release and notify

@@ -21,6 +21,10 @@ Producers MUST validate against a closed allow-list before emission. Raw prompts
 
 Native runtime telemetry SHOULD be used when supported and privacy-safe. Framework events MAY add higher-level work-item, role, capability and skill semantics. Unsupported scraping of user-interface text MUST NOT be used as a telemetry source.
 
+## Human and machine attribution
+
+Material agent-generated control-plane records MUST expose three consistent levels in this exact order: a compact role-oriented display identity at the beginning, collapsible execution details immediately after that identity, a non-empty substantive record body, and final hidden versioned metadata for machine joins. Human-facing display IDs MUST be stable, concise, and separate from raw runtime/session identifiers. Hidden metadata MUST preserve both identities when available, plus run, parent, work item, capability, skill, tool, revision, and environment correlation. A validator MUST reject missing levels, an omitted or whitespace-only body, disagreement between levels, unregistered or unauthorized claims, duplicate IDs, misplaced or out-of-order levels, and display identities that are not assigned to the run. Project-specific identity prefixes, assignments, role labels, and tracker rendering belong in project configuration.
+
 ## Readiness gate
 
 Governed autonomous execution requires testable attribution, active-state and blocker visibility, a configured destination or approved local/native store, privacy review, queryable operations, and truthful notification readiness. Unavailable exact token/cost data alone does not fail the gate when it is labelled honestly; a project-specific mandatory notification failure can still block execution.

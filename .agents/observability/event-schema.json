@@ -65,7 +65,7 @@
       "type": "object", "additionalProperties": false, "required": ["eventKey", "status"],
       "properties": {
         "eventKey": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,179}$"},
-        "status": {"enum": ["RESERVED", "SENT", "FAILED", "EXTERNAL_ACTION_REQUIRED"]},
+        "status": {"enum": ["RESERVED", "SUBMITTED", "SENT", "FAILED", "EXTERNAL_ACTION_REQUIRED"]},
         "authoritativeUrl": {"type": "string", "maxLength": 300}
       }
     },

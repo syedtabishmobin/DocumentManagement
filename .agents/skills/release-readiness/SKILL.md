@@ -10,4 +10,4 @@ description: Assess an immutable release candidate for Stage, UAT, or production
 3. Collect required independent QA, security/privacy, accessibility, resilience/performance, migration/repair, mobile, operational, and BA/business acceptance results.
 4. Record residual defects/risks, waivers, rollback/forward-repair, access instructions, and recommended UAT scenarios.
 5. Validate against `.agents/protocols/release-evidence.schema.json`.
-6. Emit `UAT_READY` only when Stage QA and business acceptance pass. Plan and record notification through the exactly-once ledger; if the adapter is not operational, update the authoritative UAT Issue and mark `EXTERNAL_ACTION_REQUIRED`.
+6. Emit `UAT_READY` only when Stage QA and business acceptance pass. Plan and dispatch through the exactly-once ledger, then record `SENT` only after terminal recipient delivery evidence; if the adapter is not operational or delivery cannot be reconciled, update the authoritative UAT Issue and mark the truthful non-success state.

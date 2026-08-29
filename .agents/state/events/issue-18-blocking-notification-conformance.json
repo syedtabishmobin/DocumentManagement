@@ -1,0 +1,32 @@
+{
+  "key": "decision:dec-notify-018:first-blocking-notification",
+  "eventType": "BLOCKING_DECISION",
+  "projectId": "doculyra",
+  "subject": "[Doculyra][ACTION REQUIRED][DEC-NOTIFY-018] Complete ACS Email conformance",
+  "authoritativeUrl": "https://github.com/syedtabishmobin/DocumentManagement/issues/18",
+  "requiredAction": "Refresh authorised Azure management access, then allow the Issue #18 candidate to verify and deploy the prepared notification infrastructure and run the two synthetic delivery checks.",
+  "reason": "Autonomous governed queue execution remains blocked until the required Product Authority email channel has proven secure submission, terminal delivery reconciliation and deduplication.",
+  "appliesTo": [
+    "Agent Engineering Framework autonomous queue readiness",
+    "Azure development ACS Email conformance only"
+  ],
+  "recommendation": "Use the existing approved ACS Email resources, user-assigned managed identity and Azure Monitor delivery logs; do not introduce a second email provider or credential-based connection string.",
+  "alternatives": [
+    "Explicitly accept GitHub-only fallback in the authoritative Issue; this removes email as a queue gate but weakens the currently approved remote-notification requirement.",
+    "Keep the queue paused and defer Azure conformance; no product work starts and readiness remains partial."
+  ],
+  "blocked": [
+    "Final autonomous governed queue readiness PASS",
+    "Activation of Product Authority email notifications"
+  ],
+  "continuing": [
+    "Repository tests, independent QA and public-safe framework evidence",
+    "No Doculyra product-development queue work"
+  ],
+  "remaining": [
+    "Verify ACS sender/domain, managed-identity roles and email diagnostic settings",
+    "Deliver and reconcile this blocking-decision conformance message",
+    "Deliver and reconcile the synthetic UAT-ready conformance message",
+    "Repeat both sends to prove deduplication, then update readiness truthfully"
+  ]
+}

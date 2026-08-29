@@ -21,6 +21,7 @@ param boxClientSecretConfigured bool
 param azureCommunicationServiceName string
 param azureCommunicationEndpoint string
 param emailFromAddress string
+param configureNotificationAdapterInfrastructure bool
 param tags object
 
 var webAppName = 'ca-${resourcePrefix}-${environment}-web'
@@ -43,6 +44,10 @@ var providerRegistrationEnvironment = configureProviderRegistrations ? [
 
 resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {
   name: logAnalyticsName
+}
+
+resource communicationService 'Microsoft.Communication/communicationServices@2023-04-01' existing = if (configureNotificationAdapterInfrastructure) {
+  name: azureCommunicationServiceName
 }
 
 resource registry 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' existing = {
@@ -90,6 +95,45 @@ resource keyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01
     principalId: runtimeIdentity.properties.principalId
     principalType: 'ServicePrincipal'
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')
+  }
+}
+
+resource acsEmailSender 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (configureNotificationAdapterInfrastructure) {
+  name: guid(communicationService!.id, runtimeIdentity.id, 'CommunicationAndEmailServiceOwner')
+  scope: communicationService!
+  properties: {
+    principalId: runtimeIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '09976791-48a7-449e-bb21-39d1a415f350')
+  }
+}
+
+resource emailDeliveryLogReader 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (configureNotificationAdapterInfrastructure) {
+  name: guid(logs.id, runtimeIdentity.id, 'LogAnalyticsDataReader')
+  scope: logs
+  properties: {
+    principalId: runtimeIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '3b03c2da-16b3-4a49-8834-0f8130efdd3b')
+  }
+}
+
+resource emailDeliveryDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (configureNotificationAdapterInfrastructure) {
+  name: 'doculyra-email-delivery'
+  scope: communicationService!
+  properties: {
+    workspaceId: logs.id
+    logAnalyticsDestinationType: 'Dedicated'
+    logs: [
+      {
+        category: 'EmailSendMailOperational'
+        enabled: true
+      }
+      {
+        category: 'EmailStatusUpdateOperational'
+        enabled: true
+      }
+    ]
   }
 }
 
@@ -164,6 +208,11 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'DM_EXTERNAL_CONNECTORS', value: 'disabled' }
             { name: 'DM_CONNECTOR_ADAPTERS_READY', value: 'false' }
             { name: 'DM_EXTERNAL_NOTIFICATIONS', value: 'disabled' }
+            { name: 'AZURE_CLIENT_ID', value: runtimeIdentity.properties.clientId }
+            { name: 'DM_LOG_ANALYTICS_WORKSPACE_ID', value: logs.properties.customerId }
+            { name: 'DM_NOTIFICATION_CREDENTIAL_MODE', value: 'MANAGED_IDENTITY' }
+            { name: 'DM_NOTIFICATION_PROVIDER_RETRIES', value: '2' }
+            { name: 'DM_NOTIFICATION_POLL_INTERVAL_MS', value: '5000' }
             { name: 'DM_AZURE_STORAGE_ACCOUNT', value: ciphertextStorageName }
             { name: 'DM_AZURE_KEY_VAULT', value: keyVaultName }
             { name: 'DM_CUSTOMER_DATA_POLICY', value: environment == 'prod' ? 'production-gated' : 'synthetic-only' }
@@ -193,7 +242,7 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
       ]
     }
   }
-  dependsOn: [acrPull, blobContributor, keyVaultSecretsUser]
+  dependsOn: [acrPull, blobContributor, keyVaultSecretsUser, acsEmailSender, emailDeliveryLogReader, emailDeliveryDiagnostics]
 }
 
 resource web 'Microsoft.App/containerApps@2024-03-01' = {
@@ -248,3 +297,4 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
 
 output apiUrl string = 'https://${api.properties.configuration.ingress.fqdn}'
 output webUrl string = 'https://${web.properties.configuration.ingress.fqdn}'
+output notificationAdapterInfrastructureConfigured bool = configureNotificationAdapterInfrastructure

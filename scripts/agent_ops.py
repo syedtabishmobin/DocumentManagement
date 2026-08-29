@@ -33,6 +33,14 @@ def config() -> dict[str, Any]:
     return load_json(CONFIG_PATH)
 
 
+def display_assignment(run_id: str, agent_id: str) -> dict[str, Any] | None:
+    configured = config().get("attribution", {}).get("displayIdentityAssignments")
+    if not configured:
+        return None
+    assignments = load_json(ROOT / configured).get("assignments", [])
+    return next((item for item in assignments if item.get("runtimeRunId") == run_id and item.get("runtimeAgentId") == agent_id), None)
+
+
 def store_path(override: str | None = None) -> Path:
     candidate = Path(override) if override else Path(config()["runtimeStore"]["path"])
     return candidate if candidate.is_absolute() else ROOT / candidate
@@ -209,8 +217,13 @@ def aggregate_agent_states(events: list[dict[str, Any]], at: datetime | None = N
             duration_ms = max(0, int((end - parse_time(started["occurredAt"])).total_seconds() * 1000))
         latest_with = lambda key: next((event[key] for event in reversed(agent_events) if key in event), None)
         quality_events = [event["quality"] for event in agent_events if "quality" in event]
+        assignment = display_assignment(run_id, agent_id)
         result.append({
             "agentId": agent_id,
+            "displayAgentId": assignment.get("displayAgentId") if assignment else None,
+            "displayRole": assignment.get("displayRole") if assignment else None,
+            "displayRunId": assignment.get("displayRunId") if assignment else None,
+            "parentDisplayAgentId": assignment.get("parentDisplayAgentId") if assignment else None,
             "parentAgentId": latest_with("parentAgentId"),
             "runId": run_id,
             "roleId": latest_with("roleId"),
@@ -464,7 +477,8 @@ def print_status(snapshot: dict[str, Any]) -> None:
     print(f"Active agents: {len(snapshot['activeAgents'])}; blocked: {len(snapshot['blockedAgents'])}; events: {snapshot['runtimeStore']['eventCount']}")
     for agent in snapshot["agents"]:
         work = agent.get("workItem") or {}
-        print(f"- {agent['agentId']} run={agent['runId']} [{agent['state']}] role={agent.get('roleId') or 'UNAVAILABLE'} work={work.get('kind', 'UNAVAILABLE')}:{work.get('id', 'UNAVAILABLE')} capability={','.join(agent['capabilityIds']) or 'UNAVAILABLE'} skills={','.join(agent['skillIds']) or 'UNAVAILABLE'} tools={','.join(agent['toolIds']) or 'UNAVAILABLE'} adapters={','.join(agent['adapterIds']) or 'UNAVAILABLE'} branch={agent.get('branch') or 'UNAVAILABLE'} worktree={agent.get('worktree') or 'UNAVAILABLE'} pr={(agent.get('pullRequest') or {}).get('number', 'UNAVAILABLE')} quality={(agent.get('quality') or {}).get('status', 'UNAVAILABLE')}")
+        identity = f"{agent['displayRole']} · {agent['displayAgentId']} displayRun={agent['displayRunId']}" if agent.get("displayAgentId") else "displayIdentity=UNAVAILABLE"
+        print(f"- {identity} runtimeAgent={agent['agentId']} runtimeRun={agent['runId']} [{agent['state']}] role={agent.get('roleId') or 'UNAVAILABLE'} work={work.get('kind', 'UNAVAILABLE')}:{work.get('id', 'UNAVAILABLE')} capability={','.join(agent['capabilityIds']) or 'UNAVAILABLE'} skills={','.join(agent['skillIds']) or 'UNAVAILABLE'} tools={','.join(agent['toolIds']) or 'UNAVAILABLE'} adapters={','.join(agent['adapterIds']) or 'UNAVAILABLE'} branch={agent.get('branch') or 'UNAVAILABLE'} worktree={agent.get('worktree') or 'UNAVAILABLE'} pr={(agent.get('pullRequest') or {}).get('number', 'UNAVAILABLE')} quality={(agent.get('quality') or {}).get('status', 'UNAVAILABLE')}")
         if agent.get("blocker"):
             print(f"  blocker={agent['blocker']['kind']}:{agent['blocker']['id']} status={agent['blocker']['status']}")
     github = snapshot["github"]
@@ -634,7 +648,8 @@ def main() -> int:
             else:
                 for row in rows:
                     work = row.get("workItem") or {}
-                    print(f"{'  ' * row['depth']}- {row['agentId']} run={row['runId']} [{row['state']}] role={row.get('roleId') or 'UNAVAILABLE'} work={work.get('id', 'UNAVAILABLE')} durationMs={row['durationMs']}")
+                    identity = f"{row['displayRole']} · {row['displayAgentId']} displayRun={row['displayRunId']}" if row.get("displayAgentId") else f"runtimeAgent={row['agentId']}"
+                    print(f"{'  ' * row['depth']}- {identity} runtimeRun={row['runId']} [{row['state']}] role={row.get('roleId') or 'UNAVAILABLE'} work={work.get('id', 'UNAVAILABLE')} durationMs={row['durationMs']}")
         elif args.command == "summary":
             if args.window_days < 1:
                 parser.error("--window-days must be positive")

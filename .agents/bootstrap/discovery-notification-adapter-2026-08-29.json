@@ -1,0 +1,74 @@
+{
+  "id": "DISC-DOCULYRA-NOTIFICATION-ADAPTER-2026-08-29",
+  "assessedAt": "2026-08-29T22:30:00+10:00",
+  "scope": "Agent Engineering Framework Product Authority ACS Email implementation and conformance only; no Doculyra product-development queue work",
+  "baseline": {
+    "branch": "main",
+    "revision": "782d435",
+    "workingTreeAtStart": "clean",
+    "repository": "syedtabishmobin/DocumentManagement",
+    "visibility": "public",
+    "authoritativeWorkItem": "https://github.com/syedtabishmobin/DocumentManagement/issues/18"
+  },
+  "evidence": [
+    "AGENTS.md, CODEX.md, WORKFLOW.md and 04_USING_THIS_REPO_WITH_CODEX.md",
+    "Notification policy, event/config schemas, structured contacts, provider configuration, durable ledger and focused tests",
+    "Agent Operations event/metric model, readiness report, capability/tool registries and online GitHub control-plane conventions",
+    "Azure main/applications Bicep, development parameters, runtime user-assigned identity, Log Analytics foundation, Container Apps configuration and deployment workflows",
+    "API package, Docker image, Azure Identity dependency, CI and existing provider runbook/decision register",
+    "Official Microsoft ACS Email SDK, managed-identity, send-status, email operational-log and Azure Monitor query documentation",
+    "Read-only GitHub Issues/PRs/labels and local Azure account state; live management reads failed with AADSTS530035 under security defaults"
+  ],
+  "dispositions": [
+    {
+      "area": "Vendor-neutral notification policy, recipient routing and event contracts",
+      "decision": "REUSE",
+      "evidence": "The existing project-over-global contact normalization, direct GitHub authority, content requirements and fail-closed policy are sound."
+    },
+    {
+      "area": "Durable notification ledger",
+      "decision": "EXTEND",
+      "evidence": "The locked atomic JSON ledger and payload fingerprint are sound; add atomic dispatch ownership, deterministic provider operation identity, submitted state, bounded retry and terminal-delivery reconciliation."
+    },
+    {
+      "area": "Outbound provider",
+      "decision": "EXTEND",
+      "evidence": "The approved ACS Email resources, sender and managed-identity design remain appropriate; add the official JavaScript EmailClient transport without connection strings or keys."
+    },
+    {
+      "area": "Delivery evidence",
+      "decision": "EXTEND",
+      "evidence": "Existing Log Analytics is suitable. ACS submission success only means out-for-delivery, so recipient-level ACSEmailStatusUpdateOperational evidence is required before SENT."
+    },
+    {
+      "area": "Azure infrastructure",
+      "decision": "EXTEND",
+      "evidence": "Retain the existing user-assigned runtime identity and Log Analytics workspace; codify ACS role assignment, least-privilege log read, diagnostic settings and non-secret runtime metadata."
+    },
+    {
+      "area": "GitHub agent attribution",
+      "decision": "EXTEND",
+      "evidence": "Observability correlation fields exist but no durable GitHub footer format was configured; add one normalized project profile and validator rather than ad hoc labels."
+    },
+    {
+      "area": "External email/telemetry vendor",
+      "decision": "REPLACE_SELECTIVELY",
+      "evidence": "No new vendor is introduced. Azure Monitor delivery reconciliation replaces the need for a new webhook provider or secret-bearing endpoint."
+    }
+  ],
+  "consultations": [
+    "Delivery Orchestrator: bounded Issue #18 implementation sequence and no-product-work stop condition",
+    "Architecture Guardian: preserve vendor-neutral ledger/transport boundary and distinguish provider submission from delivery",
+    "Reliability & Operations: atomic lease, deterministic operation ID, bounded retries, terminal failure reconciliation and diagnostic-log latency",
+    "Security & Privacy: managed identity, recipient allow-list, plain-text/minimized content, engagement tracking disabled, no credential persistence and public-Issue redaction",
+    "Repository Steward: Bicep/CI/Docker integration, GitHub attribution validation and reproducible commands",
+    "QA & Release Lead: separate immutable-candidate independent verification and synthetic blocking/UAT conformance events"
+  ],
+  "risks": [
+    "Live Azure sender/domain, role assignments, diagnostic categories and Log Analytics ingestion cannot be confirmed until an authorised interactive Azure login succeeds.",
+    "Actual ACS terminal delivery cannot be claimed until recipient-level Azure Monitor evidence is observed for both conformance events.",
+    "Azure Monitor delivery logs are asynchronous; the check path must report SUBMITTED/PENDING rather than infer delivery.",
+    "The approved Communication and Email Service Owner role is broader than send-only, but it is the existing documented role; live review should confirm whether a supported narrower custom role can replace it without weakening reliability."
+  ],
+  "recommendation": "Extend the existing framework with the official ACS/Monitor transport, atomic ledger states and Bicep controls; keep activation disabled, run independent offline QA, then complete live Azure what-if/deployment and two terminal delivery tests after authorised login before changing autonomous readiness to PASS."
+}

@@ -53,6 +53,11 @@ FORBIDDEN_VALUE_PATTERNS = (
     re.compile(r"\b(?:password|client_secret|access_token|authorization)\s*[:=]", re.I),
     re.compile(r"\b(?:sk|ghp|github_pat)_[A-Za-z0-9_-]{12,}\b"),
     re.compile(r"(?:^|[?&])(?:sig|token|key|secret)=", re.I),
+    re.compile(r"\bBearer\s+[A-Za-z0-9._~+/=-]{8,}", re.I),
+    re.compile(r"\b(?:raw|user|system|developer)\s+prompt\s*[:=]", re.I),
+    re.compile(r"\b(?:customer|document|raw)\s+content\s*[:=]", re.I),
+    re.compile(r"\b(?:tool\s+(?:input|output)|provider\s+payload)\s*[:=]", re.I),
+    re.compile(r"\b(?:api[_ -]?key|secret)\s*[:=]\s*\S+", re.I),
 )
 
 
@@ -172,10 +177,14 @@ def validate_url(
     location: str,
 ) -> list[str]:
     parsed = urlparse(value)
+    try:
+        explicit_port = parsed.port
+    except ValueError:
+        return [f"{location} contains an invalid port"]
     if parsed.scheme != "https" or parsed.hostname not in allowed_hosts:
         return [f"{location} must use HTTPS on an approved evidence host"]
-    if parsed.username or parsed.password or parsed.query or parsed.fragment:
-        return [f"{location} must not contain credentials, query parameters, or fragments"]
+    if parsed.username or parsed.password or explicit_port is not None or parsed.query or parsed.fragment:
+        return [f"{location} must not contain credentials, explicit ports, query parameters, or fragments"]
     segments = parsed.path.strip("/").split("/")
     if len(segments) < 3 or "/".join(segments[:2]) not in allowed_repositories:
         return [f"{location} must reference an approved evidence repository"]
@@ -361,6 +370,10 @@ def validate_configuration() -> list[str]:
         values = attribution.get(field, [])
         if len(values) != len(set(values)) or any(not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,79}", item) for item in values):
             errors.append(f"observability attribution {field} must contain unique normalized IDs")
+    if attribution.get("githubMaterialAttribution") != ".agents/project/github-attribution.json" or attribution.get("displayIdentityAssignments") != ".agents/state/agent-display-assignments.json":
+        errors.append("observability attribution must join configured GitHub material records and display identity assignments")
+    if attribution.get("displayAndRuntimeIdentitySeparated") is not True:
+        errors.append("observability attribution must separate display and runtime identities")
     if config.get("autonomousQueueGate", {}).get("status") != "BLOCKED":
         notifications = load_json(ROOT / ".agents/config/notifications.json").get("adapter", {})
         operational = notifications.get("implementation") == "IMPLEMENTED" and notifications.get("activation") == "ENABLED" and notifications.get("deliveryConformance") == "PASS"
@@ -393,6 +406,24 @@ def validate_configuration() -> list[str]:
     for marker in ("OBSERVABILITY READINESS REPORT", "## 1. Repository/framework state discovered", "## 12. Recommendation for starting the governed Doculyra work queue", "**PARTIAL**", "04_USING_THIS_REPO_WITH_CODEX.md"):
         if marker not in report:
             errors.append(f"observability readiness report is missing marker: {marker}")
+    notification = load_json(ROOT / ".agents/config/notifications.json").get("adapter", {})
+    state_line = (
+        "Notification state: "
+        f"implementation={notification.get('implementation')}; "
+        f"activation={notification.get('activation')}; "
+        f"deliveryConformance={notification.get('deliveryConformance')}; "
+        f"sendAllowed={str(notification.get('sendAllowed')).lower()}."
+    )
+    for path in (
+        ROOT / ".agents/bootstrap/2026-08-29-observability-readiness-report.md",
+        ROOT / ".agents/project/current-state.md",
+        ROOT / "04_USING_THIS_REPO_WITH_CODEX.md",
+    ):
+        content = path.read_text(encoding="utf-8")
+        if state_line not in content:
+            errors.append(f"{path.relative_to(ROOT)} does not match structured notification readiness state")
+        if notification.get("implementation") == "IMPLEMENTED" and re.search(r"ACS Email implementation is (?:`?MISSING`?|missing)", content):
+            errors.append(f"{path.relative_to(ROOT)} contains stale missing-implementation notification truth")
     return errors
 
 

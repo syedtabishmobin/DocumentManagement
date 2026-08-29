@@ -10,5 +10,5 @@ description: Route a genuine human-owned consequential decision through durable 
 3. State the exact question, evidence, why work stopped, affected scope, at least two meaningful options and impacts, recommendation, blocked work, continuing work, and remaining work.
 4. Validate a structured record against `.agents/protocols/decision.schema.json` when one is persisted outside the Issue.
 5. Create a `BLOCKING_DECISION` event with a stable decision-scoped key and direct Issue URL.
-6. Use `python3 scripts/notification_ledger.py plan <event.json>`. Send only if configuration reports an operational adapter; otherwise record `EXTERNAL_ACTION_REQUIRED` without claiming delivery.
+6. Use `python3 scripts/notification_ledger.py plan <event.json>`. If operational, use `dispatch` and then `check-delivery`; provider submission remains `SUBMITTED` until terminal recipient evidence records `SENT`. If non-operational, record `EXTERNAL_ACTION_REQUIRED` without claiming delivery. Use `--conformance` only for the governed adapter-conformance work item.
 7. Record the authoritative decision in the Issue and update affected contracts after approval.

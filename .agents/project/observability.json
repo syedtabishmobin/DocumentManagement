@@ -30,7 +30,10 @@
   },
   "attribution": {
     "externalSkillIds": ["openai-docs", "skill-creator"],
-    "externalToolIds": ["codex-thread-coordination", "web"]
+    "externalToolIds": ["codex-thread-coordination", "web"],
+    "githubMaterialAttribution": ".agents/project/github-attribution.json",
+    "displayIdentityAssignments": ".agents/state/agent-display-assignments.json",
+    "displayAndRuntimeIdentitySeparated": true
   },
   "privacy": {
     "rawPromptsAllowed": false,
@@ -50,6 +53,6 @@
   "notifications": ".agents/config/notifications.json",
   "autonomousQueueGate": {
     "status": "BLOCKED",
-    "reason": "Required Product Authority email notification path is not operational and GitHub-only fallback has not been explicitly accepted."
+    "reason": "PR #19 repository candidate passed independent QA and defects #20-#24 are closed; autonomous execution remains blocked solely by live managed-identity, sender/domain, diagnostic-log, terminal-delivery and repeat-dispatch conformance pending refreshed authorised Azure access."
   }
 }

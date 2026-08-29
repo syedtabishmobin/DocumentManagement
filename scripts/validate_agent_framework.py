@@ -19,11 +19,12 @@ REQUIRED_PATHS = [
     ".agents/observability/event-schema.json", ".agents/observability/metric-catalog.json",
     ".agents/observability/queries/catalog.json", ".agents/project/profile.json",
     ".agents/project/team.json", ".agents/project/source-of-truth.json", ".agents/project/observability.json",
+    ".agents/project/github-attribution.json", ".agents/state/agent-display-assignments.json",
     ".agents/project/environments.json", ".agents/project/github.json",
     ".agents/project/github-labels.json", ".agents/config/contacts.json",
     ".agents/config/notifications.json", ".agents/capabilities/registry.json",
     ".agents/tools/registry.json", ".agents/state/notification-ledger.json",
-    ".agents/bootstrap/2026-08-29-bootstrap-report.md", ".github/CODEOWNERS",
+    ".agents/bootstrap/2026-08-29-bootstrap-report.md", ".agents/bootstrap/2026-08-30-final-autonomous-readiness-report.md", ".github/CODEOWNERS",
     ".github/pull_request_template.md", ".github/ISSUE_TEMPLATE/governed-work.yml",
     ".github/ISSUE_TEMPLATE/defect.yml", ".github/ISSUE_TEMPLATE/decision.yml",
     ".github/ISSUE_TEMPLATE/uat-ready.yml",
@@ -84,8 +85,8 @@ def validate_framework() -> list[str]:
         return errors
 
     manifest = load_json(ROOT / ".agents/framework-manifest.json")
-    if manifest.get("framework", {}).get("version") != "1.2.0":
-        errors.append("framework manifest must bind reusable framework version 1.2.0")
+    if manifest.get("framework", {}).get("version") != "1.3.0":
+        errors.append("framework manifest must bind reusable framework version 1.3.0")
     if manifest.get("project", {}).get("id") != "doculyra":
         errors.append("framework manifest must bind the Doculyra profile")
 
@@ -140,6 +141,22 @@ def validate_framework() -> list[str]:
     operational = adapter.get("implementation") == "IMPLEMENTED" and adapter.get("activation") == "ENABLED" and adapter.get("deliveryConformance") == "PASS"
     if bool(adapter.get("sendAllowed")) != operational:
         errors.append("notification sendAllowed must exactly reflect implementation, activation, and delivery conformance")
+    if adapter.get("authentication") != "MANAGED_IDENTITY_REQUIRED":
+        errors.append("notification adapter must require managed identity authentication")
+    if adapter.get("transportCommand") != ["node", "src/apps/api/dist/notification-email.cli.js"]:
+        errors.append("notification transport command must use the reviewed built adapter entry point")
+    adapter_configuration = adapter.get("configuration", {})
+    if adapter_configuration.get("recipientAllowList") != notifications.get("recipientConfiguration"):
+        errors.append("notification adapter allow-list must use the structured recipient configuration")
+    if adapter_configuration.get("deliverySource") != "AZURE_MONITOR_ACS_EMAIL_STATUS_LOGS" or adapter_configuration.get("userEngagementTracking") != "DISABLED":
+        errors.append("notification delivery must use ACS status logs with engagement tracking disabled")
+    delivery = adapter.get("delivery", {})
+    if delivery.get("maxDispatchAttempts") != 3 or delivery.get("maxProviderRetries") not in {0, 1, 2}:
+        errors.append("notification dispatch/provider retries must remain bounded")
+    if delivery.get("terminalSuccessStatus") != "Delivered" or set(delivery.get("terminalFailureStatuses", [])) != {"Bounced", "Quarantined", "FilteredSpam", "Suppressed", "Failed"}:
+        errors.append("notification terminal delivery statuses do not match the reviewed ACS contract")
+    if adapter.get("conformanceSendAllowed") is True and not (adapter.get("implementation") == "IMPLEMENTED" and adapter.get("activation") == "CONFIGURED_DISABLED" and not adapter.get("sendAllowed")):
+        errors.append("notification conformance send may only be available for an implemented, normally disabled adapter")
     if set(notifications.get("events", {})) != {"BLOCKING_DECISION", "UAT_READY"}:
         errors.append("notification configuration must define exactly BLOCKING_DECISION and UAT_READY events")
 
@@ -148,8 +165,56 @@ def validate_framework() -> list[str]:
     if None in keys or len(keys) != len(set(keys)):
         errors.append("notification ledger keys must be present and unique")
     for event in ledger.get("events", []):
-        if event.get("status") not in {"RESERVED", "SENT", "FAILED", "EXTERNAL_ACTION_REQUIRED"}:
+        if event.get("status") not in {"RESERVED", "SUBMITTED", "SENT", "FAILED", "EXTERNAL_ACTION_REQUIRED"}:
             errors.append(f"notification ledger event {event.get('key')} has invalid status")
+
+    attribution = load_json(ROOT / ".agents/project/github-attribution.json")
+    if attribution.get("schemaVersion") != "2.0.0" or attribution.get("markerStart") != "<!-- doculyra-agent-meta:v2" or attribution.get("markerEnd") != "-->":
+        errors.append("GitHub agent attribution must use the reviewed hidden v2 agent-meta block")
+    if attribution.get("format") != "VISIBLE_HEADER_THEN_COLLAPSIBLE_DETAILS_THEN_BODY_THEN_HIDDEN_METADATA" or attribution.get("substantiveBodyRequired") is not True:
+        errors.append("GitHub agent attribution must require Level 1, Level 2, a substantive body, then final Level 3 metadata")
+    expected_attribution_fields = {
+        "display_agent_id", "display_role", "activity", "display_run_id", "runtime_agent_id", "runtime_run_id",
+        "role_id", "parent_display_agent_id", "work_item", "work_item_label", "capability_ids", "skill_ids",
+        "tool_ids", "commit", "environment",
+    }
+    if set(attribution.get("requiredFields", [])) != expected_attribution_fields:
+        errors.append("GitHub agent attribution required fields do not match the operations correlation contract")
+    if set(attribution.get("listFields", [])) != {"capability_ids", "skill_ids", "tool_ids"}:
+        errors.append("GitHub agent attribution list fields are invalid")
+    presentations = attribution.get("rolePresentations", [])
+    team_roles = {item.get("id") for item in load_json(ROOT / ".agents/project/team.json").get("persistentRoles", [])}
+    for presentation in presentations:
+        if presentation.get("roleId") not in team_roles or not presentation.get("displayRole"):
+            errors.append("GitHub agent role presentation must reference a registered role and visible label")
+        try:
+            re.compile(presentation.get("displayIdPattern", ""))
+        except re.error:
+            errors.append("GitHub agent role presentation has an invalid display-ID pattern")
+    assignments = load_json(ROOT / attribution.get("identityAssignments", "missing")).get("assignments", [])
+    display_run_pairs = [(item.get("displayAgentId"), item.get("displayRunId")) for item in assignments]
+    if not assignments or len(display_run_pairs) != len(set(display_run_pairs)):
+        errors.append("GitHub display agent/run assignments must be present and unique")
+    assigned_display_ids = {item.get("displayAgentId") for item in assignments}
+    runtime_run_ids = [item.get("runtimeRunId") for item in assignments]
+    if None in runtime_run_ids or len(runtime_run_ids) != len(set(runtime_run_ids)):
+        errors.append("GitHub runtime run assignments must be present and unique")
+    for assignment in assignments:
+        matching_presentation = any(
+            item.get("roleId") == assignment.get("roleId")
+            and item.get("displayRole") == assignment.get("displayRole")
+            and re.fullmatch(item.get("displayIdPattern", r"$^"), str(assignment.get("displayAgentId", "")))
+            for item in presentations
+        )
+        if not matching_presentation:
+            errors.append(f"GitHub display assignment {assignment.get('displayAgentId')} does not match a role presentation")
+        parent = assignment.get("parentDisplayAgentId")
+        if parent != attribution.get("noParentValue") and parent not in assigned_display_ids:
+            errors.append(f"GitHub display assignment {assignment.get('displayAgentId')} has an unknown parent")
+        if parent == assignment.get("displayAgentId"):
+            errors.append(f"GitHub display assignment {assignment.get('displayAgentId')} cannot parent itself")
+        if assignment.get("status") not in {"ACTIVE", "COMPLETED"}:
+            errors.append(f"GitHub display assignment {assignment.get('displayAgentId')} has invalid status")
 
     capabilities = load_json(ROOT / ".agents/capabilities/registry.json").get("capabilities", [])
     registered_skills = {item.get("skill") for item in capabilities}
@@ -202,6 +267,10 @@ def validate_framework() -> list[str]:
     for marker in ("04_USING_THIS_REPO_WITH_CODEX.md", "Changed files", "External/admin actions", "First governed work queue"):
         if marker not in report:
             errors.append(f"bootstrap report is missing completion marker: {marker}")
+    final_readiness = (ROOT / ".agents/bootstrap/2026-08-30-final-autonomous-readiness-report.md").read_text(encoding="utf-8")
+    for marker in ("FINAL AUTONOMOUS READINESS REPORT", "Notification implementation status", "GitHub attribution evidence", "Outstanding external/admin actions", "Overall autonomous queue readiness: PARTIAL"):
+        if marker not in final_readiness:
+            errors.append(f"final autonomous readiness report is missing marker: {marker}")
     return errors
 
 

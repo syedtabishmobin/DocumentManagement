@@ -33,6 +33,7 @@ param boxClientSecretConfigured bool = false
 param azureCommunicationServiceName string = ''
 param azureCommunicationEndpoint string = ''
 param emailFromAddress string = ''
+param configureNotificationAdapterInfrastructure bool = false
 param monthlyBudgetAud int = environment == 'dev' ? 25 : environment == 'stage' ? 75 : 500
 param alertEmail string = ''
 param budgetStartDate string = utcNow('yyyy-MM-dd')
@@ -94,6 +95,7 @@ module applications './modules/applications.bicep' = if (deployApplications) {
     azureCommunicationServiceName: azureCommunicationServiceName
     azureCommunicationEndpoint: azureCommunicationEndpoint
     emailFromAddress: emailFromAddress
+    configureNotificationAdapterInfrastructure: configureNotificationAdapterInfrastructure
     tags: commonTags
   }
 }
@@ -142,3 +144,4 @@ output webUrl string = deployApplications ? applications!.outputs.webUrl : ''
 output customerDataPolicy string = commonTags.customerData
 output ciClientId string = foundation.outputs.ciClientId
 output providerRegistrationMetadataConfigured bool = configureProviderRegistrations
+output notificationAdapterInfrastructureConfigured bool = configureNotificationAdapterInfrastructure
