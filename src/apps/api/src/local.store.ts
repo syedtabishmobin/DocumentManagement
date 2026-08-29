@@ -376,7 +376,11 @@ export class LocalStore {
   async listWorkspaces(identityId: string): Promise<WorkspaceSummary[]> {
     const database = await this.readDatabase();
     return database.workspaces
-      .filter((state) => state.members.some((member) => member.identityId === identityId && member.state === "ACTIVE"))
+      .filter((state) => state.members.some((member) =>
+        member.workspaceId === state.workspace.id &&
+        member.identityId === identityId &&
+        member.state === "ACTIVE",
+      ))
       .map(({ workspace }) => ({ id: workspace.id, name: workspace.name, type: workspace.type, status: workspace.status, revision: workspace.revision }));
   }
 

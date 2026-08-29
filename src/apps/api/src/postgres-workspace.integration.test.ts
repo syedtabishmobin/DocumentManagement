@@ -78,6 +78,7 @@ integration("PostgreSQL workspace authority integration", () => {
     const row = await pool.query<{ state: { members: Array<{ workspaceId: string }> } }>("SELECT state FROM doculyra.workspace_state WHERE workspace_id = $1", [first.id]);
     row.rows[0]!.state.members[0]!.workspaceId = foreign.id;
     await pool.query("UPDATE doculyra.workspace_state SET state = $2::jsonb WHERE workspace_id = $1", [first.id, JSON.stringify(row.rows[0]!.state)]);
+    await expect(restarted.listWorkspaces(actor.identityId)).resolves.toEqual([]);
     await expect(restarted.requireAuthorization(actor, first.id, "workspace.read", "WORKSPACE", first.id)).rejects.toThrow("not available");
     await expect(firstPersistence.verifyInvariants()).rejects.toThrow("workspace scope mismatch");
   });

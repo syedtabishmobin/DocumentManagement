@@ -168,6 +168,7 @@ describe("PostgresWorkspacePersistence", () => {
     state.members[0]!.workspaceId = second.id;
     await pool.query("UPDATE doculyra.workspace_state SET state = $2::jsonb WHERE workspace_id = $1", [first.id, JSON.stringify(state)]);
     const restarted = new LocalStore(new PostgresWorkspacePersistence({ pool, migrationMode: "verify", migrationsDirectory }));
+    await expect(restarted.listWorkspaces(actor.identityId)).resolves.toEqual([]);
     await expect(restarted.requireAuthorization(actor, first.id, "workspace.read", "WORKSPACE", first.id)).rejects.toThrow("not available");
     await expect(persistence.verifyInvariants()).rejects.toThrow("workspace scope mismatch");
   });
