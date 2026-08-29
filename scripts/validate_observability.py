@@ -164,12 +164,24 @@ def inspect_privacy(value: Any, location: str = "event") -> list[str]:
     return errors
 
 
-def validate_url(value: str, allowed_hosts: set[str], location: str) -> list[str]:
+def validate_url(
+    value: str,
+    allowed_hosts: set[str],
+    allowed_repositories: set[str],
+    allowed_route_patterns: tuple[re.Pattern[str], ...],
+    location: str,
+) -> list[str]:
     parsed = urlparse(value)
     if parsed.scheme != "https" or parsed.hostname not in allowed_hosts:
         return [f"{location} must use HTTPS on an approved evidence host"]
     if parsed.username or parsed.password or parsed.query or parsed.fragment:
         return [f"{location} must not contain credentials, query parameters, or fragments"]
+    segments = parsed.path.strip("/").split("/")
+    if len(segments) < 3 or "/".join(segments[:2]) not in allowed_repositories:
+        return [f"{location} must reference an approved evidence repository"]
+    route = "/".join(segments[2:])
+    if not any(pattern.fullmatch(route) for pattern in allowed_route_patterns):
+        return [f"{location} must use an approved durable evidence route"]
     return []
 
 
@@ -222,6 +234,12 @@ def validate_event(event: dict[str, Any], config: dict[str, Any] | None = None) 
             if item not in allowed:
                 errors.append(f"event.{field} contains unregistered ID: {item}")
     allowed_hosts = set(config.get("privacy", {}).get("evidenceHosts", []))
+    allowed_repositories = set(config.get("privacy", {}).get("evidenceRepositories", []))
+    try:
+        allowed_route_patterns = tuple(re.compile(value) for value in config.get("privacy", {}).get("evidenceRoutePatterns", []))
+    except re.error as exc:
+        errors.append(f"observability evidence route pattern is invalid: {exc}")
+        allowed_route_patterns = ()
     for location, url in (
         ("event.workItem.url", event.get("workItem", {}).get("url")),
         ("event.pullRequest.url", event.get("pullRequest", {}).get("url")),
@@ -229,9 +247,9 @@ def validate_event(event: dict[str, Any], config: dict[str, Any] | None = None) 
         ("event.notification.authoritativeUrl", event.get("notification", {}).get("authoritativeUrl")),
     ):
         if url:
-            errors.extend(validate_url(url, allowed_hosts, location))
+            errors.extend(validate_url(url, allowed_hosts, allowed_repositories, allowed_route_patterns, location))
     for index, url in enumerate(event.get("evidenceUrls", [])):
-        errors.extend(validate_url(url, allowed_hosts, f"event.evidenceUrls[{index}]"))
+        errors.extend(validate_url(url, allowed_hosts, allowed_repositories, allowed_route_patterns, f"event.evidenceUrls[{index}]"))
     usage = event.get("usage", {})
     for key in ("inputTokens", "cachedInputTokens", "outputTokens", "reasoningTokens", "totalTokens", "credits", "providerCost", "toolCost"):
         if key in usage:
@@ -330,6 +348,14 @@ def validate_configuration() -> list[str]:
         errors.append("native cost status must use metric provenance")
     if config.get("privacy", {}).get("rawPromptsAllowed") is not False:
         errors.append("raw prompt persistence must remain disabled")
+    privacy = config.get("privacy", {})
+    if not privacy.get("evidenceHosts") or not privacy.get("evidenceRepositories") or not privacy.get("evidenceRoutePatterns"):
+        errors.append("privacy config must constrain evidence hosts, repositories and durable routes")
+    for pattern in privacy.get("evidenceRoutePatterns", []):
+        try:
+            re.compile(pattern)
+        except re.error as exc:
+            errors.append(f"invalid evidence route pattern {pattern!r}: {exc}")
     attribution = config.get("attribution", {})
     for field in ("externalSkillIds", "externalToolIds"):
         values = attribution.get(field, [])

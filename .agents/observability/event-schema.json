@@ -74,7 +74,7 @@
     "usage": {
       "type": "object", "additionalProperties": false, "required": ["recordId", "scope", "inputTokens", "cachedInputTokens", "outputTokens", "reasoningTokens", "totalTokens", "credits", "providerCost", "toolCost"],
       "properties": {
-        "recordId": {"type": "string", "maxLength": 128},
+        "recordId": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{2,127}$"},
         "scope": {"enum": ["SELF_ONLY", "INCLUSIVE"]},
         "inputTokens": {"$ref": "#/$defs/countMetric"},
         "cachedInputTokens": {"$ref": "#/$defs/countMetric"},

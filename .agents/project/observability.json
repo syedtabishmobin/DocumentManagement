@@ -38,7 +38,13 @@
     "credentialsAllowed": false,
     "arbitraryToolPayloadsAllowed": false,
     "externalExportAllowed": false,
-    "evidenceHosts": ["github.com"]
+    "evidenceHosts": ["github.com"],
+    "evidenceRepositories": ["syedtabishmobin/DocumentManagement"],
+    "evidenceRoutePatterns": [
+      "^(?:issues|pull)/[1-9][0-9]*$",
+      "^actions/runs/[1-9][0-9]*(?:/job/[1-9][0-9]*)?$",
+      "^commit/[0-9a-f]{7,40}$"
+    ]
   },
   "environments": ".agents/project/environments.json",
   "notifications": ".agents/config/notifications.json",

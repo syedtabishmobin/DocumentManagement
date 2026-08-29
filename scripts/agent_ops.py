@@ -79,7 +79,21 @@ def read_events(path: Path, at: datetime | None = None) -> list[dict[str, Any]]:
 
 def prune_events(events: list[dict[str, Any]], retention_days: int, at: datetime | None = None) -> list[dict[str, Any]]:
     threshold = (at or datetime.now(timezone.utc)) - timedelta(days=retention_days)
-    return [event for event in events if parse_time(event["occurredAt"]) >= threshold]
+    retained = [event for event in events if parse_time(event["occurredAt"]) >= threshold]
+    # A child without its retained parent would make the delegation graph invalid.
+    # Remove the complete orphaned subtree instead of extending retention or
+    # fabricating a parent event.
+    while retained:
+        identities = {(event["runId"], event["agentId"]) for event in retained}
+        orphaned = {
+            (event["runId"], event["agentId"])
+            for event in retained
+            if event.get("parentAgentId") and (event["runId"], event["parentAgentId"]) not in identities
+        }
+        if not orphaned:
+            break
+        retained = [event for event in retained if (event["runId"], event["agentId"]) not in orphaned]
+    return retained
 
 
 def append_event(event: dict[str, Any], path: Path, at: datetime | None = None) -> None:
@@ -233,7 +247,7 @@ def issue_severity(body: str, labels: list[dict[str, Any]]) -> str:
 
 
 def github_snapshot() -> dict[str, Any]:
-    def gh(*args: str) -> tuple[list[Any] | None, str | None]:
+    def gh(kind: str, *args: str) -> tuple[list[dict[str, Any]] | None, str | None]:
         try:
             result = subprocess.run(["gh", *args], cwd=ROOT, text=True, capture_output=True, check=False, timeout=20)
         except (OSError, subprocess.TimeoutExpired) as exc:
@@ -241,12 +255,33 @@ def github_snapshot() -> dict[str, Any]:
         if result.returncode != 0:
             return None, (result.stderr.strip() or "GitHub query failed")
         try:
-            return json.loads(result.stdout), None
+            payload = json.loads(result.stdout)
         except json.JSONDecodeError:
             return None, "GitHub returned non-JSON output"
+        if not isinstance(payload, list) or any(not isinstance(item, dict) for item in payload):
+            return None, f"GitHub returned malformed {kind} data"
+        for item in payload:
+            labels = item.get("labels")
+            common_valid = (
+                isinstance(item.get("number"), int)
+                and isinstance(item.get("title"), str)
+                and isinstance(item.get("url"), str)
+                and isinstance(labels, list)
+                and all(isinstance(label, dict) and isinstance(label.get("name"), str) for label in labels)
+            )
+            kind_valid = (
+                kind == "issues" and isinstance(item.get("body"), str)
+            ) or (
+                kind == "pull requests"
+                and isinstance(item.get("headRefName"), str)
+                and isinstance(item.get("statusCheckRollup"), (list, type(None)))
+            )
+            if not common_valid or not kind_valid:
+                return None, f"GitHub returned malformed {kind} data"
+        return payload, None
 
-    issues, issue_error = gh("issue", "list", "--state", "open", "--limit", "100", "--json", "number,title,url,labels,body")
-    prs, pr_error = gh("pr", "list", "--state", "open", "--limit", "50", "--json", "number,title,url,headRefName,statusCheckRollup")
+    issues, issue_error = gh("issues", "issue", "list", "--state", "open", "--limit", "100", "--json", "number,title,url,labels,body")
+    prs, pr_error = gh("pull requests", "pr", "list", "--state", "open", "--limit", "50", "--json", "number,title,url,headRefName,statusCheckRollup")
     issue_availability = "MEASURED" if issues is not None else "UNAVAILABLE"
     pull_request_availability = "MEASURED" if prs is not None else "UNAVAILABLE"
     availability = "MEASURED" if issues is not None and prs is not None else "UNAVAILABLE" if issues is None and prs is None else "PARTIAL"
