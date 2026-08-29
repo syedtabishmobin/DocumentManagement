@@ -19,6 +19,15 @@ export interface WorkspaceActor {
   displayName: string;
 }
 
+export interface WorkspaceCreationContext {
+  purposeId: "PUR-P1-001";
+  correlationId: string;
+  jurisdictionPackRef: Workspace["jurisdictionPackRef"];
+  residencyPolicyRef: Workspace["residencyPolicyRef"];
+  configurationVersion: Workspace["configurationVersion"];
+  activation: "IMMEDIATE" | "DEFERRED";
+}
+
 export interface WorkspaceState {
   workspace: Workspace;
   ownerBindings: WorkspaceOwnerBinding[];

@@ -9,9 +9,9 @@ function requestHeaders(path: string, init?: RequestInit): Headers {
   const method = (init?.method ?? "GET").toUpperCase();
   const unsafe = method !== "GET" && method !== "HEAD" && method !== "OPTIONS";
   if (unsafe && csrfToken) headers.set("X-CSRF-Token", csrfToken);
+  if (!path.startsWith("/auth/")) headers.set("X-Purpose-Id", "PUR-P1-001");
   if (activeWorkspaceId && path !== "/workspace") {
     headers.set("X-Workspace-Id", activeWorkspaceId);
-    headers.set("X-Purpose-Id", "PUR-P1-001");
   }
   if (unsafe && !headers.has("Idempotency-Key")) headers.set("Idempotency-Key", crypto.randomUUID());
   headers.set("X-Correlation-Id", crypto.randomUUID());

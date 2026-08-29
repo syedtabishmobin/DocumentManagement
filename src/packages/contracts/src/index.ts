@@ -78,6 +78,13 @@ export const configureWorkspaceSchema = z.object({
   type: z.enum(["PERSONAL", "FAMILY"]),
 });
 
+export const canonicalCreateWorkspaceSchema = z.object({
+  workspace_type: z.enum(["PERSONAL", "FAMILY"]),
+  jurisdiction_pack_ref: z.string().trim().min(1).max(200),
+  residency_policy_ref: z.string().trim().min(1).max(200),
+  configuration_version: z.string().trim().min(1).max(200),
+}).strict();
+
 export const selectWorkspaceSchema = z.object({
   workspaceId: z.string().trim().min(1).max(200),
 });
@@ -128,6 +135,7 @@ export type CreateMemberInput = z.infer<typeof createMemberSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ConfigureWorkspaceInput = z.infer<typeof configureWorkspaceSchema>;
+export type CanonicalCreateWorkspaceInput = z.infer<typeof canonicalCreateWorkspaceSchema>;
 export type SelectWorkspaceInput = z.infer<typeof selectWorkspaceSchema>;
 export type CreateSubjectInput = z.infer<typeof createSubjectSchema>;
 export type FilePermissions = z.infer<typeof filePermissionsSchema>;
@@ -154,11 +162,11 @@ export interface Workspace {
   id: string;
   name: string;
   type: "PERSONAL" | "FAMILY";
-  status: "ACTIVE" | "SUSPENDED";
+  status: "PENDING_ACTIVATION" | "ACTIVE" | "SUSPENDED";
   ownerBindingId: string;
-  jurisdictionPackRef: "jurisdiction.AU";
-  residencyPolicyRef: "residency.local.synthetic" | "residency.azure.au.synthetic-preview";
-  configurationVersion: "configuration.local.synthetic@0.1";
+  jurisdictionPackRef: string;
+  residencyPolicyRef: string;
+  configurationVersion: string;
   revision: number;
   createdAt: string;
 }
