@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Inject, NotFoundException, Param, Patch, Post, Req, Res, UnprocessableEntityException, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, HttpException, HttpStatus, Inject, NotFoundException, Param, Patch, Post, PreconditionFailedException, Req, Res, UnprocessableEntityException, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 import { askQuestionSchema, canonicalCreateWorkspaceSchema, configureWorkspaceSchema, createMemberSchema, createSubjectSchema, createTaskSchema, managePersonSchema, manualDocumentSchema, type Workspace, type WorkspaceAction } from "@document-management/contracts";
@@ -22,6 +22,23 @@ export class LocalController {
     const context = this.workspaceContext(request);
     await this.store.requireAuthorization(context.actor, context.workspaceId, action, resourceKind, resourceId);
     return context;
+  }
+
+  private problem(request: AuthenticatedRequest, response: Response, status: number, code: string, title: string, retryClass: "DO_NOT_RETRY" | "REFRESH_REQUIRED"): never {
+    const correlationId = normalizedCorrelationId(request.get("x-correlation-id"));
+    response.setHeader("X-Correlation-Id", correlationId);
+    response.setHeader("Content-Type", "application/problem+json");
+    throw new HttpException({
+      type: `urn:doculyra:problem:${code.toLowerCase().replaceAll("_", "-")}`,
+      title, status, code, correlation_id: correlationId, retry_class: retryClass, violations: [],
+    }, status);
+  }
+
+  private expectedRevision(request: AuthenticatedRequest, response: Response): number {
+    const value = request.get("if-match")?.trim();
+    const match = value?.match(/^"?([1-9][0-9]*)"?$/);
+    if (!match) this.problem(request, response, HttpStatus.PRECONDITION_REQUIRED, "PRECONDITION_REQUIRED", "A current resource revision is required", "REFRESH_REQUIRED");
+    return Number(match[1]);
   }
 
   private async createAndBindWorkspace(
@@ -174,27 +191,47 @@ export class LocalController {
   }
 
   @Post("people")
-  async createPerson(@Body() body: unknown, @Req() request: AuthenticatedRequest) {
-    const input = managePersonSchema.parse(body);
+  async createPerson(@Body() body: unknown, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    const parsed = managePersonSchema.safeParse(body);
+    if (!parsed.success) this.problem(request, response, HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_PERSON_REQUEST", "Person request could not be validated", "DO_NOT_RETRY");
+    const input = parsed.data;
     const context = await this.authorize(request, "subject.create", "WORKSPACE");
     if (input.loginEnabled) await this.store.requireAuthorization(context.actor, context.workspaceId, "workspace.admin", "WORKSPACE");
-    return this.store.createPerson(context.workspaceId, context.actor, input);
+    const subject = await this.store.createPerson(context.workspaceId, context.actor, input);
+    response.setHeader("ETag", `\"${subject.revision}\"`);
+    return subject;
   }
 
   @Patch("people/:id")
-  async updatePerson(@Param("id") id: string, @Body() body: unknown, @Req() request: AuthenticatedRequest) {
-    const input = managePersonSchema.parse(body);
-    const context = await this.authorize(request, "subject.edit", "SUBJECT", id);
-    await this.store.requireAuthorization(context.actor, context.workspaceId, "workspace.admin", "WORKSPACE");
-    return this.store.updatePerson(context.workspaceId, context.actor, id, input);
+  async updatePerson(@Param("id") id: string, @Body() body: unknown, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    const parsed = managePersonSchema.safeParse(body);
+    if (!parsed.success) this.problem(request, response, HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_PERSON_REQUEST", "Person request could not be validated", "DO_NOT_RETRY");
+    const input = parsed.data;
+    try {
+      const context = await this.authorize(request, "subject.edit", "SUBJECT", id);
+      await this.store.requireAuthorization(context.actor, context.workspaceId, "workspace.admin", "WORKSPACE");
+      const subject = await this.store.updatePerson(context.workspaceId, context.actor, id, this.expectedRevision(request, response), input);
+      response.setHeader("ETag", `\"${subject.revision}\"`);
+      return subject;
+    } catch (error) {
+      if (error instanceof PreconditionFailedException) this.problem(request, response, HttpStatus.PRECONDITION_FAILED, "PRECONDITION_FAILED", "The resource changed", "REFRESH_REQUIRED");
+      if (error instanceof NotFoundException) this.problem(request, response, HttpStatus.NOT_FOUND, "RESOURCE_NOT_AVAILABLE", "Resource not available", "DO_NOT_RETRY");
+      throw error;
+    }
   }
 
   @Delete("people/:id")
-  async deletePerson(@Param("id") id: string, @Req() request: AuthenticatedRequest) {
-    const context = await this.authorize(request, "subject.delete", "SUBJECT", id);
-    await this.store.requireAuthorization(context.actor, context.workspaceId, "workspace.admin", "WORKSPACE");
-    await this.store.deletePerson(context.workspaceId, context.actor, id);
-    return { deleted: true };
+  async deletePerson(@Param("id") id: string, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    try {
+      const context = await this.authorize(request, "subject.delete", "SUBJECT", id);
+      await this.store.requireAuthorization(context.actor, context.workspaceId, "workspace.admin", "WORKSPACE");
+      await this.store.deletePerson(context.workspaceId, context.actor, id, this.expectedRevision(request, response));
+      return { deleted: true };
+    } catch (error) {
+      if (error instanceof PreconditionFailedException) this.problem(request, response, HttpStatus.PRECONDITION_FAILED, "PRECONDITION_FAILED", "The resource changed", "REFRESH_REQUIRED");
+      if (error instanceof NotFoundException) this.problem(request, response, HttpStatus.NOT_FOUND, "RESOURCE_NOT_AVAILABLE", "Resource not available", "DO_NOT_RETRY");
+      throw error;
+    }
   }
 
   @Get("connectors")

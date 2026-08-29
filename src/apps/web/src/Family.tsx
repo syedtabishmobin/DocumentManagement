@@ -60,14 +60,14 @@ function PersonEditor({ subject, member, onClose, onSaved, onError }: { subject:
   const input: ManagePersonInput = { displayName, kind: owner ? "OWNER" : kind, relationship, loginEnabled, role, permissions, ...(email ? { email } : {}), ...(mobile ? { mobile } : {}) };
   async function save(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setFormError("");
-    try { subject ? await api.updatePerson(subject.id, input) : await api.createPerson(input); await onSaved(); }
+    try { subject ? await api.updatePerson(subject.id, subject.revision, input) : await api.createPerson(input); await onSaved(); }
     catch (cause) { setFormError(cause instanceof Error ? cause.message : "Person could not be saved"); }
     finally { setBusy(false); }
   }
   async function remove() {
     if (!subject || owner || !confirm(`Remove ${subject.displayName}? This is allowed only when no documents remain assigned.`)) return;
     setBusy(true);
-    try { await api.deletePerson(subject.id); await onSaved(); }
+    try { await api.deletePerson(subject.id, subject.revision); await onSaved(); }
     catch (cause) { onClose(); onError(cause instanceof Error ? cause.message : "Person could not be removed"); }
     finally { setBusy(false); }
   }

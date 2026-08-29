@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, Optional, UnprocessableEntityException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, Optional, PreconditionFailedException, UnprocessableEntityException } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -30,6 +30,7 @@ import { classifyDocument, extractProfileFacts, normalizeQuestion } from "@docum
 import { evaluateAuthorization } from "./authorization.policy.js";
 import { PostgresWorkspacePersistence } from "./postgres-workspace.persistence.js";
 import {
+  normalizeAuthorityLifecycle,
   WORKSPACE_PERSISTENCE,
   type AuthorityOutboxEvent,
   type WorkspaceActor,
@@ -54,6 +55,15 @@ const trashDeadline = (deletedAt: string): string => {
   return deadline.toISOString();
 };
 const defaultPermissions = (owner = false): FilePermissions => ({ view: owner, add: owner, edit: owner, delete: owner });
+const subjectHistory = (subject: SubjectRecord, validTo: string): SubjectRecord["history"][number] => ({
+  revision: subject.revision, displayName: subject.displayName, kind: subject.kind, relationship: subject.relationship,
+  ...(subject.dateOfBirth ? { dateOfBirth: subject.dateOfBirth } : {}), status: subject.status,
+  validFrom: subject.validFrom, validTo, recordedAt: subject.recordedAt,
+});
+const membershipHistory = (member: Member, validTo: string): Member["history"][number] => ({
+  revision: member.revision, role: member.role, state: member.state, invitationState: member.invitationState,
+  permissions: { ...member.permissions }, validFrom: member.validFrom, validTo, recordedAt: member.recordedAt,
+});
 const stableId = (prefix: string, ...parts: string[]): string => `${prefix}_${createHash("sha256").update(parts.join("\u001f")).digest("hex").slice(0, 24)}`;
 const ownerActions: WorkspaceAction[] = [
   "workspace.read", "workspace.admin", "subject.read", "subject.create", "subject.edit", "subject.delete",
@@ -143,8 +153,11 @@ function initialState(actor: WorkspaceActor, name: string, type: Workspace["type
         subjectId: ownerSubjectId,
         invitationState: "ACTIVE",
         permissions: defaultPermissions(true),
+        validFrom: createdAt,
+        recordedAt: createdAt,
         createdAt,
         revision: 1,
+        history: [],
       },
     ],
     subjects: [
@@ -154,8 +167,12 @@ function initialState(actor: WorkspaceActor, name: string, type: Workspace["type
         displayName: actor.displayName,
         kind: "OWNER",
         relationship: "Self",
+        status: "ACTIVE",
+        validFrom: createdAt,
+        recordedAt: createdAt,
         createdAt,
         revision: 1,
+        history: [],
       },
     ],
     subjectIdentityLinks: [{ id: randomUUID(), workspaceId, subjectId: ownerSubjectId, identityId: actor.identityId, evidenceKind: "WORKSPACE_CREATION", state: "ACTIVE", validFrom: createdAt, recordedAt: createdAt, revision: 1 }],
@@ -243,22 +260,31 @@ function documentSummary(document: DocumentRecord): DocumentRecord {
 }
 
 function normalizeWorkspaceState(input: WorkspaceState): WorkspaceState {
-  const state = input;
+  const state = normalizeAuthorityLifecycle(input);
   state.workspace.status ??= "ACTIVE";
   state.workspace.ownerBindingId ??= randomUUID();
   state.workspace.jurisdictionPackRef ??= "jurisdiction.AU";
   state.workspace.residencyPolicyRef ??= (process.env.DM_PROFILE ?? "local") === "local" ? "residency.local.synthetic" : "residency.azure.au.synthetic-preview";
   state.workspace.configurationVersion ??= "configuration.local.synthetic@0.1";
   state.workspace.revision ??= 1;
-  state.subjects ??= [{ id: "sub_local_owner", workspaceId: state.workspace.id, displayName: state.members[0]?.displayName ?? "Local owner", kind: "OWNER", relationship: "Self", createdAt: state.workspace.createdAt, revision: 1 }];
-  for (const subject of state.subjects) subject.revision ??= 1;
+  state.subjects ??= [{ id: "sub_local_owner", workspaceId: state.workspace.id, displayName: state.members[0]?.displayName ?? "Local owner", kind: "OWNER", relationship: "Self", status: "ACTIVE", validFrom: state.workspace.createdAt, recordedAt: state.workspace.createdAt, createdAt: state.workspace.createdAt, revision: 1, history: [] }];
+  for (const subject of state.subjects) {
+    subject.status ??= "ACTIVE";
+    subject.validFrom ??= subject.createdAt;
+    subject.recordedAt ??= subject.createdAt;
+    subject.history ??= [];
+    subject.revision ??= 1;
+  }
   for (const member of state.members) {
     const fallbackSubjectId = member.role === "OWNER" ? state.subjects.find((subject) => subject.kind === "OWNER")?.id ?? "sub_local_owner" : `sub_member_${member.id}`;
     member.subjectId ??= fallbackSubjectId;
     member.invitationState ??= member.state === "ACTIVE" ? "ACTIVE" : "SUSPENDED";
     member.permissions ??= defaultPermissions(member.role === "OWNER");
+    member.validFrom ??= member.createdAt;
+    member.recordedAt ??= member.createdAt;
+    member.history ??= [];
     member.revision ??= 1;
-    if (!state.subjects.some((subject) => subject.id === member.subjectId)) state.subjects.push({ id: member.subjectId, workspaceId: state.workspace.id, displayName: member.displayName, kind: member.role === "MANAGED_DEPENDANT" ? "DEPENDANT" : "ADULT", relationship: member.role === "GUEST" ? "Guest" : "Family member", createdAt: member.createdAt, revision: 1 });
+    if (!state.subjects.some((subject) => subject.id === member.subjectId)) state.subjects.push({ id: member.subjectId, workspaceId: state.workspace.id, displayName: member.displayName, kind: member.role === "MANAGED_DEPENDANT" ? "DEPENDANT" : "ADULT", relationship: member.role === "GUEST" ? "Guest" : "Family member", status: "ACTIVE", validFrom: member.createdAt, recordedAt: member.createdAt, createdAt: member.createdAt, revision: 1, history: [] });
   }
   state.ownerBindings ??= [];
   state.subjectIdentityLinks ??= [];
@@ -504,7 +530,7 @@ export class LocalStore {
       tasks,
       notifications,
       members,
-      subjects,
+      subjects: subjects.filter((subject) => subject.status === "ACTIVE"),
       audit: [...audit].reverse(),
       dependencies: dependencies.filter((edge) => activeIds.has(edge.evidenceDocumentId)),
       accessGrants,
@@ -517,7 +543,7 @@ export class LocalStore {
   async addDocument(workspaceId: string, actor: WorkspaceActor, file: Express.Multer.File, subjectIds: string[], captureRoute: DocumentRecord["captureRoute"]): Promise<DocumentRecord> {
     return this.mutate(async (database) => {
       const state = this.state(database, workspaceId);
-      if (!subjectIds.length || subjectIds.some((subjectId) => !state.subjects.some((subject) => subject.id === subjectId))) {
+      if (!subjectIds.length || subjectIds.some((subjectId) => !state.subjects.some((subject) => subject.id === subjectId && subject.status === "ACTIVE"))) {
         throw new BadRequestException("Select at least one valid household person for this document");
       }
       const digest = createHash("sha256").update(file.buffer).digest("hex");
@@ -619,9 +645,11 @@ export class LocalStore {
     return this.mutate((database) => {
       const state = this.state(database, workspaceId);
       if (input.kind === "OWNER") throw new BadRequestException("Additional owner subjects and ownership transfer are unavailable");
+      const createdAt = now();
       const subject: SubjectRecord = {
         id: randomUUID(), workspaceId: state.workspace.id, displayName: input.displayName, kind: input.kind,
-        relationship: input.relationship, ...(input.dateOfBirth ? { dateOfBirth: input.dateOfBirth } : {}), createdAt: now(), revision: 1,
+        relationship: input.relationship, ...(input.dateOfBirth ? { dateOfBirth: input.dateOfBirth } : {}), status: "ACTIVE",
+        validFrom: createdAt, recordedAt: createdAt, createdAt, revision: 1, history: [],
       };
       state.subjects.push(subject);
       recordAuthorityTransition(database, state, actor, "SUBJECT_CREATED", "PERSON", "Added a person to the household", subject.id);
@@ -696,9 +724,9 @@ export class LocalStore {
       const state = this.state(database, workspaceId);
       if (role === "OWNER") throw new BadRequestException("Ownership transfer is unavailable");
       const createdAt = now();
-      const subject: SubjectRecord = { id: randomUUID(), workspaceId: state.workspace.id, displayName, kind: role === "MANAGED_DEPENDANT" ? "DEPENDANT" : "ADULT", relationship: "Family member", createdAt, revision: 1 };
+      const subject: SubjectRecord = { id: randomUUID(), workspaceId: state.workspace.id, displayName, kind: role === "MANAGED_DEPENDANT" ? "DEPENDANT" : "ADULT", relationship: "Family member", status: "ACTIVE", validFrom: createdAt, recordedAt: createdAt, createdAt, revision: 1, history: [] };
       state.subjects.push(subject);
-      const member: Member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName, role, state: "ACTIVE", invitationState: "PENDING", permissions: defaultPermissions(), createdAt, revision: 1 };
+      const member: Member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName, role, state: "ACTIVE", invitationState: "PENDING", permissions: defaultPermissions(), validFrom: createdAt, recordedAt: createdAt, createdAt, revision: 1, history: [] };
       state.members.push(member);
       advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
       recordAuthorityTransition(database, state, actor, "MEMBERSHIP_INVITATION_PREPARED", "MEMBERSHIP", "Prepared membership without fabricating an identity or active resource grant", member.id);
@@ -711,11 +739,11 @@ export class LocalStore {
       const state = this.state(database, workspaceId);
       if (input.kind === "OWNER") throw new BadRequestException("Additional owners and ownership transfer are unavailable");
       const createdAt = now();
-      const subject: SubjectRecord = { id: randomUUID(), workspaceId: state.workspace.id, displayName: input.displayName, kind: input.kind, relationship: input.relationship, ...(input.dateOfBirth ? { dateOfBirth: input.dateOfBirth } : {}), createdAt, revision: 1 };
+      const subject: SubjectRecord = { id: randomUUID(), workspaceId: state.workspace.id, displayName: input.displayName, kind: input.kind, relationship: input.relationship, ...(input.dateOfBirth ? { dateOfBirth: input.dateOfBirth } : {}), status: "ACTIVE", validFrom: createdAt, recordedAt: createdAt, createdAt, revision: 1, history: [] };
       state.subjects.push(subject);
       recordAuthorityTransition(database, state, actor, "PERSON_CREATED", "PERSON", "Added a person to the household", subject.id);
       if (input.loginEnabled) {
-        const member: Member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName: input.displayName, role: input.role, state: "ACTIVE", invitationState: "PENDING", permissions: input.permissions, ...(input.email ? { email: input.email } : {}), ...(input.mobile ? { mobile: input.mobile } : {}), createdAt, revision: 1 };
+        const member: Member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName: input.displayName, role: input.role, state: "ACTIVE", invitationState: "PENDING", permissions: input.permissions, ...(input.email ? { email: input.email } : {}), ...(input.mobile ? { mobile: input.mobile } : {}), validFrom: createdAt, recordedAt: createdAt, createdAt, revision: 1, history: [] };
         state.members.push(member);
         advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
         recordAuthorityTransition(database, state, actor, "INVITATION_PREPARED", "MEMBERSHIP", "Prepared a membership invitation without creating credentials or a resource grant", member.id);
@@ -724,47 +752,87 @@ export class LocalStore {
     });
   }
 
-  async updatePerson(workspaceId: string, actor: WorkspaceActor, id: string, input: ManagePersonInput): Promise<SubjectRecord> {
-    return this.mutate((database) => {
+  async updatePerson(workspaceId: string, actor: WorkspaceActor, id: string, expectedRevision: number, input: ManagePersonInput): Promise<SubjectRecord> {
+    const result = await this.mutate((database): { state: "UPDATED"; subject: SubjectRecord } | { state: "NOT_AVAILABLE" } | { state: "STALE" } => {
       const state = this.state(database, workspaceId);
       const subject = state.subjects.find((item) => item.id === id);
-      if (!subject) throw new NotFoundException("Person not found");
+      if (!subject || subject.status !== "ACTIVE") {
+        const denial = auditRecord(state.workspace.id, actor, "PERSON_CHANGE_REJECTED", "PERSON", "Rejected a person change because the current subject was unavailable");
+        denial.outcome = "DENIED";
+        state.audit.push(denial); appendAuthorityOutbox(database, state, denial);
+        return { state: "NOT_AVAILABLE" };
+      }
+      if (subject.revision !== expectedRevision) {
+        const denial = auditRecord(state.workspace.id, actor, "PERSON_CHANGE_REJECTED", "PERSON", "Rejected a stale person change", subject.id);
+        denial.outcome = "DENIED";
+        state.audit.push(denial); appendAuthorityOutbox(database, state, denial);
+        return { state: "STALE" };
+      }
       if (input.kind === "OWNER" && subject.kind !== "OWNER") throw new BadRequestException("Ownership transfer is unavailable");
       if (subject.kind === "OWNER" && input.kind !== "OWNER") throw new BadRequestException("The local owner cannot be changed to another person type");
+      const changedAt = now();
+      subject.history.push(subjectHistory(subject, changedAt));
       subject.displayName = input.displayName; subject.kind = input.kind; subject.relationship = input.relationship; subject.revision += 1;
+      subject.validFrom = changedAt; subject.recordedAt = changedAt;
       if (input.dateOfBirth) subject.dateOfBirth = input.dateOfBirth; else delete subject.dateOfBirth;
       let member = state.members.find((item) => item.subjectId === subject.id);
       if (input.loginEnabled) {
         if (!member) {
-          member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName: input.displayName, role: input.role, state: "ACTIVE", invitationState: "PENDING", permissions: input.permissions, createdAt: now(), revision: 1 };
+          member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName: input.displayName, role: input.role, state: "ACTIVE", invitationState: "PENDING", permissions: input.permissions, validFrom: changedAt, recordedAt: changedAt, createdAt: changedAt, revision: 1, history: [] };
           state.members.push(member);
+        } else {
+          member.history.push(membershipHistory(member, changedAt));
+          member.displayName = input.displayName; member.role = subject.kind === "OWNER" ? "OWNER" : input.role; member.state = "ACTIVE"; member.permissions = subject.kind === "OWNER" ? defaultPermissions(true) : input.permissions; member.revision += 1;
+          member.validFrom = changedAt; member.recordedAt = changedAt; delete member.validTo;
+          if (member.invitationState === "SUSPENDED" || member.invitationState === "NOT_INVITED") member.invitationState = "PENDING";
         }
-        member.displayName = input.displayName; member.role = subject.kind === "OWNER" ? "OWNER" : input.role; member.state = "ACTIVE"; member.permissions = subject.kind === "OWNER" ? defaultPermissions(true) : input.permissions; member.revision += 1;
-        if (member.invitationState === "SUSPENDED" || member.invitationState === "NOT_INVITED") member.invitationState = "PENDING";
         if (input.email) member.email = input.email; else delete member.email;
         if (input.mobile) member.mobile = input.mobile; else delete member.mobile;
-      } else if (member && member.role !== "OWNER") {
+      } else if (member && member.role !== "OWNER" && (member.state !== "REVOKED" || member.invitationState !== "SUSPENDED")) {
+        member.history.push(membershipHistory(member, changedAt));
         member.state = "REVOKED"; member.invitationState = "SUSPENDED"; member.revision += 1;
+        member.validTo = changedAt; member.recordedAt = changedAt;
       }
       advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
       recordAuthorityTransition(database, state, actor, "PERSON_UPDATED", "PERSON", input.loginEnabled ? "Updated person and prospective membership settings; resource grants remain separate" : "Updated person details and disabled membership participation", subject.id);
-      return subject;
+      return { state: "UPDATED", subject };
     });
+    if (result.state === "NOT_AVAILABLE") throw new NotFoundException("Resource not available");
+    if (result.state === "STALE") throw new PreconditionFailedException("Resource changed; refresh before retrying");
+    return result.subject;
   }
 
-  async deletePerson(workspaceId: string, actor: WorkspaceActor, id: string): Promise<void> {
-    await this.mutate((database) => {
+  async deletePerson(workspaceId: string, actor: WorkspaceActor, id: string, expectedRevision: number): Promise<void> {
+    const result = await this.mutate((database): "RETIRED" | "NOT_AVAILABLE" | "STALE" => {
       const state = this.state(database, workspaceId);
       const subject = state.subjects.find((item) => item.id === id);
-      if (!subject) throw new NotFoundException("Person not found");
+      if (!subject || subject.status !== "ACTIVE") {
+        const denial = auditRecord(state.workspace.id, actor, "PERSON_RETIREMENT_REJECTED", "PERSON", "Rejected a person retirement because the current subject was unavailable");
+        denial.outcome = "DENIED"; state.audit.push(denial); appendAuthorityOutbox(database, state, denial);
+        return "NOT_AVAILABLE";
+      }
+      if (subject.revision !== expectedRevision) {
+        const denial = auditRecord(state.workspace.id, actor, "PERSON_RETIREMENT_REJECTED", "PERSON", "Rejected a stale person retirement", subject.id);
+        denial.outcome = "DENIED"; state.audit.push(denial); appendAuthorityOutbox(database, state, denial);
+        return "STALE";
+      }
       if (subject.kind === "OWNER") throw new BadRequestException("The workspace owner cannot be removed");
       if (state.documents.some((document) => document.status !== "DELETED" && document.subjectIds.includes(id))) throw new BadRequestException("Reassign or delete this person's documents before removing them");
-      state.subjects = state.subjects.filter((item) => item.id !== id);
-      state.members = state.members.map((member) => member.subjectId === id ? { ...member, state: "REVOKED", invitationState: "SUSPENDED", revision: member.revision + 1 } : member);
+      const retiredAt = now();
+      subject.history.push(subjectHistory(subject, retiredAt));
+      subject.status = "RETIRED"; subject.retiredAt = retiredAt; subject.validFrom = retiredAt; subject.recordedAt = retiredAt; subject.revision += 1;
+      state.members = state.members.map((member) => {
+        if (member.subjectId !== id || member.state !== "ACTIVE") return member;
+        member.history.push(membershipHistory(member, retiredAt));
+        return { ...member, state: "REVOKED", invitationState: "SUSPENDED", validTo: retiredAt, recordedAt: retiredAt, revision: member.revision + 1 };
+      });
       state.subjectIdentityLinks = state.subjectIdentityLinks.map((link) => link.subjectId === id && link.state === "ACTIVE" ? { ...link, state: "REVOKED", revision: link.revision + 1 } : link);
       advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
       recordAuthorityTransition(database, state, actor, "PERSON_REMOVED", "PERSON", "Removed the active subject view while preserving revoked participation history", id);
+      return "RETIRED";
     });
+    if (result === "NOT_AVAILABLE") throw new NotFoundException("Resource not available");
+    if (result === "STALE") throw new PreconditionFailedException("Resource changed; refresh before retrying");
   }
 
   async addTask(workspaceId: string, actor: WorkspaceActor, input: { title: string; severity: TaskRecord["severity"]; dueAt?: string | undefined; documentId?: string | undefined }): Promise<TaskRecord> {

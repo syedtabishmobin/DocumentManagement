@@ -45,6 +45,36 @@ describe("PostgresWorkspacePersistence", () => {
     await expect(restarted.createWorkspace(actor, "Changed input", "PERSONAL", "postgres-key-0001")).rejects.toThrow("already used");
   });
 
+  it("expands pre-lifecycle PostgreSQL authority records without fabricating access", async () => {
+    const { pool, persistence, store } = harness();
+    openPools.push(pool);
+    const workspace = await store.createWorkspace(actor, "Legacy authority household", "FAMILY", "postgres-legacy-0001");
+    const current = (await persistence.read()).workspaces[0]!;
+    const legacy = structuredClone(current);
+    for (const subject of legacy.subjects) {
+      const record = subject as unknown as Record<string, unknown>;
+      delete record.status;
+      delete record.validFrom;
+      delete record.recordedAt;
+      delete record.history;
+    }
+    for (const member of legacy.members) {
+      const record = member as unknown as Record<string, unknown>;
+      delete record.validFrom;
+      delete record.recordedAt;
+      delete record.history;
+    }
+    await pool.query("UPDATE doculyra.workspace_state SET state = $2::jsonb WHERE workspace_id = $1", [workspace.id, JSON.stringify(legacy)]);
+
+    const expanded = await persistence.read();
+    expect(expanded.workspaces[0]!.subjects[0]).toMatchObject({ status: "ACTIVE", validFrom: current.subjects[0]!.createdAt, history: [] });
+    expect(expanded.workspaces[0]!.members[0]).toMatchObject({ validFrom: current.members[0]!.createdAt, history: [] });
+    expect(expanded.workspaces[0]!.members).toHaveLength(current.members.length);
+    expect(expanded.workspaces[0]!.subjectIdentityLinks).toEqual(current.subjectIdentityLinks);
+    expect(expanded.workspaces[0]!.accessGrants).toEqual(current.accessGrants);
+    await expect(persistence.verifyInvariants()).resolves.toMatchObject({ workspaces: 1 });
+  });
+
   it("serializes concurrent commands and preserves one owner, membership and grant per workspace", async () => {
     const { pool, persistence, store } = harness();
     openPools.push(pool);

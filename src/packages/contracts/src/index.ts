@@ -197,8 +197,23 @@ export interface Member {
   permissions: FilePermissions;
   email?: string;
   mobile?: string;
+  validFrom: string;
+  validTo?: string;
+  recordedAt: string;
   createdAt: string;
   revision: number;
+  history: MembershipHistoryEntry[];
+}
+
+export interface MembershipHistoryEntry {
+  revision: number;
+  role: WorkspaceRole;
+  state: Member["state"];
+  invitationState: Member["invitationState"];
+  permissions: FilePermissions;
+  validFrom: string;
+  validTo: string;
+  recordedAt: string;
 }
 
 export interface DocumentRecord {
@@ -241,8 +256,25 @@ export interface SubjectRecord {
   kind: "OWNER" | "ADULT" | "CHILD" | "DEPENDANT" | "OTHER";
   relationship: string;
   dateOfBirth?: string;
+  status: "ACTIVE" | "RETIRED";
+  validFrom: string;
+  recordedAt: string;
+  retiredAt?: string;
   createdAt: string;
   revision: number;
+  history: SubjectHistoryEntry[];
+}
+
+export interface SubjectHistoryEntry {
+  revision: number;
+  displayName: string;
+  kind: SubjectRecord["kind"];
+  relationship: string;
+  dateOfBirth?: string;
+  status: SubjectRecord["status"];
+  validFrom: string;
+  validTo: string;
+  recordedAt: string;
 }
 
 export interface SubjectIdentityLink {

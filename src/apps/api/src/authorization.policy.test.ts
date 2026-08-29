@@ -24,8 +24,11 @@ const member: Member = {
   subjectId: "sub_a",
   invitationState: "ACTIVE",
   permissions: { view: true, add: true, edit: true, delete: true },
+  validFrom: workspace.createdAt,
+  recordedAt: workspace.createdAt,
   createdAt: workspace.createdAt,
   revision: 1,
+  history: [],
 };
 const grant: AccessGrant = {
   id: "grt_a",

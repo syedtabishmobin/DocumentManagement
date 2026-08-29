@@ -81,3 +81,25 @@ export interface WorkspacePersistence {
 }
 
 export const WORKSPACE_PERSISTENCE = Symbol("WORKSPACE_PERSISTENCE");
+
+/**
+ * Expand authority records written before lifecycle history was introduced.
+ * This is deliberately additive: stable IDs and prior authority are preserved,
+ * and no identity, membership, or grant is inferred from a subject record.
+ */
+export function normalizeAuthorityLifecycle(state: WorkspaceState): WorkspaceState {
+  for (const subject of state.subjects ?? []) {
+    subject.status ??= "ACTIVE";
+    subject.validFrom ??= subject.createdAt;
+    subject.recordedAt ??= subject.createdAt;
+    subject.history ??= [];
+    subject.revision ??= 1;
+  }
+  for (const member of state.members ?? []) {
+    member.validFrom ??= member.createdAt;
+    member.recordedAt ??= member.createdAt;
+    member.history ??= [];
+    member.revision ??= 1;
+  }
+  return state;
+}

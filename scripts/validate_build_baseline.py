@@ -211,8 +211,12 @@ def validate() -> tuple[list[str], dict[str, int]]:
             errors.append(f"{story} acceptance differs: expected={sorted(expected_acs)} actual={sorted(story_acs)}")
         acceptance.update(story_acs)
         state = next((line for line in section.splitlines() if line.startswith("| State / owner |")), "")
-        if "BASELINED" not in state or "PLANNED_UNISSUED" not in state:
-            errors.append(f"{story} must be BASELINED and PLANNED_UNISSUED before execution")
+        if not state:
+            errors.append(f"{story} must retain a current governed state and owner")
+        # Baseline inclusion is immutable in build-baseline.v1.json and is checked
+        # by the exact inventory above. The story catalogue is the live execution
+        # view, so requiring PLANNED_UNISSUED here would make truthful progress
+        # (IN_IMPLEMENTATION, DEV_ACCEPTED, and later release states) invalid.
         if "`DONE" in state or "`COMPLETE" in state:
             errors.append(f"{story} claims completion without release evidence")
     for feature in expected_features:
