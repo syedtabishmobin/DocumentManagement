@@ -42,6 +42,19 @@ export interface WorkspaceState {
   authorizationEpoch: AuthorizationEpoch;
   audit: AuditRecord[];
   dependencies: DependencyRecord[];
+  authorityCommandReceipts: AuthorityCommandReceipt[];
+}
+
+export interface AuthorityCommandReceipt {
+  id: string;
+  workspaceId: string;
+  actorId: string;
+  operationId: "API-P1-105" | "API-P1-107" | "API-P1-109" | "API-P1-111";
+  idempotencyKeyHash: string;
+  requestFingerprint: string;
+  resourceId: string;
+  resultRevision: number;
+  createdAt: string;
 }
 
 export interface WorkspaceCreationReceipt {
@@ -88,6 +101,7 @@ export const WORKSPACE_PERSISTENCE = Symbol("WORKSPACE_PERSISTENCE");
  * and no identity, membership, or grant is inferred from a subject record.
  */
 export function normalizeAuthorityLifecycle(state: WorkspaceState): WorkspaceState {
+  state.authorityCommandReceipts ??= [];
   for (const subject of state.subjects ?? []) {
     subject.status ??= "ACTIVE";
     subject.validFrom ??= subject.createdAt;

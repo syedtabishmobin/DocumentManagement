@@ -1,14 +1,25 @@
-import { BadRequestException, Body, Controller, Delete, Get, HttpException, HttpStatus, Inject, NotFoundException, Param, Patch, Post, PreconditionFailedException, Req, Res, UnprocessableEntityException, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, ConflictException, Controller, Delete, Get, HttpException, HttpStatus, Inject, NotFoundException, Param, Patch, Post, PreconditionFailedException, Req, Res, UnprocessableEntityException, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
-import { askQuestionSchema, canonicalCreateWorkspaceSchema, configureWorkspaceSchema, createMemberSchema, createSubjectSchema, createTaskSchema, managePersonSchema, manualDocumentSchema, type Workspace, type WorkspaceAction } from "@document-management/contracts";
+import { askQuestionSchema, canonicalCreateSubjectSchema, canonicalCreateWorkspaceSchema, canonicalInviteMembershipSchema, canonicalUpdateMembershipSchema, canonicalUpdateSubjectSchema, configureWorkspaceSchema, createMemberSchema, createSubjectSchema, createTaskSchema, managePersonSchema, manualDocumentSchema, type Member, type SubjectRecord, type Workspace, type WorkspaceAction } from "@document-management/contracts";
 import { currentWorkspaceConfiguration, LocalStore, normalizedCorrelationId, type WorkspaceActor } from "./local.store.js";
 import { IdentityStore } from "./identity.store.js";
 import { actorFor, requestIdentity, sessionToken, setSessionCredentials, type AuthenticatedRequest } from "./auth.controller.js";
 
 @Controller()
 export class LocalController {
+  private readonly requestCorrelations = new WeakMap<object, string>();
   constructor(@Inject(LocalStore) private readonly store: LocalStore, @Inject(IdentityStore) private readonly identities: IdentityStore) {}
+
+  private correlation(request: AuthenticatedRequest, response: Response): string {
+    let correlationId = this.requestCorrelations.get(request);
+    if (!correlationId) {
+      correlationId = normalizedCorrelationId(request.get("x-correlation-id"));
+      this.requestCorrelations.set(request, correlationId);
+    }
+    response.setHeader("X-Correlation-Id", correlationId);
+    return correlationId;
+  }
 
   private workspaceContext(request: AuthenticatedRequest, expectedWorkspaceId?: string): { workspaceId: string; actor: WorkspaceActor } {
     const workspaceId = request.get("x-workspace-id")?.trim();
@@ -25,8 +36,7 @@ export class LocalController {
   }
 
   private problem(request: AuthenticatedRequest, response: Response, status: number, code: string, title: string, retryClass: "DO_NOT_RETRY" | "REFRESH_REQUIRED"): never {
-    const correlationId = normalizedCorrelationId(request.get("x-correlation-id"));
-    response.setHeader("X-Correlation-Id", correlationId);
+    const correlationId = this.correlation(request, response);
     response.setHeader("Content-Type", "application/problem+json");
     throw new HttpException({
       type: `urn:doculyra:problem:${code.toLowerCase().replaceAll("_", "-")}`,
@@ -39,6 +49,31 @@ export class LocalController {
     const match = value?.match(/^"?([1-9][0-9]*)"?$/);
     if (!match) this.problem(request, response, HttpStatus.PRECONDITION_REQUIRED, "PRECONDITION_REQUIRED", "A current resource revision is required", "REFRESH_REQUIRED");
     return Number(match[1]);
+  }
+
+  private idempotencyKey(request: AuthenticatedRequest, response: Response): string {
+    const value = request.get("idempotency-key")?.trim();
+    if (!value || value.length < 16 || value.length > 200) this.problem(request, response, HttpStatus.BAD_REQUEST, "IDEMPOTENCY_KEY_REQUIRED", "A valid Idempotency-Key is required", "DO_NOT_RETRY");
+    return value;
+  }
+
+  private subjectView(subject: SubjectRecord) {
+    return { subject_id: subject.id, workspace_id: subject.workspaceId, subject_kind: "PERSON", status: subject.status, identity_link_state: "NONE", revision: subject.revision };
+  }
+
+  private membershipView(member: Member) {
+    return { membership_id: member.id, workspace_id: member.workspaceId, ...(member.identityId ? { identity_id: member.identityId } : {}), ...(member.audienceRef ? { audience_ref: member.audienceRef } : {}), participation_class: member.role, status: member.invitationState === "PENDING" ? "PENDING" : member.state, role_assignment_refs: [], revision: member.revision };
+  }
+
+  private collection(items: unknown[], workspaceId: string) {
+    return { items, page: { next_page_after: null, has_more: false, snapshot_ref: `workspace:${workspaceId}` }, coverage: { state: "COMPLETE_AUTHORIZED_VIEW", projection_generation: "authority-v1", source_watermark: "transactional-authority-store", policy_epoch: "current", deletion_fence_watermark: "current", limitations: [] } };
+  }
+
+  private canonicalProblem(error: unknown, request: AuthenticatedRequest, response: Response): never {
+    if (error instanceof PreconditionFailedException) this.problem(request, response, HttpStatus.PRECONDITION_FAILED, "PRECONDITION_FAILED", "The resource changed", "REFRESH_REQUIRED");
+    if (error instanceof NotFoundException) this.problem(request, response, HttpStatus.NOT_FOUND, "RESOURCE_NOT_AVAILABLE", "Resource not available", "DO_NOT_RETRY");
+    if (error instanceof ConflictException) this.problem(request, response, HttpStatus.CONFLICT, "IDEMPOTENCY_CONFLICT", "The command key conflicts with an earlier request", "DO_NOT_RETRY");
+    throw error;
   }
 
   private async createAndBindWorkspace(
@@ -184,6 +219,102 @@ export class LocalController {
     return this.store.reviewFact(workspaceId, actor, id);
   }
 
+  @Get("v1/workspaces/:workspaceId/subjects")
+  async canonicalSubjects(@Param("workspaceId") workspaceId: string, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    try {
+      const context = this.workspaceContext(request, workspaceId);
+      await this.store.requireAuthorization(context.actor, workspaceId, "subject.read", "WORKSPACE");
+      this.correlation(request, response);
+      const items = (await this.store.listSubjects(workspaceId)).map((subject) => this.subjectView(subject));
+      response.setHeader("ETag", `\"subjects-${items.map((item) => item.revision).join("-")}\"`);
+      return this.collection(items, workspaceId);
+    } catch (error) { this.canonicalProblem(error, request, response); }
+  }
+
+  @Post("v1/workspaces/:workspaceId/subjects")
+  async canonicalCreateSubject(@Param("workspaceId") workspaceId: string, @Body() body: unknown, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    const parsed = canonicalCreateSubjectSchema.safeParse(body);
+    if (!parsed.success) this.problem(request, response, HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_SUBJECT_REQUEST", "Subject request could not be validated", "DO_NOT_RETRY");
+    try {
+      const context = this.workspaceContext(request, workspaceId);
+      await this.store.requireAuthorization(context.actor, workspaceId, "subject.create", "WORKSPACE");
+      await this.store.requireAuthorization(context.actor, workspaceId, "workspace.admin", "WORKSPACE");
+      const subject = await this.store.createCanonicalSubject(workspaceId, context.actor, this.expectedRevision(request, response), this.idempotencyKey(request, response), parsed.data, this.correlation(request, response));
+      response.setHeader("ETag", `\"${subject.revision}\"`);
+      return this.subjectView(subject);
+    } catch (error) { this.canonicalProblem(error, request, response); }
+  }
+
+  @Get("v1/workspaces/:workspaceId/subjects/:subjectId")
+  async canonicalSubject(@Param("workspaceId") workspaceId: string, @Param("subjectId") subjectId: string, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    try {
+      const context = this.workspaceContext(request, workspaceId);
+      await this.store.requireAuthorization(context.actor, workspaceId, "subject.read", "SUBJECT", subjectId);
+      const subject = await this.store.getSubject(workspaceId, subjectId);
+      this.correlation(request, response); response.setHeader("ETag", `\"${subject.revision}\"`);
+      return this.subjectView(subject);
+    } catch (error) { this.canonicalProblem(error, request, response); }
+  }
+
+  @Patch("v1/workspaces/:workspaceId/subjects/:subjectId")
+  async canonicalUpdateSubject(@Param("workspaceId") workspaceId: string, @Param("subjectId") subjectId: string, @Body() body: unknown, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    const parsed = canonicalUpdateSubjectSchema.safeParse(body);
+    if (!parsed.success) this.problem(request, response, HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_SUBJECT_REQUEST", "Subject request could not be validated", "DO_NOT_RETRY");
+    try {
+      const context = this.workspaceContext(request, workspaceId);
+      await this.store.requireAuthorization(context.actor, workspaceId, "subject.edit", "WORKSPACE");
+      await this.store.requireAuthorization(context.actor, workspaceId, "workspace.admin", "WORKSPACE");
+      const subject = await this.store.proposeCanonicalSubjectChange(workspaceId, context.actor, subjectId, this.expectedRevision(request, response), this.idempotencyKey(request, response), parsed.data, this.correlation(request, response));
+      response.setHeader("ETag", `\"${subject.revision}\"`); return this.subjectView(subject);
+    } catch (error) { this.canonicalProblem(error, request, response); }
+  }
+
+  @Get("v1/workspaces/:workspaceId/memberships")
+  async canonicalMemberships(@Param("workspaceId") workspaceId: string, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    try {
+      const context = this.workspaceContext(request, workspaceId);
+      await this.store.requireAuthorization(context.actor, workspaceId, "workspace.admin", "WORKSPACE");
+      this.correlation(request, response);
+      const items = (await this.store.listMemberships(workspaceId)).map((member) => this.membershipView(member));
+      response.setHeader("ETag", `\"memberships-${items.map((item) => item.revision).join("-")}\"`);
+      return this.collection(items, workspaceId);
+    } catch (error) { this.canonicalProblem(error, request, response); }
+  }
+
+  @Post("v1/workspaces/:workspaceId/memberships")
+  async canonicalInviteMembership(@Param("workspaceId") workspaceId: string, @Body() body: unknown, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    const parsed = canonicalInviteMembershipSchema.safeParse(body);
+    if (!parsed.success) this.problem(request, response, HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_MEMBERSHIP_REQUEST", "Membership request could not be validated", "DO_NOT_RETRY");
+    try {
+      const context = this.workspaceContext(request, workspaceId);
+      await this.store.requireAuthorization(context.actor, workspaceId, "workspace.admin", "WORKSPACE");
+      const membership = await this.store.inviteCanonicalMembership(workspaceId, context.actor, this.expectedRevision(request, response), this.idempotencyKey(request, response), parsed.data, this.correlation(request, response));
+      response.setHeader("ETag", `\"${membership.revision}\"`); return this.membershipView(membership);
+    } catch (error) { this.canonicalProblem(error, request, response); }
+  }
+
+  @Get("v1/workspaces/:workspaceId/memberships/:membershipId")
+  async canonicalMembership(@Param("workspaceId") workspaceId: string, @Param("membershipId") membershipId: string, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    try {
+      const context = this.workspaceContext(request, workspaceId);
+      await this.store.requireAuthorization(context.actor, workspaceId, "workspace.admin", "WORKSPACE");
+      const membership = await this.store.getMembership(workspaceId, membershipId);
+      this.correlation(request, response); response.setHeader("ETag", `\"${membership.revision}\"`); return this.membershipView(membership);
+    } catch (error) { this.canonicalProblem(error, request, response); }
+  }
+
+  @Patch("v1/workspaces/:workspaceId/memberships/:membershipId")
+  async canonicalUpdateMembership(@Param("workspaceId") workspaceId: string, @Param("membershipId") membershipId: string, @Body() body: unknown, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    const parsed = canonicalUpdateMembershipSchema.safeParse(body);
+    if (!parsed.success) this.problem(request, response, HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_MEMBERSHIP_REQUEST", "Membership request could not be validated", "DO_NOT_RETRY");
+    try {
+      const context = this.workspaceContext(request, workspaceId);
+      await this.store.requireAuthorization(context.actor, workspaceId, "workspace.admin", "WORKSPACE");
+      const membership = await this.store.transitionCanonicalMembership(workspaceId, context.actor, membershipId, this.expectedRevision(request, response), this.idempotencyKey(request, response), parsed.data, this.correlation(request, response));
+      response.setHeader("ETag", `\"${membership.revision}\"`); return this.membershipView(membership);
+    } catch (error) { this.canonicalProblem(error, request, response); }
+  }
+
   @Post("subjects")
   async addSubject(@Body() body: unknown, @Req() request: AuthenticatedRequest) {
     const context = await this.authorize(request, "subject.create", "WORKSPACE");
@@ -197,7 +328,7 @@ export class LocalController {
     const input = parsed.data;
     const context = await this.authorize(request, "subject.create", "WORKSPACE");
     if (input.loginEnabled) await this.store.requireAuthorization(context.actor, context.workspaceId, "workspace.admin", "WORKSPACE");
-    const subject = await this.store.createPerson(context.workspaceId, context.actor, input);
+    const subject = await this.store.createPerson(context.workspaceId, context.actor, input, this.correlation(request, response));
     response.setHeader("ETag", `\"${subject.revision}\"`);
     return subject;
   }
@@ -208,9 +339,9 @@ export class LocalController {
     if (!parsed.success) this.problem(request, response, HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_PERSON_REQUEST", "Person request could not be validated", "DO_NOT_RETRY");
     const input = parsed.data;
     try {
-      const context = await this.authorize(request, "subject.edit", "SUBJECT", id);
+      const context = await this.authorize(request, "subject.edit", "WORKSPACE");
       await this.store.requireAuthorization(context.actor, context.workspaceId, "workspace.admin", "WORKSPACE");
-      const subject = await this.store.updatePerson(context.workspaceId, context.actor, id, this.expectedRevision(request, response), input);
+      const subject = await this.store.updatePerson(context.workspaceId, context.actor, id, this.expectedRevision(request, response), input, this.correlation(request, response));
       response.setHeader("ETag", `\"${subject.revision}\"`);
       return subject;
     } catch (error) {
@@ -223,9 +354,9 @@ export class LocalController {
   @Delete("people/:id")
   async deletePerson(@Param("id") id: string, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
     try {
-      const context = await this.authorize(request, "subject.delete", "SUBJECT", id);
+      const context = await this.authorize(request, "subject.delete", "WORKSPACE");
       await this.store.requireAuthorization(context.actor, context.workspaceId, "workspace.admin", "WORKSPACE");
-      await this.store.deletePerson(context.workspaceId, context.actor, id, this.expectedRevision(request, response));
+      await this.store.deletePerson(context.workspaceId, context.actor, id, this.expectedRevision(request, response), this.correlation(request, response));
       return { deleted: true };
     } catch (error) {
       if (error instanceof PreconditionFailedException) this.problem(request, response, HttpStatus.PRECONDITION_FAILED, "PRECONDITION_FAILED", "The resource changed", "REFRESH_REQUIRED");

@@ -9921,12 +9921,11 @@
       },
       "Membership": {
         "type": "object",
-        "description": "Identity participation in one workspace; not blanket content authority.",
+        "description": "Identity or pre-redemption audience participation in one workspace; not blanket content authority. Pending invitations MUST NOT fabricate an Identity.",
         "additionalProperties": false,
         "required": [
           "membership_id",
           "workspace_id",
-          "identity_id",
           "participation_class",
           "status",
           "role_assignment_refs",
@@ -9945,7 +9944,12 @@
           },
           "identity_id": {
             "type": "string",
-            "description": "Opaque IdentityId.",
+            "description": "Opaque IdentityId only after a legitimate identity link exists.",
+            "minLength": 1
+          },
+          "audience_ref": {
+            "type": "string",
+            "description": "Protected intended-audience reference used before invitation redemption; it is not an IdentityId.",
             "minLength": 1
           },
           "participation_class": {
@@ -9970,6 +9974,10 @@
             "minimum": 0
           }
         },
+        "oneOf": [
+          { "required": ["identity_id"], "not": { "required": ["audience_ref"] } },
+          { "required": ["audience_ref"], "not": { "required": ["identity_id"] } }
+        ],
         "examples": [
           {
             "membership_id": "membership-synthetic-001",

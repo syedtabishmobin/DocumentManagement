@@ -132,6 +132,7 @@ describe("LocalStore", () => {
       subjects: [{ id: "sub_legacy", workspaceId: "wrk_legacy", displayName: "Local owner", kind: "OWNER", relationship: "Self", createdAt }],
       audit: [{ id: "audit_legacy", workspaceId: "wrk_legacy", type: "WORKSPACE_CREATED", resourceType: "WORKSPACE", resourceId: "wrk_legacy", actor: "Local owner", detail: "Created the local workspace", at: createdAt }],
       dependencies: [],
+      authorityCommandReceipts: [],
     }));
     const migrated = new LocalStore();
     expect(await migrated.listWorkspaces(actor.identityId)).toEqual([]);

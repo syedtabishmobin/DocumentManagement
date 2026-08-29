@@ -33,6 +33,7 @@ import {
   normalizeAuthorityLifecycle,
   WORKSPACE_PERSISTENCE,
   type AuthorityOutboxEvent,
+  type AuthorityCommandReceipt,
   type WorkspaceActor,
   type WorkspaceDatabase,
   type WorkspaceCreationContext,
@@ -65,6 +66,15 @@ const membershipHistory = (member: Member, validTo: string): Member["history"][n
   permissions: { ...member.permissions }, validFrom: member.validFrom, validTo, recordedAt: member.recordedAt,
 });
 const stableId = (prefix: string, ...parts: string[]): string => `${prefix}_${createHash("sha256").update(parts.join("\u001f")).digest("hex").slice(0, 24)}`;
+const commandHash = (value: unknown): string => createHash("sha256").update(typeof value === "string" ? value : JSON.stringify(value)).digest("hex");
+function priorCommandReceipt(state: WorkspaceState, actor: WorkspaceActor, operationId: AuthorityCommandReceipt["operationId"], idempotencyKey: string, input: unknown): AuthorityCommandReceipt | undefined {
+  const receipt = state.authorityCommandReceipts.find((candidate) => candidate.actorId === actor.identityId && candidate.operationId === operationId && candidate.idempotencyKeyHash === commandHash(idempotencyKey));
+  if (receipt && receipt.requestFingerprint !== commandHash({ operationId, input })) throw new ConflictException("This command key was already used for different input");
+  return receipt;
+}
+function appendCommandReceipt(state: WorkspaceState, actor: WorkspaceActor, operationId: AuthorityCommandReceipt["operationId"], idempotencyKey: string, input: unknown, resourceId: string, resultRevision: number): void {
+  state.authorityCommandReceipts.push({ id: randomUUID(), workspaceId: state.workspace.id, actorId: actor.identityId, operationId, idempotencyKeyHash: commandHash(idempotencyKey), requestFingerprint: commandHash({ operationId, input }), resourceId, resultRevision, createdAt: now() });
+}
 const ownerActions: WorkspaceAction[] = [
   "workspace.read", "workspace.admin", "subject.read", "subject.create", "subject.edit", "subject.delete",
   "document.read", "document.create", "document.edit", "document.delete", "fact.review",
@@ -189,6 +199,7 @@ function initialState(actor: WorkspaceActor, name: string, type: Workspace["type
       policyVersion: "policy.local-explicit-grant@0.1", correlationId: context.correlationId, detail: `Created a ${type.toLowerCase()} workspace`, at: createdAt,
     }],
     dependencies: [],
+    authorityCommandReceipts: [],
   };
 }
 
@@ -355,8 +366,9 @@ function recordAuthorityTransition(
   resourceType: AuditRecord["resourceType"],
   detail: string,
   resourceId?: string,
+  correlationId?: string,
 ): void {
-  const audit = auditRecord(state.workspace.id, actor, type, resourceType, detail, resourceId);
+  const audit = auditRecord(state.workspace.id, actor, type, resourceType, detail, resourceId, correlationId);
   state.audit.push(audit);
   appendAuthorityOutbox(database, state, audit);
 }
@@ -734,36 +746,143 @@ export class LocalStore {
     });
   }
 
-  async createPerson(workspaceId: string, actor: WorkspaceActor, input: ManagePersonInput): Promise<SubjectRecord> {
+  async listSubjects(workspaceId: string): Promise<SubjectRecord[]> {
+    const state = this.state(await this.readDatabase(), workspaceId);
+    return state.subjects.filter((subject) => subject.status === "ACTIVE");
+  }
+
+  async getSubject(workspaceId: string, subjectId: string): Promise<SubjectRecord> {
+    const subject = (await this.listSubjects(workspaceId)).find((candidate) => candidate.id === subjectId);
+    if (!subject) throw new NotFoundException("Resource not available");
+    return subject;
+  }
+
+  async listMemberships(workspaceId: string): Promise<Member[]> {
+    const state = this.state(await this.readDatabase(), workspaceId);
+    return state.members.filter((member) => member.state === "ACTIVE");
+  }
+
+  async getMembership(workspaceId: string, membershipId: string): Promise<Member> {
+    const membership = (await this.listMemberships(workspaceId)).find((candidate) => candidate.id === membershipId);
+    if (!membership) throw new NotFoundException("Resource not available");
+    return membership;
+  }
+
+  async createCanonicalSubject(workspaceId: string, actor: WorkspaceActor, expectedWorkspaceRevision: number, idempotencyKey: string, input: { subject_kind: "PERSON"; authority_basis_ref: string | null }, correlationId: string): Promise<SubjectRecord> {
+    return this.mutate((database) => {
+      const state = this.state(database, workspaceId);
+      const receipt = priorCommandReceipt(state, actor, "API-P1-105", idempotencyKey, input);
+      if (receipt) return state.subjects.find((subject) => subject.id === receipt.resourceId) ?? (() => { throw new ConflictException("The prior command result is unavailable"); })();
+      if (state.workspace.revision !== expectedWorkspaceRevision) throw new PreconditionFailedException("Workspace changed; refresh before retrying");
+      const createdAt = now();
+      const subject: SubjectRecord = { id: randomUUID(), workspaceId, displayName: "Represented person", kind: "OTHER", relationship: input.authority_basis_ref ? "Authorized representation" : "Household person", status: "ACTIVE", validFrom: createdAt, recordedAt: createdAt, createdAt, revision: 1, history: [] };
+      state.subjects.push(subject);
+      state.workspace.revision += 1;
+      recordAuthorityTransition(database, state, actor, "SUBJECT_CREATED", "PERSON", "Created a represented subject without identity or participation", subject.id, correlationId);
+      appendCommandReceipt(state, actor, "API-P1-105", idempotencyKey, input, subject.id, subject.revision);
+      return subject;
+    });
+  }
+
+  async proposeCanonicalSubjectChange(workspaceId: string, actor: WorkspaceActor, subjectId: string, expectedRevision: number, idempotencyKey: string, input: { operation: "PROPOSE_ATTRIBUTE_CORRECTION"; protected_change_ref: string | null; reason_code: string }, correlationId: string): Promise<SubjectRecord> {
+    const result = await this.mutate((database): SubjectRecord | "NOT_AVAILABLE" | "STALE" => {
+      const state = this.state(database, workspaceId);
+      const receipt = priorCommandReceipt(state, actor, "API-P1-107", idempotencyKey, { subjectId, ...input });
+      if (receipt) return state.subjects.find((subject) => subject.id === receipt.resourceId) ?? "NOT_AVAILABLE";
+      const subject = state.subjects.find((candidate) => candidate.id === subjectId);
+      if (!subject || subject.status !== "ACTIVE") {
+        const denial = auditRecord(workspaceId, actor, "SUBJECT_CHANGE_REJECTED", "PERSON", "Rejected a protected subject proposal because the subject was unavailable", undefined, correlationId); denial.outcome = "DENIED";
+        state.audit.push(denial); appendAuthorityOutbox(database, state, denial); return "NOT_AVAILABLE";
+      }
+      if (subject.revision !== expectedRevision) {
+        const denial = auditRecord(workspaceId, actor, "SUBJECT_CHANGE_REJECTED", "PERSON", "Rejected a stale protected subject proposal", subject.id, correlationId); denial.outcome = "DENIED";
+        state.audit.push(denial); appendAuthorityOutbox(database, state, denial); return "STALE";
+      }
+      const changedAt = now();
+      subject.history.push(subjectHistory(subject, changedAt)); subject.revision += 1; subject.validFrom = changedAt; subject.recordedAt = changedAt;
+      state.workspace.revision += 1;
+      recordAuthorityTransition(database, state, actor, "SUBJECT_CHANGE_PROPOSED", "PERSON", "Recorded a protected subject change proposal without applying opaque content", subject.id, correlationId);
+      appendCommandReceipt(state, actor, "API-P1-107", idempotencyKey, { subjectId, ...input }, subject.id, subject.revision);
+      return subject;
+    });
+    if (result === "NOT_AVAILABLE") throw new NotFoundException("Resource not available");
+    if (result === "STALE") throw new PreconditionFailedException("Resource changed; refresh before retrying");
+    return result;
+  }
+
+  async inviteCanonicalMembership(workspaceId: string, actor: WorkspaceActor, expectedWorkspaceRevision: number, idempotencyKey: string, input: { identity_or_audience_ref: string; participation_class: Exclude<Member["role"], "OWNER" | "FAMILY_ADMIN">; invitation_policy_ref: string }, correlationId: string): Promise<Member> {
+    return this.mutate((database) => {
+      const state = this.state(database, workspaceId);
+      const receipt = priorCommandReceipt(state, actor, "API-P1-109", idempotencyKey, input);
+      if (receipt) return state.members.find((member) => member.id === receipt.resourceId) ?? (() => { throw new ConflictException("The prior command result is unavailable"); })();
+      if (state.workspace.revision !== expectedWorkspaceRevision) throw new PreconditionFailedException("Workspace changed; refresh before retrying");
+      const createdAt = now();
+      const subject: SubjectRecord = { id: randomUUID(), workspaceId, displayName: "Invited participant", kind: input.participation_class === "MANAGED_DEPENDANT" ? "DEPENDANT" : "ADULT", relationship: "Invited participant", status: "ACTIVE", validFrom: createdAt, recordedAt: createdAt, createdAt, revision: 1, history: [] };
+      const member: Member = { id: randomUUID(), workspaceId, subjectId: subject.id, audienceRef: input.identity_or_audience_ref, displayName: "Invited participant", role: input.participation_class, state: "ACTIVE", invitationState: "PENDING", permissions: defaultPermissions(), validFrom: createdAt, recordedAt: createdAt, createdAt, revision: 1, history: [] };
+      state.subjects.push(subject); state.members.push(member); state.workspace.revision += 1; advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
+      recordAuthorityTransition(database, state, actor, "MEMBERSHIP_INVITATION_PREPARED", "MEMBERSHIP", "Prepared an audience-bound invitation without fabricating identity or access", member.id, correlationId);
+      appendCommandReceipt(state, actor, "API-P1-109", idempotencyKey, input, member.id, member.revision);
+      return member;
+    });
+  }
+
+  async transitionCanonicalMembership(workspaceId: string, actor: WorkspaceActor, membershipId: string, expectedRevision: number, idempotencyKey: string, input: { transition: "SUSPEND" | "REACTIVATE" | "DEPART" | "REMOVE"; reason_code: string }, correlationId: string): Promise<Member> {
+    const result = await this.mutate((database): Member | "NOT_AVAILABLE" | "STALE" => {
+      const state = this.state(database, workspaceId);
+      const receipt = priorCommandReceipt(state, actor, "API-P1-111", idempotencyKey, { membershipId, ...input });
+      if (receipt) return state.members.find((member) => member.id === receipt.resourceId) ?? "NOT_AVAILABLE";
+      const member = state.members.find((candidate) => candidate.id === membershipId);
+      if (!member) {
+        const denial = auditRecord(workspaceId, actor, "MEMBERSHIP_CHANGE_REJECTED", "MEMBERSHIP", "Rejected a membership transition because the record was unavailable", undefined, correlationId); denial.outcome = "DENIED";
+        state.audit.push(denial); appendAuthorityOutbox(database, state, denial); return "NOT_AVAILABLE";
+      }
+      if (member.revision !== expectedRevision) {
+        const denial = auditRecord(workspaceId, actor, "MEMBERSHIP_CHANGE_REJECTED", "MEMBERSHIP", "Rejected a stale membership transition", member.id, correlationId); denial.outcome = "DENIED";
+        state.audit.push(denial); appendAuthorityOutbox(database, state, denial); return "STALE";
+      }
+      const changedAt = now(); member.history.push(membershipHistory(member, changedAt));
+      if (input.transition === "REACTIVATE") { member.state = "ACTIVE"; member.invitationState = "PENDING"; delete member.validTo; member.validFrom = changedAt; }
+      else { member.state = "REVOKED"; member.invitationState = "SUSPENDED"; member.validTo = changedAt; }
+      member.recordedAt = changedAt; member.revision += 1; state.workspace.revision += 1; advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
+      recordAuthorityTransition(database, state, actor, "MEMBERSHIP_CHANGED", "MEMBERSHIP", "Applied a revision-guarded participation transition without changing grants", member.id, correlationId);
+      appendCommandReceipt(state, actor, "API-P1-111", idempotencyKey, { membershipId, ...input }, member.id, member.revision);
+      return member;
+    });
+    if (result === "NOT_AVAILABLE") throw new NotFoundException("Resource not available");
+    if (result === "STALE") throw new PreconditionFailedException("Resource changed; refresh before retrying");
+    return result;
+  }
+
+  async createPerson(workspaceId: string, actor: WorkspaceActor, input: ManagePersonInput, correlationId?: string): Promise<SubjectRecord> {
     return this.mutate((database) => {
       const state = this.state(database, workspaceId);
       if (input.kind === "OWNER") throw new BadRequestException("Additional owners and ownership transfer are unavailable");
       const createdAt = now();
       const subject: SubjectRecord = { id: randomUUID(), workspaceId: state.workspace.id, displayName: input.displayName, kind: input.kind, relationship: input.relationship, ...(input.dateOfBirth ? { dateOfBirth: input.dateOfBirth } : {}), status: "ACTIVE", validFrom: createdAt, recordedAt: createdAt, createdAt, revision: 1, history: [] };
       state.subjects.push(subject);
-      recordAuthorityTransition(database, state, actor, "PERSON_CREATED", "PERSON", "Added a person to the household", subject.id);
+      recordAuthorityTransition(database, state, actor, "PERSON_CREATED", "PERSON", "Added a person to the household", subject.id, correlationId);
       if (input.loginEnabled) {
         const member: Member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName: input.displayName, role: input.role, state: "ACTIVE", invitationState: "PENDING", permissions: input.permissions, ...(input.email ? { email: input.email } : {}), ...(input.mobile ? { mobile: input.mobile } : {}), validFrom: createdAt, recordedAt: createdAt, createdAt, revision: 1, history: [] };
         state.members.push(member);
         advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
-        recordAuthorityTransition(database, state, actor, "INVITATION_PREPARED", "MEMBERSHIP", "Prepared a membership invitation without creating credentials or a resource grant", member.id);
+        recordAuthorityTransition(database, state, actor, "INVITATION_PREPARED", "MEMBERSHIP", "Prepared a membership invitation without creating credentials or a resource grant", member.id, correlationId);
       }
       return subject;
     });
   }
 
-  async updatePerson(workspaceId: string, actor: WorkspaceActor, id: string, expectedRevision: number, input: ManagePersonInput): Promise<SubjectRecord> {
+  async updatePerson(workspaceId: string, actor: WorkspaceActor, id: string, expectedRevision: number, input: ManagePersonInput, correlationId?: string): Promise<SubjectRecord> {
     const result = await this.mutate((database): { state: "UPDATED"; subject: SubjectRecord } | { state: "NOT_AVAILABLE" } | { state: "STALE" } => {
       const state = this.state(database, workspaceId);
       const subject = state.subjects.find((item) => item.id === id);
       if (!subject || subject.status !== "ACTIVE") {
-        const denial = auditRecord(state.workspace.id, actor, "PERSON_CHANGE_REJECTED", "PERSON", "Rejected a person change because the current subject was unavailable");
+        const denial = auditRecord(state.workspace.id, actor, "PERSON_CHANGE_REJECTED", "PERSON", "Rejected a person change because the current subject was unavailable", undefined, correlationId);
         denial.outcome = "DENIED";
         state.audit.push(denial); appendAuthorityOutbox(database, state, denial);
         return { state: "NOT_AVAILABLE" };
       }
       if (subject.revision !== expectedRevision) {
-        const denial = auditRecord(state.workspace.id, actor, "PERSON_CHANGE_REJECTED", "PERSON", "Rejected a stale person change", subject.id);
+        const denial = auditRecord(state.workspace.id, actor, "PERSON_CHANGE_REJECTED", "PERSON", "Rejected a stale person change", subject.id, correlationId);
         denial.outcome = "DENIED";
         state.audit.push(denial); appendAuthorityOutbox(database, state, denial);
         return { state: "STALE" };
@@ -794,7 +913,7 @@ export class LocalStore {
         member.validTo = changedAt; member.recordedAt = changedAt;
       }
       advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
-      recordAuthorityTransition(database, state, actor, "PERSON_UPDATED", "PERSON", input.loginEnabled ? "Updated person and prospective membership settings; resource grants remain separate" : "Updated person details and disabled membership participation", subject.id);
+      recordAuthorityTransition(database, state, actor, "PERSON_UPDATED", "PERSON", input.loginEnabled ? "Updated person and prospective membership settings; resource grants remain separate" : "Updated person details and disabled membership participation", subject.id, correlationId);
       return { state: "UPDATED", subject };
     });
     if (result.state === "NOT_AVAILABLE") throw new NotFoundException("Resource not available");
@@ -802,17 +921,17 @@ export class LocalStore {
     return result.subject;
   }
 
-  async deletePerson(workspaceId: string, actor: WorkspaceActor, id: string, expectedRevision: number): Promise<void> {
+  async deletePerson(workspaceId: string, actor: WorkspaceActor, id: string, expectedRevision: number, correlationId?: string): Promise<void> {
     const result = await this.mutate((database): "RETIRED" | "NOT_AVAILABLE" | "STALE" => {
       const state = this.state(database, workspaceId);
       const subject = state.subjects.find((item) => item.id === id);
       if (!subject || subject.status !== "ACTIVE") {
-        const denial = auditRecord(state.workspace.id, actor, "PERSON_RETIREMENT_REJECTED", "PERSON", "Rejected a person retirement because the current subject was unavailable");
+        const denial = auditRecord(state.workspace.id, actor, "PERSON_RETIREMENT_REJECTED", "PERSON", "Rejected a person retirement because the current subject was unavailable", undefined, correlationId);
         denial.outcome = "DENIED"; state.audit.push(denial); appendAuthorityOutbox(database, state, denial);
         return "NOT_AVAILABLE";
       }
       if (subject.revision !== expectedRevision) {
-        const denial = auditRecord(state.workspace.id, actor, "PERSON_RETIREMENT_REJECTED", "PERSON", "Rejected a stale person retirement", subject.id);
+        const denial = auditRecord(state.workspace.id, actor, "PERSON_RETIREMENT_REJECTED", "PERSON", "Rejected a stale person retirement", subject.id, correlationId);
         denial.outcome = "DENIED"; state.audit.push(denial); appendAuthorityOutbox(database, state, denial);
         return "STALE";
       }
@@ -828,7 +947,7 @@ export class LocalStore {
       });
       state.subjectIdentityLinks = state.subjectIdentityLinks.map((link) => link.subjectId === id && link.state === "ACTIVE" ? { ...link, state: "REVOKED", revision: link.revision + 1 } : link);
       advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
-      recordAuthorityTransition(database, state, actor, "PERSON_REMOVED", "PERSON", "Removed the active subject view while preserving revoked participation history", id);
+      recordAuthorityTransition(database, state, actor, "PERSON_REMOVED", "PERSON", "Removed the active subject view while preserving revoked participation history", id, correlationId);
       return "RETIRED";
     });
     if (result === "NOT_AVAILABLE") throw new NotFoundException("Resource not available");

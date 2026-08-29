@@ -71,6 +71,14 @@ integration.sequential("PostgreSQL workspace authority integration", () => {
     expect(authority.audit.filter((record) => record.type === "PERSON_UPDATED")).toHaveLength(1);
     expect(authority.audit.filter((record) => record.type === "PERSON_CHANGE_REJECTED")).toHaveLength(1);
 
+    const canonicalSubject = await firstStore.createCanonicalSubject(first.id, actor, authority.workspace.revision, "real-postgres-subject-command-0001", { subject_kind: "PERSON", authority_basis_ref: "authority-basis-synthetic-001" }, "corr-real-postgres-subject");
+    const replayedCanonicalSubject = await secondStore.createCanonicalSubject(first.id, actor, authority.workspace.revision, "real-postgres-subject-command-0001", { subject_kind: "PERSON", authority_basis_ref: "authority-basis-synthetic-001" }, "corr-real-postgres-replay");
+    expect(replayedCanonicalSubject.id).toBe(canonicalSubject.id);
+    const afterCommandReplay = await firstPersistence.read();
+    expect(afterCommandReplay.workspaces.find((state) => state.workspace.id === first.id)!.authorityCommandReceipts).toEqual([
+      expect.objectContaining({ operationId: "API-P1-105", resourceId: canonicalSubject.id }),
+    ]);
+
     await expect(firstPersistence.mutate((database) => {
       database.workspaces.find((state) => state.workspace.id === first.id)!.accessGrants[0]!.workspaceId = foreign.id;
     })).rejects.toThrow("workspace scope mismatch");
@@ -82,7 +90,7 @@ integration.sequential("PostgreSQL workspace authority integration", () => {
 
     const restarted = new LocalStore(new PostgresWorkspacePersistence({ pool, migrationMode: "verify", migrationsDirectory }));
     expect(await restarted.listWorkspaces(actor.identityId)).toEqual([expect.objectContaining({ id: first.id })]);
-    await expect(firstPersistence.verifyInvariants()).resolves.toEqual({ workspaces: 2, receipts: 2, outbox: 5 });
+    await expect(firstPersistence.verifyInvariants()).resolves.toEqual({ workspaces: 2, receipts: 2, outbox: 6 });
 
     const row = await pool.query<{ state: { members: Array<{ workspaceId: string }> } }>("SELECT state FROM doculyra.workspace_state WHERE workspace_id = $1", [first.id]);
     row.rows[0]!.state.members[0]!.workspaceId = foreign.id;

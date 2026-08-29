@@ -147,6 +147,7 @@ function validateWorkspaceState(state: WorkspaceState): void {
     [state.accessGrants, "access grant"],
     [state.audit, "audit record"],
     [state.dependencies, "dependency"],
+    [state.authorityCommandReceipts, "authority command receipt"],
   ];
   for (const [items, kind] of scopedCollections) {
     assertUniqueIds(items, kind, workspaceId);
