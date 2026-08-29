@@ -5,7 +5,7 @@
 | Baseline ID | `DOCULYRA-BUILD-P1-2026.08.30.1` |
 | Status | `IN_REVIEW — DEC-P1-056 resolved; independent exact-candidate review not started` |
 | Recorded | 30 August 2026, Australia/Sydney |
-| Candidate revision | `PENDING` |
+| Candidate revision | `5ca299d5def0e7a579075f01e6497122fd413495` |
 | Governed work | [Issue #32](https://github.com/syedtabishmobin/DocumentManagement/issues/32) |
 | Blocking decision | None; [`DEC-P1-056`](https://github.com/syedtabishmobin/DocumentManagement/issues/33#issuecomment-5463877570) approved the Phase 1 fail-closed fence |
 | Machine record | [`build-baseline.v1.json`](../build-baseline.v1.json) |

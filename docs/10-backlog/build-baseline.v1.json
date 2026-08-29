@@ -3,7 +3,7 @@
   "baselineId": "DOCULYRA-BUILD-P1-2026.08.30.1",
   "status": "IN_REVIEW",
   "recordedAt": "2026-08-30T03:30:00+10:00",
-  "candidateRevision": "PENDING",
+  "candidateRevision": "5ca299d5def0e7a579075f01e6497122fd413495",
   "authority": {
     "vision": {
       "id": "PROD-VIS-001",
