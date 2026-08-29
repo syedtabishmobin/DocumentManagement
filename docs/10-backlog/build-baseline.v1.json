@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "baselineId": "DOCULYRA-BUILD-P1-2026.08.30.1",
-  "status": "IN_REVIEW",
+  "status": "BUILD_BASELINE_APPROVED",
   "recordedAt": "2026-08-30T03:30:00+10:00",
   "candidateRevision": "426be2cd207bb5417f70aedffb2b6304e666a274",
   "authority": {
@@ -110,10 +110,16 @@
   ],
   "blockingDecisions": [],
   "reviewEvidence": {
-    "productBa": "CONSULTED — corrections authored; exact candidate review pending",
-    "architectureSecurityData": "CONSULTED — corrections authored and DEC-P1-056 resolved; exact candidate review pending",
-    "aiUx": "CONSULTED — corrections authored; exact candidate review pending",
-    "independentBaselineReview": "RETEST_PENDING — candidate 41b0f4b7c0eaaad388fd84c59c849ed8dd20385c failed #37 semantic consistency; remediation content revision 426be2cd207bb5417f70aedffb2b6304e666a274"
+    "productBa": "CONSULTED — authoritative mapping and public-scope corrections reviewed in the approved content candidate",
+    "architectureSecurityData": "CONSULTED — DEC-P1-056 and DEC-038 semantics reviewed in the approved content candidate",
+    "aiUx": "CONSULTED — AI/UX/public-entry corrections reviewed in the approved content candidate",
+    "independentBaselineReview": "PASS",
+    "reviewedCandidate": "ca34ccbb7af3134e1ded1e4cde4fbc9c48ccb7fd",
+    "reviewedContentRevision": "426be2cd207bb5417f70aedffb2b6304e666a274",
+    "protectedCi": "https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33268626178",
+    "issueEvidence": "https://github.com/syedtabishmobin/DocumentManagement/issues/37#issuecomment-5464176484",
+    "pullRequestEvidence": "https://github.com/syedtabishmobin/DocumentManagement/pull/34#issuecomment-5464176681",
+    "approvalMetadataExactHeadReview": "REQUIRED_BEFORE_MERGE_ON_PR_34"
   },
   "changeControl": {
     "materialChangesRequireNewBaselineVersion": true,

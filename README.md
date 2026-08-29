@@ -4,7 +4,7 @@ This repository is the source of truth for an AI-native personal and family docu
 
 ## Current status
 
-The complete Phase 1 specification repository is the controlled build-baseline candidate. It includes the product, architecture, document-intelligence, AI, API/event, security, UX, engineering, operations, backlog, reference-data, and testing packs. The PRD defines four vertical slices, seven outcomes, 101 stable requirements, and an explicit disposition for every research `GAP-*` item. The backlog decomposes that candidate into 12 epics, 31 features, and 49 stories with 98 exact story acceptance criteria and 104 planned tests. Its status remains `IN_REVIEW` until exact-candidate independent approval.
+The complete Phase 1 specification repository is controlled build baseline `DOCULYRA-BUILD-P1-2026.08.30.1`, status `BUILD_BASELINE_APPROVED`. It includes the product, architecture, document-intelligence, AI, API/event, security, UX, engineering, operations, backlog, reference-data, and testing packs. The PRD defines four vertical slices, seven outcomes, 101 stable requirements, and an explicit disposition for every research `GAP-*` item. The backlog decomposes that baseline into 12 epics, 31 features, and 49 stories with 98 exact story acceptance criteria and 104 planned tests. Approval authorizes governed queue shaping, not product completion, production release, or real-data processing.
 
 The repository's Markdown/link/ID/checksum, API/event, reference-data, test-traceability, type, unit, and build validators are quality gates. Static success does not constitute legal validation or production release authority.
 

@@ -4,7 +4,7 @@
 |---|---|
 | Document ID | `BLG-IDX-001` |
 | Version | `0.3` |
-| Status | **RECONCILED APPROVED BUILD BACKLOG — `DEC-P1-056` resolved; exact-candidate independent review pending** |
+| Status | **BUILD BASELINE APPROVED — `DEC-P1-056` resolved; exact-candidate independent review PASS** |
 | Product phase | Phase 1 — Personal and Family |
 | Sequence basis | `P1-S1`–`P1-S4`, approved as one continuous program by `DEC-030`, `DEC-041`, and `DEC-054` |
 | Updated | 30 August 2026 |

@@ -4,7 +4,7 @@
 |---|---|
 | Document ID | `BLG-TRACE-001` |
 | Version | `0.3` |
-| Status | **RECONCILED BUILD-BASELINE TRACE — exact-candidate independent review pending** |
+| Status | **APPROVED BUILD-BASELINE TRACE — exact-candidate independent review PASS** |
 | Product phase | Phase 1 — Personal and Family |
 | Updated | 30 August 2026 |
 

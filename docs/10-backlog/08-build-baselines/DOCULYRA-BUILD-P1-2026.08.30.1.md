@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Baseline ID | `DOCULYRA-BUILD-P1-2026.08.30.1` |
-| Status | `IN_REVIEW — DEC-P1-056 resolved; second independent retest of defects #36–#38 pending` |
+| Status | `BUILD_BASELINE_APPROVED` |
 | Recorded | 30 August 2026, Australia/Sydney |
 | Candidate revision | `426be2cd207bb5417f70aedffb2b6304e666a274` |
 | Governed work | [Issue #32](https://github.com/syedtabishmobin/DocumentManagement/issues/32) |
@@ -12,7 +12,7 @@
 
 ## Purpose and approval boundary
 
-This record converts the approved Phase 1 product intent into a complete, dependency-aware build reference. It does not declare any product goal, feature, story, environment, business-acceptance gate, UAT gate, or release complete. Product implementation must not begin from this candidate until independent review and protected CI pass and this status becomes `BUILD_BASELINE_APPROVED`.
+This record converts the approved Phase 1 product intent into a complete, dependency-aware build reference. Independent review and protected CI passed the exact content candidate and authorized this controlled approval transition. It does not declare any product goal, feature, story, environment, business-acceptance gate, UAT gate, or release complete.
 
 Once approved, the build may execute against this version. Material product or contract change requires governed change control and a new historically traceable baseline version; routine implementation details may evolve within the approved contracts.
 
@@ -101,17 +101,17 @@ Framework observability, three-level GitHub attribution, and Product Authority A
 | Authority | Evidence state |
 |---|---|
 | Product Manager / BA | Consultation complete; authoritative mapping and public-scope corrections authored |
-| Architecture Guardian + Security/Privacy + Data/Domain | Consultation complete; corrections authored and `DEC-P1-056` resolved; exact-candidate review pending |
+| Architecture Guardian + Security/Privacy + Data/Domain | Consultation complete; corrections authored, `DEC-P1-056` resolved, and approved-decision semantics independently retested |
 | AI Architect / Evaluator + UX/Product Design | Consultation complete; AI/UX/public-entry corrections authored |
-| Repository & Traceability Steward + QA/Release | Consultation complete; exact-candidate independent review deliberately withheld |
-| Independent baseline reviewer | Candidate `41b0f4b7c0eaaad388fd84c59c849ed8dd20385c` passed #36/#38 but FAILED #37 semantic consistency; remediation content revision `426be2cd207bb5417f70aedffb2b6304e666a274` awaits independent retest |
+| Repository & Traceability Steward + QA/Release | Consultation complete; dependency, traceability and Definition-of-Ready gates independently retested |
+| Independent baseline reviewer | `QA-E2E-004` PASS on candidate `ca34ccbb7af3134e1ded1e4cde4fbc9c48ccb7fd`; [Issue evidence](https://github.com/syedtabishmobin/DocumentManagement/issues/37#issuecomment-5464176484), [PR evidence](https://github.com/syedtabishmobin/DocumentManagement/pull/34#issuecomment-5464176681), protected [CI run 33268626178](https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33268626178) |
 
 ## Approval checklist
 
 - [x] `DEC-P1-056` resolved in GitHub and reflected in all affected records.
-- [ ] `pnpm verify` passes on the exact candidate.
-- [ ] `pnpm verify:baseline`, `pnpm trace:audit`, and deterministic dependency graph pass.
-- [ ] `pnpm agent:status --online` shows no unresolved material decision or defect.
-- [ ] Independent reviewer verifies every `AC-BL-P1-*`, GitHub state, attribution, notification readiness, and protected CI at the exact SHA.
-- [ ] Issue #32 and the PR contain attributed approval evidence.
-- [ ] Status changes to `BUILD_BASELINE_APPROVED` without claiming product completion.
+- [x] `pnpm verify` passes on the exact candidate.
+- [x] `pnpm verify:baseline`, `pnpm trace:audit`, and deterministic dependency graph pass.
+- [x] `pnpm agent:status --online` shows no unresolved material decision or defect.
+- [x] Independent reviewer verifies every `AC-BL-P1-*`, GitHub state, attribution, notification readiness, and protected CI at the exact SHA.
+- [x] Issue #32 and the PR contain attributed approval evidence.
+- [x] Status changes to `BUILD_BASELINE_APPROVED` without claiming product completion.

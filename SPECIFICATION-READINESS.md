@@ -4,7 +4,7 @@
 |---|---|
 | Document ID | `GOV-READY-001` |
 | Status | Active gate record |
-| Current verdict | **BUILD BASELINE IN REVIEW — HIERARCHY/DEFINITION OF READY SATISFIED — NOT PRODUCT OR PRODUCTION COMPLETE** |
+| Current verdict | **BUILD BASELINE APPROVED — DEFINITION OF READY SATISFIED — NOT PRODUCT OR PRODUCTION COMPLETE** |
 | Updated | 30 August 2026 |
 | Governing contract | [`CODEX.md`](CODEX.md#specification-readiness-gate) |
 
@@ -18,13 +18,13 @@ A file's existence is not evidence that its contract is approved, complete, inte
 
 The product owner explicitly approved the Phase 1 PRD, resolved `DEC-030`–`040` for safe local behavior, and authorized the complete personal/family build in `DEC-041`. `DEC-049`–`055` select Azure/Bicep, two-layer customer-controlled encryption, React web plus Flutter mobile, 30-day document Trash, and complete synthetic dev/stage implementation and deployment.
 
-The reconciled candidate `DOCULYRA-BUILD-P1-2026.08.30.1` defines the complete hierarchy and Definition of Ready, including approved `DEC-P1-056`. Product implementation remains paused until exact-candidate independent review and protected CI approve the controlled baseline. Once approved, attributed story Issues may enter dependency order using synthetic data; external providers/channels, production provisioning, public launch, store publication and real personal documents remain separately gated.
+Approved baseline `DOCULYRA-BUILD-P1-2026.08.30.1` defines the complete hierarchy and Definition of Ready, including approved `DEC-P1-056`. Exact-candidate independent review and protected CI passed. Attributed story Issues may enter dependency order using synthetic data only after this baseline work merges and Product Authority separately starts the queue; external providers/channels, production provisioning, public launch, store publication and real personal documents remain separately gated.
 
 ## 3. Gate criteria
 
 | Readiness ID | Criterion | Current state | Required evidence |
 |---|---|---|---|
-| `RDY-P1-001` | The Phase 1 PRD is approved or explicitly marked as an approved implementation baseline. | `SATISFIED` | `DEC-041` approves `PROD-PRD-001` version `0.1`. |
+| `RDY-P1-001` | The Phase 1 PRD is approved or explicitly marked as an approved implementation baseline. | `SATISFIED` | `DEC-041` approves the PRD baseline; governed reconciliation records current `PROD-PRD-001` version `0.3`. |
 | `RDY-P1-002` | High-impact product and architecture decisions are approved or safely deferred behind documented abstractions. | `SATISFIED` | `DEC-030`–`055` and `DEC-P1-056` define local/dev behavior, Azure/client/encryption/deletion/transition choices, and production/provider fences; applicable ADRs are accepted or superseded. |
 | `RDY-P1-003` | Domain/data, tenancy, authorization, security, privacy, deletion, audit, and residency models are complete and mutually consistent. | `SATISFIED` | Reconciled architecture/security/data contracts, accepted ADRs, `DEC-P1-056`, exact story applicability and mapped negative tests form the build contract; runtime/release proof remains story evidence. |
 | `RDY-P1-004` | Document-intelligence, monitoring, trusted-source, evidence, fact, graph, impact, health, and version contracts exist. | `SATISFIED` | Normative specifications, schemas/data, failure/replay expectations, story ownership and planned tests validate. |
@@ -35,7 +35,7 @@ The reconciled candidate `DOCULYRA-BUILD-P1-2026.08.30.1` defines the complete h
 | `RDY-P1-009` | Every implementation epic has stable traceability and testable acceptance criteria. | `SATISFIED` | Twelve epics, 31 features and 49 stories link 101 requirements, 20 use cases, 98 story ACs and 104 exact tests; all remain planned, not complete. |
 | `RDY-P1-010` | Initial reference data and all required test/evaluation strategies, fixtures, and quality gates exist and pass. | `SATISFIED` | Twelve DRAFT/disabled catalogues and deterministic synthetic fixtures validate; test/evaluation execution remains story/release evidence and does not weaken DoR. |
 | `RDY-P1-011` | No open decision makes the proposed implementation unsafe or substantially disposable. | `SATISFIED` | `DEC-031`–`040` and `DEC-P1-056` close local/transition behavior and explicitly deny unsafe or unproved activation; provider-neutral extension points preserve later change. |
-| `RDY-P1-012` | The complete repository is coherent, reviewable, and protected against drift. | `IN PROGRESS` | Static validators pass; exact-candidate independent baseline review and protected CI are pending. |
+| `RDY-P1-012` | The complete repository is coherent, reviewable, and protected against drift. | `SATISFIED` | Static validators, exact-candidate independent baseline review, negative mutation checks and protected CI pass; controlled material-change versioning is required. |
 
 Allowed states are `MISSING`, `IN PROGRESS`, `BLOCKED`, `SATISFIED`, and `NOT APPLICABLE` with an approved rationale. `IN PROGRESS` never opens the implementation gate.
 
