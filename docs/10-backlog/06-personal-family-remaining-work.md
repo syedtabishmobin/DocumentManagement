@@ -15,13 +15,15 @@ This register converts the story-by-story evidence audit into a delivery checkli
 
 Priority `P0` items block real personal documents or production release. `P1` items are core Phase 1 outcomes. `P2` items complete integration, parity, portability, operations, and release assurance. Priority is dependency/risk order inside the one approved Phase 1 program, not a reduction of scope.
 
+The 29 August 2026 local foundation now has multiple identities/workspaces, idempotent workspace authority records, explicit owner grants, deny-by-default action checks, bounded sessions/CSRF/origin/abuse controls, and a truthful recovery-unavailable boundary. The rows below remain open because that local synthetic-preview evidence is not production durability, complete authorization, MFA/passkeys, delegated sharing, client encryption, or release assurance.
+
 ## 2. Remaining product and platform work
 
 | Priority | State | Work item | Story trace |
 |---|---|---|---|
-| `P0` | `INCOMPLETE` | Replace the single local owner/session model with production identity, MFA/passkey enrolment, secure session rotation, CSRF and abuse controls, and explicit unavailable recovery behavior. | `STORY-P1-001`, `008`, `047` |
-| `P0` | `INCOMPLETE` | Implement durable multi-workspace persistence with separate identity, person, relationship, membership, role, grant, document and action authority. | `STORY-P1-001`–`003`, `039`, `040` |
-| `P0` | `INCOMPLETE` | Enforce deny-by-default current authorization at document, field, evidence, edge, search, answer, citation, task, export and activity surfaces, including revocation and side-channel tests. | `STORY-P1-003`, `019`, `020`–`023`, `038`, `039` |
+| `P0` | `INCOMPLETE` | Replace the bounded local identity/session store with production identity, MFA/passkey enrolment, distributed session/revocation controls and complete abuse evidence; retain and fully test the explicit unavailable recovery behavior. | `STORY-P1-001`, `008`, `047` |
+| `P0` | `INCOMPLETE` | Replace local JSON authority records with transactional durable multi-workspace persistence and complete identity, person, relationship, membership, role, grant, document and action lifecycle/concurrency/repair behavior. | `STORY-P1-001`–`003`, `039`, `040` |
+| `P0` | `INCOMPLETE` | Extend the local deny-by-default action boundary to document fields, evidence, edges, search, answers, citations, tasks, exports and activity, including delegated grants, revocation propagation, minimal disclosure and side-channel tests. | `STORY-P1-003`, `019`, `020`–`023`, `038`, `039` |
 | `P0` | `INCOMPLETE` | Encrypt every web and Flutter document before upload; implement secure device keys, workspace/customer key envelopes, grant-aware unwrap, rotation, revocation and crypto-shred without a plaintext fallback. | `STORY-P1-004`, `007`, `008`, `039`, `045` |
 | `P0` | `INCOMPLETE` | Replace preview file storage with immutable put-once Azure Blob artifacts, separate logical versions, integrity verification and deletion acknowledgements. | `STORY-P1-007`, `011`, `044`, `045` |
 | `P0` | `MISSING` | Build the durable ingestion workflow: validated stages, transactional outbox, leases, idempotency, retries, deduplication, dead-letter handling, reconciliation and repair tooling. | `STORY-P1-004`, `006`, `015` |
@@ -46,7 +48,7 @@ Priority `P0` items block real personal documents or production release. `P1` it
 | `P1` | `MISSING` | Implement expected-evidence profiles and explainable item-level findings, including applicability, lifecycle, disposition, verification, waiver/exception, re-evaluation and no aggregate score. | `STORY-P1-034`, `035`, `043` |
 | `P1` | `INCOMPLETE` | Complete tasks and notifications with assignment, schedules, preferences, quiet periods, linkage, deduplication, escalation, read state, repair and Flutter parity. | `STORY-P1-036`, `042` |
 | `P1` | `MISSING` | Implement minimal-disclosure “impact exists” responses with policy-specific authorization, anti-enumeration behavior, safe redemption and side-channel tests. | `STORY-P1-038` |
-| `P1` | `MISSING` | Implement exact resource/field/action/purpose/time grants with preview, secure invitation redemption, expiry/revocation, key-envelope access and audit. | `STORY-P1-039` |
+| `P1` | `INCOMPLETE` | Extend the explicit owner bootstrap grant into exact delegated resource/field/action/purpose/time grants with effective-access preview, secure invitation redemption, expiry/revocation propagation, key-envelope access and immutable audit. | `STORY-P1-039` |
 | `P1` | `INCOMPLETE` | Complete family invitations with single-use delivery, invitee-created password/passkey, enable/suspend login, age/authority/consent rules, dependant transition and provenance. | `STORY-P1-040` |
 | `P2` | `INCOMPLETE` | Implement Microsoft, Google, Dropbox and Box OAuth start/callback, state/PKCE, encrypted token custody, consent persistence, selected-file import, cursors, disconnect, revocation/deletion and conformance. | `STORY-P1-041` |
 | `P2` | `INCOMPLETE` | Implement ACS email delivery with verified test recipients, preferences, minimised templates, bounce/retry state, rate controls and audit; decide whether SMS remains in scope. | `STORY-P1-042` |

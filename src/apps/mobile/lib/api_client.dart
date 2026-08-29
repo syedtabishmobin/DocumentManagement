@@ -2,6 +2,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:http/http.dart' as http;
 
@@ -25,13 +26,37 @@ class DoculyraApi {
   final String _baseUrl;
   final http.Client _client;
   String? _cookie;
+  String? _csrfToken;
+  String? _workspaceId;
+  String _workspaceCreationKey = _requestKey();
 
   Uri _uri(String path) => Uri.parse('$_baseUrl$path');
-  Map<String, String> _headers({bool json = false}) {
+  static String _requestKey() {
+    final random = Random.secure();
+    final bytes = List<int>.generate(24, (_) => random.nextInt(256));
+    return base64Url.encode(bytes);
+  }
+
+  Map<String, String> _headers({
+    bool json = false,
+    String method = 'GET',
+    bool workspaceContext = true,
+    String? idempotencyKey,
+  }) {
     final result = <String, String>{};
     if (json) result['content-type'] = 'application/json';
     final cookie = _cookie;
     if (cookie != null) result['cookie'] = cookie;
+    final unsafe = !const {'GET', 'HEAD', 'OPTIONS'}.contains(method);
+    final csrf = _csrfToken;
+    if (unsafe && csrf != null) result['x-csrf-token'] = csrf;
+    final workspaceId = _workspaceId;
+    if (workspaceContext && workspaceId != null) {
+      result['x-workspace-id'] = workspaceId;
+      result['x-purpose-id'] = 'PUR-P1-001';
+    }
+    if (unsafe) result['idempotency-key'] = idempotencyKey ?? _requestKey();
+    result['x-correlation-id'] = _requestKey();
     return result;
   }
 
@@ -44,6 +69,7 @@ class DoculyraApi {
 
   Map<String, dynamic> _decode(http.Response response) {
     _captureCookie(response);
+    _csrfToken = response.headers['x-csrf-token'] ?? _csrfToken;
     final body = response.body.isEmpty
         ? <String, dynamic>{}
         : jsonDecode(response.body) as Map<String, dynamic>;
@@ -53,6 +79,14 @@ class DoculyraApi {
         response.statusCode,
       );
     }
+    if (body.containsKey('authenticated')) {
+      if (body['authenticated'] != true) {
+        _csrfToken = null;
+        _workspaceId = null;
+      } else {
+        _workspaceId = body['activeWorkspaceId']?.toString();
+      }
+    }
     return body;
   }
 
@@ -60,9 +94,18 @@ class DoculyraApi {
     String path, {
     String method = 'GET',
     Object? body,
+    bool workspaceContext = true,
+    String? idempotencyKey,
   }) async {
     final request = http.Request(method, _uri(path))
-      ..headers.addAll(_headers(json: body != null));
+      ..headers.addAll(
+        _headers(
+          json: body != null,
+          method: method,
+          workspaceContext: workspaceContext,
+          idempotencyKey: idempotencyKey,
+        ),
+      );
     if (body != null) request.body = jsonEncode(body);
     final streamed = await _client.send(request);
     return _decode(await http.Response.fromStream(streamed));
@@ -76,16 +119,41 @@ class DoculyraApi {
   ) => _json(
     '/auth/register',
     method: 'POST',
+    workspaceContext: false,
     body: {'displayName': name, 'email': email, 'password': password},
   );
   Future<Map<String, dynamic>> login(String email, String password) => _json(
     '/auth/login',
     method: 'POST',
+    workspaceContext: false,
     body: {'email': email, 'password': password},
   );
-  Future<void> logout() async => _json('/auth/logout', method: 'POST');
-  Future<Map<String, dynamic>> configureWorkspace(String name, String type) =>
-      _json('/workspace', method: 'PATCH', body: {'name': name, 'type': type});
+  Future<void> logout() async {
+    try {
+      await _json('/auth/logout', method: 'POST');
+    } finally {
+      _cookie = null;
+      _csrfToken = null;
+      _workspaceId = null;
+    }
+  }
+
+  Future<Map<String, dynamic>> configureWorkspace(
+    String name,
+    String type,
+  ) async {
+    final value = await _json(
+      '/workspace',
+      method: 'PATCH',
+      workspaceContext: false,
+      idempotencyKey: _workspaceCreationKey,
+      body: {'name': name, 'type': type},
+    );
+    _workspaceId = value['id']?.toString();
+    _workspaceCreationKey = _requestKey();
+    return value;
+  }
+
   Future<Map<String, dynamic>> dashboard() => _json('/dashboard');
   Future<Map<String, dynamic>> ask(String question) => _json(
     '/assistant/questions',
@@ -119,13 +187,24 @@ class DoculyraApi {
     bool syntheticConfirmed,
   ) async {
     final request = http.MultipartRequest('POST', _uri('/documents'))
-      ..headers.addAll(_headers())
+      ..headers.addAll(_headers(method: 'POST'))
       ..fields['subjectIds'] = subjectIds.join(',')
       ..fields['captureRoute'] = captureRoute
       ..fields['syntheticConfirmed'] = syntheticConfirmed.toString()
       ..files.add(await http.MultipartFile.fromPath('file', file.path));
     final streamed = await _client.send(request);
     return _decode(await http.Response.fromStream(streamed));
+  }
+
+  Future<Map<String, dynamic>> recordRecoveryUnavailable() {
+    final workspaceId = _workspaceId;
+    if (workspaceId == null) {
+      throw const ApiException(
+        'Select a workspace before requesting recovery support',
+        400,
+      );
+    }
+    return _json('/workspaces/$workspaceId/recovery-cases', method: 'POST');
   }
 
   void close() => _client.close();

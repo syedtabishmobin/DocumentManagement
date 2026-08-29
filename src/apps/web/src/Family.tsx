@@ -6,8 +6,20 @@ import { api } from "./api.js";
 export function FamilyView({ data, refresh }: { data: DashboardSnapshot; refresh: () => Promise<void> }) {
   const [editing, setEditing] = useState<SubjectRecord | "new">();
   const [error, setError] = useState("");
+  const [exporting, setExporting] = useState(false);
+  async function exportWorkspace() {
+    setExporting(true); setError("");
+    try {
+      const url = URL.createObjectURL(await api.exportWorkspace());
+      const link = document.createElement("a");
+      link.href = url; link.download = "doculyra-export.json"; link.click();
+      setTimeout(() => URL.revokeObjectURL(url), 0);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Workspace export is unavailable");
+    } finally { setExporting(false); }
+  }
   return <>
-    <div className="page-head"><div><span className="eyebrow">People and access</span><h1>Your family</h1><p>Manage each person once, then decide whether they need login access and exactly what file actions they may perform.</p></div><div className="head-actions"><a className="secondary button-link" href={api.exportUrl} download="doculyra-export.json"><Download size={17} /> Export</a><button className="primary" onClick={() => setEditing("new")}><UserPlus size={17} /> Add person</button></div></div>
+    <div className="page-head"><div><span className="eyebrow">People and access</span><h1>Your family</h1><p>Manage each person once, then decide whether they need login access and exactly what file actions they may perform.</p></div><div className="head-actions"><button className="secondary" disabled={exporting} onClick={() => void exportWorkspace()}><Download size={17} /> {exporting ? "Preparing…" : "Export"}</button><button className="primary" onClick={() => setEditing("new")}><UserPlus size={17} /> Add person</button></div></div>
     {error ? <div className="error-banner">{error}<button onClick={() => setError("")}>Dismiss</button></div> : null}
     <section className="people-summary"><div><Users /><span><strong>{data.subjects.length}</strong><small>People organised</small></span></div><div><KeyRound /><span><strong>{data.members.filter((member) => member.state === "ACTIVE").length}</strong><small>With login access</small></span></div><p>A person can have documents without an account. Login and file permissions are explicit and can be changed independently.</p></section>
     <div className="unified-people-list">{data.subjects.map((subject) => {
@@ -61,7 +73,7 @@ function PersonEditor({ subject, member, onClose, onSaved, onError }: { subject:
   }
 
   return <div className="modal-backdrop" role="presentation"><section className="person-editor" role="dialog" aria-modal="true" aria-labelledby="person-editor-title"><header><div><span className="eyebrow">Household person</span><h2 id="person-editor-title">{subject ? `Edit ${subject.displayName}` : "Add a person"}</h2></div><button className="icon-button" aria-label="Close" onClick={onClose}><X /></button></header><form onSubmit={(event) => void save(event)}>
-    <div className="person-fields"><label>Full name<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} required /></label><label>Relationship<input value={relationship} onChange={(event) => setRelationship(event.target.value)} required /></label><label>Person type<select value={owner ? "OWNER" : kind} disabled={owner} onChange={(event) => setKind(event.target.value as SubjectRecord["kind"])}><option value="OWNER">Owner</option><option value="ADULT">Adult</option><option value="CHILD">Child</option><option value="DEPENDANT">Dependant</option><option value="OTHER">Other</option></select></label></div>
+    <div className="person-fields"><label>Full name<input value={displayName} onChange={(event) => setDisplayName(event.target.value)} required /></label><label>Relationship<input value={relationship} onChange={(event) => setRelationship(event.target.value)} required /></label><label>Person type<select value={owner ? "OWNER" : kind} disabled={owner} onChange={(event) => setKind(event.target.value as SubjectRecord["kind"])}>{owner ? <option value="OWNER">Owner</option> : null}<option value="ADULT">Adult</option><option value="CHILD">Child</option><option value="DEPENDANT">Dependant</option><option value="OTHER">Other</option></select></label></div>
     <label className="login-toggle"><input type="checkbox" checked={loginEnabled} disabled={owner} onChange={(event) => setLoginEnabled(event.target.checked)} /><span><strong>Allow this person to sign in</strong><small>Creates or suspends a separate workspace membership.</small></span></label>
     {loginEnabled ? <div className="login-settings"><div className="person-fields"><label>Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required={!mobile} placeholder="person@example.com" /></label><label>Mobile number<input value={mobile} onChange={(event) => setMobile(event.target.value)} required={!email} placeholder="+61 …" /></label>{!owner ? <label>Workspace role<select value={role} onChange={(event) => setRole(event.target.value as ManagePersonInput["role"])}><option value="ADULT_MEMBER">Adult member</option><option value="FAMILY_ADMIN">Family administrator</option><option value="MANAGED_DEPENDANT">Managed dependant</option><option value="GUEST">Guest</option></select></label> : null}</div>
       <fieldset className="permission-editor"><legend>Document permissions</legend><p>Choose the actions this person can perform. Resource-level sharing remains separate.</p>{(["view", "add", "edit", "delete"] as const).map((permission) => <label key={permission}><input type="checkbox" checked={owner || permissions[permission]} disabled={owner || permission === "view"} onChange={(event) => setPermissions({ ...permissions, [permission]: event.target.checked })} /><span>{permission === "view" ? "View assigned files" : `${permission[0]!.toUpperCase()}${permission.slice(1)} files`}</span>{owner || permissions[permission] ? <Check /> : null}</label>)}</fieldset>

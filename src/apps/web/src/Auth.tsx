@@ -17,6 +17,7 @@ export function AuthScreen({ onAuthenticated, onModeChange, initialMode = "regis
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
 
   useEffect(() => { setMode(initialMode); }, [initialMode]);
 
@@ -58,8 +59,10 @@ export function AuthScreen({ onAuthenticated, onModeChange, initialMode = "regis
           {error ? <div className="form-error">{error}</div> : null}
           <button className="primary wide" disabled={busy}>{busy ? "Please wait…" : mode === "register" ? `Create ${localRuntime ? "local" : "preview"} account` : "Sign in"}</button>
         </form>
-        <button className="auth-switch" onClick={() => { const next = mode === "register" ? "login" : "register"; setMode(next); onModeChange?.(next); setError(""); }}>{mode === "register" ? "Already have an account? Sign in" : "New here? Create an account"}</button>
-        <div className="local-explainer"><LockKeyhole size={18} /><span><strong>{localRuntime ? "Nothing leaves this device." : "External providers are off."}</strong><small>{localRuntime ? "External identity providers will require configured applications and consent." : "This Azure development preview accepts synthetic test data only. Provider sign-in requires configured applications and consent."} Passkeys are enrolled after account creation and then used to sign in.</small></span></div>
+        <button className="auth-switch" onClick={() => { const next = mode === "register" ? "login" : "register"; setMode(next); onModeChange?.(next); setError(""); setRecoveryOpen(false); }}>{mode === "register" ? "Already have an account? Sign in" : "New here? Create an account"}</button>
+        {mode === "login" ? <button className="recovery-link" type="button" onClick={() => setRecoveryOpen((open) => !open)}>Can’t sign in?</button> : null}
+        {recoveryOpen ? <div className="recovery-boundary" role="status"><strong>Account recovery is not available yet.</strong><span>No recovery case or ownership change has been created. This development preview cannot reset access or transfer a workspace owner.</span></div> : null}
+        <div className="local-explainer"><LockKeyhole size={18} /><span><strong>{localRuntime ? "Nothing leaves this device." : "External providers are off."}</strong><small>{localRuntime ? "External identity providers will require configured applications and consent." : "This Azure development preview accepts synthetic test data only. Provider sign-in requires configured applications and consent."} Passkeys remain unavailable until enrollment and recovery controls are implemented and verified.</small></span></div>
         <a className="back-to-site" href="/">← Back to website</a>
       </div>
     </main>

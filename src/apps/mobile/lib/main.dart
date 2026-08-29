@@ -201,6 +201,21 @@ class _AuthScreenState extends State<AuthScreen> {
       email = TextEditingController(),
       password = TextEditingController();
   String? error;
+  Future<void> showRecoveryBoundary() => showDialog<void>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Account recovery is not available yet'),
+      content: const Text(
+        'No recovery case or ownership change has been created. This development preview cannot reset access or transfer a workspace owner.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
+        ),
+      ],
+    ),
+  );
   Future<void> submit() async {
     setState(() {
       busy = true;
@@ -304,6 +319,11 @@ class _AuthScreenState extends State<AuthScreen> {
                           : 'New to Doculyra? Create your vault',
                     ),
                   ),
+                  if (!register)
+                    TextButton(
+                      onPressed: busy ? null : showRecoveryBoundary,
+                      child: const Text('Can’t sign in?'),
+                    ),
                   const SizedBox(height: 22),
                   const _TrustNote(
                     text: 'Mobile-first · customer-controlled encryption foundation · no advertising or data sale',
@@ -1124,12 +1144,9 @@ class _ManualDocumentDialogState extends State<ManualDocumentDialog> {
             ? null
             : () async {
                 setState(() => busy = true);
-                await widget.api.addManual(
-                  name.text,
-                  content.text,
-                  [widget.person.id],
-                  widget.syntheticConfirmed,
-                );
+                await widget.api.addManual(name.text, content.text, [
+                  widget.person.id,
+                ], widget.syntheticConfirmed);
                 if (context.mounted) Navigator.pop(context);
               },
         child: Text(busy ? 'Adding…' : 'Add record'),

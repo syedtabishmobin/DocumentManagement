@@ -1,10 +1,12 @@
-import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import type {
   Answer,
+  AccessGrant,
   AuditRecord,
+  AuthorizationEpoch,
   ConnectorDescriptor,
   CreateSubjectInput,
   DashboardSnapshot,
@@ -17,21 +19,49 @@ import type {
   Member,
   NotificationRecord,
   SubjectRecord,
+  SubjectIdentityLink,
   TaskRecord,
   Workspace,
+  WorkspaceAction,
+  WorkspaceOwnerBinding,
+  WorkspaceSummary,
 } from "@document-management/contracts";
 import { classifyDocument, extractProfileFacts, normalizeQuestion } from "@document-management/domain";
+import { evaluateAuthorization } from "./authorization.policy.js";
 
 interface LocalState {
   workspace: Workspace;
+  ownerBindings: WorkspaceOwnerBinding[];
   documents: DocumentRecord[];
   facts: FactRecord[];
   tasks: TaskRecord[];
   notifications: NotificationRecord[];
   members: Member[];
   subjects: SubjectRecord[];
+  subjectIdentityLinks: SubjectIdentityLink[];
+  accessGrants: AccessGrant[];
+  authorizationEpoch: AuthorizationEpoch;
   audit: AuditRecord[];
   dependencies: DependencyRecord[];
+}
+
+interface WorkspaceCreationReceipt {
+  identityId: string;
+  idempotencyKeyHash: string;
+  requestFingerprint: string;
+  workspaceId: string;
+  createdAt: string;
+}
+
+interface LocalDatabase {
+  schemaVersion: 2;
+  workspaces: LocalState[];
+  workspaceCreationReceipts: WorkspaceCreationReceipt[];
+}
+
+export interface WorkspaceActor {
+  identityId: string;
+  displayName: string;
 }
 
 const now = (): string => new Date().toISOString();
@@ -40,18 +70,40 @@ const trashDeadline = (deletedAt: string): string => {
   deadline.setUTCDate(deadline.getUTCDate() + 30);
   return deadline.toISOString();
 };
-const defaultPermissions = (owner = false): FilePermissions => ({ view: true, add: owner, edit: owner, delete: owner });
+const defaultPermissions = (owner = false): FilePermissions => ({ view: owner, add: owner, edit: owner, delete: owner });
 const stableId = (prefix: string, ...parts: string[]): string => `${prefix}_${createHash("sha256").update(parts.join("\u001f")).digest("hex").slice(0, 24)}`;
+const ownerActions: WorkspaceAction[] = [
+  "workspace.read", "workspace.admin", "subject.read", "subject.create", "subject.edit", "subject.delete",
+  "document.read", "document.create", "document.edit", "document.delete", "fact.review",
+  "task.read", "task.create", "task.edit", "connector.read", "export.create", "audit.read",
+];
 
-function auditRecord(workspaceId: string, type: string, resourceType: AuditRecord["resourceType"], detail: string, resourceId?: string): AuditRecord {
-  return { id: randomUUID(), workspaceId, type, resourceType, ...(resourceId ? { resourceId } : {}), actor: "Local owner", detail, at: now() };
+function auditRecord(workspaceId: string, actor: WorkspaceActor, type: string, resourceType: AuditRecord["resourceType"], detail: string, resourceId?: string): AuditRecord {
+  return {
+    id: randomUUID(), workspaceId, type, resourceType, ...(resourceId ? { resourceId } : {}),
+    actor: actor.displayName, actorId: actor.identityId, action: type, outcome: "SUCCEEDED",
+    policyVersion: "policy.local-explicit-grant@0.1", correlationId: randomUUID(), detail, at: now(),
+  };
 }
 
-function initialState(): LocalState {
+function advanceAuthorizationEpoch(state: LocalState, cause: AuthorizationEpoch["cause"]): void {
+  state.authorizationEpoch = { workspaceId: state.workspace.id, value: state.authorizationEpoch.value + 1, cause, advancedAt: now() };
+}
+
+function initialState(actor: WorkspaceActor, name: string, type: Workspace["type"]): LocalState {
   const createdAt = now();
-  const workspaceId = "wrk_local_household";
+  const workspaceId = randomUUID();
+  const ownerMembershipId = randomUUID();
+  const ownerSubjectId = randomUUID();
+  const ownerBindingId = randomUUID();
+  const ownerGrantId = randomUUID();
+  const residencyPolicyRef = (process.env.DM_PROFILE ?? "local") === "local" ? "residency.local.synthetic" : "residency.azure.au.synthetic-preview";
   return {
-    workspace: { id: workspaceId, name: "My household", type: "FAMILY", createdAt },
+    workspace: {
+      id: workspaceId, name, type, status: "ACTIVE", ownerBindingId, jurisdictionPackRef: "jurisdiction.AU",
+      residencyPolicyRef, configurationVersion: "configuration.local.synthetic@0.1", revision: 1, createdAt,
+    },
+    ownerBindings: [{ id: ownerBindingId, workspaceId, ownerIdentityId: actor.identityId, ownerMembershipId, authorityBasis: "WORKSPACE_CREATOR", state: "ACTIVE", validFrom: createdAt, recordedAt: createdAt, revision: 1 }],
     documents: [],
     facts: [],
     tasks: [
@@ -67,28 +119,43 @@ function initialState(): LocalState {
     notifications: [],
     members: [
       {
-        id: "mem_local_owner",
+        id: ownerMembershipId,
         workspaceId,
-        displayName: "Local owner",
+        identityId: actor.identityId,
+        displayName: actor.displayName,
         role: "OWNER",
         state: "ACTIVE",
-        subjectId: "sub_local_owner",
+        subjectId: ownerSubjectId,
         invitationState: "ACTIVE",
         permissions: defaultPermissions(true),
         createdAt,
+        revision: 1,
       },
     ],
     subjects: [
       {
-        id: "sub_local_owner",
+        id: ownerSubjectId,
         workspaceId,
-        displayName: "Local owner",
+        displayName: actor.displayName,
         kind: "OWNER",
         relationship: "Self",
         createdAt,
+        revision: 1,
       },
     ],
-    audit: [{ id: randomUUID(), workspaceId, type: "WORKSPACE_CREATED", resourceType: "WORKSPACE", resourceId: workspaceId, actor: "Local owner", detail: "Created the local workspace", at: createdAt }],
+    subjectIdentityLinks: [{ id: randomUUID(), workspaceId, subjectId: ownerSubjectId, identityId: actor.identityId, evidenceKind: "WORKSPACE_CREATION", state: "ACTIVE", validFrom: createdAt, recordedAt: createdAt, revision: 1 }],
+    accessGrants: [{
+      id: ownerGrantId, workspaceId, grantorIdentityId: actor.identityId, granteeIdentityId: actor.identityId,
+      purposeId: "PUR-P1-001", resourceKind: "WORKSPACE", resourceIds: [workspaceId], actions: ownerActions,
+      startsAt: createdAt, state: "ACTIVE", policyVersion: "policy.local-explicit-grant@0.1", onwardDelegation: false,
+      exportAllowed: true, createdAt, revision: 1,
+    }],
+    authorizationEpoch: { workspaceId, value: 1, cause: "WORKSPACE_CREATED", advancedAt: createdAt },
+    audit: [{
+      id: randomUUID(), workspaceId, type: "WORKSPACE_CREATED", resourceType: "WORKSPACE", resourceId: workspaceId,
+      actor: actor.displayName, actorId: actor.identityId, action: "workspace.create", outcome: "SUCCEEDED",
+      policyVersion: "policy.local-explicit-grant@0.1", correlationId: randomUUID(), detail: `Created a ${type.toLowerCase()} workspace`, at: createdAt,
+    }],
     dependencies: [],
   };
 }
@@ -160,69 +227,176 @@ function documentSummary(document: DocumentRecord): DocumentRecord {
   };
 }
 
+function normalizeWorkspaceState(input: LocalState): LocalState {
+  const state = input;
+  state.workspace.status ??= "ACTIVE";
+  state.workspace.ownerBindingId ??= randomUUID();
+  state.workspace.jurisdictionPackRef ??= "jurisdiction.AU";
+  state.workspace.residencyPolicyRef ??= (process.env.DM_PROFILE ?? "local") === "local" ? "residency.local.synthetic" : "residency.azure.au.synthetic-preview";
+  state.workspace.configurationVersion ??= "configuration.local.synthetic@0.1";
+  state.workspace.revision ??= 1;
+  state.subjects ??= [{ id: "sub_local_owner", workspaceId: state.workspace.id, displayName: state.members[0]?.displayName ?? "Local owner", kind: "OWNER", relationship: "Self", createdAt: state.workspace.createdAt, revision: 1 }];
+  for (const subject of state.subjects) subject.revision ??= 1;
+  for (const member of state.members) {
+    const fallbackSubjectId = member.role === "OWNER" ? state.subjects.find((subject) => subject.kind === "OWNER")?.id ?? "sub_local_owner" : `sub_member_${member.id}`;
+    member.subjectId ??= fallbackSubjectId;
+    member.invitationState ??= member.state === "ACTIVE" ? "ACTIVE" : "SUSPENDED";
+    member.permissions ??= defaultPermissions(member.role === "OWNER");
+    member.revision ??= 1;
+    if (!state.subjects.some((subject) => subject.id === member.subjectId)) state.subjects.push({ id: member.subjectId, workspaceId: state.workspace.id, displayName: member.displayName, kind: member.role === "MANAGED_DEPENDANT" ? "DEPENDANT" : "ADULT", relationship: member.role === "GUEST" ? "Guest" : "Family member", createdAt: member.createdAt, revision: 1 });
+  }
+  state.ownerBindings ??= [];
+  state.subjectIdentityLinks ??= [];
+  state.accessGrants ??= [];
+  state.authorizationEpoch ??= { workspaceId: state.workspace.id, value: 1, cause: "WORKSPACE_CREATED", advancedAt: state.workspace.createdAt };
+  state.documents = state.documents.map((document) => ({
+    ...document,
+    subjectIds: document.subjectIds?.length ? document.subjectIds : [state.subjects[0]!.id],
+    captureRoute: document.captureRoute ?? "FILE",
+    ...(document.status === "DELETED" && !document.deletedAt ? { deletedAt: document.updatedAt, purgeDueAt: trashDeadline(document.updatedAt), preDeleteStatus: "NEEDS_REVIEW" as const } : {}),
+  }));
+  state.facts = (state.facts ?? []).map((fact) => {
+    const source = state.documents.find((document) => document.id === fact.documentId);
+    return {
+      ...fact,
+      subjectIds: fact.subjectIds?.length ? fact.subjectIds : source?.subjectIds ?? [],
+      definitionId: fact.definitionId ?? `fact.legacy.${fact.name.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`,
+      reviewState: fact.reviewState ?? "PROPOSED",
+      evidenceExcerpt: fact.evidenceExcerpt ?? "Legacy extracted proposal; open the source document for evidence.",
+    };
+  });
+  state.audit = state.audit.map((entry) => ({
+    ...entry,
+    workspaceId: entry.workspaceId ?? state.workspace.id,
+    resourceType: entry.resourceType ?? (entry.type.startsWith("DOCUMENT") ? "DOCUMENT" : entry.type.startsWith("MEMBER") ? "MEMBERSHIP" : entry.type.startsWith("SUBJECT") ? "PERSON" : "WORKSPACE"),
+    actor: entry.actor ?? "Local owner",
+    detail: entry.detail ?? entry.type.replaceAll("_", " ").toLowerCase(),
+  }));
+  ensureDocumentIntelligence(state);
+  return state;
+}
+
+function normalizeDatabase(input: LocalDatabase | LocalState): LocalDatabase {
+  if ("schemaVersion" in input && input.schemaVersion === 2) {
+    return { ...input, workspaces: input.workspaces.map(normalizeWorkspaceState), workspaceCreationReceipts: input.workspaceCreationReceipts ?? [] };
+  }
+  return { schemaVersion: 2, workspaces: [normalizeWorkspaceState(input as LocalState)], workspaceCreationReceipts: [] };
+}
+
 @Injectable()
 export class LocalStore {
   private readonly root = resolve(process.env.DM_DATA_DIR ?? "./local-data");
   private readonly statePath = join(this.root, "state.json");
   private readonly artifactRoot = join(this.root, "artifacts");
-  private writeChain: Promise<void> = Promise.resolve();
+  private writeChain: Promise<unknown> = Promise.resolve();
 
-  private async load(): Promise<LocalState> {
+  private async loadDatabaseRaw(): Promise<LocalDatabase> {
     try {
-      const state = JSON.parse(await readFile(this.statePath, "utf8")) as LocalState;
-      state.subjects ??= [{ id: "sub_local_owner", workspaceId: state.workspace.id, displayName: state.members[0]?.displayName ?? "Local owner", kind: "OWNER", relationship: "Self", createdAt: state.workspace.createdAt }];
-      for (const member of state.members) {
-        const fallbackSubjectId = member.role === "OWNER" ? state.subjects.find((subject) => subject.kind === "OWNER")?.id ?? "sub_local_owner" : `sub_member_${member.id}`;
-        member.subjectId ??= fallbackSubjectId;
-        member.invitationState ??= member.state === "ACTIVE" ? "ACTIVE" : "SUSPENDED";
-        member.permissions ??= defaultPermissions(member.role === "OWNER");
-        if (!state.subjects.some((subject) => subject.id === member.subjectId)) state.subjects.push({ id: member.subjectId, workspaceId: state.workspace.id, displayName: member.displayName, kind: member.role === "MANAGED_DEPENDANT" ? "DEPENDANT" : "ADULT", relationship: member.role === "GUEST" ? "Guest" : "Family member", createdAt: member.createdAt });
-      }
-      state.documents = state.documents.map((document) => ({
-        ...document,
-        subjectIds: document.subjectIds?.length ? document.subjectIds : [state.subjects[0]!.id],
-        captureRoute: document.captureRoute ?? "FILE",
-        ...(document.status === "DELETED" && !document.deletedAt ? { deletedAt: document.updatedAt, purgeDueAt: trashDeadline(document.updatedAt), preDeleteStatus: "NEEDS_REVIEW" as const } : {}),
-      }));
-      state.facts = (state.facts ?? []).map((fact) => {
-        const source = state.documents.find((document) => document.id === fact.documentId);
-        return {
-          ...fact,
-          subjectIds: fact.subjectIds?.length ? fact.subjectIds : source?.subjectIds ?? [],
-          definitionId: fact.definitionId ?? `fact.legacy.${fact.name.toLowerCase().replace(/[^a-z0-9]+/g, "_")}`,
-          reviewState: fact.reviewState ?? "PROPOSED",
-          evidenceExcerpt: fact.evidenceExcerpt ?? "Legacy extracted proposal; open the source document for evidence.",
-        };
-      });
-      state.audit = state.audit.map((entry) => ({
-        ...entry,
-        workspaceId: entry.workspaceId ?? state.workspace.id,
-        resourceType: entry.resourceType ?? (entry.type.startsWith("DOCUMENT") ? "DOCUMENT" : entry.type.startsWith("MEMBER") ? "MEMBERSHIP" : entry.type.startsWith("SUBJECT") ? "PERSON" : "WORKSPACE"),
-        actor: entry.actor ?? "Local owner",
-        detail: entry.detail ?? entry.type.replaceAll("_", " ").toLowerCase(),
-      }));
-      if (ensureDocumentIntelligence(state)) await this.save(state);
-      return state;
+      return normalizeDatabase(JSON.parse(await readFile(this.statePath, "utf8")) as LocalDatabase | LocalState);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-      const state = initialState();
-      await this.save(state);
-      return state;
+      return { schemaVersion: 2, workspaces: [], workspaceCreationReceipts: [] };
     }
   }
 
-  private async save(state: LocalState): Promise<void> {
-    this.writeChain = this.writeChain.then(async () => {
-      await mkdir(dirname(this.statePath), { recursive: true });
-      const temporary = `${this.statePath}.${process.pid}.tmp`;
-      await writeFile(temporary, `${JSON.stringify(state, null, 2)}\n`, { mode: 0o600 });
-      await rename(temporary, this.statePath);
-    });
-    await this.writeChain;
+  private async saveDatabaseRaw(database: LocalDatabase): Promise<void> {
+    await mkdir(dirname(this.statePath), { recursive: true });
+    const temporary = `${this.statePath}.${process.pid}.${randomUUID()}.tmp`;
+    await writeFile(temporary, `${JSON.stringify(database, null, 2)}\n`, { mode: 0o600 });
+    await rename(temporary, this.statePath);
   }
 
-  async dashboard(): Promise<DashboardSnapshot> {
-    const { workspace, documents, facts, tasks, notifications, members, subjects, audit, dependencies } = await this.load();
+  private async readDatabase(): Promise<LocalDatabase> {
+    await this.writeChain;
+    return this.loadDatabaseRaw();
+  }
+
+  private async mutate<T>(operation: (database: LocalDatabase) => Promise<T> | T): Promise<T> {
+    const run = this.writeChain.then(async () => {
+      const database = await this.loadDatabaseRaw();
+      const result = await operation(database);
+      await this.saveDatabaseRaw(database);
+      return result;
+    });
+    this.writeChain = run.then(() => undefined, () => undefined);
+    return run;
+  }
+
+  private state(database: LocalDatabase, workspaceId: string): LocalState {
+    const state = database.workspaces.find((candidate) => candidate.workspace.id === workspaceId);
+    if (!state) throw new NotFoundException("Workspace not available");
+    return state;
+  }
+
+  private scopedArtifactPath(workspaceId: string, documentId: string): string {
+    return join(this.artifactRoot, workspaceId, documentId);
+  }
+
+  private async readArtifact(workspaceId: string, documentId: string): Promise<Buffer> {
+    try {
+      return await readFile(this.scopedArtifactPath(workspaceId, documentId));
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+      return readFile(join(this.artifactRoot, documentId));
+    }
+  }
+
+  async listWorkspaces(identityId: string): Promise<WorkspaceSummary[]> {
+    const database = await this.readDatabase();
+    return database.workspaces
+      .filter((state) => state.members.some((member) => member.identityId === identityId && member.state === "ACTIVE"))
+      .map(({ workspace }) => ({ id: workspace.id, name: workspace.name, type: workspace.type, status: workspace.status, revision: workspace.revision }));
+  }
+
+  async claimLegacyWorkspace(actor: WorkspaceActor): Promise<WorkspaceSummary | undefined> {
+    return this.mutate((database) => {
+      const candidate = database.workspaces.find((state) => state.ownerBindings.length === 0 && state.members.filter((member) => member.role === "OWNER" && member.state === "ACTIVE").length === 1);
+      if (!candidate) return undefined;
+      const owner = candidate.members.find((member) => member.role === "OWNER" && member.state === "ACTIVE")!;
+      if (owner.identityId && owner.identityId !== actor.identityId) return undefined;
+      const subject = candidate.subjects.find((item) => item.id === owner.subjectId)!;
+      owner.identityId = actor.identityId;
+      owner.displayName = actor.displayName;
+      owner.revision += 1;
+      subject.displayName = actor.displayName;
+      subject.revision += 1;
+      const recordedAt = now();
+      const binding: WorkspaceOwnerBinding = { id: candidate.workspace.ownerBindingId, workspaceId: candidate.workspace.id, ownerIdentityId: actor.identityId, ownerMembershipId: owner.id, authorityBasis: "WORKSPACE_CREATOR", state: "ACTIVE", validFrom: candidate.workspace.createdAt, recordedAt, revision: 1 };
+      candidate.ownerBindings.push(binding);
+      candidate.subjectIdentityLinks.push({ id: randomUUID(), workspaceId: candidate.workspace.id, subjectId: subject.id, identityId: actor.identityId, evidenceKind: "WORKSPACE_CREATION", state: "ACTIVE", validFrom: candidate.workspace.createdAt, recordedAt, revision: 1 });
+      candidate.accessGrants.push({ id: randomUUID(), workspaceId: candidate.workspace.id, grantorIdentityId: actor.identityId, granteeIdentityId: actor.identityId, purposeId: "PUR-P1-001", resourceKind: "WORKSPACE", resourceIds: [candidate.workspace.id], actions: ownerActions, startsAt: recordedAt, state: "ACTIVE", policyVersion: "policy.local-explicit-grant@0.1", onwardDelegation: false, exportAllowed: true, createdAt: recordedAt, revision: 1 });
+      candidate.authorizationEpoch = { workspaceId: candidate.workspace.id, value: candidate.authorizationEpoch.value + 1, cause: "SECURITY_CHANGED", advancedAt: recordedAt };
+      candidate.audit.push(auditRecord(candidate.workspace.id, actor, "LEGACY_OWNER_LINKED", "MEMBERSHIP", "Linked the existing local owner to the migrated workspace authority records", owner.id));
+      return { id: candidate.workspace.id, name: candidate.workspace.name, type: candidate.workspace.type, status: candidate.workspace.status, revision: candidate.workspace.revision };
+    });
+  }
+
+  async createWorkspace(actor: WorkspaceActor, name: string, type: Workspace["type"], idempotencyKey: string): Promise<Workspace> {
+    const keyHash = createHash("sha256").update(idempotencyKey).digest("hex");
+    const fingerprint = createHash("sha256").update(JSON.stringify({ name, type })).digest("hex");
+    return this.mutate((database) => {
+      const prior = database.workspaceCreationReceipts.find((receipt) => receipt.identityId === actor.identityId && receipt.idempotencyKeyHash === keyHash);
+      if (prior) {
+        if (prior.requestFingerprint !== fingerprint) throw new ConflictException("This workspace request key was already used for different input");
+        return this.state(database, prior.workspaceId).workspace;
+      }
+      const state = initialState(actor, name, type);
+      database.workspaces.push(state);
+      database.workspaceCreationReceipts.push({ identityId: actor.identityId, idempotencyKeyHash: keyHash, requestFingerprint: fingerprint, workspaceId: state.workspace.id, createdAt: state.workspace.createdAt });
+      return state.workspace;
+    });
+  }
+
+  async requireAuthorization(actor: WorkspaceActor, workspaceId: string, action: WorkspaceAction, resourceKind: "WORKSPACE" | "DOCUMENT" | "SUBJECT" | "TASK", resourceId?: string): Promise<void> {
+    const database = await this.readDatabase();
+    const state = this.state(database, workspaceId);
+    const context = { identityId: actor.identityId, workspaceId, purposeId: "PUR-P1-001" as const, action, resourceKind, ...(resourceId ? { resourceId } : {}) };
+    const decision = evaluateAuthorization(state, context);
+    if (decision.decision !== "ALLOW") throw new NotFoundException("Resource not available");
+  }
+
+  async dashboard(workspaceId: string): Promise<DashboardSnapshot> {
+    const { workspace, documents, facts, tasks, notifications, members, subjects, audit, dependencies, accessGrants, authorizationEpoch } = this.state(await this.readDatabase(), workspaceId);
     const activeIds = new Set(documents.filter((document) => document.status !== "DELETED" && document.status !== "POLICY_HOLD").map((document) => document.id));
     return {
       workspace,
@@ -234,77 +408,68 @@ export class LocalStore {
       subjects,
       audit: [...audit].reverse(),
       dependencies: dependencies.filter((edge) => activeIds.has(edge.evidenceDocumentId)),
+      accessGrants,
+      authorizationEpoch,
       localMode: (process.env.DM_PROFILE ?? "local") === "local",
       customerDataPolicy: (process.env.DM_CUSTOMER_DATA_POLICY ?? "synthetic-only") === "production-gated" ? "production-gated" : "synthetic-only",
     };
   }
 
-  async configureWorkspace(name: string, type: Workspace["type"], ownerName: string): Promise<Workspace> {
-    const state = await this.load();
-    state.workspace.name = name;
-    state.workspace.type = type;
-    const ownerMember = state.members.find((member) => member.role === "OWNER");
-    if (ownerMember) ownerMember.displayName = ownerName;
-    const ownerSubject = state.subjects.find((subject) => subject.kind === "OWNER");
-    if (ownerSubject) ownerSubject.displayName = ownerName;
-    state.audit.push(auditRecord(state.workspace.id, "WORKSPACE_CONFIGURED", "WORKSPACE", `Configured a ${type.toLowerCase()} workspace`, state.workspace.id));
-    await this.save(state);
-    return state.workspace;
-  }
+  async addDocument(workspaceId: string, actor: WorkspaceActor, file: Express.Multer.File, subjectIds: string[], captureRoute: DocumentRecord["captureRoute"]): Promise<DocumentRecord> {
+    return this.mutate(async (database) => {
+      const state = this.state(database, workspaceId);
+      if (!subjectIds.length || subjectIds.some((subjectId) => !state.subjects.some((subject) => subject.id === subjectId))) {
+        throw new BadRequestException("Select at least one valid household person for this document");
+      }
+      const digest = createHash("sha256").update(file.buffer).digest("hex");
+      const duplicate = state.documents.find((item) => item.sha256 === digest && item.status !== "DELETED");
+      if (duplicate) return duplicate;
 
-  async addDocument(file: Express.Multer.File, subjectIds: string[], captureRoute: DocumentRecord["captureRoute"]): Promise<DocumentRecord> {
-    const state = await this.load();
-    if (!subjectIds.length || subjectIds.some((subjectId) => !state.subjects.some((subject) => subject.id === subjectId))) {
-      throw new BadRequestException("Select at least one valid household person for this document");
-    }
-    const id = randomUUID();
-    const digest = createHash("sha256").update(file.buffer).digest("hex");
-    const duplicate = state.documents.find((item) => item.sha256 === digest && item.status !== "DELETED");
-    if (duplicate) return duplicate;
+      const id = randomUUID();
+      const textual = /^(text\/|application\/(json|xml))/.test(file.mimetype);
+      const extractedText = textual ? file.buffer.toString("utf8").slice(0, 500_000) : "";
+      const classification = classifyDocument(file.originalname, extractedText);
+      const createdAt = now();
+      const document: DocumentRecord = {
+        id,
+        workspaceId: state.workspace.id,
+        name: file.originalname,
+        mediaType: file.mimetype || "application/octet-stream",
+        size: file.size,
+        sha256: digest,
+        status: classification.policyHold ? "POLICY_HOLD" : textual ? "READY" : "NEEDS_REVIEW",
+        category: classification.category,
+        version: 1,
+        createdAt,
+        updatedAt: createdAt,
+        subjectIds,
+        captureRoute,
+        ...(extractedText ? { extractedText } : {}),
+        ...(!textual && !classification.policyHold ? { reviewReason: "Local text extraction is not yet available for this format." } : {}),
+        ...(classification.policyHold ? { reviewReason: "Suspected clinical content is isolated by policy." } : {}),
+      };
 
-    const textual = /^(text\/|application\/(json|xml))/.test(file.mimetype);
-    const extractedText = textual ? file.buffer.toString("utf8").slice(0, 500_000) : "";
-    const classification = classifyDocument(file.originalname, extractedText);
-    const createdAt = now();
-    const document: DocumentRecord = {
-      id,
-      workspaceId: state.workspace.id,
-      name: file.originalname,
-      mediaType: file.mimetype || "application/octet-stream",
-      size: file.size,
-      sha256: digest,
-      status: classification.policyHold ? "POLICY_HOLD" : textual ? "READY" : "NEEDS_REVIEW",
-      category: classification.category,
-      version: 1,
-      createdAt,
-      updatedAt: createdAt,
-      subjectIds,
-      captureRoute,
-      ...(extractedText ? { extractedText } : {}),
-      ...(!textual && !classification.policyHold ? { reviewReason: "Local text extraction is not yet available for this format." } : {}),
-      ...(classification.policyHold ? { reviewReason: "Suspected clinical content is isolated by policy." } : {}),
-    };
-
-    await mkdir(this.artifactRoot, { recursive: true, mode: 0o700 });
-    await writeFile(join(this.artifactRoot, id), file.buffer, { mode: 0o600, flag: "wx" });
-    state.documents.push(document);
-    ensureDocumentIntelligence(state);
-    state.notifications.unshift({
-      id: randomUUID(),
-      workspaceId: state.workspace.id,
-      title: classification.policyHold ? "Document quarantined" : "Document added",
-      detail: classification.policyHold ? `${file.originalname} requires review before processing.` : `${file.originalname} is stored locally.`,
-      severity: classification.policyHold ? "IMPORTANT" : "INFO",
-      read: false,
-      createdAt,
+      const artifactPath = this.scopedArtifactPath(workspaceId, id);
+      await mkdir(dirname(artifactPath), { recursive: true, mode: 0o700 });
+      await writeFile(artifactPath, file.buffer, { mode: 0o600, flag: "wx" });
+      state.documents.push(document);
+      ensureDocumentIntelligence(state);
+      state.notifications.unshift({
+        id: randomUUID(),
+        workspaceId: state.workspace.id,
+        title: classification.policyHold ? "Document quarantined" : "Document added",
+        detail: classification.policyHold ? `${file.originalname} requires review before processing.` : `${file.originalname} is stored locally.`,
+        severity: classification.policyHold ? "IMPORTANT" : "INFO",
+        read: false,
+        createdAt,
+      });
+      state.audit.push(auditRecord(state.workspace.id, actor, "DOCUMENT_INGESTED", "DOCUMENT", `Added a document using ${captureRoute.toLowerCase()} capture`, id));
+      return document;
     });
-    state.audit.push(auditRecord(state.workspace.id, "DOCUMENT_INGESTED", "DOCUMENT", `Added a document using ${captureRoute.toLowerCase()} capture`, id));
-    await this.save(state);
-    return document;
   }
 
-  async documentDetail(id: string): Promise<DocumentDetail> {
-    const state = await this.load();
+  async documentDetail(workspaceId: string, id: string): Promise<DocumentDetail> {
+    const state = this.state(await this.readDatabase(), workspaceId);
     const document = state.documents.find((item) => item.id === id);
     if (!document || document.status === "DELETED") throw new NotFoundException("Document not found");
     if (document.status === "POLICY_HOLD") throw new BadRequestException("This item is isolated and cannot be previewed in the ordinary document view");
@@ -324,47 +489,45 @@ export class LocalStore {
     };
   }
 
-  async documentArtifact(id: string): Promise<{ buffer: Buffer; mediaType: string; name: string }> {
-    const state = await this.load();
+  async documentArtifact(workspaceId: string, id: string): Promise<{ buffer: Buffer; mediaType: string; name: string }> {
+    const state = this.state(await this.readDatabase(), workspaceId);
     const document = state.documents.find((item) => item.id === id);
     if (!document || document.status === "DELETED") throw new NotFoundException("Document not found");
     if (document.status === "POLICY_HOLD") throw new BadRequestException("This item is isolated and cannot be opened");
-    return { buffer: await readFile(join(this.artifactRoot, id)), mediaType: document.mediaType, name: document.name };
+    return { buffer: await this.readArtifact(workspaceId, id), mediaType: document.mediaType, name: document.name };
   }
 
-  async reviewFact(id: string): Promise<FactRecord> {
-    const state = await this.load();
-    const fact = state.facts.find((item) => item.id === id);
-    if (!fact) throw new NotFoundException("Extracted detail not found");
-    const document = state.documents.find((item) => item.id === fact.documentId);
-    if (!document || document.status !== "READY") throw new BadRequestException("The source document is not available for fact review");
-    fact.reviewState = "REVIEWED";
-    fact.recordedAt = now();
-    state.audit.push(auditRecord(state.workspace.id, "FACT_REVIEWED", "DOCUMENT", "Reviewed an evidence-linked profile detail", fact.documentId));
-    await this.save(state);
-    return fact;
+  async reviewFact(workspaceId: string, actor: WorkspaceActor, id: string): Promise<FactRecord> {
+    return this.mutate((database) => {
+      const state = this.state(database, workspaceId);
+      const fact = state.facts.find((item) => item.id === id);
+      if (!fact) throw new NotFoundException("Extracted detail not found");
+      const document = state.documents.find((item) => item.id === fact.documentId);
+      if (!document || document.status !== "READY") throw new BadRequestException("The source document is not available for fact review");
+      fact.reviewState = "REVIEWED";
+      fact.recordedAt = now();
+      state.audit.push(auditRecord(state.workspace.id, actor, "FACT_REVIEWED", "DOCUMENT", "Reviewed an evidence-linked profile detail", fact.documentId));
+      return fact;
+    });
   }
 
-  async addManualDocument(input: { name: string; content: string; subjectIds: string[] }): Promise<DocumentRecord> {
+  async addManualDocument(workspaceId: string, actor: WorkspaceActor, input: { name: string; content: string; subjectIds: string[] }): Promise<DocumentRecord> {
     const buffer = Buffer.from(input.content, "utf8");
-    return this.addDocument({ originalname: `${input.name}.txt`, mimetype: "text/plain", size: buffer.byteLength, buffer } as Express.Multer.File, input.subjectIds, "MANUAL");
+    return this.addDocument(workspaceId, actor, { originalname: `${input.name}.txt`, mimetype: "text/plain", size: buffer.byteLength, buffer } as Express.Multer.File, input.subjectIds, "MANUAL");
   }
 
-  async addSubject(input: CreateSubjectInput): Promise<SubjectRecord> {
-    const state = await this.load();
-    const subject: SubjectRecord = {
-      id: randomUUID(),
-      workspaceId: state.workspace.id,
-      displayName: input.displayName,
-      kind: input.kind,
-      relationship: input.relationship,
-      ...(input.dateOfBirth ? { dateOfBirth: input.dateOfBirth } : {}),
-      createdAt: now(),
-    };
-    state.subjects.push(subject);
-    state.audit.push(auditRecord(state.workspace.id, "SUBJECT_CREATED", "PERSON", "Added a person to the household", subject.id));
-    await this.save(state);
-    return subject;
+  async addSubject(workspaceId: string, actor: WorkspaceActor, input: CreateSubjectInput): Promise<SubjectRecord> {
+    return this.mutate((database) => {
+      const state = this.state(database, workspaceId);
+      if (input.kind === "OWNER") throw new BadRequestException("Additional owner subjects and ownership transfer are unavailable");
+      const subject: SubjectRecord = {
+        id: randomUUID(), workspaceId: state.workspace.id, displayName: input.displayName, kind: input.kind,
+        relationship: input.relationship, ...(input.dateOfBirth ? { dateOfBirth: input.dateOfBirth } : {}), createdAt: now(), revision: 1,
+      };
+      state.subjects.push(subject);
+      state.audit.push(auditRecord(state.workspace.id, actor, "SUBJECT_CREATED", "PERSON", "Added a person to the household", subject.id));
+      return subject;
+    });
   }
 
   connectorCatalogue(): ConnectorDescriptor[] {
@@ -386,8 +549,8 @@ export class LocalStore {
     ];
   }
 
-  async ask(question: string, documentIds?: string[]): Promise<Answer> {
-    const state = await this.load();
+  async ask(workspaceId: string, question: string, documentIds?: string[]): Promise<Answer> {
+    const state = this.state(await this.readDatabase(), workspaceId);
     const tokens = normalizeQuestion(question);
     const allowed = state.documents.filter(
       (document) =>
@@ -429,144 +592,176 @@ export class LocalStore {
     };
   }
 
-  async addMember(displayName: string, role: Member["role"]): Promise<Member> {
-    const state = await this.load();
-    const subject: SubjectRecord = { id: randomUUID(), workspaceId: state.workspace.id, displayName, kind: role === "MANAGED_DEPENDANT" ? "DEPENDANT" : "ADULT", relationship: "Family member", createdAt: now() };
-    state.subjects.push(subject);
-    const member: Member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName, role, state: "ACTIVE", invitationState: "ACTIVE", permissions: defaultPermissions(), createdAt: now() };
-    state.members.push(member);
-    state.audit.push(auditRecord(state.workspace.id, "MEMBERSHIP_CREATED", "MEMBERSHIP", "Added local workspace access", member.id));
-    await this.save(state);
-    return member;
-  }
-
-  async createPerson(input: ManagePersonInput): Promise<SubjectRecord> {
-    const state = await this.load();
-    const subject: SubjectRecord = { id: randomUUID(), workspaceId: state.workspace.id, displayName: input.displayName, kind: input.kind, relationship: input.relationship, ...(input.dateOfBirth ? { dateOfBirth: input.dateOfBirth } : {}), createdAt: now() };
-    state.subjects.push(subject);
-    state.audit.push(auditRecord(state.workspace.id, "PERSON_CREATED", "PERSON", "Added a person to the household", subject.id));
-    if (input.loginEnabled) {
-      const member: Member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName: input.displayName, role: input.role, state: "ACTIVE", invitationState: "PENDING", permissions: input.permissions, ...(input.email ? { email: input.email } : {}), ...(input.mobile ? { mobile: input.mobile } : {}), createdAt: now() };
+  async addMember(workspaceId: string, actor: WorkspaceActor, displayName: string, role: Member["role"]): Promise<Member> {
+    return this.mutate((database) => {
+      const state = this.state(database, workspaceId);
+      if (role === "OWNER") throw new BadRequestException("Ownership transfer is unavailable");
+      const createdAt = now();
+      const subject: SubjectRecord = { id: randomUUID(), workspaceId: state.workspace.id, displayName, kind: role === "MANAGED_DEPENDANT" ? "DEPENDANT" : "ADULT", relationship: "Family member", createdAt, revision: 1 };
+      state.subjects.push(subject);
+      const member: Member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName, role, state: "ACTIVE", invitationState: "PENDING", permissions: defaultPermissions(), createdAt, revision: 1 };
       state.members.push(member);
-      state.audit.push(auditRecord(state.workspace.id, "INVITATION_PREPARED", "MEMBERSHIP", "Prepared a time-limited login invitation; external delivery awaits configuration", member.id));
-    }
-    await this.save(state);
-    return subject;
+      advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
+      state.audit.push(auditRecord(state.workspace.id, actor, "MEMBERSHIP_INVITATION_PREPARED", "MEMBERSHIP", "Prepared membership without fabricating an identity or active resource grant", member.id));
+      return member;
+    });
   }
 
-  async updatePerson(id: string, input: ManagePersonInput): Promise<SubjectRecord> {
-    const state = await this.load();
-    const subject = state.subjects.find((item) => item.id === id);
-    if (!subject) throw new NotFoundException("Person not found");
-    if (subject.kind === "OWNER" && input.kind !== "OWNER") throw new BadRequestException("The local owner cannot be changed to another person type");
-    subject.displayName = input.displayName; subject.kind = input.kind; subject.relationship = input.relationship;
-    if (input.dateOfBirth) subject.dateOfBirth = input.dateOfBirth; else delete subject.dateOfBirth;
-    let member = state.members.find((item) => item.subjectId === subject.id);
-    if (input.loginEnabled) {
-      if (!member) {
-        member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName: input.displayName, role: input.role, state: "ACTIVE", invitationState: "PENDING", permissions: input.permissions, createdAt: now() };
+  async createPerson(workspaceId: string, actor: WorkspaceActor, input: ManagePersonInput): Promise<SubjectRecord> {
+    return this.mutate((database) => {
+      const state = this.state(database, workspaceId);
+      if (input.kind === "OWNER") throw new BadRequestException("Additional owners and ownership transfer are unavailable");
+      const createdAt = now();
+      const subject: SubjectRecord = { id: randomUUID(), workspaceId: state.workspace.id, displayName: input.displayName, kind: input.kind, relationship: input.relationship, ...(input.dateOfBirth ? { dateOfBirth: input.dateOfBirth } : {}), createdAt, revision: 1 };
+      state.subjects.push(subject);
+      state.audit.push(auditRecord(state.workspace.id, actor, "PERSON_CREATED", "PERSON", "Added a person to the household", subject.id));
+      if (input.loginEnabled) {
+        const member: Member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName: input.displayName, role: input.role, state: "ACTIVE", invitationState: "PENDING", permissions: input.permissions, ...(input.email ? { email: input.email } : {}), ...(input.mobile ? { mobile: input.mobile } : {}), createdAt, revision: 1 };
         state.members.push(member);
+        advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
+        state.audit.push(auditRecord(state.workspace.id, actor, "INVITATION_PREPARED", "MEMBERSHIP", "Prepared a membership invitation without creating credentials or a resource grant", member.id));
       }
-      member.displayName = input.displayName; member.role = subject.kind === "OWNER" ? "OWNER" : input.role; member.state = "ACTIVE"; member.permissions = subject.kind === "OWNER" ? defaultPermissions(true) : input.permissions;
-      if (member.invitationState === "SUSPENDED" || member.invitationState === "NOT_INVITED") member.invitationState = "PENDING";
-      if (input.email) member.email = input.email; else delete member.email;
-      if (input.mobile) member.mobile = input.mobile; else delete member.mobile;
-    } else if (member && member.role !== "OWNER") {
-      member.state = "REVOKED"; member.invitationState = "SUSPENDED";
-    }
-    state.audit.push(auditRecord(state.workspace.id, "PERSON_UPDATED", "PERSON", input.loginEnabled ? "Updated person details, login access or file permissions" : "Updated person details and disabled login access", subject.id));
-    await this.save(state);
-    return subject;
+      return subject;
+    });
   }
 
-  async deletePerson(id: string): Promise<void> {
-    const state = await this.load();
-    const subject = state.subjects.find((item) => item.id === id);
-    if (!subject) throw new NotFoundException("Person not found");
-    if (subject.kind === "OWNER") throw new BadRequestException("The workspace owner cannot be removed");
-    if (state.documents.some((document) => document.status !== "DELETED" && document.subjectIds.includes(id))) throw new BadRequestException("Reassign or delete this person's documents before removing them");
-    state.subjects = state.subjects.filter((item) => item.id !== id);
-    state.members = state.members.filter((item) => item.subjectId !== id);
-    state.audit.push(auditRecord(state.workspace.id, "PERSON_REMOVED", "PERSON", "Removed a person with no remaining document assignments", id));
-    await this.save(state);
+  async updatePerson(workspaceId: string, actor: WorkspaceActor, id: string, input: ManagePersonInput): Promise<SubjectRecord> {
+    return this.mutate((database) => {
+      const state = this.state(database, workspaceId);
+      const subject = state.subjects.find((item) => item.id === id);
+      if (!subject) throw new NotFoundException("Person not found");
+      if (input.kind === "OWNER" && subject.kind !== "OWNER") throw new BadRequestException("Ownership transfer is unavailable");
+      if (subject.kind === "OWNER" && input.kind !== "OWNER") throw new BadRequestException("The local owner cannot be changed to another person type");
+      subject.displayName = input.displayName; subject.kind = input.kind; subject.relationship = input.relationship; subject.revision += 1;
+      if (input.dateOfBirth) subject.dateOfBirth = input.dateOfBirth; else delete subject.dateOfBirth;
+      let member = state.members.find((item) => item.subjectId === subject.id);
+      if (input.loginEnabled) {
+        if (!member) {
+          member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName: input.displayName, role: input.role, state: "ACTIVE", invitationState: "PENDING", permissions: input.permissions, createdAt: now(), revision: 1 };
+          state.members.push(member);
+        }
+        member.displayName = input.displayName; member.role = subject.kind === "OWNER" ? "OWNER" : input.role; member.state = "ACTIVE"; member.permissions = subject.kind === "OWNER" ? defaultPermissions(true) : input.permissions; member.revision += 1;
+        if (member.invitationState === "SUSPENDED" || member.invitationState === "NOT_INVITED") member.invitationState = "PENDING";
+        if (input.email) member.email = input.email; else delete member.email;
+        if (input.mobile) member.mobile = input.mobile; else delete member.mobile;
+      } else if (member && member.role !== "OWNER") {
+        member.state = "REVOKED"; member.invitationState = "SUSPENDED"; member.revision += 1;
+      }
+      advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
+      state.audit.push(auditRecord(state.workspace.id, actor, "PERSON_UPDATED", "PERSON", input.loginEnabled ? "Updated person and prospective membership settings; resource grants remain separate" : "Updated person details and disabled membership participation", subject.id));
+      return subject;
+    });
   }
 
-  async addTask(input: { title: string; severity: TaskRecord["severity"]; dueAt?: string | undefined; documentId?: string | undefined }): Promise<TaskRecord> {
-    const state = await this.load();
-    const task: TaskRecord = {
-      id: randomUUID(), workspaceId: state.workspace.id, title: input.title, severity: input.severity, state: "OPEN", createdAt: now(),
-      ...(input.dueAt ? { dueAt: input.dueAt } : {}), ...(input.documentId ? { documentId: input.documentId } : {}),
-    };
-    state.tasks.unshift(task);
-    state.audit.push(auditRecord(state.workspace.id, "TASK_CREATED", "TASK", "Created a household task", task.id));
-    await this.save(state);
-    return task;
+  async deletePerson(workspaceId: string, actor: WorkspaceActor, id: string): Promise<void> {
+    await this.mutate((database) => {
+      const state = this.state(database, workspaceId);
+      const subject = state.subjects.find((item) => item.id === id);
+      if (!subject) throw new NotFoundException("Person not found");
+      if (subject.kind === "OWNER") throw new BadRequestException("The workspace owner cannot be removed");
+      if (state.documents.some((document) => document.status !== "DELETED" && document.subjectIds.includes(id))) throw new BadRequestException("Reassign or delete this person's documents before removing them");
+      state.subjects = state.subjects.filter((item) => item.id !== id);
+      state.members = state.members.map((member) => member.subjectId === id ? { ...member, state: "REVOKED", invitationState: "SUSPENDED", revision: member.revision + 1 } : member);
+      state.subjectIdentityLinks = state.subjectIdentityLinks.map((link) => link.subjectId === id && link.state === "ACTIVE" ? { ...link, state: "REVOKED", revision: link.revision + 1 } : link);
+      advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
+      state.audit.push(auditRecord(state.workspace.id, actor, "PERSON_REMOVED", "PERSON", "Removed the active subject view while preserving revoked participation history", id));
+    });
   }
 
-  async completeTask(id: string): Promise<TaskRecord> {
-    const state = await this.load();
-    const task = state.tasks.find((item) => item.id === id);
-    if (!task) throw new NotFoundException("Task not found");
-    task.state = "DONE";
-    state.audit.push(auditRecord(state.workspace.id, "TASK_COMPLETED", "TASK", "Completed a household task", task.id));
-    await this.save(state);
-    return task;
+  async addTask(workspaceId: string, actor: WorkspaceActor, input: { title: string; severity: TaskRecord["severity"]; dueAt?: string | undefined; documentId?: string | undefined }): Promise<TaskRecord> {
+    return this.mutate((database) => {
+      const state = this.state(database, workspaceId);
+      const task: TaskRecord = {
+        id: randomUUID(), workspaceId: state.workspace.id, title: input.title, severity: input.severity, state: "OPEN", createdAt: now(),
+        ...(input.dueAt ? { dueAt: input.dueAt } : {}), ...(input.documentId ? { documentId: input.documentId } : {}),
+      };
+      state.tasks.unshift(task);
+      state.audit.push(auditRecord(state.workspace.id, actor, "TASK_CREATED", "TASK", "Created a household task", task.id));
+      return task;
+    });
   }
 
-  async deleteDocument(id: string): Promise<{ documentId: string; state: "TRASHED"; deletedAt: string; purgeDueAt: string }> {
-    const state = await this.load();
-    const document = state.documents.find((item) => item.id === id);
-    if (!document) throw new NotFoundException("Document not found");
-    if (document.status === "DELETED" && document.deletedAt && document.purgeDueAt) {
-      return { documentId: document.id, state: "TRASHED", deletedAt: document.deletedAt, purgeDueAt: document.purgeDueAt };
-    }
-    const deletedAt = now();
-    document.preDeleteStatus = document.status === "DELETED" ? "NEEDS_REVIEW" : document.status;
-    document.status = "DELETED";
-    document.deletedAt = deletedAt;
-    document.purgeDueAt = trashDeadline(deletedAt);
-    document.updatedAt = deletedAt;
-    state.audit.push(auditRecord(state.workspace.id, "DOCUMENT_TRASHED", "DOCUMENT", `Moved document to Trash until ${document.purgeDueAt}`, id));
-    await this.save(state);
-    return { documentId: document.id, state: "TRASHED", deletedAt, purgeDueAt: document.purgeDueAt };
+  async completeTask(workspaceId: string, actor: WorkspaceActor, id: string): Promise<TaskRecord> {
+    return this.mutate((database) => {
+      const state = this.state(database, workspaceId);
+      const task = state.tasks.find((item) => item.id === id);
+      if (!task) throw new NotFoundException("Task not found");
+      task.state = "DONE";
+      state.audit.push(auditRecord(state.workspace.id, actor, "TASK_COMPLETED", "TASK", "Completed a household task", task.id));
+      return task;
+    });
   }
 
-  async restoreDocument(id: string, at = now()): Promise<DocumentRecord> {
-    const state = await this.load();
-    const document = state.documents.find((item) => item.id === id);
-    if (!document || document.status !== "DELETED" || !document.purgeDueAt) throw new NotFoundException("Document is not in Trash");
-    if (new Date(at).getTime() >= new Date(document.purgeDueAt).getTime()) throw new BadRequestException("The 30-day recovery period has ended");
-    document.status = document.preDeleteStatus ?? (document.extractedText ? "READY" : "NEEDS_REVIEW");
-    document.updatedAt = at;
-    delete document.deletedAt;
-    delete document.purgeDueAt;
-    delete document.preDeleteStatus;
-    state.audit.push(auditRecord(state.workspace.id, "DOCUMENT_RESTORED", "DOCUMENT", "Restored document from Trash before its purge deadline", id));
-    await this.save(state);
-    return documentSummary(document);
+  async deleteDocument(workspaceId: string, actor: WorkspaceActor, id: string): Promise<{ documentId: string; state: "TRASHED"; deletedAt: string; purgeDueAt: string }> {
+    return this.mutate((database) => {
+      const state = this.state(database, workspaceId);
+      const document = state.documents.find((item) => item.id === id);
+      if (!document) throw new NotFoundException("Document not found");
+      if (document.status === "DELETED" && document.deletedAt && document.purgeDueAt) {
+        return { documentId: document.id, state: "TRASHED" as const, deletedAt: document.deletedAt, purgeDueAt: document.purgeDueAt };
+      }
+      const deletedAt = now();
+      document.preDeleteStatus = document.status === "DELETED" ? "NEEDS_REVIEW" : document.status;
+      document.status = "DELETED";
+      document.deletedAt = deletedAt;
+      document.purgeDueAt = trashDeadline(deletedAt);
+      document.updatedAt = deletedAt;
+      state.audit.push(auditRecord(state.workspace.id, actor, "DOCUMENT_TRASHED", "DOCUMENT", "Moved document into the restricted 30-day Trash state", id));
+      return { documentId: document.id, state: "TRASHED" as const, deletedAt, purgeDueAt: document.purgeDueAt };
+    });
   }
 
-  async purgeExpiredDocuments(at = now()): Promise<string[]> {
-    const state = await this.load();
-    const cutoff = new Date(at).getTime();
-    const expired = state.documents.filter((document) => document.status === "DELETED" && document.purgeDueAt && new Date(document.purgeDueAt).getTime() <= cutoff);
-    for (const document of expired) {
-      state.facts = state.facts.filter((fact) => fact.documentId !== document.id);
-      state.dependencies = state.dependencies.filter((edge) => edge.evidenceDocumentId !== document.id);
-      state.tasks = state.tasks.filter((task) => task.documentId !== document.id);
-      state.audit.push(auditRecord(state.workspace.id, "DOCUMENT_PURGED", "DOCUMENT", "Completed final purge after the 30-day Trash period", document.id));
-      try { await unlink(join(this.artifactRoot, document.id)); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
-    }
-    if (expired.length) {
-      const expiredIds = new Set(expired.map((document) => document.id));
-      state.documents = state.documents.filter((document) => !expiredIds.has(document.id));
-      await this.save(state);
-    }
-    return expired.map((document) => document.id);
+  async restoreDocument(workspaceId: string, actor: WorkspaceActor, id: string, at = now()): Promise<DocumentRecord> {
+    return this.mutate((database) => {
+      const state = this.state(database, workspaceId);
+      const document = state.documents.find((item) => item.id === id);
+      if (!document || document.status !== "DELETED" || !document.purgeDueAt) throw new NotFoundException("Document is not in Trash");
+      if (new Date(at).getTime() >= new Date(document.purgeDueAt).getTime()) throw new BadRequestException("The 30-day recovery period has ended");
+      document.status = document.preDeleteStatus ?? (document.extractedText ? "READY" : "NEEDS_REVIEW");
+      document.updatedAt = at;
+      delete document.deletedAt;
+      delete document.purgeDueAt;
+      delete document.preDeleteStatus;
+      state.audit.push(auditRecord(state.workspace.id, actor, "DOCUMENT_RESTORED", "DOCUMENT", "Restored document from Trash before its purge deadline", id));
+      return documentSummary(document);
+    });
   }
 
-  async exportWorkspace(): Promise<LocalState> {
-    const state = await this.load();
+  async purgeExpiredDocuments(workspaceId: string, at = now()): Promise<string[]> {
+    return this.mutate(async (database) => {
+      const state = this.state(database, workspaceId);
+      const cutoff = new Date(at).getTime();
+      const expired = state.documents.filter((document) => document.status === "DELETED" && document.purgeDueAt && new Date(document.purgeDueAt).getTime() <= cutoff);
+      const worker = { identityId: "workload.local-purge", displayName: "Local purge worker" };
+      for (const document of expired) {
+        state.facts = state.facts.filter((fact) => fact.documentId !== document.id);
+        state.dependencies = state.dependencies.filter((edge) => edge.evidenceDocumentId !== document.id);
+        state.tasks = state.tasks.filter((task) => task.documentId !== document.id);
+        state.audit.push(auditRecord(state.workspace.id, worker, "DOCUMENT_PURGED", "DOCUMENT", "Completed final local purge after the Trash period", document.id));
+        for (const artifactPath of [this.scopedArtifactPath(workspaceId, document.id), join(this.artifactRoot, document.id)]) {
+          try { await unlink(artifactPath); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+        }
+      }
+      if (expired.length) {
+        const expiredIds = new Set(expired.map((document) => document.id));
+        state.documents = state.documents.filter((document) => !expiredIds.has(document.id));
+      }
+      return expired.map((document) => document.id);
+    });
+  }
+
+  async exportWorkspace(workspaceId: string): Promise<LocalState> {
+    const state = this.state(await this.readDatabase(), workspaceId);
     return { ...state, documents: state.documents.map(({ extractedText: _content, ...document }) => document) } as LocalState;
+  }
+
+  async recordRecoveryBlocked(workspaceId: string, actor: WorkspaceActor): Promise<{ caseId: string; workspaceId: string; caseKind: "WORKSPACE_RECOVERY"; state: "POLICY_BLOCKED"; decisionFence: "DEC-038"; createdAt: string; revision: 1 }> {
+    return this.mutate((database) => {
+      const state = this.state(database, workspaceId);
+      const createdAt = now();
+      const caseId = randomUUID();
+      state.audit.push(auditRecord(workspaceId, actor, "RECOVERY_POLICY_BLOCKED", "WORKSPACE", "Recovery and ownership transfer remain unavailable under DEC-038", workspaceId));
+      return { caseId, workspaceId, caseKind: "WORKSPACE_RECOVERY", state: "POLICY_BLOCKED", decisionFence: "DEC-038", createdAt, revision: 1 };
+    });
   }
 }

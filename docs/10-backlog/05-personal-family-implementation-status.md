@@ -33,20 +33,32 @@ The assessment compared:
 
 Organisation workspaces, SSO/SCIM, DLP, records management, enterprise administration, and other Phase 2 capabilities were excluded.
 
+### 2.1 Latest bounded implementation evidence
+
+The 29 August 2026 identity/authority increment adds local-preview evidence without closing any story:
+
+- versioned local authority persistence now supports multiple isolated workspaces and records the workspace, explicit owner binding, owner subject, identity link, membership, bootstrap owner grant, authorization epoch, audit entry, and idempotent creation receipt as separate records;
+- the API now requires an active session plus explicit workspace and purpose context, evaluates current membership and explicit action grants through one deny-by-default policy function, and returns existence-safe denials for mismatched workspaces;
+- local identity persistence now supports separate accounts, scrypt password hashes, hashed session and CSRF tokens, 30-minute idle and seven-day absolute expiry, privilege-change/session rotation, current-session revocation, trusted browser origins, and persisted sign-in throttling keyed by email and client fingerprint;
+- React and Flutter requests carry the current workspace, purpose, CSRF, correlation, and idempotency context; protected originals and exports are fetched through authorized requests rather than unauthenticated browser links; and
+- web/mobile sign-in surfaces state that recovery and ownership transfer are unavailable, while the reserved authenticated recovery-case route returns and audits `POLICY_BLOCKED` under `DEC-038`.
+
+The focused API suite covers policy allow/deny behavior, multi-workspace isolation/idempotency, authority record separation, session/CSRF rotation, login throttling, unique-owner fencing, and the recovery fence. A live local HTTP smoke test also verified create/replay `200`, reused-key conflict `409`, authorized dashboard `200`, owner-fabrication `400`, cross-workspace `404`, missing-CSRF `403`, policy-blocked recovery `201`, and untrusted-origin `403` outcomes. This remains local JSON/synthetic-preview evidence: production persistence, MFA/passkeys, delegated grants, field/edge authorization, client-side document encryption, durable audit/events, accessibility, and full security/E2E evidence are still open.
+
 ## 3. Story-by-story comparison
 
 ### `P1-S1` — Secure household vault
 
 | Story | Status | Current evidence | Remaining work |
 |---|---|---|---|
-| `STORY-P1-001` | `PARTIAL PREVIEW` | Registration creates one owner and onboarding renames a personal/family workspace. | Multi-workspace/identity model, eligibility, idempotent creation, durable event/audit, migration, concurrency, and negative isolation evidence. |
-| `STORY-P1-002` | `PARTIAL PREVIEW` | Subjects are distinct from members; dependants can exist without login. | Production persistence, lifecycle/concurrency, provenance-preserving transition, resource policy integration, and cross-workspace denial. |
-| `STORY-P1-003` | `PARTIAL PREVIEW` | Session guard protects API routes and UI exposes file-permission choices. | Central current policy engine for resource/field/edge/action decisions; deny-by-default projections, revocation epochs, minimal disclosure, and negative tests. |
+| `STORY-P1-001` | `PARTIAL PREVIEW` | Local onboarding creates an idempotent, isolated personal/family workspace with separate owner binding, owner subject, identity link, membership, grant, epoch and audit records; repeated-key and cross-workspace tests pass. | Production persistence/transactions, eligibility/configuration authority, durable event/audit, concurrent failure repair, migration evidence, and full contract/E2E isolation evidence. |
+| `STORY-P1-002` | `PARTIAL PREVIEW` | Subjects, identities, subject-identity links and memberships are distinct versioned local records; a dependant or prospective member creates no account or access grant. | Production persistence, optimistic concurrency, complete relationship provenance, invitation redemption, lifecycle/transition policy, and exhaustive foreign-resource denial/audit evidence. |
+| `STORY-P1-003` | `PARTIAL PREVIEW` | One policy evaluator now requires current membership plus an explicit purpose/action/resource grant; API requests bind active session, workspace and purpose, and cross-workspace/no-grant tests fail closed. | Field/evidence/edge/search/answer/citation authorization, delegated grants, revocation propagation across queued/cached outputs, policy packages, minimal-disclosure/side-channel evidence, and production policy-decision infrastructure. |
 | `STORY-P1-004` | `PARTIAL PREVIEW` | File, folder/multi-file, camera-compatible, and manual capture reach one API/store. | Durable ingestion case/state machine, resumable transfer, idempotency key, status/retry, content validation, mobile encryption before transfer, and production artifact route. |
 | `STORY-P1-005` | `PARTIAL PREVIEW` | Heuristic suspected-clinical `POLICY_HOLD` blocks preview/search; test exists. | Malware scanning, trustworthy MIME/content inspection, isolated encrypted quarantine, safe reclassification/deletion, timeout/unavailable behavior, and adversarial tests. |
 | `STORY-P1-006` | `NOT IMPLEMENTED` | No durable staged workflow, outbox, lease, retry, or dead-letter runtime. | Idempotent ingestion stages, crash-window recovery, duplicate/reorder handling, retry budget, reconciliation, audit, and repair tooling. |
 | `STORY-P1-007` | `PARTIAL PREVIEW` | Uploaded bytes are hashed and stored; duplicate content is rejected. | Put-once Azure Blob artifact path, immutable artifact/version identities, logical document versioning, integrity verification, supersession, compare, retention, and deletion acknowledgements. |
-| `STORY-P1-008` | `PARTIAL PREVIEW` | Password hashing, HttpOnly sessions, Key Vault/IaC foundations, and cross-language AES-GCM vectors exist. | End-to-end client encryption on every web/mobile upload and download, secure device key storage, key envelope/grant lifecycle, step-up/MFA/passkeys, production identity, session rotation/CSRF/abuse controls, and secret mounting/rotation. |
+| `STORY-P1-008` | `PARTIAL PREVIEW` | Local accounts use scrypt hashes; raw session/CSRF tokens are not stored; HttpOnly/SameSite sessions have idle/absolute expiry, CSRF/origin checks, privilege-change rotation, revocation metadata and persisted sign-in throttling. Key Vault/IaC foundations and cross-language AES-GCM vectors also exist. | End-to-end client encryption on every web/mobile upload/download, secure device key storage, key envelope/grant lifecycle, step-up/MFA/passkeys, production identity/federation, distributed revocation, secret mounting/rotation, and full abuse/security evidence. |
 | `STORY-P1-009` | `PARTIAL PREVIEW` | Content-minimized local activity records and basic tests exist. | Append-only/tamper-evident audit store, actor/workload provenance, comprehensive event coverage, separate safe telemetry, correlation, retention/export controls, anomaly alerting, and audit-failure behavior. |
 | `STORY-P1-010` | `PARTIAL PREVIEW` | Versioned synthetic reference JSON and validators exist; runtime activation is disabled. | Runtime configuration registry/publication, signed immutable packages, compatibility/impact/replay, approval/activation, rollback/forward repair, and consumer acknowledgements. |
 
@@ -92,7 +104,7 @@ Organisation workspaces, SSO/SCIM, DLP, records management, enterprise administr
 
 | Story | Status | Current evidence | Remaining work |
 |---|---|---|---|
-| `STORY-P1-039` | `NOT IMPLEMENTED` | Coarse member permissions are stored, but no resource grant is issued or redeemed. | Exact resource/field/action/purpose/time grants, preview, invitation, single-use redemption, expiry/revocation, key-envelope access, minimal disclosure, and audit. |
+| `STORY-P1-039` | `NOT IMPLEMENTED` | Workspace creation now persists and evaluates one explicit purpose/action/resource bootstrap grant for the owner; prospective members receive no fabricated grant. No delegated grant issue/preview/redeem workflow exists. | Exact delegated resource/field/action/purpose/time grants, effective-access preview, invitation, single-use redemption, expiry/revocation propagation, key-envelope access, minimal disclosure, and immutable audit. |
 | `STORY-P1-040` | `PARTIAL PREVIEW` | Dependants and login-enabled people are separate; invitation state is represented. | Secure `DEC-046` invite delivery/redemption, invitee-created credential/passkey, age/authority/consent policy, managed-dependant transition, provenance retention, and revocation. |
 | `STORY-P1-041` | `PARTIAL PREVIEW` | Provider catalogue shows purpose, requested permission, exact callback, and `CONFIGURED_DISABLED` state. | OAuth start/callback routes, token store, provider adapters, consent persistence, selected-file import, cursors, revocation/deletion, conformance, and production provider approval. |
 | `STORY-P1-042` | `PARTIAL PREVIEW` | External channels are disabled and ACS is prepared. | Notification preferences, email adapter, recipient verification, delivery/bounce/retry state, quiet periods, consent/minimization, SMS decision/provider, and conformance tests. |
@@ -100,7 +112,7 @@ Organisation workspaces, SSO/SCIM, DLP, records management, enterprise administr
 | `STORY-P1-044` | `PARTIAL PREVIEW` | A JSON export endpoint returns some current local state without extracted text. | Complete declared envelope with originals, versions, facts, relationships, tasks, grants, audit, manifest/checksums, authorization, encryption, temporary cleanup, and portability tests. |
 | `STORY-P1-045` | `PARTIAL PREVIEW` | Immediate fence, 30-day Trash/restore, final file/fact/edge/task purge, and unit tests exist. | Step-up restore, durable scheduler/ledger, encrypted Blob and key-envelope purge, every projection/adapter/backup acknowledgement, late-event non-resurrection, exceptions, and production evidence. |
 | `STORY-P1-046` | `PARTIAL PREVIEW` | Azure Australia foundations, policy markers, and Australian ACS data location exist. | Enforceable data-class/processor/region matrix across storage, AI, connectors, support, telemetry, backup/failover, exports, and denial/evidence tests. |
-| `STORY-P1-047` | `INTENTIONALLY UNAVAILABLE` | No recovery or ownership-transfer API is exposed in the local/dev preview. | Explicit unavailable UI/API contract and abuse-resistant negative tests; later production recovery assurance, identity proofing, key recovery, support boundaries, and owner decision. |
+| `STORY-P1-047` | `INTENTIONALLY UNAVAILABLE` | Web/mobile sign-in explicitly says recovery and ownership transfer are unavailable; the reserved authenticated API returns and audits `POLICY_BLOCKED` rather than success, and no reset/transfer/evidence-upload route exists. | Full contract, accessibility, anti-enumeration, repeated-abuse, direct-port/configuration and support-boundary negative evidence; any later production recovery still requires identity/key assurance and an owner decision. |
 | `STORY-P1-048` | `INTENTIONALLY UNAVAILABLE` | No automated emergency/incapacity/after-death release exists, as required by `DEC-032`. | Explicit negative tests and copy; keep ordinary grants/export separate and prevent future configuration from silently activating release. |
 
 ## 4. Feature and requirement coverage by slice
@@ -116,7 +128,7 @@ Organisation workspaces, SSO/SCIM, DLP, records management, enterprise administr
 
 The principal differences between the preview and [`ARCH-SOL-001`](../02-architecture/01-solution-architecture.md) are:
 
-1. **Tenancy and authorization:** the API has one local owner/store and session-wide access, not a multi-workspace policy-decision boundary with resource/field/edge/action enforcement.
+1. **Tenancy and authorization:** a local multi-workspace authority store, explicit owner bootstrap grant, authorization epoch and deny-by-default action boundary now exist, but persistence is still JSON and field/evidence/edge/delegated-grant/revocation propagation and production policy infrastructure remain incomplete.
 2. **Data plane:** canonical state is a local JSON file and artifacts are local/Azure Files preview data, not production canonical stores plus immutable customer-encrypted Blob artifacts and rebuildable projections.
 3. **Encryption:** TypeScript and Dart cryptographic envelope tests exist, but React/Flutter upload paths send plaintext to the API and the API stores plaintext. This must be fixed before real documents are allowed.
 4. **Durable processing:** there is no transactional outbox, workflow state machine, queue, retry/replay, dead-letter, cursor, projection watermark, migration, or repair runtime.
@@ -131,7 +143,7 @@ The principal differences between the preview and [`ARCH-SOL-001`](../02-archite
 
 All Phase 1 remains one continuous program under `DEC-054`; this order is for dependency and risk control, not separate product approvals.
 
-1. Production identity/session foundation, multi-workspace persistence, policy engine, exact grants, secure invitations, and audit.
+1. Complete the production identity/MFA/passkey and durable multi-workspace foundation, then extend the local action-policy baseline into exact delegated grants, field/evidence/edge decisions, secure invitations, revocation propagation, and append-only audit.
 2. End-to-end client encryption and secure key envelopes on React and Flutter before any real-document route.
 3. Immutable artifact/version repository and durable ingestion/outbox/retry/quarantine pipeline.
 4. Evidence anchors, extraction generations, taxonomy, bitemporal facts/entities/conflicts, and review/correction.

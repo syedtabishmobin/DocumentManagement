@@ -4,11 +4,15 @@ class AuthState {
     required this.onboardingComplete,
     this.name,
     this.email,
+    this.activeWorkspaceId,
+    this.workspaces = const [],
   });
   final bool authenticated;
   final bool onboardingComplete;
   final String? name;
   final String? email;
+  final String? activeWorkspaceId;
+  final List<WorkspaceOption> workspaces;
 
   factory AuthState.fromJson(Map<String, dynamic> value) {
     final account = value['account'] as Map<String, dynamic>?;
@@ -17,8 +21,30 @@ class AuthState {
       onboardingComplete: value['onboardingComplete'] == true,
       name: account?['displayName']?.toString(),
       email: account?['email']?.toString(),
+      activeWorkspaceId: value['activeWorkspaceId']?.toString(),
+      workspaces: (value['workspaces'] as List<dynamic>? ?? const [])
+          .map((item) => WorkspaceOption.fromJson(item as Map<String, dynamic>))
+          .toList(),
     );
   }
+}
+
+class WorkspaceOption {
+  const WorkspaceOption({
+    required this.id,
+    required this.name,
+    required this.type,
+  });
+  final String id;
+  final String name;
+  final String type;
+
+  factory WorkspaceOption.fromJson(Map<String, dynamic> value) =>
+      WorkspaceOption(
+        id: value['id'].toString(),
+        name: value['name'].toString(),
+        type: value['type'].toString(),
+      );
 }
 
 class VaultDocument {

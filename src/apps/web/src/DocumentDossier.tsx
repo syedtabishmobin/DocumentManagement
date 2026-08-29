@@ -6,13 +6,27 @@ import { api } from "./api.js";
 export function DocumentDossier({ id, data, onClose, onUpdated }: { id: string; data: DashboardSnapshot; onClose: () => void; onUpdated?: () => Promise<void> }) {
   const [detail, setDetail] = useState<DocumentDetail>();
   const [error, setError] = useState("");
+  const [artifactUrl, setArtifactUrl] = useState<string>();
+  const [artifactError, setArtifactError] = useState("");
   const [section, setSection] = useState<"preview" | "details" | "connections">("preview");
 
   useEffect(() => {
+    let disposed = false;
+    let objectUrl: string | undefined;
     const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };
     document.addEventListener("keydown", closeOnEscape);
-    void api.documentDetail(id).then(setDetail).catch((cause) => setError(cause instanceof Error ? cause.message : "Document details are unavailable"));
-    return () => document.removeEventListener("keydown", closeOnEscape);
+    setDetail(undefined); setArtifactUrl(undefined); setError(""); setArtifactError("");
+    void api.documentDetail(id).then((value) => { if (!disposed) setDetail(value); }).catch((cause) => { if (!disposed) setError(cause instanceof Error ? cause.message : "Document details are unavailable"); });
+    void api.documentArtifact(id).then((blob) => {
+      objectUrl = URL.createObjectURL(blob);
+      if (disposed) URL.revokeObjectURL(objectUrl);
+      else setArtifactUrl(objectUrl);
+    }).catch((cause) => { if (!disposed) setArtifactError(cause instanceof Error ? cause.message : "The authorised original is unavailable"); });
+    return () => {
+      disposed = true;
+      document.removeEventListener("keydown", closeOnEscape);
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
   }, [id, onClose]);
 
   return <div className="modal-backdrop dossier-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
@@ -36,8 +50,8 @@ export function DocumentDossier({ id, data, onClose, onUpdated }: { id: string; 
           <button className={section === "connections" ? "active" : ""} onClick={() => setSection("connections")}><Network /> Connections <b>{detail.dependencies.length}</b></button>
         </nav>
         {section === "preview" ? <section className="dossier-section">
-          <div className="section-title"><div><span className="eyebrow">Exact authorised version</span><h3>Document preview</h3></div><a className="secondary button-link" href={api.documentArtifactUrl(detail.document.id)} target="_blank" rel="noreferrer"><ExternalLink size={16} /> Open original</a></div>
-          <Preview detail={detail} />
+          <div className="section-title"><div><span className="eyebrow">Exact authorised version</span><h3>Document preview</h3></div>{artifactUrl ? <a className="secondary button-link" href={artifactUrl} target="_blank" rel="noreferrer"><ExternalLink size={16} /> Open original</a> : <button className="secondary" disabled><ExternalLink size={16} /> Opening securely…</button>}</div>
+          <Preview detail={detail} artifactUrl={artifactUrl} artifactError={artifactError} />
           <div className="integrity-strip"><Fingerprint /><span><strong>Immutable authorised original</strong><small>SHA-256 {detail.document.sha256.slice(0, 16)}… · {formatBytes(detail.document.size)} · added {formatDate(detail.document.createdAt)}</small></span></div>
         </section> : null}
         {section === "details" ? <section className="dossier-section">
@@ -48,17 +62,19 @@ export function DocumentDossier({ id, data, onClose, onUpdated }: { id: string; 
           <div className="section-title"><div><span className="eyebrow">Typed relationships</span><h3>Where this document connects</h3><p>This list is the accessible equivalent of the relationship map. Every connection remains tied to this document.</p></div></div>
           <div className="connection-list">{detail.dependencies.map((edge) => <article key={edge.id}><Link2 /><span><strong>{edge.label}</strong><small>{connectionTarget(edge, data)}</small></span><code>{edge.kind.replaceAll("_", " → ").toLowerCase()}</code></article>)}</div>
         </section> : null}
-        <footer><span><ShieldCheck /> {data.localMode ? "Stored and processed in the local development profile" : "Stored in the synthetic Azure development preview"}</span><a href={api.documentArtifactUrl(detail.document.id)} download><Download /> Download exact original</a></footer>
+        <footer><span><ShieldCheck /> {data.localMode ? "Stored and processed in the local development profile" : "Stored in the synthetic Azure development preview"}</span>{artifactUrl ? <a href={artifactUrl} download={detail.document.name}><Download /> Download exact original</a> : <span><Download /> Original loading</span>}</footer>
       </> : null}
     </section>
   </div>;
 }
 
-function Preview({ detail }: { detail: DocumentDetail }) {
+function Preview({ detail, artifactUrl, artifactError }: { detail: DocumentDetail; artifactUrl: string | undefined; artifactError: string }) {
   if (detail.preview.kind === "TEXT") return <pre className="text-preview">{detail.preview.text}</pre>;
-  if (detail.preview.kind === "IMAGE") return <div className="media-preview"><img src={detail.preview.artifactUrl} alt={`Preview of ${detail.document.name}`} /></div>;
-  if (detail.preview.kind === "PDF") return <iframe className="pdf-preview" src={detail.preview.artifactUrl} title={`Preview of ${detail.document.name}`} />;
-  return <div className="dossier-empty"><FileText /><strong>Inline preview unavailable</strong><p>{detail.preview.message}</p><a className="secondary button-link" href={detail.preview.artifactUrl} target="_blank" rel="noreferrer">Open exact original</a></div>;
+  if (artifactError) return <div className="dossier-empty"><FileText /><strong>Authorised original unavailable</strong><p>{artifactError}</p></div>;
+  if (!artifactUrl) return <div className="dossier-loading">Loading the authorised original…</div>;
+  if (detail.preview.kind === "IMAGE") return <div className="media-preview"><img src={artifactUrl} alt={"Preview of " + detail.document.name} /></div>;
+  if (detail.preview.kind === "PDF") return <iframe className="pdf-preview" src={artifactUrl} title={"Preview of " + detail.document.name} />;
+  return <div className="dossier-empty"><FileText /><strong>Inline preview unavailable</strong><p>{detail.preview.message}</p><a className="secondary button-link" href={artifactUrl} target="_blank" rel="noreferrer">Open exact original</a></div>;
 }
 
 function connectionTarget(edge: DocumentDetail["dependencies"][number], data: DashboardSnapshot) {

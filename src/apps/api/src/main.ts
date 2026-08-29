@@ -9,11 +9,17 @@ async function bootstrap(): Promise<void> {
   }
 
   const app = await NestFactory.create(AppModule, { logger: ["error", "warn", "log"] });
-  const origins = (process.env.DM_WEB_ORIGIN ?? "http://localhost:4173")
+  const origins = (process.env.DM_WEB_ORIGIN ?? "http://localhost:4173,http://127.0.0.1:4173")
     .split(",")
     .map((value) => value.trim())
     .filter(Boolean);
-  app.enableCors({ origin: origins, methods: ["GET", "POST", "PATCH", "DELETE"], credentials: true });
+  app.enableCors({
+    origin: origins,
+    methods: ["GET", "POST", "PATCH", "DELETE"],
+    allowedHeaders: ["Content-Type", "X-CSRF-Token", "X-Workspace-Id", "X-Purpose-Id", "Idempotency-Key", "X-Correlation-Id"],
+    exposedHeaders: ["X-CSRF-Token"],
+    credentials: true,
+  });
   app.setGlobalPrefix("api");
   const port = Number(process.env.DM_API_PORT ?? 4310);
   const host = process.env.DM_BIND_HOST ?? (profile === "local" ? "127.0.0.1" : "0.0.0.0");
