@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plan and record exactly-once Product Authority notifications."""
+"""Plan, reserve, dispatch and reconcile Product Authority notifications."""
 
 from __future__ import annotations
 
@@ -8,17 +8,21 @@ import fcntl
 import hashlib
 import json
 import os
+import subprocess
 import tempfile
-from datetime import datetime, timezone
+import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CONFIG = ROOT / ".agents/config/notifications.json"
 DEFAULT_CONTACTS = ROOT / ".agents/config/contacts.json"
 REQUIRED_EVENT_FIELDS = {"key", "eventType", "projectId", "subject", "authoritativeUrl", "requiredAction", "reason", "appliesTo", "recommendation", "alternatives", "blocked", "continuing", "remaining"}
 UAT_REQUIRED_FIELDS = {"releaseEvidence", "accessInstructions", "deliveredScope", "acceptanceSummary", "residualRisks", "businessAcceptanceStatus", "recommendedUatScenarios"}
-STATUSES = {"RESERVED", "SENT", "FAILED", "EXTERNAL_ACTION_REQUIRED"}
+STATUSES = {"RESERVED", "SUBMITTED", "SENT", "FAILED", "EXTERNAL_ACTION_REQUIRED"}
+NEGATIVE_DELIVERY_STATUSES = {"Bounced", "Quarantined", "FilteredSpam", "Suppressed", "Failed"}
+OPERATION_NAMESPACE = uuid.UUID("58a0cc27-95c8-4a62-a7bf-d21eff2ac466")
 
 
 def load(path: Path) -> Any:
@@ -30,23 +34,47 @@ def event_fingerprint(event: dict[str, Any]) -> str:
     return hashlib.sha256(json.dumps(event, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
+def provider_operation_id(event: dict[str, Any]) -> str:
+    return str(uuid.uuid5(OPERATION_NAMESPACE, f"{event['key']}:{event_fingerprint(event)}"))
+
+
+def _non_empty_text(value: Any, name: str) -> None:
+    if not isinstance(value, str) or not value.strip() or len(value) > 20_000:
+        raise ValueError(f"{name} must be non-empty minimized text")
+
+
+def _text_list(value: Any, name: str, *, allow_empty: bool = False) -> None:
+    if not isinstance(value, list) or (not allow_empty and not value) or any(not isinstance(item, str) or not item.strip() or len(item) > 2_000 for item in value):
+        raise ValueError(f"{name} must be a bounded list of non-empty text")
+
+
 def validate_event(event: dict[str, Any], config: dict[str, Any]) -> None:
     missing = sorted(REQUIRED_EVENT_FIELDS - set(event))
     if missing:
         raise ValueError(f"notification event missing fields: {', '.join(missing)}")
     if event["eventType"] not in config["events"] or event["projectId"] != config["projectId"]:
         raise ValueError("event type or project does not match notification configuration")
-    if not str(event["authoritativeUrl"]).startswith("https://github.com/"):
-        raise ValueError("authoritativeUrl must be a direct GitHub URL")
+    if not str(event["authoritativeUrl"]).startswith("https://github.com/syedtabishmobin/DocumentManagement/"):
+        raise ValueError("authoritativeUrl must be a direct configured-repository GitHub URL")
     prefix = "[Doculyra][ACTION REQUIRED]" if event["eventType"] == "BLOCKING_DECISION" else "[Doculyra][UAT READY]"
-    if not event["subject"].startswith(prefix):
-        raise ValueError(f"subject must start with {prefix}")
+    if not event["subject"].startswith(prefix) or len(event["subject"]) > 200:
+        raise ValueError(f"subject must start with {prefix} and remain bounded")
+    for field in ("requiredAction", "reason", "recommendation"):
+        _non_empty_text(event[field], field)
+    for field in ("appliesTo", "alternatives", "blocked", "continuing", "remaining"):
+        _text_list(event[field], field, allow_empty=field == "continuing")
     if event["eventType"] == "UAT_READY":
         missing_uat = sorted(UAT_REQUIRED_FIELDS - set(event))
         if missing_uat:
             raise ValueError(f"UAT_READY event missing fields: {', '.join(missing_uat)}")
         if event["businessAcceptanceStatus"] != "PASS":
             raise ValueError("UAT_READY requires PASS business acceptance")
+        for field in ("releaseEvidence", "accessInstructions", "acceptanceSummary"):
+            _non_empty_text(event[field], field)
+        for field in ("deliveredScope", "residualRisks", "recommendedUatScenarios"):
+            _text_list(event[field], field, allow_empty=field == "residualRisks")
+        if not str(event["releaseEvidence"]).startswith("https://github.com/syedtabishmobin/DocumentManagement/"):
+            raise ValueError("releaseEvidence must be a durable configured-repository GitHub URL")
 
 
 def resolve_recipients(contacts: dict[str, Any]) -> dict[str, list[str]]:
@@ -54,7 +82,10 @@ def resolve_recipients(contacts: dict[str, Any]) -> dict[str, list[str]]:
     routing = contacts["routing"]
     to = by_id[routing["toContactId"]]
     cc = [by_id[item] for item in routing["ccContactIds"]]
-    return {"to": [to], "cc": [address for address in dict.fromkeys(cc) if address != to]}
+    recipients = {"to": [to], "cc": [address for address in dict.fromkeys(cc) if address != to]}
+    if recipients != routing.get("resolved"):
+        raise ValueError("computed recipients do not match the reviewed recipient allow-list")
+    return recipients
 
 
 def operational(config: dict[str, Any]) -> bool:
@@ -62,10 +93,66 @@ def operational(config: dict[str, Any]) -> bool:
     return adapter["implementation"] == "IMPLEMENTED" and adapter["activation"] == "ENABLED" and adapter["deliveryConformance"] == "PASS" and adapter["sendAllowed"] is True
 
 
+def conformance_allowed(config: dict[str, Any]) -> bool:
+    adapter = config["adapter"]
+    return adapter["implementation"] == "IMPLEMENTED" and adapter["activation"] == "CONFIGURED_DISABLED" and adapter["deliveryConformance"] in {"NOT_RUN", "BLOCKED_EXTERNAL_VALIDATION"} and adapter.get("conformanceSendAllowed") is True
+
+
+def _bullets(values: list[str]) -> str:
+    return "\n".join(f"- {value}" for value in values) if values else "- None recorded."
+
+
+def compose_plain_text(event: dict[str, Any]) -> str:
+    sections = [
+        event["subject"],
+        f"Authoritative record: {event['authoritativeUrl']}",
+        f"Action required:\n{event['requiredAction']}",
+        f"Why this notification was raised:\n{event['reason']}",
+        f"Applies to:\n{_bullets(event['appliesTo'])}",
+        f"Recommendation:\n{event['recommendation']}",
+        f"Alternatives and impacts:\n{_bullets(event['alternatives'])}",
+        f"Work blocked:\n{_bullets(event['blocked'])}",
+        f"Work continuing:\n{_bullets(event['continuing'])}",
+        f"Work remaining after this action:\n{_bullets(event['remaining'])}",
+    ]
+    if event["eventType"] == "UAT_READY":
+        sections.extend([
+            f"Stage access:\n{event['accessInstructions']}",
+            f"Delivered scope:\n{_bullets(event['deliveredScope'])}",
+            f"QA, test and evaluation summary:\n{event['acceptanceSummary']}",
+            f"Known residual defects and risks:\n{_bullets(event['residualRisks'])}",
+            f"BA/business acceptance status:\n{event['businessAcceptanceStatus']}",
+            f"Recommended UAT scenarios:\n{_bullets(event['recommendedUatScenarios'])}",
+            f"Durable release evidence: {event['releaseEvidence']}",
+        ])
+    return "\n\n".join(sections) + "\n"
+
+
+def dispatch_plan(event: dict[str, Any], config: dict[str, Any], contacts: dict[str, Any]) -> dict[str, Any]:
+    validate_event(event, config)
+    return {
+        "schemaVersion": "1.0.0",
+        "eventKey": event["key"],
+        "eventType": event["eventType"],
+        "providerOperationId": provider_operation_id(event),
+        "subject": event["subject"],
+        "plainText": compose_plain_text(event),
+        "recipients": resolve_recipients(contacts),
+    }
+
+
 def plan(event: dict[str, Any], config: dict[str, Any], contacts: dict[str, Any], ledger: dict[str, Any]) -> dict[str, Any]:
     validate_event(event, config)
     existing = next((item for item in ledger.get("events", []) if item.get("key") == event["key"]), None)
-    return {"key": event["key"], "eventType": event["eventType"], "recipients": resolve_recipients(contacts), "adapter": config["adapter"]["kind"], "sendAllowed": operational(config), "result": "READY_TO_SEND" if operational(config) and existing is None else (existing["status"] if existing else config["nonOperationalResult"]), "existing": existing is not None}
+    return {
+        "key": event["key"],
+        "eventType": event["eventType"],
+        "recipients": resolve_recipients(contacts),
+        "adapter": config["adapter"]["kind"],
+        "sendAllowed": operational(config),
+        "result": "READY_TO_SEND" if operational(config) and existing is None else (existing["status"] if existing else config["nonOperationalResult"]),
+        "existing": existing is not None,
+    }
 
 
 def atomic_write(path: Path, payload: dict[str, Any]) -> None:
@@ -73,45 +160,252 @@ def atomic_write(path: Path, payload: dict[str, Any]) -> None:
     with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent, delete=False) as handle:
         json.dump(payload, handle, indent=2)
         handle.write("\n")
+        handle.flush()
+        os.fsync(handle.fileno())
         temp_name = handle.name
+    os.chmod(temp_name, 0o600)
     os.replace(temp_name, path)
+
+
+def _locked_ledger(ledger_path: Path, callback: Callable[[dict[str, Any]], dict[str, Any]]) -> dict[str, Any]:
+    lock_path = ledger_path.with_suffix(ledger_path.suffix + ".lock")
+    lock_path.touch(exist_ok=True)
+    os.chmod(lock_path, 0o600)
+    with lock_path.open("r+") as lock:
+        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
+        ledger = load(ledger_path)
+        result = callback(ledger)
+        atomic_write(ledger_path, ledger)
+        return result
+
+
+def _existing(ledger: dict[str, Any], key: str) -> dict[str, Any] | None:
+    return next((item for item in ledger.get("events", []) if item.get("key") == key), None)
+
+
+def reserve(event: dict[str, Any], config: dict[str, Any], contacts: dict[str, Any], ledger_path: Path, *, conformance: bool = False, retry: bool = False, now: datetime | None = None) -> dict[str, Any]:
+    validate_event(event, config)
+    if not operational(config) and not (conformance and conformance_allowed(config)):
+        raise ValueError("notification adapter is not enabled for this send mode")
+    plan_payload = dispatch_plan(event, config, contacts)
+    fingerprint = event_fingerprint(event)
+    current = now or datetime.now(timezone.utc)
+    lease_seconds = int(config["adapter"]["delivery"]["reservationLeaseSeconds"])
+    max_attempts = int(config["adapter"]["delivery"]["maxDispatchAttempts"])
+
+    def update(ledger: dict[str, Any]) -> dict[str, Any]:
+        existing = _existing(ledger, event["key"])
+        if existing:
+            if existing.get("fingerprint") != fingerprint:
+                raise ValueError("deduplication key already exists for a different event payload")
+            if existing["status"] in {"SUBMITTED", "SENT"}:
+                return {"acquired": False, "result": existing["status"], "entry": existing, "plan": plan_payload}
+            if existing["status"] in {"FAILED", "EXTERNAL_ACTION_REQUIRED"} and not retry:
+                return {"acquired": False, "result": existing["status"], "entry": existing, "plan": plan_payload}
+            lease_until = datetime.fromisoformat(existing.get("reservationLeaseUntil", current.isoformat()))
+            if existing["status"] == "RESERVED" and lease_until > current:
+                return {"acquired": False, "result": "DUPLICATE_IN_PROGRESS", "entry": existing, "plan": plan_payload}
+            if int(existing.get("attemptCount", 0)) >= max_attempts:
+                existing.update({"status": "EXTERNAL_ACTION_REQUIRED", "lastUpdatedAt": current.isoformat(), "evidence": "MAX_DISPATCH_ATTEMPTS_EXHAUSTED"})
+                return {"acquired": False, "result": "EXTERNAL_ACTION_REQUIRED", "entry": existing, "plan": plan_payload}
+            existing.update({
+                "status": "RESERVED",
+                "attemptCount": int(existing.get("attemptCount", 0)) + 1,
+                "reservationLeaseUntil": (current + timedelta(seconds=lease_seconds)).isoformat(),
+                "lastUpdatedAt": current.isoformat(),
+                "evidence": "ATOMIC_RESERVATION_ACQUIRED",
+            })
+            return {"acquired": True, "result": "RESERVED", "entry": existing, "plan": plan_payload}
+        entry = {
+            "key": event["key"], "eventType": event["eventType"], "subject": event["subject"],
+            "authoritativeUrl": event["authoritativeUrl"], "fingerprint": fingerprint,
+            "providerOperationId": plan_payload["providerOperationId"], "status": "RESERVED", "attemptCount": 1,
+            "reservationLeaseUntil": (current + timedelta(seconds=lease_seconds)).isoformat(),
+            "firstRecordedAt": current.isoformat(), "lastUpdatedAt": current.isoformat(), "evidence": "ATOMIC_RESERVATION_ACQUIRED",
+        }
+        ledger.setdefault("events", []).append(entry)
+        return {"acquired": True, "result": "RESERVED", "entry": entry, "plan": plan_payload}
+
+    return _locked_ledger(ledger_path, update)
+
+
+def mark_submitted(event: dict[str, Any], config: dict[str, Any], ledger_path: Path, provider_message_id: str, provider_status: str, now: datetime | None = None) -> dict[str, Any]:
+    validate_event(event, config)
+    if str(provider_message_id).lower() != provider_operation_id(event):
+        raise ValueError("provider message ID must match the deterministic provider operation ID")
+    current = now or datetime.now(timezone.utc)
+
+    def update(ledger: dict[str, Any]) -> dict[str, Any]:
+        existing = _existing(ledger, event["key"])
+        if not existing or existing.get("fingerprint") != event_fingerprint(event):
+            raise ValueError("submission requires the matching atomic reservation")
+        prior_id = existing.get("providerMessageId")
+        if prior_id and prior_id != provider_message_id:
+            raise ValueError("provider message ID cannot change after submission")
+        if existing["status"] == "SENT":
+            return existing
+        if existing["status"] not in {"RESERVED", "SUBMITTED"}:
+            raise ValueError("only a reserved notification can be submitted")
+        existing.update({"status": "SUBMITTED", "providerMessageId": provider_message_id, "providerSubmissionStatus": provider_status, "submittedAt": existing.get("submittedAt", current.isoformat()), "lastUpdatedAt": current.isoformat(), "evidence": "ACS_OUT_FOR_DELIVERY"})
+        existing.pop("reservationLeaseUntil", None)
+        return existing
+
+    return _locked_ledger(ledger_path, update)
+
+
+def reconcile_delivery(event: dict[str, Any], config: dict[str, Any], ledger_path: Path, provider_message_id: str, delivery_status: str, *, observed_at: str | None = None, hard_bounce: bool | None = None, now: datetime | None = None) -> dict[str, Any]:
+    validate_event(event, config)
+    if delivery_status not in {"PENDING", "Delivered", *NEGATIVE_DELIVERY_STATUSES}:
+        raise ValueError("unsupported terminal delivery status")
+    current = now or datetime.now(timezone.utc)
+
+    def update(ledger: dict[str, Any]) -> dict[str, Any]:
+        existing = _existing(ledger, event["key"])
+        if not existing or existing.get("fingerprint") != event_fingerprint(event) or existing.get("providerMessageId") != provider_message_id:
+            raise ValueError("delivery report does not match a submitted notification")
+        if existing["status"] not in {"SUBMITTED", "SENT", "FAILED"}:
+            raise ValueError("delivery reconciliation requires submitted provider evidence")
+        if existing["status"] == "SENT" and delivery_status != "Delivered":
+            raise ValueError("a confirmed SENT event cannot be downgraded")
+        if existing["status"] == "FAILED" and delivery_status == "Delivered":
+            raise ValueError("a terminal failed delivery requires explicit investigation before reversal")
+        existing["lastDeliveryCheckAt"] = current.isoformat()
+        existing["lastUpdatedAt"] = current.isoformat()
+        if delivery_status == "PENDING":
+            existing["evidence"] = "DELIVERY_REPORT_PENDING"
+            return existing
+        existing["deliveryStatus"] = delivery_status
+        existing["deliveryObservedAt"] = observed_at or current.isoformat()
+        if hard_bounce is not None:
+            existing["hardBounce"] = hard_bounce
+        if delivery_status == "Delivered":
+            existing.update({"status": "SENT", "evidence": "ACS_RECIPIENT_DELIVERED"})
+        else:
+            existing.update({"status": "FAILED", "evidence": f"ACS_RECIPIENT_{delivery_status.upper()}"})
+        return existing
+
+    return _locked_ledger(ledger_path, update)
+
+
+def record_failure(event: dict[str, Any], config: dict[str, Any], ledger_path: Path, evidence: str, *, ambiguous: bool = False, now: datetime | None = None) -> dict[str, Any]:
+    if not evidence or len(evidence) > 120 or not evidence.replace("_", "").isalnum():
+        raise ValueError("failure evidence must be a bounded machine-readable code")
+    current = now or datetime.now(timezone.utc)
+
+    def update(ledger: dict[str, Any]) -> dict[str, Any]:
+        existing = _existing(ledger, event["key"])
+        if not existing or existing.get("fingerprint") != event_fingerprint(event) or existing["status"] != "RESERVED":
+            raise ValueError("failure recording requires the matching active reservation")
+        existing.update({"lastUpdatedAt": current.isoformat(), "evidence": evidence})
+        if ambiguous:
+            existing["reservationLeaseUntil"] = current.isoformat()
+        else:
+            existing["status"] = "EXTERNAL_ACTION_REQUIRED"
+            existing.pop("reservationLeaseUntil", None)
+        return existing
+
+    return _locked_ledger(ledger_path, update)
+
+
+def record_reconciliation_failure(event: dict[str, Any], ledger_path: Path, evidence: str, now: datetime | None = None) -> dict[str, Any]:
+    current = now or datetime.now(timezone.utc)
+
+    def update(ledger: dict[str, Any]) -> dict[str, Any]:
+        existing = _existing(ledger, event["key"])
+        if not existing or existing.get("fingerprint") != event_fingerprint(event) or existing["status"] != "SUBMITTED":
+            raise ValueError("reconciliation failure requires the matching submitted notification")
+        existing.update({
+            "lastDeliveryCheckAt": current.isoformat(),
+            "lastUpdatedAt": current.isoformat(),
+            "deliveryReconciliationStatus": "EXTERNAL_ACTION_REQUIRED",
+            "evidence": evidence,
+        })
+        return existing
+
+    return _locked_ledger(ledger_path, update)
 
 
 def record(event: dict[str, Any], config: dict[str, Any], ledger_path: Path, status: str, evidence: str, provider_message_id: str | None) -> dict[str, Any]:
     validate_event(event, config)
     if status not in STATUSES:
         raise ValueError(f"unsupported status: {status}")
-    if status == "SENT" and (not operational(config) or not provider_message_id):
-        raise ValueError("SENT requires an operational adapter and provider message ID")
-    lock_path = ledger_path.with_suffix(ledger_path.suffix + ".lock")
-    lock_path.touch(exist_ok=True)
-    with lock_path.open("r+") as lock:
-        fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-        ledger = load(ledger_path)
-        now = datetime.now(timezone.utc).isoformat()
-        fingerprint = event_fingerprint(event)
-        existing = next((item for item in ledger.get("events", []) if item.get("key") == event["key"]), None)
+    if status in {"SUBMITTED", "SENT"}:
+        raise ValueError(f"{status} must be produced by provider submission/delivery reconciliation")
+    current = datetime.now(timezone.utc)
+    fingerprint = event_fingerprint(event)
+
+    def update(ledger: dict[str, Any]) -> dict[str, Any]:
+        existing = _existing(ledger, event["key"])
         if existing:
             if existing.get("fingerprint") != fingerprint:
                 raise ValueError("deduplication key already exists for a different event payload")
-            if existing.get("status") == "SENT" and status != "SENT":
+            if existing.get("status") == "SENT":
                 raise ValueError("a confirmed SENT event cannot be downgraded")
-            existing.update({"status": status, "lastUpdatedAt": now, "evidence": evidence})
-            if provider_message_id:
-                existing["providerMessageId"] = provider_message_id
-            result = existing
-        else:
-            result = {"key": event["key"], "eventType": event["eventType"], "subject": event["subject"], "authoritativeUrl": event["authoritativeUrl"], "fingerprint": fingerprint, "status": status, "firstRecordedAt": now, "lastUpdatedAt": now, "evidence": evidence}
-            if provider_message_id:
-                result["providerMessageId"] = provider_message_id
-            ledger.setdefault("events", []).append(result)
-        atomic_write(ledger_path, ledger)
+            existing.update({"status": status, "lastUpdatedAt": current.isoformat(), "evidence": evidence})
+            return existing
+        result = {"key": event["key"], "eventType": event["eventType"], "subject": event["subject"], "authoritativeUrl": event["authoritativeUrl"], "fingerprint": fingerprint, "status": status, "firstRecordedAt": current.isoformat(), "lastUpdatedAt": current.isoformat(), "evidence": evidence}
+        ledger.setdefault("events", []).append(result)
         return result
+
+    return _locked_ledger(ledger_path, update)
+
+
+def _transport(config: dict[str, Any], arguments: list[str], environment: dict[str, str] | None = None) -> dict[str, Any]:
+    command = config["adapter"]["transportCommand"] + arguments
+    try:
+        completed = subprocess.run(command, cwd=ROOT, env=environment, capture_output=True, text=True, timeout=int(config["adapter"]["delivery"]["providerTimeoutSeconds"]), check=False)
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise RuntimeError("provider transport could not complete") from exc
+    if completed.returncode != 0:
+        raise RuntimeError("provider transport command failed")
+    try:
+        return json.loads(completed.stdout.strip().splitlines()[-1])
+    except (IndexError, json.JSONDecodeError) as exc:
+        raise RuntimeError("provider transport returned an invalid response") from exc
+
+
+def dispatch(event: dict[str, Any], config: dict[str, Any], contacts: dict[str, Any], ledger_path: Path, *, conformance: bool, retry: bool, contacts_path: Path = DEFAULT_CONTACTS) -> dict[str, Any]:
+    reservation = reserve(event, config, contacts, ledger_path, conformance=conformance, retry=retry)
+    if not reservation["acquired"]:
+        return {"key": event["key"], "result": reservation["result"], "providerOperationId": reservation["plan"]["providerOperationId"]}
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", suffix=".json", delete=False) as handle:
+        json.dump(reservation["plan"], handle)
+        handle.write("\n")
+        plan_path = Path(handle.name)
+    os.chmod(plan_path, 0o600)
+    environment = dict(os.environ)
+    environment["DM_EXTERNAL_NOTIFICATIONS"] = "enabled"
+    try:
+        response = _transport(config, ["submit", "--plan", str(plan_path), "--contacts", str(contacts_path)], environment)
+        entry = mark_submitted(event, config, ledger_path, response["providerMessageId"], response["providerStatus"])
+        return {"key": event["key"], "result": entry["status"], "providerMessageId": entry["providerMessageId"], "attemptCount": entry["attemptCount"]}
+    except (RuntimeError, KeyError, ValueError):
+        record_failure(event, config, ledger_path, "PROVIDER_SUBMISSION_EXTERNAL_ACTION_REQUIRED")
+        return {"key": event["key"], "result": "EXTERNAL_ACTION_REQUIRED", "reason": "PROVIDER_SUBMISSION_EXTERNAL_ACTION_REQUIRED"}
+    finally:
+        plan_path.unlink(missing_ok=True)
+
+
+def check_delivery(event: dict[str, Any], config: dict[str, Any], ledger_path: Path, contacts_path: Path = DEFAULT_CONTACTS) -> dict[str, Any]:
+    ledger = load(ledger_path)
+    existing = _existing(ledger, event["key"])
+    if not existing or existing.get("status") not in {"SUBMITTED", "SENT", "FAILED"} or not existing.get("providerMessageId"):
+        raise ValueError("delivery check requires a submitted notification")
+    environment = dict(os.environ)
+    environment["DM_EXTERNAL_NOTIFICATIONS"] = "enabled"
+    try:
+        response = _transport(config, ["delivery", "--provider-message-id", existing["providerMessageId"], "--contacts", str(contacts_path)], environment)
+    except RuntimeError:
+        record_reconciliation_failure(event, ledger_path, "DELIVERY_RECONCILIATION_EXTERNAL_ACTION_REQUIRED")
+        return {"key": event["key"], "result": "EXTERNAL_ACTION_REQUIRED", "reason": "DELIVERY_RECONCILIATION_EXTERNAL_ACTION_REQUIRED"}
+    delivery_status = "PENDING" if response["status"] == "PENDING" else response["deliveryStatus"]
+    entry = reconcile_delivery(event, config, ledger_path, response["providerMessageId"], delivery_status, observed_at=response.get("observedAt"), hard_bounce=response.get("hardBounce"))
+    return {"key": event["key"], "result": entry["status"], "deliveryStatus": entry.get("deliveryStatus", "PENDING"), "providerMessageId": entry["providerMessageId"]}
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("command", choices=["plan", "record"])
+    parser.add_argument("command", choices=["plan", "reserve", "dispatch", "check-delivery", "record"])
     parser.add_argument("event")
     parser.add_argument("--status", choices=sorted(STATUSES))
     parser.add_argument("--evidence")
@@ -119,12 +413,21 @@ def main() -> int:
     parser.add_argument("--config", default=str(DEFAULT_CONFIG))
     parser.add_argument("--contacts", default=str(DEFAULT_CONTACTS))
     parser.add_argument("--ledger")
+    parser.add_argument("--conformance", action="store_true")
+    parser.add_argument("--retry", action="store_true")
     args = parser.parse_args()
     config = load(Path(args.config))
     event = load(Path(args.event))
+    contacts = load(Path(args.contacts))
     ledger_path = Path(args.ledger or ROOT / config["ledger"])
     if args.command == "plan":
-        result = plan(event, config, load(Path(args.contacts)), load(ledger_path))
+        result = plan(event, config, contacts, load(ledger_path))
+    elif args.command == "reserve":
+        result = reserve(event, config, contacts, ledger_path, conformance=args.conformance, retry=args.retry)
+    elif args.command == "dispatch":
+        result = dispatch(event, config, contacts, ledger_path, conformance=args.conformance, retry=args.retry, contacts_path=Path(args.contacts))
+    elif args.command == "check-delivery":
+        result = check_delivery(event, config, ledger_path, contacts_path=Path(args.contacts))
     else:
         if not args.status or not args.evidence:
             parser.error("record requires --status and --evidence")

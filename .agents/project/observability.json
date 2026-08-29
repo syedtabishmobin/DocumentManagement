@@ -50,6 +50,6 @@
   "notifications": ".agents/config/notifications.json",
   "autonomousQueueGate": {
     "status": "BLOCKED",
-    "reason": "Required Product Authority email notification path is not operational and GitHub-only fallback has not been explicitly accepted."
+    "reason": "The ACS Email adapter is implemented but live managed-identity, sender/domain, diagnostic-log and terminal-delivery conformance is blocked pending refreshed authorised Azure access."
   }
 }

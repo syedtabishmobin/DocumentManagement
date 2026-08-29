@@ -19,6 +19,7 @@ REQUIRED_PATHS = [
     ".agents/observability/event-schema.json", ".agents/observability/metric-catalog.json",
     ".agents/observability/queries/catalog.json", ".agents/project/profile.json",
     ".agents/project/team.json", ".agents/project/source-of-truth.json", ".agents/project/observability.json",
+    ".agents/project/github-attribution.json",
     ".agents/project/environments.json", ".agents/project/github.json",
     ".agents/project/github-labels.json", ".agents/config/contacts.json",
     ".agents/config/notifications.json", ".agents/capabilities/registry.json",
@@ -140,6 +141,22 @@ def validate_framework() -> list[str]:
     operational = adapter.get("implementation") == "IMPLEMENTED" and adapter.get("activation") == "ENABLED" and adapter.get("deliveryConformance") == "PASS"
     if bool(adapter.get("sendAllowed")) != operational:
         errors.append("notification sendAllowed must exactly reflect implementation, activation, and delivery conformance")
+    if adapter.get("authentication") != "MANAGED_IDENTITY_REQUIRED":
+        errors.append("notification adapter must require managed identity authentication")
+    if adapter.get("transportCommand") != ["node", "src/apps/api/dist/notification-email.cli.js"]:
+        errors.append("notification transport command must use the reviewed built adapter entry point")
+    adapter_configuration = adapter.get("configuration", {})
+    if adapter_configuration.get("recipientAllowList") != notifications.get("recipientConfiguration"):
+        errors.append("notification adapter allow-list must use the structured recipient configuration")
+    if adapter_configuration.get("deliverySource") != "AZURE_MONITOR_ACS_EMAIL_STATUS_LOGS" or adapter_configuration.get("userEngagementTracking") != "DISABLED":
+        errors.append("notification delivery must use ACS status logs with engagement tracking disabled")
+    delivery = adapter.get("delivery", {})
+    if delivery.get("maxDispatchAttempts") != 3 or delivery.get("maxProviderRetries") not in {0, 1, 2}:
+        errors.append("notification dispatch/provider retries must remain bounded")
+    if delivery.get("terminalSuccessStatus") != "Delivered" or set(delivery.get("terminalFailureStatuses", [])) != {"Bounced", "Quarantined", "FilteredSpam", "Suppressed", "Failed"}:
+        errors.append("notification terminal delivery statuses do not match the reviewed ACS contract")
+    if adapter.get("conformanceSendAllowed") is True and not (adapter.get("implementation") == "IMPLEMENTED" and adapter.get("activation") == "CONFIGURED_DISABLED" and not adapter.get("sendAllowed")):
+        errors.append("notification conformance send may only be available for an implemented, normally disabled adapter")
     if set(notifications.get("events", {})) != {"BLOCKING_DECISION", "UAT_READY"}:
         errors.append("notification configuration must define exactly BLOCKING_DECISION and UAT_READY events")
 
@@ -148,8 +165,15 @@ def validate_framework() -> list[str]:
     if None in keys or len(keys) != len(set(keys)):
         errors.append("notification ledger keys must be present and unique")
     for event in ledger.get("events", []):
-        if event.get("status") not in {"RESERVED", "SENT", "FAILED", "EXTERNAL_ACTION_REQUIRED"}:
+        if event.get("status") not in {"RESERVED", "SUBMITTED", "SENT", "FAILED", "EXTERNAL_ACTION_REQUIRED"}:
             errors.append(f"notification ledger event {event.get('key')} has invalid status")
+
+    attribution = load_json(ROOT / ".agents/project/github-attribution.json")
+    if attribution.get("marker") != "<!-- doculyra-agent-attribution:v1 -->":
+        errors.append("GitHub agent attribution must use the reviewed v1 marker")
+    expected_attribution_fields = {"agent_id", "run_id", "role_id", "work_item", "capability_ids", "skill_ids", "tool_ids"}
+    if set(attribution.get("requiredFields", [])) != expected_attribution_fields:
+        errors.append("GitHub agent attribution required fields do not match the operations correlation contract")
 
     capabilities = load_json(ROOT / ".agents/capabilities/registry.json").get("capabilities", [])
     registered_skills = {item.get("skill") for item in capabilities}

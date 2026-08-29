@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1.0.0",
+  "marker": "<!-- doculyra-agent-attribution:v1 -->",
+  "format": "SEMICOLON_DELIMITED_MARKDOWN_FOOTER",
+  "requiredFields": [
+    "agent_id",
+    "run_id",
+    "role_id",
+    "work_item",
+    "capability_ids",
+    "skill_ids",
+    "tool_ids"
+  ],
+  "identifierPattern": "^[a-zA-Z0-9][a-zA-Z0-9._:#/-]{1,255}$",
+  "listSeparator": ",",
+  "footerPrefix": "Agent attribution:",
+  "appliesTo": [
+    "agent-authored material GitHub Issues",
+    "agent-authored material GitHub comments",
+    "agent-authored pull request descriptions",
+    "agent-authored pull request reviews",
+    "agent-authored QA and test evidence"
+  ],
+  "humanAuthoredRecordsRequireFooter": false
+}

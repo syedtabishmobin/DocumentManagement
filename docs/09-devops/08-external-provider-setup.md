@@ -157,15 +157,17 @@ Development resources:
 
 The runtime identity receives a role assignment on the ACS resource. The ACS resource itself does not need to own that identity. Runtime code must authenticate through managed identity; do not add an ACS connection string or access key to application configuration when managed identity is supported.
 
+Issue #18 implements the repository transport with the official ACS Email SDK, managed-identity/Azure CLI conformance modes, the structured Product Authority allow-list, deterministic provider operation IDs, bounded retry and recipient-level Azure Monitor reconciliation. Engagement tracking is disabled and no attachment/HTML/product content path exists.
+
 Before enabling synthetic email delivery:
 
-1. implement the channel-neutral notification adapter and an allow-list of test recipients;
+1. compile and independently verify the channel-neutral notification adapter and configured recipient allow-list;
 2. keep message content minimized and never attach or quote document content by default;
 3. implement deduplication, delivery-state reconciliation, bounce/failure handling, user preferences, revocation, audit, and rate/cost controls;
 4. test only with synthetic content; and
 5. retain `DM_EXTERNAL_NOTIFICATIONS=disabled` until the delivery conformance suite passes.
 
-The repository Agent Engineering Framework adds the Product Authority decision/UAT notification contract and exactly-once ledger under `.agents/config/notifications.json`, `.agents/protocols/notification-event.schema.json`, and `.agents/state/notification-ledger.json`. This control plane does not activate ACS or replace the product notification requirements above. Until the runtime adapter and delivery conformance pass, it MUST record `EXTERNAL_ACTION_REQUIRED` and MUST NOT report email as sent.
+The repository Agent Engineering Framework adds the Product Authority decision/UAT notification contract and exactly-once ledger under `.agents/config/notifications.json`, `.agents/protocols/notification-event.schema.json`, and `.agents/state/notification-ledger.json`. Bicep now codifies the existing runtime ACS role, least-privilege Log Analytics Data Reader role, ACS send/status diagnostic categories and non-secret runtime settings. Live resource state and deployment still require authorised Azure verification. Until terminal delivery conformance passes, normal notification plans MUST record `EXTERNAL_ACTION_REQUIRED`; ACS long-running-operation success is only `SUBMITTED`/out-for-delivery.
 
 ## 9. Configuration and Key Vault inventory
 
@@ -182,6 +184,9 @@ The repository Agent Engineering Framework adds the Product Authority decision/U
 | `DM_AZURE_COMMUNICATION_SERVICE` | ACS resource name |
 | `DM_AZURE_COMMUNICATION_ENDPOINT` | ACS endpoint |
 | `DM_EMAIL_FROM` | Verified sender address |
+| `AZURE_CLIENT_ID` | User-assigned runtime identity client ID |
+| `DM_LOG_ANALYTICS_WORKSPACE_ID` | Existing environment Log Analytics customer/workspace ID |
+| `DM_NOTIFICATION_CREDENTIAL_MODE` | `MANAGED_IDENTITY` in Azure; explicit `AZURE_CLI` only for agent-local conformance |
 
 ### 9.2 Secret references
 

@@ -1,0 +1,49 @@
+{
+  "key": "release:rc-notify-018:uat-ready",
+  "eventType": "UAT_READY",
+  "projectId": "doculyra",
+  "subject": "[Doculyra][UAT READY][RC-NOTIFY-018] Synthetic notification conformance",
+  "authoritativeUrl": "https://github.com/syedtabishmobin/DocumentManagement/issues/18",
+  "requiredAction": "Confirm that this synthetic framework message contains the complete UAT-ready packet, one direct recipient, durable links and no product/customer content.",
+  "reason": "The mandatory UAT-ready notification contract needs an independent safe delivery test before autonomous queue activation.",
+  "appliesTo": [
+    "Agent Engineering Framework notification conformance only",
+    "No Doculyra product release or product UAT approval"
+  ],
+  "recommendation": "Accept this message only as evidence of the notification channel and content contract; do not interpret it as a Doculyra product release candidate.",
+  "alternatives": [
+    "Retain PARTIAL readiness until an equivalent safe UAT-ready channel test is completed."
+  ],
+  "blocked": [
+    "Notification adapter delivery-conformance PASS"
+  ],
+  "continuing": [
+    "Independent framework QA and observability validation",
+    "No Doculyra product-development queue work"
+  ],
+  "remaining": [
+    "Reconcile terminal provider delivery evidence",
+    "Repeat dispatch to prove the event is not sent twice",
+    "Record independent QA and final readiness"
+  ],
+  "releaseEvidence": "https://github.com/syedtabishmobin/DocumentManagement/issues/18",
+  "accessInstructions": "Synthetic notification-conformance Stage record: open the authoritative Issue #18 from the durable link in this message. No application login, customer data or product environment is involved.",
+  "deliveredScope": [
+    "ACS Email managed-identity transport",
+    "Product Authority recipient allow-list and project-over-global deduplication",
+    "Atomic event reservation, bounded retry and terminal delivery reconciliation",
+    "Blocking-decision and UAT-ready plain-text content contracts"
+  ],
+  "acceptanceSummary": "Developer unit, negative, edge, framework, infrastructure and observability checks must pass; independent QA must confirm the immutable candidate before the adapter can be activated.",
+  "residualRisks": [
+    "This synthetic event proves the notification channel only and is not evidence that a Doculyra product release is Stage- or UAT-ready.",
+    "Azure resource state and actual terminal delivery must still be verified in the configured development subscription."
+  ],
+  "businessAcceptanceStatus": "PASS",
+  "recommendedUatScenarios": [
+    "Verify the subject clearly says Synthetic notification conformance.",
+    "Verify the direct Issue #18 link opens from a phone.",
+    "Verify Stage/access, delivered scope, QA summary, residual risks, BA status and scenarios are all present.",
+    "Verify no duplicate copy or CC arrives when the same event is dispatched again."
+  ]
+}
