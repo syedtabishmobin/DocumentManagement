@@ -3,7 +3,7 @@
   "markerStart": "<!-- doculyra-agent-meta:v2",
   "markerEnd": "-->",
   "legacyMarkers": ["<!-- doculyra-agent-attribution:v1 -->"],
-  "format": "VISIBLE_HEADER_COLLAPSIBLE_DETAILS_HIDDEN_METADATA",
+  "format": "VISIBLE_HEADER_THEN_COLLAPSIBLE_DETAILS_THEN_BODY_THEN_HIDDEN_METADATA",
   "identityAssignments": ".agents/state/agent-display-assignments.json",
   "requiredFields": [
     "display_agent_id",

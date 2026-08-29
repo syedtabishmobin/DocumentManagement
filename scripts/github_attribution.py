@@ -176,10 +176,10 @@ def hidden_metadata(values: dict[str, str], selected: dict[str, Any]) -> str:
 def render(values: dict[str, str], body: str = "", config: dict[str, Any] | None = None) -> str:
     selected = config or load_config()
     _validate_values(values, selected)
-    sections = [visible_header(values)]
+    sections = [visible_header(values), execution_details(values, selected)]
     if body.strip():
         sections.append(body.strip())
-    sections.extend([execution_details(values, selected), hidden_metadata(values, selected)])
+    sections.append(hidden_metadata(values, selected))
     return "\n\n".join(sections)
 
 
@@ -212,9 +212,10 @@ def validate(text: str, config: dict[str, Any] | None = None) -> list[str]:
         errors.append(str(exc))
     else:
         header = visible_header(values)
-        if not text.startswith(header + "\n"):
-            errors.append("GitHub evidence must begin with the normalized visible agent identity")
         details = execution_details(values, selected)
+        expected_start = header + "\n\n" + details + "\n"
+        if not normalized.startswith(expected_start):
+            errors.append("GitHub evidence must begin with Level 1 identity immediately followed by Level 2 execution details")
         if before.count(details) != 1:
             errors.append("GitHub evidence must contain exactly one matching execution-details block")
         expected_metadata = hidden_metadata(values, selected)

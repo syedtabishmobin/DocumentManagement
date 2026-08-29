@@ -177,10 +177,14 @@ def validate_url(
     location: str,
 ) -> list[str]:
     parsed = urlparse(value)
+    try:
+        explicit_port = parsed.port
+    except ValueError:
+        return [f"{location} contains an invalid port"]
     if parsed.scheme != "https" or parsed.hostname not in allowed_hosts:
         return [f"{location} must use HTTPS on an approved evidence host"]
-    if parsed.username or parsed.password or parsed.query or parsed.fragment:
-        return [f"{location} must not contain credentials, query parameters, or fragments"]
+    if parsed.username or parsed.password or explicit_port is not None or parsed.query or parsed.fragment:
+        return [f"{location} must not contain credentials, explicit ports, query parameters, or fragments"]
     segments = parsed.path.strip("/").split("/")
     if len(segments) < 3 or "/".join(segments[:2]) not in allowed_repositories:
         return [f"{location} must reference an approved evidence repository"]

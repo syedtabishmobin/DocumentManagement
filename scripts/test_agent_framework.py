@@ -284,6 +284,7 @@ class FrameworkTests(unittest.TestCase):
             {"status": "DELIVERED", "providerMessageId": "placeholder"},
             {"status": "FAILED", "providerMessageId": "placeholder", "deliveryStatus": "Delivered"},
             {"status": "PENDING", "providerMessageId": "placeholder", "deliveryStatus": "Bounced"},
+            {"status": "PENDING", "providerMessageId": "placeholder", "deliveryStatus": None},
             {"status": "DELIVERED", "providerMessageId": "placeholder", "deliveryStatus": "Delivered", "unexpected": True},
         )
         for response in malformed:
@@ -367,6 +368,8 @@ class FrameworkTests(unittest.TestCase):
             "https://github.com/syedtabishmobin/DocumentManagement/settings/secrets/actions",
             "https://github.com/syedtabishmobin/DocumentManagement/issues/18?token=synthetic",
             "https://github.com/syedtabishmobin/DocumentManagement/issues/18#fragment",
+            "https://github.com:443/syedtabishmobin/DocumentManagement/issues/18",
+            "https://github.com:8443/syedtabishmobin/DocumentManagement/issues/18",
             "https://github.com/other/repository/issues/18",
         )
         for value in unsafe_urls:
@@ -387,6 +390,12 @@ class FrameworkTests(unittest.TestCase):
                 event = copy.deepcopy(self.event)
                 event["reason"] = value
                 with self.assertRaisesRegex(ValueError, "prohibited"):
+                    notification_ledger.validate_event(event, self.config)
+        for field in ("rawPrompt", "customerContent", "toolOutput", "providerPayload", "credential"):
+            with self.subTest(field=field):
+                event = copy.deepcopy(self.event)
+                event[field] = "synthetic-canary"
+                with self.assertRaisesRegex(ValueError, "unallowlisted"):
                     notification_ledger.validate_event(event, self.config)
 
     def test_notification_event_accepts_each_configured_durable_route_class(self) -> None:
@@ -409,6 +418,7 @@ class FrameworkTests(unittest.TestCase):
         self.assertTrue(artifact.startswith("**🤖 Independent Security QA · QA-SEC-003**  \n`security-verification` · `RUN-20260829-0041`"))
         self.assertIn("<summary>Agent execution details</summary>", artifact)
         self.assertIn("Parent: ORCH-001", artifact)
+        self.assertLess(artifact.index("<summary>Agent execution details</summary>"), artifact.index("Independent QA evidence."))
         self.assertIn("<!-- doculyra-agent-meta:v2", artifact)
         self.assertGreater(artifact.index(values["runtime_agent_id"]), artifact.index("<!-- doculyra-agent-meta:v2"))
         self.assertEqual(github_attribution.validate(artifact), [])
@@ -420,6 +430,9 @@ class FrameworkTests(unittest.TestCase):
         artifact = github_attribution.render(self.qa_attribution(), "Independent QA evidence.")
         self.assertTrue(github_attribution.validate("Preamble\n" + artifact))
         self.assertTrue(github_attribution.validate(artifact.replace("Parent: ORCH-001", "Parent: NONE", 1)))
+        misplaced = artifact.replace(github_attribution.execution_details(self.qa_attribution(), github_attribution.load_config()) + "\n\n", "", 1)
+        misplaced = misplaced.replace("Independent QA evidence.", "Independent QA evidence.\n\n" + github_attribution.execution_details(self.qa_attribution(), github_attribution.load_config()), 1)
+        self.assertTrue(any("immediately followed" in error for error in github_attribution.validate(misplaced)))
         self.assertTrue(github_attribution.validate(artifact.replace("display_agent_id=QA-SEC-003", "display_agent_id=QA-SEC-999")))
         legacy = "Evidence\n\n<!-- doculyra-agent-attribution:v1 -->\nAgent attribution: agent_id=raw-runtime"
         errors = github_attribution.validate(legacy)

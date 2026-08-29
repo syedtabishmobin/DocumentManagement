@@ -86,6 +86,12 @@ def validate_event(event: dict[str, Any], config: dict[str, Any]) -> None:
         raise ValueError(f"notification event missing fields: {', '.join(missing)}")
     if event["eventType"] not in config["events"] or event["projectId"] != config["projectId"]:
         raise ValueError("event type or project does not match notification configuration")
+    allowed_fields = set(REQUIRED_EVENT_FIELDS)
+    if event["eventType"] == "UAT_READY":
+        allowed_fields |= UAT_REQUIRED_FIELDS
+    unexpected = sorted(set(event) - allowed_fields)
+    if unexpected:
+        raise ValueError(f"notification event contains unallowlisted fields: {', '.join(unexpected)}")
     if len(json.dumps(event, separators=(",", ":")).encode("utf-8")) > 32_768:
         raise ValueError("notification event exceeds the minimized size limit")
     _durable_github_url(event["authoritativeUrl"], "authoritativeUrl")
@@ -423,7 +429,7 @@ def _delivery_response(response: Any, expected_provider_id: str) -> tuple[str, s
         raise ValueError("provider delivery response does not match the submitted operation")
     delivery_status = response.get("deliveryStatus")
     if response["status"] == "PENDING":
-        if delivery_status is not None or "observedAt" in response or "hardBounce" in response:
+        if set(response) != {"status", "providerMessageId"}:
             raise ValueError("pending delivery response contains terminal evidence")
         return "PENDING", None, None, None
     if delivery_status not in {"Delivered", *NEGATIVE_DELIVERY_STATUSES}:
