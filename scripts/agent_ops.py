@@ -261,16 +261,16 @@ def github_snapshot() -> dict[str, Any]:
         if not isinstance(payload, list) or any(not isinstance(item, dict) for item in payload):
             return None, f"GitHub returned malformed {kind} data"
         for item in payload:
-            labels = item.get("labels")
             common_valid = (
                 isinstance(item.get("number"), int)
                 and isinstance(item.get("title"), str)
                 and isinstance(item.get("url"), str)
-                and isinstance(labels, list)
-                and all(isinstance(label, dict) and isinstance(label.get("name"), str) for label in labels)
             )
             kind_valid = (
-                kind == "issues" and isinstance(item.get("body"), str)
+                kind == "issues"
+                and isinstance(item.get("body"), str)
+                and isinstance(item.get("labels"), list)
+                and all(isinstance(label, dict) and isinstance(label.get("name"), str) for label in item["labels"])
             ) or (
                 kind == "pull requests"
                 and isinstance(item.get("headRefName"), str)

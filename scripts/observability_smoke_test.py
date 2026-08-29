@@ -327,6 +327,24 @@ class ObservabilitySmokeTests(unittest.TestCase):
         self.assertEqual(snapshot["sourceAvailability"]["issues"], "UNAVAILABLE")
         self.assertEqual(snapshot["sourceAvailability"]["pullRequests"], "MEASURED")
 
+    def test_live_shaped_pull_request_without_unrequested_labels_is_measured(self) -> None:
+        pull_request = {
+            "number": 12,
+            "title": "Install Agent Operations and Observability",
+            "url": "https://github.com/syedtabishmobin/DocumentManagement/pull/12",
+            "headRefName": "codex/11-agent-operations-observability",
+            "statusCheckRollup": [],
+        }
+        responses = [
+            SimpleNamespace(returncode=0, stdout="[]", stderr=""),
+            SimpleNamespace(returncode=0, stdout=json.dumps([pull_request]), stderr=""),
+        ]
+        with patch.object(agent_ops.subprocess, "run", side_effect=responses):
+            snapshot = agent_ops.github_snapshot()
+        self.assertEqual(snapshot["availability"], "MEASURED")
+        self.assertEqual(snapshot["sourceAvailability"]["pullRequests"], "MEASURED")
+        self.assertEqual(snapshot["openPullRequests"][0]["number"], 12)
+
 
 if __name__ == "__main__":
     unittest.main()
