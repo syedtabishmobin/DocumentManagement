@@ -4,6 +4,7 @@
   "markerEnd": "-->",
   "legacyMarkers": ["<!-- doculyra-agent-attribution:v1 -->"],
   "format": "VISIBLE_HEADER_THEN_COLLAPSIBLE_DETAILS_THEN_BODY_THEN_HIDDEN_METADATA",
+  "substantiveBodyRequired": true,
   "identityAssignments": ".agents/state/agent-display-assignments.json",
   "requiredFields": [
     "display_agent_id",

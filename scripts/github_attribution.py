@@ -176,9 +176,10 @@ def hidden_metadata(values: dict[str, str], selected: dict[str, Any]) -> str:
 def render(values: dict[str, str], body: str = "", config: dict[str, Any] | None = None) -> str:
     selected = config or load_config()
     _validate_values(values, selected)
-    sections = [visible_header(values), execution_details(values, selected)]
-    if body.strip():
-        sections.append(body.strip())
+    substantive_body = body.strip()
+    if selected.get("substantiveBodyRequired") and not substantive_body:
+        raise ValueError("material GitHub evidence requires a substantive body")
+    sections = [visible_header(values), execution_details(values, selected), substantive_body]
     sections.append(hidden_metadata(values, selected))
     return "\n\n".join(sections)
 
@@ -213,11 +214,15 @@ def validate(text: str, config: dict[str, Any] | None = None) -> list[str]:
     else:
         header = visible_header(values)
         details = execution_details(values, selected)
-        expected_start = header + "\n\n" + details + "\n"
+        expected_start = header + "\n\n" + details + "\n\n"
         if not normalized.startswith(expected_start):
             errors.append("GitHub evidence must begin with Level 1 identity immediately followed by Level 2 execution details")
         if before.count(details) != 1:
             errors.append("GitHub evidence must contain exactly one matching execution-details block")
+        if selected.get("substantiveBodyRequired"):
+            substantive_body = before[len(expected_start):].strip() if before.startswith(expected_start) else ""
+            if not substantive_body:
+                errors.append("GitHub evidence requires a substantive body between Level 2 execution details and Level 3 hidden metadata")
         expected_metadata = hidden_metadata(values, selected)
         if not text.rstrip().endswith(expected_metadata):
             errors.append("GitHub evidence hidden agent metadata must be the final normalized block")
@@ -232,13 +237,14 @@ def main() -> int:
     for command_parser in (render_parser, wrap_parser):
         for field in load_config()["requiredFields"]:
             command_parser.add_argument(f"--{field.replace('_', '-')}", required=True)
-    wrap_parser.add_argument("--body-file", required=True)
+    for command_parser in (render_parser, wrap_parser):
+        command_parser.add_argument("--body-file", required=True)
     validate_parser = subparsers.add_parser("validate")
     validate_parser.add_argument("path")
     args = parser.parse_args()
     if args.command in {"render", "wrap"}:
         values = {field: getattr(args, field) for field in load_config()["requiredFields"]}
-        body = Path(args.body_file).read_text(encoding="utf-8") if args.command == "wrap" else ""
+        body = Path(args.body_file).read_text(encoding="utf-8")
         print(render(values, body))
         return 0
     errors = validate(Path(args.path).read_text(encoding="utf-8"))

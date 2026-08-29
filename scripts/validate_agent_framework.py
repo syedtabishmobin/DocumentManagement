@@ -171,6 +171,8 @@ def validate_framework() -> list[str]:
     attribution = load_json(ROOT / ".agents/project/github-attribution.json")
     if attribution.get("schemaVersion") != "2.0.0" or attribution.get("markerStart") != "<!-- doculyra-agent-meta:v2" or attribution.get("markerEnd") != "-->":
         errors.append("GitHub agent attribution must use the reviewed hidden v2 agent-meta block")
+    if attribution.get("format") != "VISIBLE_HEADER_THEN_COLLAPSIBLE_DETAILS_THEN_BODY_THEN_HIDDEN_METADATA" or attribution.get("substantiveBodyRequired") is not True:
+        errors.append("GitHub agent attribution must require Level 1, Level 2, a substantive body, then final Level 3 metadata")
     expected_attribution_fields = {
         "display_agent_id", "display_role", "activity", "display_run_id", "runtime_agent_id", "runtime_run_id",
         "role_id", "parent_display_agent_id", "work_item", "work_item_label", "capability_ids", "skill_ids",

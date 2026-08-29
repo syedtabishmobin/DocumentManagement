@@ -426,6 +426,27 @@ class FrameworkTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "runtime_run_id"):
             github_attribution.render(values)
 
+    def test_github_agent_attribution_requires_and_preserves_substantive_body(self) -> None:
+        values = self.qa_attribution()
+        for body in ("", "   \n\t"):
+            with self.subTest(body=repr(body)), self.assertRaisesRegex(ValueError, "substantive body"):
+                github_attribution.render(values, body)
+
+        selected = github_attribution.load_config()
+        bodyless = "\n\n".join([
+            github_attribution.visible_header(values),
+            github_attribution.execution_details(values, selected),
+            github_attribution.hidden_metadata(values, selected),
+        ])
+        self.assertTrue(any("substantive body" in error for error in github_attribution.validate(bodyless)))
+
+        body = "Expected behaviour:\n\n- Preserve this complete evidence body."
+        artifact = github_attribution.render(values, body)
+        details_end = artifact.index("</details>") + len("</details>")
+        metadata_start = artifact.index(selected["markerStart"])
+        self.assertEqual(artifact[details_end:metadata_start].strip(), body)
+        self.assertEqual(github_attribution.validate(artifact), [])
+
     def test_github_agent_attribution_rejects_legacy_misplaced_or_inconsistent_levels(self) -> None:
         artifact = github_attribution.render(self.qa_attribution(), "Independent QA evidence.")
         self.assertTrue(github_attribution.validate("Preamble\n" + artifact))
