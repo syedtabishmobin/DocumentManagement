@@ -268,7 +268,7 @@ def validate_framework() -> list[str]:
         if marker not in report:
             errors.append(f"bootstrap report is missing completion marker: {marker}")
     final_readiness = (ROOT / ".agents/bootstrap/2026-08-30-final-autonomous-readiness-report.md").read_text(encoding="utf-8")
-    for marker in ("FINAL AUTONOMOUS READINESS REPORT", "Notification implementation status", "GitHub attribution evidence", "Outstanding external/admin actions", "Overall autonomous queue readiness: PARTIAL"):
+    for marker in ("FINAL AUTONOMOUS READINESS REPORT", "Notification implementation status", "GitHub attribution evidence", "Outstanding external/admin actions", "Overall autonomous queue readiness: PASS", "READY_FOR_GOVERNED_QUEUE_EXECUTION"):
         if marker not in final_readiness:
             errors.append(f"final autonomous readiness report is missing marker: {marker}")
     return errors

@@ -52,7 +52,7 @@
   "environments": ".agents/project/environments.json",
   "notifications": ".agents/config/notifications.json",
   "autonomousQueueGate": {
-    "status": "BLOCKED",
-    "reason": "Issue #18 live ACS Email conformance passes; autonomous execution remains blocked only until independent QA accepts the exact activation/evidence candidate. Product work still requires an explicit subsequent governed request."
+    "status": "PASS",
+    "reason": "Issue #18 live ACS Email conformance, exact-candidate independent QA, protected CI and merge pass. Product work still requires an explicit subsequent governed request."
   }
 }

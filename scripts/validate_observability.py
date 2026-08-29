@@ -403,7 +403,7 @@ def validate_configuration() -> list[str]:
     if missing_event_types:
         errors.append(f"event schema is missing required event types: {', '.join(missing_event_types)}")
     report = (ROOT / ".agents/bootstrap/2026-08-29-observability-readiness-report.md").read_text(encoding="utf-8")
-    for marker in ("OBSERVABILITY READINESS REPORT", "## 1. Repository/framework state discovered", "## 12. Recommendation for starting the governed Doculyra work queue", "**PARTIAL**", "04_USING_THIS_REPO_WITH_CODEX.md"):
+    for marker in ("OBSERVABILITY READINESS REPORT", "## 1. Repository/framework state discovered", "## 12. Recommendation for starting the governed Doculyra work queue", "**PASS**", "04_USING_THIS_REPO_WITH_CODEX.md"):
         if marker not in report:
             errors.append(f"observability readiness report is missing marker: {marker}")
     notification = load_json(ROOT / ".agents/config/notifications.json").get("adapter", {})

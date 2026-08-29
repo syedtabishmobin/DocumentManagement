@@ -28,7 +28,7 @@ The dev ACS and Email Communication Services resources use the verified Azure-ma
 
 ## GitHub attribution evidence
 
-Material records use Level 1 compact display identity, immediately adjacent Level 2 execution details, substantive body, then final hidden v2 metadata. Display/runtime IDs remain separate. Live continuation evidence and fix-ready updates use `ORCH-001`; independent QA defect #28 and final acceptance use separately assigned `QA-SEC-003`. The #28 fix rejects both explicit default and nonstandard endpoint ports before/alongside URL normalization.
+**PASS.** Material records use Level 1 compact display identity, immediately adjacent Level 2 execution details, substantive body, then final hidden v2 metadata. Display/runtime IDs remain separate. Live continuation evidence and fix-ready updates use `ORCH-001`; independent defect/retest/acceptance records use separately assigned `QA-SEC-003`. Independent QA accepted exact candidate `b9ce247330b269e16234b790b3d95c5e074379da`, closed #25/#26/#28 and confirmed all `NOTIFY-AC-01`–`14`. GitHub could not record a formal approval because both roles share the PR author's account; branch protection requires zero approvals, and the durable independent evidence plus protected checks permitted merge.
 
 ## Observability status
 
@@ -36,8 +36,10 @@ The event/query model, privacy controls and online GitHub join remain operationa
 
 ## Outstanding external/admin actions
 
-No Azure or Product Authority action remains. Exact-candidate independent QA is the sole open readiness gate; the implementation agent cannot self-approve it.
+None. Azure administration, Product Authority receipt confirmation, exact-candidate independent QA, protected CI and merge are complete. Stage/UAT/production remain separately governed and are not claimed by this framework result.
 
-## Overall autonomous queue readiness: PARTIAL
+## Overall autonomous queue readiness: PASS
 
-Live notification conformance passes. Readiness remains temporarily partial until independent QA accepts the exact final activation/evidence candidate and the protected PR workflow permits merge. Do not start product work.
+Live notification conformance, independent QA and protected merge pass. The governed product queue is authorised to begin only on an explicit subsequent request; no product work started in this readiness task.
+
+READY_FOR_GOVERNED_QUEUE_EXECUTION
