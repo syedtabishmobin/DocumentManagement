@@ -85,6 +85,28 @@ export const canonicalCreateWorkspaceSchema = z.object({
   configuration_version: z.string().trim().min(1).max(200),
 }).strict();
 
+export const canonicalCreateSubjectSchema = z.object({
+  subject_kind: z.literal("PERSON"),
+  authority_basis_ref: z.string().trim().min(1).max(200).nullable(),
+}).strict();
+
+export const canonicalUpdateSubjectSchema = z.object({
+  operation: z.literal("PROPOSE_ATTRIBUTE_CORRECTION"),
+  protected_change_ref: z.string().trim().min(1).max(200).nullable(),
+  reason_code: z.string().trim().min(1).max(80),
+}).strict();
+
+export const canonicalInviteMembershipSchema = z.object({
+  identity_or_audience_ref: z.string().trim().min(1).max(200),
+  participation_class: workspaceRoleSchema.exclude(["OWNER", "FAMILY_ADMIN"]),
+  invitation_policy_ref: z.string().trim().min(1).max(200),
+}).strict();
+
+export const canonicalUpdateMembershipSchema = z.object({
+  transition: z.enum(["SUSPEND", "REACTIVATE", "DEPART", "REMOVE"]),
+  reason_code: z.string().trim().min(1).max(80),
+}).strict();
+
 export const selectWorkspaceSchema = z.object({
   workspaceId: z.string().trim().min(1).max(200),
 });
@@ -136,6 +158,10 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type ConfigureWorkspaceInput = z.infer<typeof configureWorkspaceSchema>;
 export type CanonicalCreateWorkspaceInput = z.infer<typeof canonicalCreateWorkspaceSchema>;
+export type CanonicalCreateSubjectInput = z.infer<typeof canonicalCreateSubjectSchema>;
+export type CanonicalUpdateSubjectInput = z.infer<typeof canonicalUpdateSubjectSchema>;
+export type CanonicalInviteMembershipInput = z.infer<typeof canonicalInviteMembershipSchema>;
+export type CanonicalUpdateMembershipInput = z.infer<typeof canonicalUpdateMembershipSchema>;
 export type SelectWorkspaceInput = z.infer<typeof selectWorkspaceSchema>;
 export type CreateSubjectInput = z.infer<typeof createSubjectSchema>;
 export type FilePermissions = z.infer<typeof filePermissionsSchema>;
@@ -189,6 +215,7 @@ export interface Member {
   id: string;
   workspaceId: string;
   identityId?: string;
+  audienceRef?: string;
   displayName: string;
   role: WorkspaceRole;
   state: "ACTIVE" | "REVOKED";
@@ -197,8 +224,23 @@ export interface Member {
   permissions: FilePermissions;
   email?: string;
   mobile?: string;
+  validFrom: string;
+  validTo?: string;
+  recordedAt: string;
   createdAt: string;
   revision: number;
+  history: MembershipHistoryEntry[];
+}
+
+export interface MembershipHistoryEntry {
+  revision: number;
+  role: WorkspaceRole;
+  state: Member["state"];
+  invitationState: Member["invitationState"];
+  permissions: FilePermissions;
+  validFrom: string;
+  validTo: string;
+  recordedAt: string;
 }
 
 export interface DocumentRecord {
@@ -241,8 +283,25 @@ export interface SubjectRecord {
   kind: "OWNER" | "ADULT" | "CHILD" | "DEPENDANT" | "OTHER";
   relationship: string;
   dateOfBirth?: string;
+  status: "ACTIVE" | "RETIRED";
+  validFrom: string;
+  recordedAt: string;
+  retiredAt?: string;
   createdAt: string;
   revision: number;
+  history: SubjectHistoryEntry[];
+}
+
+export interface SubjectHistoryEntry {
+  revision: number;
+  displayName: string;
+  kind: SubjectRecord["kind"];
+  relationship: string;
+  dateOfBirth?: string;
+  status: SubjectRecord["status"];
+  validFrom: string;
+  validTo: string;
+  recordedAt: string;
 }
 
 export interface SubjectIdentityLink {

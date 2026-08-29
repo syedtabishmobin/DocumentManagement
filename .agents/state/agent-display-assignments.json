@@ -65,7 +65,7 @@
       "roleId": "delivery-orchestrator",
       "parentDisplayAgentId": "NONE",
       "workItem": "story-p1-001",
-      "status": "ACTIVE"
+      "status": "COMPLETED"
     },
     {
       "displayAgentId": "QA-FUNC-005",
@@ -76,6 +76,50 @@
       "roleId": "qa-release-lead",
       "parentDisplayAgentId": "ORCH-004",
       "workItem": "issue-39/pr-40",
+      "status": "COMPLETED"
+    },
+    {
+      "displayAgentId": "ORCH-005",
+      "displayRole": "Framework Delivery Orchestrator",
+      "displayRunId": "RUN-20260830-0062",
+      "runtimeAgentId": "codex-01a04b98-20f5-7831-8b62-3fe5bd5f4add",
+      "runtimeRunId": "run-phase1-story-p1-002-20260830",
+      "roleId": "delivery-orchestrator",
+      "parentDisplayAgentId": "ORCH-004",
+      "workItem": "story-p1-002",
+      "status": "ACTIVE"
+    },
+    {
+      "displayAgentId": "QA-FUNC-006",
+      "displayRole": "Independent Functional QA",
+      "displayRunId": "RUN-20260830-0063",
+      "runtimeAgentId": "codex-01a04f09-806d-7832-915a-21d31c5a0fde",
+      "runtimeRunId": "run-qa-story-p1-002-20260830",
+      "roleId": "qa-release-lead",
+      "parentDisplayAgentId": "ORCH-005",
+      "workItem": "issue-42/pr-43",
+      "status": "COMPLETED"
+    },
+    {
+      "displayAgentId": "QA-FUNC-007",
+      "displayRole": "Independent Functional QA",
+      "displayRunId": "RUN-20260830-0064",
+      "runtimeAgentId": "codex-01a04f09-806d-7832-915a-21d31c5a0fde",
+      "runtimeRunId": "run-qa-retest-story-p1-002-20260830",
+      "roleId": "qa-release-lead",
+      "parentDisplayAgentId": "ORCH-005",
+      "workItem": "issues-44-45/pr-43",
+      "status": "COMPLETED"
+    },
+    {
+      "displayAgentId": "QA-FUNC-008",
+      "displayRole": "Independent Functional QA",
+      "displayRunId": "RUN-20260830-0065",
+      "runtimeAgentId": "codex-01a04f09-806d-7832-915a-21d31c5a0fde",
+      "runtimeRunId": "run-qa-pagination-retest-story-p1-002-20260830",
+      "roleId": "qa-release-lead",
+      "parentDisplayAgentId": "ORCH-005",
+      "workItem": "issue-44/pr-43",
       "status": "ACTIVE"
     }
   ]

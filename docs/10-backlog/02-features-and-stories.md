@@ -25,7 +25,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `BASELINED — PLANNED_UNISSUED`; Product + Identity/Workspace |
+| State / owner | `DEV_ACCEPTED — Issue #39 / PR #40`; Product + Identity/Workspace; independent `QA-FUNC-005` passed both story ACs on exact merged candidate, while Stage/BA/UAT and parent completion remain open. |
 | Product | `REQ-P1-WS-001`, `REQ-P1-WS-002`; `FEAT-P1-001`; `UC-P1-001`; `OUT-P1-001`, `OUT-P1-005` |
 | UX / accessibility | `UX-FLOW-P1-002`; `UX-SCR-P1-002`, `003`; `UX-IA-P1-001`–`006`; `A11Y-P1-001`–`017`, `021`–`035`, `043`–`050` |
 | API / events | `API-P1-101`–`103`; `EVT-P1-001`, `002`; API rules `API-P1-007`–`014`, `027`–`038`, `047`–`052` |
@@ -44,7 +44,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `BASELINED — PLANNED_UNISSUED`; Product + Identity/Workspace |
+| State / owner | `IN_IMPLEMENTATION — Issue #42`; Product + Identity/Workspace |
 | Product | `REQ-P1-WS-003`; `FEAT-P1-001`; `UC-P1-001`; `OUT-P1-001`, `OUT-P1-005` |
 | UX / accessibility | `UX-FLOW-P1-002`; `UX-SCR-P1-004`–`006`; `UX-IA-P1-007`–`012`; `A11Y-P1-001`–`017`, `024`–`035`, `043`–`050` |
 | API / events | `API-P1-104`–`111`; `EVT-P1-002`, `003`; `API-P1-007`–`020`, `027`–`038`, `047`–`050` |

@@ -3,6 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import type { SubjectRecord } from "@document-management/contracts";
 import { LocalStore, type WorkspaceActor } from "./local.store.js";
 
 const actor: WorkspaceActor = { identityId: "id_test_owner", displayName: "Synthetic Owner" };
@@ -131,6 +132,7 @@ describe("LocalStore", () => {
       subjects: [{ id: "sub_legacy", workspaceId: "wrk_legacy", displayName: "Local owner", kind: "OWNER", relationship: "Self", createdAt }],
       audit: [{ id: "audit_legacy", workspaceId: "wrk_legacy", type: "WORKSPACE_CREATED", resourceType: "WORKSPACE", resourceId: "wrk_legacy", actor: "Local owner", detail: "Created the local workspace", at: createdAt }],
       dependencies: [],
+      authorityCommandReceipts: [],
     }));
     const migrated = new LocalStore();
     expect(await migrated.listWorkspaces(actor.identityId)).toEqual([]);
@@ -206,7 +208,7 @@ describe("LocalStore", () => {
     expect(dashboard.members.find((member) => member.subjectId === person.id)).toMatchObject({ invitationState: "PENDING", permissions: { add: true, edit: false } });
     expect(dashboard.accessGrants.some((grant) => grant.granteeIdentityId !== actor.identityId)).toBe(false);
 
-    await store.updatePerson(workspaceId, actor, person.id, {
+    await store.updatePerson(workspaceId, actor, person.id, person.revision, {
       displayName: "Synthetic Adult Updated",
       kind: "ADULT",
       relationship: "Partner",
@@ -217,9 +219,44 @@ describe("LocalStore", () => {
     });
     dashboard = await store.dashboard(workspaceId);
     expect(dashboard.subjects.find((item) => item.id === person.id)?.displayName).toBe("Synthetic Adult Updated");
+    expect(dashboard.subjects.find((item) => item.id === person.id)?.history).toHaveLength(1);
     expect(dashboard.members.find((member) => member.subjectId === person.id)).toMatchObject({ role: "FAMILY_ADMIN", mobile: "+61400000000", permissions: { delete: true } });
     expect(dashboard.authorizationEpoch.value).toBeGreaterThan(1);
     expect(dashboard.audit.some((entry) => entry.type === "PERSON_UPDATED")).toBe(true);
+  });
+
+  it("represents a managed dependant without fabricating identity, membership or authority and rejects stale or foreign changes", async () => {
+    const input = {
+      displayName: "Synthetic Dependant", kind: "DEPENDANT" as const, relationship: "Child", loginEnabled: false,
+      role: "MANAGED_DEPENDANT" as const, permissions: { view: false, add: false, edit: false, delete: false },
+    };
+    const dependant = await store.createPerson(workspaceId, actor, input);
+    expect(dependant).toMatchObject({ workspaceId, kind: "DEPENDANT", status: "ACTIVE", revision: 1, history: [] });
+    let database = JSON.parse(await readFile(join(directory, "state.json"), "utf8")) as {
+      workspaces: Array<{ workspace: { id: string }; subjects: SubjectRecord[]; members: Array<{ subjectId: string }>; subjectIdentityLinks: Array<{ subjectId: string }>; accessGrants: Array<{ resourceIds: string[] }>; audit: Array<{ type: string; outcome?: string }> }>;
+      authorityOutbox: Array<{ eventType: string }>;
+    };
+    let state = database.workspaces.find((candidate) => candidate.workspace.id === workspaceId)!;
+    expect(state.members.some((member) => member.subjectId === dependant.id)).toBe(false);
+    expect(state.subjectIdentityLinks.some((link) => link.subjectId === dependant.id)).toBe(false);
+    expect(state.accessGrants.some((grant) => grant.resourceIds.includes(dependant.id))).toBe(false);
+    expect(state.audit.some((entry) => entry.type === "PERSON_CREATED")).toBe(true);
+
+    const updated = await store.updatePerson(workspaceId, actor, dependant.id, dependant.revision, { ...input, relationship: "Dependant" });
+    expect(updated).toMatchObject({ id: dependant.id, relationship: "Dependant", revision: 2, history: [expect.objectContaining({ revision: 1, relationship: "Child" })] });
+    await expect(store.updatePerson(workspaceId, actor, dependant.id, 1, { ...input, relationship: "Stale overwrite" })).rejects.toThrow("refresh before retrying");
+
+    const foreignActor = { identityId: "id_foreign_subject_owner", displayName: "Foreign Synthetic Owner" };
+    const foreign = await store.createWorkspace(foreignActor, "Foreign subject household", "FAMILY", "foreign-subject-workspace-0001");
+    const foreignSubject = await store.createPerson(foreign.id, foreignActor, { ...input, displayName: "Foreign Synthetic Dependant" });
+    await expect(store.updatePerson(workspaceId, actor, foreignSubject.id, foreignSubject.revision, input)).rejects.toThrow("Resource not available");
+
+    database = JSON.parse(await readFile(join(directory, "state.json"), "utf8"));
+    state = database.workspaces.find((candidate) => candidate.workspace.id === workspaceId)!;
+    expect(state.subjects.find((subject) => subject.id === dependant.id)).toMatchObject({ relationship: "Dependant", revision: 2 });
+    expect(state.members.some((member) => member.subjectId === dependant.id)).toBe(false);
+    expect(state.audit.filter((entry) => entry.type === "PERSON_CHANGE_REJECTED")).toHaveLength(2);
+    expect(database.authorityOutbox.filter((event) => event.eventType === "PERSON_CHANGE_REJECTED")).toHaveLength(2);
   });
 
   it("keeps the explicit owner unique and blocks generic ownership-transfer shortcuts", async () => {
@@ -228,19 +265,21 @@ describe("LocalStore", () => {
     await expect(store.createPerson(workspaceId, actor, { displayName: "Second Owner", kind: "OWNER", relationship: "Self", loginEnabled: false, role: "FAMILY_ADMIN", permissions: { view: true, add: true, edit: true, delete: true } })).rejects.toThrow("ownership transfer");
 
     const adult = await store.createPerson(workspaceId, actor, { displayName: "Synthetic Adult", kind: "ADULT", relationship: "Partner", loginEnabled: false, role: "ADULT_MEMBER", permissions: { view: true, add: false, edit: false, delete: false } });
-    await expect(store.updatePerson(workspaceId, actor, adult.id, { displayName: "Synthetic Adult", kind: "OWNER", relationship: "Partner", loginEnabled: true, email: "adult@example.test", role: "FAMILY_ADMIN", permissions: { view: true, add: true, edit: true, delete: true } })).rejects.toThrow("Ownership transfer");
+    await expect(store.updatePerson(workspaceId, actor, adult.id, adult.revision, { displayName: "Synthetic Adult", kind: "OWNER", relationship: "Partner", loginEnabled: true, email: "adult@example.test", role: "FAMILY_ADMIN", permissions: { view: true, add: true, edit: true, delete: true } })).rejects.toThrow("Ownership transfer");
     expect((await store.dashboard(workspaceId)).subjects.filter((subject) => subject.kind === "OWNER")).toHaveLength(1);
   });
 
   it("blocks removal while documents are assigned, then records safe removal", async () => {
     const person = await store.createPerson(workspaceId, actor, { displayName: "Synthetic Child", kind: "CHILD", relationship: "Child", loginEnabled: false, role: "ADULT_MEMBER", permissions: { view: true, add: false, edit: false, delete: false } });
     const document = await store.addDocument(workspaceId, actor, textFile("Synthetic school document.", "school.txt"), [person.id], "FILE");
-    await expect(store.deletePerson(workspaceId, actor, person.id)).rejects.toThrow("Reassign or delete");
+    await expect(store.deletePerson(workspaceId, actor, person.id, person.revision)).rejects.toThrow("Reassign or delete");
     await store.deleteDocument(workspaceId, actor, document.id);
-    await store.deletePerson(workspaceId, actor, person.id);
+    await store.deletePerson(workspaceId, actor, person.id, person.revision);
     const dashboard = await store.dashboard(workspaceId);
     expect(dashboard.subjects.some((item) => item.id === person.id)).toBe(false);
     expect(dashboard.audit[0]?.type).toBe("PERSON_REMOVED");
+    const persisted = JSON.parse(await readFile(join(directory, "state.json"), "utf8")) as { workspaces: Array<{ subjects: Array<{ id: string; status: string; history: unknown[] }> }> };
+    expect(persisted.workspaces[0]!.subjects.find((item) => item.id === person.id)).toMatchObject({ status: "RETIRED", history: [expect.any(Object)] });
   });
 
   it("records the approved recovery-unavailable policy boundary", async () => {

@@ -10,6 +10,7 @@ import type {
   WorkspacePersistence,
   WorkspaceState,
 } from "./workspace-state.js";
+import { normalizeAuthorityLifecycle } from "./workspace-state.js";
 
 type SqlClient = Pick<PoolClient, "query" | "release">;
 type SqlPool = Pick<Pool, "connect" | "end">;
@@ -98,7 +99,7 @@ async function migrationFiles(directory: string): Promise<MigrationFile[]> {
 function databaseFromRows(workspaces: WorkspaceRow[], receipts: ReceiptRow[], outbox: OutboxRow[]): WorkspaceDatabase {
   return {
     schemaVersion: 3,
-    workspaces: workspaces.map((row) => row.state),
+    workspaces: workspaces.map((row) => normalizeAuthorityLifecycle(row.state)),
     workspaceCreationReceipts: receipts.map((row) => ({
       identityId: row.identity_id,
       idempotencyKeyHash: row.idempotency_key_hash,
@@ -146,6 +147,7 @@ function validateWorkspaceState(state: WorkspaceState): void {
     [state.accessGrants, "access grant"],
     [state.audit, "audit record"],
     [state.dependencies, "dependency"],
+    [state.authorityCommandReceipts, "authority command receipt"],
   ];
   for (const [items, kind] of scopedCollections) {
     assertUniqueIds(items, kind, workspaceId);
@@ -164,7 +166,7 @@ function validateWorkspaceState(state: WorkspaceState): void {
   if (state.workspace.ownerBindingId !== ownerBinding.id || ownerBinding.ownerMembershipId !== ownerMember.id) throw new Error(`Workspace owner binding mismatch for ${workspaceId}`);
   if (!ownerMember.identityId || ownerBinding.ownerIdentityId !== ownerMember.identityId) throw new Error(`Workspace owner identity mismatch for ${workspaceId}`);
   const ownerSubject = subjects.get(ownerMember.subjectId);
-  if (!ownerSubject || ownerSubject.kind !== "OWNER") throw new Error(`Workspace owner subject mismatch for ${workspaceId}`);
+  if (!ownerSubject || ownerSubject.kind !== "OWNER" || ownerSubject.status !== "ACTIVE") throw new Error(`Workspace owner subject mismatch for ${workspaceId}`);
   if (!state.subjectIdentityLinks.some((link) => link.state === "ACTIVE" && link.subjectId === ownerSubject.id && link.identityId === ownerBinding.ownerIdentityId)) throw new Error(`Workspace owner identity link missing for ${workspaceId}`);
 
   for (const member of state.members) if (!subjects.has(member.subjectId)) throw new Error(`Membership subject reference missing for ${workspaceId}`);

@@ -59,14 +59,25 @@ integration.sequential("PostgreSQL workspace authority integration", () => {
       displayName, kind: "ADULT" as const, relationship: "Family member", loginEnabled: false,
       role: "ADULT_MEMBER" as const, permissions: { view: true, add: false, edit: false, delete: false },
     });
-    await Promise.all([
-      firstStore.updatePerson(first.id, actor, person.id, update("Synthetic Concurrent Person A")),
-      secondStore.updatePerson(first.id, actor, person.id, update("Synthetic Concurrent Person B")),
+    const outcomes = await Promise.allSettled([
+      firstStore.updatePerson(first.id, actor, person.id, person.revision, update("Synthetic Concurrent Person A")),
+      secondStore.updatePerson(first.id, actor, person.id, person.revision, update("Synthetic Concurrent Person B")),
     ]);
+    expect(outcomes.filter((outcome) => outcome.status === "fulfilled")).toHaveLength(1);
+    expect(outcomes.filter((outcome) => outcome.status === "rejected")).toHaveLength(1);
     const afterConcurrentUpdate = await firstPersistence.read();
     const authority = afterConcurrentUpdate.workspaces.find((state) => state.workspace.id === first.id)!;
-    expect(authority.subjects.find((subject) => subject.id === person.id)?.revision).toBe(3);
-    expect(authority.audit.filter((record) => record.type === "PERSON_UPDATED")).toHaveLength(2);
+    expect(authority.subjects.find((subject) => subject.id === person.id)?.revision).toBe(2);
+    expect(authority.audit.filter((record) => record.type === "PERSON_UPDATED")).toHaveLength(1);
+    expect(authority.audit.filter((record) => record.type === "PERSON_CHANGE_REJECTED")).toHaveLength(1);
+
+    const canonicalSubject = await firstStore.createCanonicalSubject(first.id, actor, authority.workspace.revision, "real-postgres-subject-command-0001", { subject_kind: "PERSON", authority_basis_ref: "authority-basis-synthetic-001" }, "corr-real-postgres-subject");
+    const replayedCanonicalSubject = await secondStore.createCanonicalSubject(first.id, actor, authority.workspace.revision, "real-postgres-subject-command-0001", { subject_kind: "PERSON", authority_basis_ref: "authority-basis-synthetic-001" }, "corr-real-postgres-replay");
+    expect(replayedCanonicalSubject.id).toBe(canonicalSubject.id);
+    const afterCommandReplay = await firstPersistence.read();
+    expect(afterCommandReplay.workspaces.find((state) => state.workspace.id === first.id)!.authorityCommandReceipts).toEqual([
+      expect.objectContaining({ operationId: "API-P1-105", resourceId: canonicalSubject.id }),
+    ]);
 
     await expect(firstPersistence.mutate((database) => {
       database.workspaces.find((state) => state.workspace.id === first.id)!.accessGrants[0]!.workspaceId = foreign.id;
@@ -79,7 +90,7 @@ integration.sequential("PostgreSQL workspace authority integration", () => {
 
     const restarted = new LocalStore(new PostgresWorkspacePersistence({ pool, migrationMode: "verify", migrationsDirectory }));
     expect(await restarted.listWorkspaces(actor.identityId)).toEqual([expect.objectContaining({ id: first.id })]);
-    await expect(firstPersistence.verifyInvariants()).resolves.toEqual({ workspaces: 2, receipts: 2, outbox: 5 });
+    await expect(firstPersistence.verifyInvariants()).resolves.toEqual({ workspaces: 2, receipts: 2, outbox: 6 });
 
     const row = await pool.query<{ state: { members: Array<{ workspaceId: string }> } }>("SELECT state FROM doculyra.workspace_state WHERE workspace_id = $1", [first.id]);
     row.rows[0]!.state.members[0]!.workspaceId = foreign.id;
