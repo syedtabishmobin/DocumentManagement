@@ -59,6 +59,27 @@ FORBIDDEN_VALUE_PATTERNS = (
     re.compile(r"\b(?:tool\s+(?:input|output)|provider\s+payload)\s*[:=]", re.I),
     re.compile(r"\b(?:api[_ -]?key|secret)\s*[:=]\s*\S+", re.I),
 )
+PASS_INCOMPATIBLE_READINESS_PHRASES = (
+    "require exact-candidate independent retest",
+    "requires exact-candidate independent retest",
+    "awaits exact-candidate",
+    "pending exact-candidate",
+    "independent qa is the sole open readiness gate",
+    "until independent qa accepts",
+    "protected pr workflow permits merge",
+)
+
+
+def validate_pass_readiness_language(gate_status: str, documents: dict[str, str]) -> list[str]:
+    if gate_status != "PASS":
+        return []
+    errors: list[str] = []
+    for name, content in documents.items():
+        normalized = content.casefold()
+        for phrase in PASS_INCOMPATIBLE_READINESS_PHRASES:
+            if phrase in normalized:
+                errors.append(f"{name} contradicts PASS readiness with pending-gate language: {phrase}")
+    return errors
 
 
 def load_json(path: Path) -> Any:
@@ -402,10 +423,23 @@ def validate_configuration() -> list[str]:
     missing_event_types = sorted(required_event_types - actual_event_types)
     if missing_event_types:
         errors.append(f"event schema is missing required event types: {', '.join(missing_event_types)}")
-    report = (ROOT / ".agents/bootstrap/2026-08-29-observability-readiness-report.md").read_text(encoding="utf-8")
-    for marker in ("OBSERVABILITY READINESS REPORT", "## 1. Repository/framework state discovered", "## 12. Recommendation for starting the governed Doculyra work queue", "**PARTIAL**", "04_USING_THIS_REPO_WITH_CODEX.md"):
+    report_path = ROOT / ".agents/bootstrap/2026-08-29-observability-readiness-report.md"
+    report = report_path.read_text(encoding="utf-8")
+    for marker in ("OBSERVABILITY READINESS REPORT", "## 1. Repository/framework state discovered", "## 12. Recommendation for starting the governed Doculyra work queue", "**PASS**", "04_USING_THIS_REPO_WITH_CODEX.md"):
         if marker not in report:
             errors.append(f"observability readiness report is missing marker: {marker}")
+    final_readiness_path = ROOT / ".agents/bootstrap/2026-08-30-final-autonomous-readiness-report.md"
+    current_state_path = ROOT / ".agents/project/current-state.md"
+    queue_path = ROOT / ".agents/project/first-governed-work-queue.md"
+    errors.extend(validate_pass_readiness_language(
+        config.get("autonomousQueueGate", {}).get("status", ""),
+        {
+            str(report_path.relative_to(ROOT)): report,
+            str(final_readiness_path.relative_to(ROOT)): final_readiness_path.read_text(encoding="utf-8"),
+            str(current_state_path.relative_to(ROOT)): current_state_path.read_text(encoding="utf-8"),
+            str(queue_path.relative_to(ROOT)): queue_path.read_text(encoding="utf-8"),
+        },
+    ))
     notification = load_json(ROOT / ".agents/config/notifications.json").get("adapter", {})
     state_line = (
         "Notification state: "

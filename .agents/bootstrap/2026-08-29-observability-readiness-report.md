@@ -6,7 +6,7 @@ Notification state: implementation=IMPLEMENTED; activation=ENABLED; deliveryConf
 
 ## 1. Repository/framework state discovered
 
-The merged framework already provided reusable/project separation, GitHub Issues authority, protected-main CI, lifecycle events, privacy-safe local queries, attribution and a sound configured-disabled ACS Email adapter. Issue #18 extended that implementation rather than rebuilding it. Azure discovery identified Bicep diagnostic-scope defect #25; post-activation reconciliation identified stale-current-state defect #26; independent negative QA identified explicit-port endpoint defect #28. All have implementation fixes and require exact-candidate independent retest.
+The merged framework already provided reusable/project separation, GitHub Issues authority, protected-main CI, lifecycle events, privacy-safe local queries, attribution and a sound configured-disabled ACS Email adapter. Issue #18 extended that implementation rather than rebuilding it. Azure discovery identified Bicep diagnostic-scope defect #25; post-activation reconciliation identified stale-current-state defect #26; independent negative QA identified explicit-port endpoint defect #28. Independent `QA-SEC-003` retested and closed all three on accepted SHA `b9ce247330b269e16234b790b3d95c5e074379da`.
 
 ## 2. Files/config changed
 
@@ -38,18 +38,18 @@ Schemas reject raw prompts, product content, arbitrary provider payloads, creden
 
 ## 9. External/admin actions still required
 
-None. Azure authentication, sender/domain, RBAC, diagnostics, deployment and recipient confirmation are complete. Independent QA of the exact final candidate remains an internal separation-of-duties gate.
+None. Azure authentication, sender/domain, RBAC, diagnostics, deployment, recipient confirmation, exact-candidate independent QA and protected merge are complete.
 
 ## 10. Observability readiness
 
-**PARTIAL**
+**PASS**
 
-The observability and live notification mechanisms pass. The temporary non-PASS reason is exact-candidate independent QA and protected-PR completion, not an external provider gap.
+The observability and live notification mechanisms pass. Independent `QA-SEC-003` accepted all `NOTIFY-AC-01`–`14` on `b9ce247330b269e16234b790b3d95c5e074379da`; protected run `33260913535` passed and PR #27 merged.
 
 ## 11. Exact reasons for any non-PASS result
 
-The implementing agent is not authorised to self-approve the activation/evidence update. Separately assigned independent QA must verify the final candidate, Azure read-only evidence, deduplication counts, tests and attribution before the autonomous queue gate changes to PASS.
+None. Token/cost precision remains truthfully `UNAVAILABLE`, but the approved framework explicitly treats that as non-blocking when provenance is honest.
 
 ## 12. Recommendation for starting the governed Doculyra work queue
 
-Complete independent QA and protected merge, then mark readiness PASS. Even after PASS, do not begin the product queue without an explicit subsequent governed request. `04_USING_THIS_REPO_WITH_CODEX.md` remains the human-facing operating guide.
+The framework is ready for governed queue execution. Do not begin product work without an explicit subsequent governed request. `04_USING_THIS_REPO_WITH_CODEX.md` remains the human-facing operating guide.
