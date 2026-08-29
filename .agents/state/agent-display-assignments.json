@@ -44,6 +44,17 @@
       "parentDisplayAgentId": "ORCH-002",
       "workItem": "issue-33",
       "status": "COMPLETED"
+    },
+    {
+      "displayAgentId": "QA-E2E-004",
+      "displayRole": "Independent End-to-End QA",
+      "displayRunId": "RUN-20260830-0052",
+      "runtimeAgentId": "codex-01a04ea7-f8a0-77d2-90c5-81d9d21166a0",
+      "runtimeRunId": "run-qa-baseline-20260830",
+      "roleId": "qa-release-lead",
+      "parentDisplayAgentId": "ORCH-002",
+      "workItem": "issue-32/pr-34",
+      "status": "ACTIVE"
     }
   ]
 }
