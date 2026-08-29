@@ -1,0 +1,52 @@
+{
+  "id": "DEC-P1-056",
+  "title": "Phase 1 managed-dependant transition boundary",
+  "authority": "doculyra-product-authority",
+  "status": "APPROVED",
+  "selectedOptionId": "A",
+  "decidedAt": "2026-08-30T03:36:28+10:00",
+  "decisionEvidenceUrl": "https://github.com/syedtabishmobin/DocumentManagement/issues/33#issuecomment-5463877570",
+  "decisionSource": "Product Authority steer in the governed Issue #32 baseline task",
+  "decision": "Phase 1 adopts an explicit, independently testable fail-closed ownership/access transition fence. Incomplete, ambiguous, failed, or partially applied transitions must not broaden access. Advanced independent document-access transfer, complex inherited-right preservation, delegated authority chains, and enterprise entitlement transfer are deferred to a later governed capability.",
+  "question": "Should Phase 1 implement managed-dependant independent-access transition semantics, retain a tested fail-closed policy fence, or remove transition representation?",
+  "evidence": [
+    "REQ-P1-WS-007 preserves subject and provenance history but makes transfer conditional on an approved consent design.",
+    "WSP-P1-037 through WSP-P1-039 prohibit fabricated identity, access activation, and resource reassignment before eligibility, consent, authority and challenge rules are approved.",
+    "AC-STORY-P1-040-01 defines a safe no-transfer boundary while AC-STORY-P1-040-02 prevents completion of an executable transition without exact policy, API, reference-data and test contracts.",
+    "Architecture, Security/Privacy and Data/Domain consultation classified the missing transition semantics as a material story-local decision."
+  ],
+  "options": [
+    {
+      "id": "A",
+      "description": "Keep Phase 1 as a tested fail-closed transition fence and defer independent-access transfer semantics to a later governed change.",
+      "impacts": ["Safest and immediately testable", "Preserves stable subjects and provenance", "Does not deliver independent-access transition in Phase 1"]
+    },
+    {
+      "id": "B",
+      "description": "Define and implement complete transition semantics in Phase 1.",
+      "impacts": ["Broader product, legal, privacy, security, data and UX scope", "Requires eligibility, consent, challenge, credential, key, grant and private-resource contracts", "May delay dependent family-access work"]
+    },
+    {
+      "id": "C",
+      "description": "Remove transition representation from Phase 1 while retaining managed dependants as subjects.",
+      "impacts": ["Smaller implementation", "Loses an explicit negative safety contract", "Raises risk of later implicit transfer behavior"]
+    }
+  ],
+  "recommendation": {
+    "optionId": "A",
+    "reason": "It preserves the approved family model while preventing sensitive authority, consent, credential, key and private-resource behavior from being invented without a complete later design."
+  },
+  "formerlyBlockedScope": [
+    "Final STORY-P1-040 status and acceptance wording",
+    "TRACE-GAP-P1-API-013 and TRACE-GAP-P1-REF-003 disposition",
+    "Final Doculyra Build Baseline approval"
+  ],
+  "reconciliationContinuedDuringDecision": [
+    "All other hierarchy and stale-status reconciliation",
+    "Public-site governed ownership",
+    "Test and reverse implementation traceability",
+    "Dependency graph and baseline validation tooling"
+  ],
+  "futureCapability": "A later governed change may add richer independent access-transfer and delegation semantics. Phase 1 must preserve extension points without implementing or implying those semantics.",
+  "authoritativeUrl": "https://github.com/syedtabishmobin/DocumentManagement/issues/33"
+}

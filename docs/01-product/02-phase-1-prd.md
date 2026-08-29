@@ -3,11 +3,12 @@
 | Field | Value |
 |---|---|
 | Document ID | `PROD-PRD-001` |
-| Version | `0.2` |
+| Version | `0.3` |
 | Status | `APPROVED IMPLEMENTATION BASELINE` |
+| Stable product vision | `PROD-VIS-001` — evidence-aware household document intelligence with explicit human control |
 | Product phase | Phase 1 — Personal and Family |
 | Jurisdiction | Australia first; jurisdiction-neutral core |
-| Updated | 28 August 2026 |
+| Updated | 30 August 2026 — build-baseline traceability reconciliation |
 | Owners | Product owner; product and architecture maintainers |
 
 ## 1. Authority and approval boundary
@@ -24,6 +25,8 @@ When this PRD conflicts with a higher-authority source, the hierarchy in `CODEX.
 - Detailed architecture, security, API, UX, reference-data, and testing specifications may refine this PRD but may not silently weaken it.
 
 ## 2. Product definition
+
+`PROD-VIS-001` is the stable Phase 1 product-vision identity. In this approved PRD it means: **Doculyra helps personal and family users turn governed document evidence into understandable, permission-safe knowledge and change action while preserving provenance, human authority, privacy, portability, and truthful failure states.** The broader strategy document may evolve as explanatory material; this identity and meaning remain the approved vision anchor until changed through governed baseline change control.
 
 Phase 1 provides a React public website and authenticated web/PWA plus dedicated Flutter iOS and Android applications for personal and family workspaces. It securely preserves customer-encrypted documents, performs authorized intelligence on the customer device by default, resolves canonical facts with history, connects dependencies, monitors dates and governed sources, explains downstream impact, and routes consequential action through human approval and auditable closure.
 
@@ -165,14 +168,14 @@ Each row is an independently traceable product requirement. The acceptance summa
 | `REQ-P1-DOC-004` | Authorized users MUST be able to inspect and download the exact original version through short-lived, scoped access; the product MUST NOT expose permanent public artifact URLs. | `P1-S1` | Expired, revoked, wrong-workspace, and wrong-version links fail without content leakage. |
 | `REQ-P1-DOC-005` | Browsing MUST offer human-readable views by document, subject, and relevant household resource such as property, vehicle, policy, or provider without changing the underlying access boundary. | `P1-S2` | The same resource policy is enforced across every view and count. |
 | `REQ-P1-DOC-006` | The supported-format profile MUST be configuration-driven and MUST define validation, preview, native extraction, OCR fallback, and unsupported-file behavior per format. | `P1-S1` | Every enabled format has an explicit processing path and an observable unsupported or degraded outcome. |
-| `REQ-P1-DOC-007` | Suspected clinical records MUST NOT enter ordinary Phase 1 extraction, graph, search, or AI flows; final reject/quarantine/user-recovery behavior is blocked on `DEC-036`. | `P1-S1` | A synthetic clinical-record fixture cannot be indexed or surfaced as an in-scope insurance record. |
+| `REQ-P1-DOC-007` | Suspected clinical records MUST enter isolated `POLICY_HOLD` under `DEC-036` and MUST NOT enter ordinary Phase 1 preview, extraction, graph, search, AI, sharing, or export flows; deletion is allowed and ordinary processing requires explicit safe reclassification. | `P1-S1` | A synthetic clinical-record fixture is isolated, cannot be indexed or surfaced as an in-scope insurance record, and cannot escape through an ordinary/admin bypass. |
 | `REQ-P1-DOC-008` | A conformed effective-document view MUST account for version, amendment, addendum, cancellation, and supersession relationships while preserving every source version. | `P1-S3` | Obligations and answers identify which clauses/versions are effective and expose conflicts for review. |
 
 ### 7.3 Capture, ingestion, and processing
 
 | Requirement | Proposed normative statement | Slice | Acceptance summary |
 |---|---|---|---|
-| `REQ-P1-ING-001` | Phase 1 MUST support browser upload, PWA camera capture, and manual record creation; other connector ingestion is conditional on `DEC-031`. | `P1-S1` | Each required entry route produces the same governed ingestion job and provenance envelope. |
+| `REQ-P1-ING-001` | Phase 1 MUST support browser upload, camera-compatible capture, and manual record creation. Connector adapters may be implemented under `DEC-045`, but each live connector ingestion route is release-gated on exact consent, configuration, route eligibility, and conformance evidence. | `P1-S1` | Each eligible entry route produces the same governed ingestion job and provenance envelope; unavailable connectors remain visibly non-operational. |
 | `REQ-P1-ING-002` | Ingestion MUST be an explicit asynchronous state machine separating receipt, validation, quarantine, extraction, review, indexing, readiness, failure, cancellation, and purge interactions. | `P1-S1` | Clients can observe non-ambiguous states; invalid transitions and late events are rejected or reconciled. |
 | `REQ-P1-ING-003` | Files MUST be validated and scanned before content extraction; suspicious files MUST be isolated from download, preview, parsing, indexing, and AI until an authorized quarantine decision. | `P1-S1` | Known-malicious, scan-timeout, scanner-unavailable, release, and delete paths are tested. |
 | `REQ-P1-ING-004` | Receipt and processing MUST be idempotent and retryable; exact-hash duplicate detection MUST preserve acquisition attempts and MUST NOT imply logical-document identity. | `P1-S1` | Repeated upload and event delivery do not create uncontrolled versions, lost provenance, or duplicate side effects. |
@@ -232,7 +235,7 @@ Each row is an independently traceable product requirement. The acceptance summa
 | `REQ-P1-HLT-001` | Expected-document intelligence MUST use versioned requirement profiles with context, jurisdiction, accepted alternatives, exceptions/waivers, validity, and evidence criteria. | `P1-S3` | Each suggestion explains why it may apply and cites an approved rule or is labelled non-authoritative guidance. |
 | `REQ-P1-HLT-002` | A user MUST be able to add evidence, select an accepted alternative, mark not applicable with reason, request a waiver/review where supported, dismiss, or remind later. | `P1-S3` | Each outcome is distinct, reversible where policy permits, and auditable. |
 | `REQ-P1-HLT-003` | The service MUST detect potentially expired, stale, superseded, missing, and contradictory information while preserving the evidence and uncertainty behind the finding. | `P1-S3` | A finding identifies rule/evidence, affected resources, confidence, and available resolution paths. |
-| `REQ-P1-HLT-004` | Any aggregate readiness or content-health score MUST be explainable, decomposable, permission-aware, and explicitly not a legal-compliance or risk guarantee; release depends on `DEC-034`. | `P1-S4` `CONDITIONAL` | Users can inspect contributing signals and cannot infer hidden restricted items from the score. |
+| `REQ-P1-HLT-004` | Phase 1 MUST present explainable, decomposable, permission-aware item-level findings and MUST NOT calculate, display, persist, infer, or use an aggregate or hidden readiness, content-health, traffic-light, ranking, compliance, risk, or guarantee score under `DEC-034`. | `P1-S4` | Users can inspect each permitted item finding and its limitations; negative tests prove no aggregate/hidden score or restricted-item inference exists. |
 | `REQ-P1-HLT-005` | Requirement satisfaction MUST require configured evidence and verification state; the presence of a file or extracted field MUST NOT by itself establish fulfilment. | `P1-S3` | A file can be received and extracted while its requirement remains unmet or under review. |
 
 ### 7.9 Change, recommendation, approval, action, and closure
@@ -254,7 +257,7 @@ Each row is an independently traceable product requirement. The acceptance summa
 |---|---|---|---|
 | `REQ-P1-NTF-001` | Recommendations and obligations MUST be able to create owned tasks with status, due date, source, evidence requirement, and audit history. | `P1-S3` | Task creation and updates retain causality to the recommendation or obligation. |
 | `REQ-P1-NTF-002` | Users MUST be able to acknowledge, snooze, reassign where authorized, complete, reopen, or dismiss a task subject to its workflow policy. | `P1-S3` | Invalid actors or terminal-state transitions fail; completion evidence is preserved. |
-| `REQ-P1-NTF-003` | In-app notifications are required; email and push delivery are conditional on `DEC-037` and MUST use a channel-neutral notification contract. | `P1-S3` | Notification state is consistent across retries and does not expose sensitive content on an unapproved channel. |
+| `REQ-P1-NTF-003` | In-app notifications are required. Customer email, push, and SMS delivery MUST use a channel-neutral contract and remain release-gated under `DEC-037`/`045` until exact consent, configuration, minimization, route, and conformance evidence passes. | `P1-S3` | Notification state is consistent across retries and does not expose sensitive content or claim delivery on an unapproved/unverified channel. |
 | `REQ-P1-NTF-004` | Notification policy MUST support preference, quiet-period, deduplication, escalation, acknowledgement, and stale-source suppression/degradation. | `P1-S4` | Duplicate triggers do not spam; urgent behavior still respects privacy and approved exceptions. |
 
 ### 7.11 Family sharing, delegation, and continuity
@@ -264,7 +267,7 @@ Each row is an independently traceable product requirement. The acceptance summa
 | `REQ-P1-SHR-001` | Sharing grants MUST be explicit, scoped to workspace/resource/field/action/purpose as applicable, time-bounded where configured, and revocable. | `P1-S4` | Grant creation shows effective access; expiry/revocation removes retrieval, graph, answer, action, notification, and export access. |
 | `REQ-P1-SHR-002` | Guest links MUST be short-lived, least-privileged, non-indexable, rate-limited, auditable, and independently revocable without exposing unrelated workspace context. | `P1-S4` | Link guessing, expiry, reuse, onward enumeration, and revoked-link scenarios fail safely. |
 | `REQ-P1-SHR-003` | Family administration MUST separate membership management from content access, consent, fact resolution, approval authority, and export/deletion authority. | `P1-S4` | Granting `FAMILY_ADMIN` does not silently confer every listed authority. |
-| `REQ-P1-SHR-004` | Curated continuity/export packs and time-aware access grants are proposed; automated incapacity or after-death release remains conditional on `DEC-032`. | `P1-S4` `CONDITIONAL` | No event can release restricted content until trigger evidence, challenge, revocation, consent, and audit rules are approved and tested. |
+| `REQ-P1-SHR-004` | Phase 1 MUST support ordinary explicit time-aware grants and the approved curated export envelope, while automated emergency, incapacity, and after-death release MUST remain unavailable under `DEC-032`. | `P1-S4` | No event, relationship, date, configuration, support route, or ordinary grant can automatically release restricted content or authority. |
 | `REQ-P1-SHR-005` | The product MUST support an impact-exists disclosure policy that can route action to an authorized person without revealing restricted evidence. | `P1-S3` | A collaborator sees only the permitted action/explanation and cannot infer the protected subject or value. |
 
 ### 7.12 AI capability and trust controls
@@ -288,7 +291,7 @@ Each row is an independently traceable product requirement. The acceptance summa
 | `REQ-P1-TRUST-003` | Ordinary logs, analytics, traces, metrics, fixtures, errors, and screenshots MUST NOT contain raw document content, secrets, tokens, or unapproved sensitive values. | `P1-S1` | Automated redaction and synthetic-data tests cover success and failure paths. |
 | `REQ-P1-TRUST-004` | Security- and consequence-relevant events MUST produce tamper-evident, workspace-scoped audit records with actor/service, action, target, decision, outcome, correlation, time, and safe provenance. | `P1-S1` | Critical workflows can be reconstructed without placing raw content in ordinary audit fields. |
 | `REQ-P1-TRUST-005` | The Australian data-residency option MUST cover every in-scope data class and processor according to an approved residency matrix, including originals, records, indexes, backups, logs, analytics, support, AI/OCR, and disaster recovery. | `P1-S4` | Automated placement and restore tests match the declared residency policy; unsupported processing is blocked or disclosed before consent. |
-| `REQ-P1-TRUST-006` | Users MUST be able to export their authorized data in documented, usable formats. The proposed complete envelope in `DEC-033` includes originals, versions, derived data, facts, relationships, rules affecting them, tasks, reminders, grants, and audit history subject to third-party rights. | `P1-S4` | Export manifests are complete, checksummed, access-controlled, resumable, and machine-readable. |
+| `REQ-P1-TRUST-006` | Users MUST be able to export their authorized data in documented, usable formats. The complete envelope approved by `DEC-033` includes originals, versions, derived data, facts, relationships, rules affecting them, tasks, reminders, grants, and audit history subject to third-party rights. | `P1-S4` | Export manifests are complete against their declared versioned envelope, checksummed, access-controlled, resumable, and machine-readable. |
 | `REQ-P1-TRUST-007` | Archive, trash, account deletion, resource purge, retention exceptions, derived-index removal, connector deletion, and backup expiry MUST be separate governed states with published user-visible behavior. | `P1-S4` | Purge tests cover binaries, rows, search/vector/graph indexes, caches, derivatives, replicas, backups, and retained/redacted audit evidence. |
 | `REQ-P1-TRUST-008` | Account recovery MUST not create a weaker path around encryption, MFA, workspace ownership, private resources, or delegated access; the assurance model remains open in `DEC-038`. | `P1-S4` `CONDITIONAL` | Recovery and support cannot disclose content or transfer authority without the approved evidence and delay/challenge process. |
 | `REQ-P1-TRUST-009` | Connector consent, AI/OCR processing, analytics, support access, and cross-border processing MUST be purpose-limited, transparent, revocable where applicable, and recorded. | `P1-S4` | Consent withdrawal changes future processing and displays the approved retained-data consequence. |
@@ -309,6 +312,7 @@ Each row is an independently traceable product requirement. The acceptance summa
 |---|---|---|---|
 | `REQ-P1-PLT-001` | The public website and authenticated web/PWA MUST remain React/TypeScript; dedicated iOS and Android clients MUST use one Flutter/Dart mobile codebase. | Cross-slice | Critical journeys meet the same API, authorization, evidence, encryption, state, and error contracts across supported clients. |
 | `REQ-P1-PLT-002` | TypeScript and Dart clients MUST consume generated or conformance-validated models from the same OpenAPI, event, encryption-envelope, and reference-data contracts; UI code is not a shared source of domain truth. | Cross-slice | Contract drift blocks CI and equivalent synthetic fixtures produce equivalent authorized outcomes. |
+| `REQ-P1-PLT-003` | The public Doculyra experience MUST provide truthful product, feature, privacy/security, about, contact, preview-legal, create-account, and sign-in routes using the approved brand and MUST distinguish implemented development-preview behaviour from target controls, unavailable providers, and production claims. | `P1-S1` / cross-slice | An unauthenticated user can understand the product and its boundaries, reach privacy and terms information, and enter account creation or sign-in without an account, customer-data disclosure, simulated provider success, or an unsupported production/readiness claim. |
 | `REQ-P1-CRYPTO-001` | Original document bytes and sensitive derivatives MUST be encrypted on the authorized customer client before network transfer using a versioned authenticated-encryption envelope and independent document keys. | `P1-S1`–`S2` | Network/storage inspection and cross-client test vectors prove no plaintext or unwrapped customer content key reaches the service. |
 | `REQ-P1-CRYPTO-002` | Workspace/document key access MUST be customer controlled, separately wrapped to authorized devices/members/recovery factors, revocable, rotatable, and unavailable to ordinary Doculyra/Azure operators. | `P1-S1`, `S4` | Grant, revoke, rotation, device loss, recovery, wrong-key, tamper, replay, downgrade, and crypto-shred tests fail safely. |
 | `REQ-P1-CRYPTO-003` | Default preview, extraction, OCR, classification, search, graph, and cited question answering over customer content MUST run on the authorized client. No cloud plaintext fallback is permitted without a later approved, explicit-consent processing route. | `P1-S1`–`S3` | Unsupported local processing remains visible and no egress occurs when a cloud route is absent or ineligible. |
@@ -335,15 +339,15 @@ Each row is an independently traceable product requirement. The acceptance summa
 
 | Gap | Draft disposition | Result in this PRD | Approval dependency |
 |---|---|---|---|
-| `GAP-001` | Adopt | `REQ-P1-HLT-001`, `REQ-P1-HLT-002`, `REQ-P1-HLT-005` | PRD approval and requirement-profile contract. |
-| `GAP-002` | Adopt | `REQ-P1-FCT-001`–`004`, `REQ-P1-MON-002`, `REQ-P1-MON-004` | PRD approval and data-model ADR. |
-| `GAP-003` | Adopt | `REQ-P1-ING-005`, `REQ-P1-SRCH-002`, `REQ-P1-AI-003` | PRD approval and evidence schema. |
-| `GAP-004` | Adopt | `REQ-P1-ING-007`, `REQ-P1-HLT-005`, `REQ-P1-ACT-005`–`008` | PRD approval and workflow state contracts. |
-| `GAP-005` | Adopt | `REQ-P1-DOC-008`, `REQ-P1-ACT-008` | PRD approval and version/obligation model. |
-| `GAP-006` | Adopt | `REQ-P1-MON-003`–`007` | PRD approval and source-monitor operations contract. |
+| `GAP-001` | Adopt | `REQ-P1-HLT-001`, `REQ-P1-HLT-002`, `REQ-P1-HLT-005` | Requirement-profile contract and execution evidence. |
+| `GAP-002` | Adopt | `REQ-P1-FCT-001`–`004`, `REQ-P1-MON-002`, `REQ-P1-MON-004` | Accepted data-model contract and execution evidence. |
+| `GAP-003` | Adopt | `REQ-P1-ING-005`, `REQ-P1-SRCH-002`, `REQ-P1-AI-003` | Evidence/output schemas and execution evidence. |
+| `GAP-004` | Adopt | `REQ-P1-ING-007`, `REQ-P1-HLT-005`, `REQ-P1-ACT-005`–`008` | Workflow-state contracts and execution evidence. |
+| `GAP-005` | Adopt | `REQ-P1-DOC-008`, `REQ-P1-ACT-008` | Version/obligation model and execution evidence. |
+| `GAP-006` | Adopt | `REQ-P1-MON-003`–`007` | Source-monitor operations contract and execution evidence. |
 | `GAP-007` | Split | Scoped grants and complete export adopted; automated emergency/after-death release remains conditional. | `DEC-032`, `DEC-033`, privacy/security design. |
-| `GAP-008` | Conditional adopt | `REQ-P1-HLT-004` permits only an explainable, permission-safe readiness score. | `DEC-034` and validated UX/metric design. |
-| `GAP-009` | Adopt | `REQ-P1-ACT-005`–`007`, `REQ-P1-AI-001`–`006` | PRD approval and policy/approval contracts. |
+| `GAP-008` | Adopt item-level findings; exclude aggregate score | `REQ-P1-HLT-004` is governed by `DEC-034`: Phase 1 presents explainable item-level findings and MUST NOT calculate, display, or use an aggregate or hidden readiness/compliance/risk score. | Item-level UX and evaluation evidence are required; a future aggregate would require a superseding approved decision. |
+| `GAP-009` | Adopt | `REQ-P1-ACT-005`–`007`, `REQ-P1-AI-001`–`006` | Policy/approval contracts and execution/evaluation evidence. |
 | `GAP-010` | Reserve | `REQ-P1-CFG-005`; no Phase 1 enterprise UI or workflows. | Future Phase 2 decisions and ADRs. |
 
 ## 10. Product-level acceptance scenarios
@@ -421,6 +425,21 @@ The scenario MUST also pass when the source is stale, a parser has failed, an ap
 
 **Then** document instructions remain untrusted data, retrieval and tools retain their independent authorization, structured output validation and policy gates apply, no consequential action occurs without bound approval, and the attempt is safely audited.
 
+### `AC-P1-PUB-001` — truthful public product and account entry
+
+**Given** an unauthenticated visitor opens Doculyra on a supported web viewport or assistive-technology path,
+
+**When** the visitor explores product, feature, privacy/security, about, contact, privacy-notice, terms, create-account, or sign-in routes,
+
+**Then** the experience:
+
+1. uses the approved Doculyra identity and describes evidence-aware assistance, privacy, and explicit human control consistently with `PROD-VIS-001`;
+2. makes the development-preview and synthetic-data-only boundary visible wherever a user could otherwise infer production readiness;
+3. distinguishes configured, unavailable, and future external providers without simulated success or silent transfer;
+4. provides direct, keyboard- and assistive-technology-operable privacy, terms, create-account, and sign-in routes without requiring an authenticated session;
+5. discloses no workspace, account, customer-document, or restricted operational data through public content, navigation, errors, analytics, or route probing; and
+6. does not present unfinished controls, external-provider registration, legal-preview copy, certification alignment, or an Azure development deployment as public launch, legal approval, production readiness, or authorization for real personal documents.
+
 ### `AC-P1-A11Y-001` — critical workflow accessibility
 
 **Given** a keyboard-only or assistive-technology user on a supported responsive viewport,
@@ -470,7 +489,7 @@ Commercial pricing, production SKUs/quotas, issuer partnerships, external provid
 
 ## 13. Dependencies on the remaining specification pack
 
-This PRD is not sufficient to start implementation. Each requirement must be refined and traced through the repository:
+This approved PRD authorizes the product scope but is not evidence that any feature is implemented, complete, or release-ready. Before a governed story enters implementation, its requirement must be refined and traced through the applicable repository contracts:
 
 | Contract area | Required detail before readiness approval |
 |---|---|
@@ -484,18 +503,18 @@ This PRD is not sufficient to start implementation. Each requirement must be ref
 | Reference data | Versioned schemas and initial Australia data for document types, rules, sources, jurisdictions, roles, permissions, statuses, severities, and workflows. |
 | Backlog/testing | Vertical stories with linked acceptance criteria; contract, authorization, security, migration, E2E, resilience, performance, and AI evaluation evidence. |
 
-## 14. PRD approval checklist
+## 14. Approved-baseline review and change control
 
-The product owner should approve this PRD only when:
+This PRD is the approved implementation baseline under `DEC-041` and `DEC-054`. Baseline review must continue to verify that:
 
 - the included, conditional, reserved, and excluded boundaries are intentional;
 - every `GAP-001`–`GAP-010` disposition is accepted or revised;
-- the open decisions that materially change scope have owners and decision dates;
+- any decision that materially changes scope has an owner, durable record, and decision date;
 - requirements and release slices reflect an achievable Phase 1 sequence;
-- success metrics and safety/quality gates are approved;
+- success-measure definitions and safety/quality gates are traceable, while provisional numeric targets remain explicitly non-final until calibrated and approved;
 - Australian terminology and domain boundaries have been reviewed;
 - clinical-record exclusion and unsupported-content behavior are unambiguous;
 - the product does not imply legal, tax, financial, insurance, immigration, or medical advice; and
-- the decision register records the approved PRD version and date.
+- the decision register and controlled build-baseline record identify the applicable PRD version and approval evidence.
 
-Approval of this PRD alone does **not** open the implementation gate. `DEC-010` and the full readiness conditions in `CODEX.md` continue to apply.
+This approval does not establish implementation completion, Stage acceptance, UAT readiness, production readiness, public-release authority, or permission to process real personal documents. Material vision, outcome, feature, requirement, architecture, privacy, security, or external-commitment changes require governed baseline change control; routine implementation detail may evolve within the approved contracts.

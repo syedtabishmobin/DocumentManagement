@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Document ID | `TST-STR-001` |
-| Version | `0.2` |
+| Version | `0.3` |
 | Status | **APPROVED IMPLEMENTATION BASELINE — candidate-specific release evidence is still required** |
 | Product phase | Phase 1 — Personal and Family |
 | Updated | 28 August 2026 |
@@ -78,6 +78,7 @@ Property generators MUST bound field sizes, Unicode, time/clock uncertainty, int
 | `TEST-CON-P1-012` | Provider-neutral source/processor/connector/channel ports | Same suite against fake/candidate version; timeout/malformed/partial/revoke/delete/unknown version; no live activation. |
 | `TEST-CON-P1-013` | React web and Flutter iOS/Android shared contracts | OpenAPI, envelope vectors, error semantics, authorization, lifecycle and accessibility labels remain compatible across supported clients. |
 | `TEST-CON-P1-014` | Azure Bicep environment contract | Build/What-If, naming, tags, regions, identity, RBAC, diagnostics, lifecycle, budget and no-cross-environment-reference policies pass for dev/stage and parameterized prod. |
+| `TEST-CON-P1-015` | Public product, trust, legal-preview and account-entry routes | Direct/refreshed routes, approved identity, CTA modes, claim boundaries, missing-contact and disabled-provider states conform to `UC-P1-020`, `AC-P1-PUB-001`, and `STORY-P1-049` without requiring an account. |
 
 Every API operation and event listed above is expanded as an exact trace ID in the scenario manifest. Per-operation conformance MUST cover authentication, workspace/header equality, purpose, minimal disclosure, supported content type, closed schemas, malformed/unknown/oversize input, current authorization, quotas, correlation, and applicable ETag, idempotency, pagination, async, cancellation, decision-fence, deletion, and redemption behavior. Every event MUST cover the common envelope, immutable bytes, duplicate/different-bytes, delay/reorder/gap, compatibility, checkpoint, DLQ/repair/replay, privacy canaries, and current authority before consequence.
 

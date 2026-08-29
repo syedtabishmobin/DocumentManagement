@@ -3,11 +3,11 @@
 | Field | Value |
 |---|---|
 | Document ID | `BLG-STATUS-001` |
-| Version | `0.1` |
+| Version | `0.2` |
 | Status | **ACTIVE EVIDENCE SNAPSHOT — not a release approval** |
 | Scope | Phase 1 personal and family only; organisation features excluded |
-| Assessed | 29 August 2026 |
-| Baseline | `PROD-PRD-001`, `FEAT-P1-001`–`030`, `STORY-P1-001`–`048`, `P1-S1`–`P1-S4` |
+| Assessed | 30 August 2026 |
+| Baseline | `DOCULYRA-BUILD-P1-2026.08.30.1`; `PROD-PRD-001` v0.3; `FEAT-P1-001`–`031`; `STORY-P1-001`–`049`; `P1-S1`–`P1-S4` |
 
 ## 1. Outcome
 
@@ -15,7 +15,7 @@ The current React/API/Flutter implementation is a useful synthetic development p
 
 | Assessment | Stories | Meaning |
 |---|---:|---|
-| `PARTIAL PREVIEW` | 28 | A visible or tested happy-path behavior exists, but major contract, security, durability, authorization, platform-parity, or evidence obligations remain. |
+| `PARTIAL PREVIEW` | 29 | A visible or tested happy-path behavior exists, but major contract, security, durability, authorization, platform-parity, or evidence obligations remain. |
 | `NOT IMPLEMENTED` | 18 | No material runtime behavior implements the story outcome. Specification/contracts may exist. |
 | `INTENTIONALLY UNAVAILABLE` | 2 | The required Phase 1 behavior is to keep an unsafe capability absent; stronger negative tests and production decisions are still required. |
 | `COMPLETE` | 0 | No story currently meets its full definition of done. |
@@ -26,7 +26,7 @@ This status does not reduce the value of the preview. It prevents prototype beha
 
 The assessment compared:
 
-- the approved PRD, feature and use-case catalogues, 48 story records, traceability matrix, and four-slice release plan;
+- the approved PRD, feature and use-case catalogues, 49 story records, traceability matrix, controlled baseline candidate, and four-slice release plan;
 - solution/data/workspace architecture, accepted ADRs, security/privacy/audit/threat contracts, API/event/connector contracts, UX/accessibility, DevOps, reference-data, and test specifications;
 - the React web/PWA, NestJS API, shared domain/contracts/crypto packages, Flutter client, unit tests, CI workflows, Bicep, Azure deployment evidence, and the current provider-registration state; and
 - current product-owner decisions through `DEC-055`.
@@ -45,7 +45,7 @@ The 29 August 2026 identity/authority increment adds local-preview evidence with
 
 The focused API suite covers policy allow/deny behavior, multi-workspace isolation/idempotency, authority record separation, session/CSRF rotation, login throttling, unique-owner fencing, and the recovery fence. A live local HTTP smoke test also verified create/replay `200`, reused-key conflict `409`, authorized dashboard `200`, owner-fabrication `400`, cross-workspace `404`, missing-CSRF `403`, policy-blocked recovery `201`, and untrusted-origin `403` outcomes.
 
-The governed Issue #2 increment adds a provider-neutral workspace persistence port and PostgreSQL adapter selected by `ADR-ARCH-007`; immutable/checksummed canonical migrations; serializable workspace transactions; unique actor/key creation receipts; optimistic per-workspace storage revisions; correlated, content-minimized authority outbox events; explicit synthetic import/verification evidence; and restart/interruption/concurrency/foreign-workspace tests. CI exercises the adapter against ephemeral PostgreSQL 17. The current dev preview still uses the file profile, and independent QA, Azure provisioning/managed-identity/private-network/backup/performance conformance, broader authorization, MFA/passkeys, delegated grants, client encryption, accessibility and full security/E2E evidence remain open.
+The governed Issue #2/PR #4 increment adds a provider-neutral workspace persistence port and PostgreSQL adapter selected by `ADR-ARCH-007`; immutable/checksummed canonical migrations; serializable workspace transactions; unique actor/key creation receipts; optimistic per-workspace storage revisions; correlated, content-minimized authority outbox events; explicit synthetic import/verification evidence; and restart/interruption/concurrency/foreign-workspace tests. Independent QA passed `AUTH-DUR-AC-01`–`10` on exact candidate `4bb43cc` after defects #5–#8 were independently retested; PR #4 merged as `6c047bd`. This is bounded component evidence, not completion of any story. The current dev preview still uses the file profile, and Azure activation/backup/performance conformance, broader authorization, MFA/passkeys, delegated grants, client encryption, accessibility and full story E2E evidence remain open.
 
 ## 3. Story-by-story comparison
 
@@ -107,15 +107,16 @@ The governed Issue #2 increment adds a provider-neutral workspace persistence po
 | Story | Status | Current evidence | Remaining work |
 |---|---|---|---|
 | `STORY-P1-039` | `NOT IMPLEMENTED` | Workspace creation now persists and evaluates one explicit purpose/action/resource bootstrap grant for the owner; prospective members receive no fabricated grant. No delegated grant issue/preview/redeem workflow exists. | Exact delegated resource/field/action/purpose/time grants, effective-access preview, invitation, single-use redemption, expiry/revocation propagation, key-envelope access, minimal disclosure, and immutable audit. |
-| `STORY-P1-040` | `PARTIAL PREVIEW` | Dependants and login-enabled people are separate; invitation state is represented. | Secure `DEC-046` invite delivery/redemption, invitee-created credential/passkey, age/authority/consent policy, managed-dependant transition, provenance retention, and revocation. |
+| `STORY-P1-040` | `PARTIAL PREVIEW` | Dependants and login-enabled people are separate; invitation state is represented; bounded authority persistence preserves separate subjects/memberships. | Implement and independently prove the `DEC-P1-056` explicit revisioned fail-closed attempt state, atomic deny boundary, audit, retry/rollback/recovery, permission recalculation, and partial/concurrent failure cases. Do not add advanced independent transfer/delegation semantics. |
 | `STORY-P1-041` | `PARTIAL PREVIEW` | Provider catalogue shows purpose, requested permission, exact callback, and `CONFIGURED_DISABLED` state. | OAuth start/callback routes, token store, provider adapters, consent persistence, selected-file import, cursors, revocation/deletion, conformance, and production provider approval. |
-| `STORY-P1-042` | `PARTIAL PREVIEW` | External channels are disabled and ACS is prepared. | Notification preferences, email adapter, recipient verification, delivery/bounce/retry state, quiet periods, consent/minimization, SMS decision/provider, and conformance tests. |
+| `STORY-P1-042` | `PARTIAL PREVIEW` | Customer external channels remain disabled; the framework ACS Product Authority adapter is operational but is explicitly not product/customer notification evidence. | Notification preferences, customer-recipient email adapter, recipient verification, delivery/bounce/retry state, quiet periods, consent/minimization, SMS scope/provider decision, and product conformance tests. |
 | `STORY-P1-043` | `PARTIAL PREVIEW` | No aggregate score is shown; statuses/tasks provide limited item signals. | Versioned expected-evidence findings, explainable item health, coverage/freshness/limitations, accessible UI, and explicit no-score negative tests. |
 | `STORY-P1-044` | `PARTIAL PREVIEW` | A JSON export endpoint returns some current local state without extracted text. | Complete declared envelope with originals, versions, facts, relationships, tasks, grants, audit, manifest/checksums, authorization, encryption, temporary cleanup, and portability tests. |
 | `STORY-P1-045` | `PARTIAL PREVIEW` | Immediate fence, 30-day Trash/restore, final file/fact/edge/task purge, and unit tests exist. | Step-up restore, durable scheduler/ledger, encrypted Blob and key-envelope purge, every projection/adapter/backup acknowledgement, late-event non-resurrection, exceptions, and production evidence. |
 | `STORY-P1-046` | `PARTIAL PREVIEW` | Azure Australia foundations, policy markers, and Australian ACS data location exist. | Enforceable data-class/processor/region matrix across storage, AI, connectors, support, telemetry, backup/failover, exports, and denial/evidence tests. |
 | `STORY-P1-047` | `INTENTIONALLY UNAVAILABLE` | Web/mobile sign-in explicitly says recovery and ownership transfer are unavailable; the reserved authenticated API returns and audits `POLICY_BLOCKED` rather than success, and no reset/transfer/evidence-upload route exists. | Full contract, accessibility, anti-enumeration, repeated-abuse, direct-port/configuration and support-boundary negative evidence; any later production recovery still requires identity/key assurance and an owner decision. |
 | `STORY-P1-048` | `INTENTIONALLY UNAVAILABLE` | No automated emergency/incapacity/after-death release exists, as required by `DEC-032`. | Explicit negative tests and copy; keep ordinary grants/export separate and prevent future configuration from silently activating release. |
+| `STORY-P1-049` | `PARTIAL PREVIEW` | React public marketing, product/feature, trust/privacy/security, legal, about/contact and account-entry routes/components exist with approved Doculyra branding. | Complete acceptance/security/accessibility tests, production legal/operator/contact approval, launch content review, DNS/deployment evidence and no-fabricated-assurance checks. |
 
 ## 4. Feature and requirement coverage by slice
 
@@ -124,7 +125,7 @@ The governed Issue #2 increment adds a provider-neutral workspace persistence po
 | `P1-S1` | `FEAT-P1-001`–`007` | All have partial preview evidence except durable ingestion retry. | `REQ-P1-WS-*`, `DOC-*`, `ING-*`, `TRUST-*`, `CFG-*`: production authorization, immutable versions, durable workflows, malware/quarantine, encryption/key custody, audit, and configuration activation. |
 | `P1-S2` | `FEAT-P1-008`–`015` | Basic dossier/facts/graph/search/cited-answer behavior exists; no feature is complete. | `DOC-*`, `ING-*`, `FCT-*`, `GPH-*`, `SRCH-*`, `AI-*`: exact evidence, bitemporal facts, conflicts, versioning, field privacy, bounded graph, real local RAG, and evaluation. |
 | `P1-S3` | `FEAT-P1-016`–`023` | Only general task/in-app behavior is partially implemented. | `MON-*`, `GPH-*`, `ACT-*`, `HLT-*`, `NTF-*`, `CFG-*`, `SHR-*`: governed monitoring, applicability, impact, recommendation/approval/action, evidence health, and configuration publication. |
-| `P1-S4` | `FEAT-P1-024`–`030` | Family people, disabled connector catalogue, basic export/Trash, and Australian foundations are partial; recovery/continuity correctly absent. | `SHR-*`, `ING-*`, `NTF-*`, `TRUST-*`, `HLT-*`: exact grants/invites, live adapters, complete export, coordinated deletion, residency enforcement, item health, and launch evidence. |
+| `P1-S4` | `FEAT-P1-024`–`031` | Family people, public entry, disabled connector catalogue, basic export/Trash, and Australian foundations are partial; recovery/continuity correctly absent. | `SHR-*`, `ING-*`, `NTF-*`, `TRUST-*`, `HLT-*`, `PLT-*`: exact grants/invites, fail-closed dependant fence, live adapters, complete export, coordinated deletion, residency enforcement, item health, public-entry assurance, and launch evidence. |
 
 ## 5. Architecture and production gaps
 
@@ -139,7 +140,7 @@ The principal differences between the preview and [`ARCH-SOL-001`](../02-archite
 7. **Monitoring and action:** governed sources, subscriptions, rule applicability, impact, recommendation, approval, external action, evidence verification, and closure are not implemented.
 8. **Operations:** foundations, IaC, CI, images, and synthetic deployment exist; production observability, backup/restore, DR, privacy/legal review, accessibility evidence, penetration testing, incident exercises, and production subscription/release evidence do not.
 9. **Mobile parity:** Flutter provides authentication, onboarding, dashboard/capture/Q&A/Trash foundations and builds previews, but it does not yet match all critical React journeys or implement store signing/distribution.
-10. **Specification drift:** several indexes/readiness statements still describe the pre-implementation repository, and the PRD contained a stale native-mobile exclusion that conflicted with `DEC-052`. This change corrects the highest-impact entries; future implementation increments must keep status and traceability current.
+10. **Traceability state:** the reconciled baseline now represents public entry, current architecture decisions, bounded Issue #2 evidence, 49 stories and reverse source-test ownership. Future implementation increments must update this evidence snapshot without converting preview evidence into completion.
 
 ## 6. Recommended implementation order
 

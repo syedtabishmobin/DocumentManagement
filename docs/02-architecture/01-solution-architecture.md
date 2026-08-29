@@ -7,26 +7,27 @@
 | Status | **APPROVED IMPLEMENTATION BASELINE under `DEC-041` and `DEC-054`** |
 | Product phase | Phase 1 — Personal and Family, with Phase 2 extension points |
 | Jurisdiction | Australia first; jurisdiction-neutral core |
-| Updated | 28 August 2026 |
-| Normative basis | Approved decision register through `DEC-054`; approved `PROD-PRD-001` version `0.2`; accepted `ADR-ARCH-001`–`010` |
+| Updated | 30 August 2026 |
+| Normative basis | Approved decision register through `DEC-P1-056`; approved `PROD-PRD-001` version `0.3`; accepted `ADR-ARCH-001`–`011` |
 | Companion | [`ARCH-DOM-001`](02-domain-model.md) |
 
 ## 1. Purpose, authority, and non-decisions
 
 This document defines the logical architecture needed to satisfy the approved Phase 1 product requirements. Its `ARCH-P1-*` rules are implementation constraints under `DEC-041` and `DEC-054`.
 
-The source-of-truth hierarchy in [`CODEX.md`](../../CODEX.md) applies. Approved entries in the [decision register](../00-context/decision-register.md) constrain this design. The [Phase 1 PRD](../01-product/02-phase-1-prd.md), [feature catalogue](../01-product/03-feature-catalogue.md), [use-case catalogue](../01-product/04-use-case-catalogue.md), [personas and journeys](../01-product/05-personas-and-journeys.md), and [scope and metrics](../01-product/06-scope-and-success-metrics.md) are draft inputs rather than implementation authority.
+The source-of-truth hierarchy in [`CODEX.md`](../../CODEX.md) applies. Approved entries in the [decision register](../00-context/decision-register.md) constrain this design. The [Phase 1 PRD](../01-product/02-phase-1-prd.md) version `0.2` is the approved product implementation baseline under `DEC-041`/`054`. The [feature catalogue](../01-product/03-feature-catalogue.md), [use-case catalogue](../01-product/04-use-case-catalogue.md), [personas and journeys](../01-product/05-personas-and-journeys.md), and [scope and metrics](../01-product/06-scope-and-success-metrics.md) are derived planning and measurement views; review labels in those views do not reopen approved decisions or override normative contracts.
 
-Accepted ADRs now select the current implementation while the logical boundaries remain provider-neutral:
+Accepted ADRs select the current implementation while the logical boundaries remain provider-neutral:
 
-- Azure/Bicep for the named environment and managed-service adapters;
-- React/TypeScript for web, NestJS/TypeScript for API/domain composition, and Flutter/Dart for mobile;
-- a relational, object, search, vector, graph, cache, queue, or analytics product;
-- Entra External ID and the named Azure infrastructure/observability adapters, while external OCR/AI/scanner/connector/notification providers remain disabled until separately activated;
-- a modular-monolith, process, service, container, cluster, or serverless deployment count; or
-- an accepted Architecture Decision Record.
+- Azure/Bicep and the named managed-service adapter baseline in `ADR-ARCH-007`, including PostgreSQL for canonical/workflow records and Azure Blob/Service Bus/Key Vault/Monitor boundaries;
+- React/TypeScript for web, NestJS/TypeScript for API/domain composition, and Flutter/Dart for mobile under `ADR-ARCH-006`/`009`;
+- customer-controlled client encryption and operator-blind content handling under `ADR-ARCH-008`;
+- 30-day production document Trash and coordinated purge under `ADR-ARCH-010`; and
+- device-local RAG and optional manifest-gated local SLM behavior under `ADR-ARCH-011`.
 
-The components below are logical ownership and policy boundaries. Several may be deployed together, and one may later be split, provided the ports, invariants, evidence, authorization, and compatibility contracts remain intact. Any deployment or vendor choice requires a separate proposed/accepted ADR.
+Exact production SKUs/topology, search/vector/graph physical products, external OCR/scanner/model routes, customer-facing notification activation, and external identity/connector credentials remain explicit adapter or release inputs. `DEC-P1-056` approves the Phase 1 managed-dependant fail-closed fence and defers richer independent transfer/delegation semantics to a later governed capability.
+
+The components below are logical ownership and policy boundaries. Several may be deployed together, and one may later be split, provided the ports, invariants, evidence, authorization, and compatibility contracts remain intact. A material deployment or vendor change outside the accepted ADR set requires a governed ADR/change decision.
 
 ## 2. Architecture drivers
 
@@ -144,7 +145,7 @@ The diagram is a context model, not a network or deployment topology. All arrows
 | `ARCH-P1-029` | Derived reads MUST apply request-time authorization and canonical deletion/deny fences. A projection that cannot prove acceptable freshness or scope MUST fail closed, omit the result, or return an explicit incomplete/stale state. |
 | `ARCH-P1-030` | Caches and conversation state MUST be workspace-partitioned and include authorization/policy and source-revision fingerprints. Revocation, deletion, or material policy change MUST invalidate or bypass affected entries. |
 | `ARCH-P1-031` | A deletion request MUST create an authoritative deletion fence/tombstone before asynchronous purge. New and late jobs, events, restores, projections, exports, and caches MUST honor the fence and MUST NOT resurrect active access. |
-| `ARCH-P1-032` | Backup restore and disaster recovery MUST replay current authorization, deletion fences, configuration, and audit continuity before restored data is serviceable; backup expiry and residual state remain truthful until `DEC-039` is resolved. |
+| `ARCH-P1-032` | Backup restore and disaster recovery MUST replay current authorization, deletion fences, configuration, and audit continuity before restored data is serviceable; document restore follows `DEC-053`, while account/workspace retention exceptions and residual backup state remain truthful until their separate release policies are approved. |
 
 ### 4.6 Intelligence, monitoring, and controlled action
 
@@ -166,7 +167,7 @@ The diagram is a context model, not a network or deployment topology. All arrows
 | `ARCH-P1-041` | Dependency failure, stale state, truncated coverage, policy uncertainty, partial effect, and recovery progress MUST be explicit machine-readable and user-safe states; last-known success MUST NOT masquerade as current success. |
 | `ARCH-P1-042` | Retry, backoff, circuit opening, quarantine/dead-letter handling, replay, and repair MUST be bounded, observable, idempotent, and operator-controlled without requiring raw-content logs. |
 | `ARCH-P1-043` | Phase 1 contracts MUST reserve organisation, business-unit, records, hold, information-barrier, DLP, policy/control/evidence, and enterprise-identity extension types without enabling Phase 2 user interfaces or workflows. |
-| `ARCH-P1-044` | Behavior governed by `DEC-031`–`DEC-040` MUST remain disabled, conditional, or expressed through an inert/configurable branch until approved; code defaults MUST NOT close an open decision. |
+| `ARCH-P1-044` | Behavior governed by approved `DEC-031`–`DEC-040` and `DEC-P1-056` MUST implement each selected enabled, disabled, excluded, synthetic-only, release-gated, or fail-closed boundary exactly; code defaults MUST NOT widen those decisions or activate an unproved route. |
 | `ARCH-P1-045` | Every enabled component and adapter MUST pass contract, authorization, isolation, residency, idempotency, evidence, deletion, audit, failure, and portability conformance tests linked to the requirements it implements. |
 
 ## 5. Logical components and ownership
@@ -175,7 +176,7 @@ The diagram is a context model, not a network or deployment topology. All arrows
 |---|---|---|---|
 | Responsive web/PWA client | Accessible interaction state, resumable local transfer state, user-visible job polling/subscription | Authorization truth, canonical resources, long-lived secrets, silent offline content copies | Application API; upload/artifact transfer; approved notification registration |
 | Edge and application API | Request authentication handoff, workspace-context validation, rate/abuse controls, request shaping, API compatibility | Domain truth or authorization policy | Authentication, authorization, domain command/query, artifact grant, job-status ports |
-| Identity and session boundary | Platform identity reference, authenticated session assurance, workload identity verification | Workspace membership, resource ownership, subject identity, authorization outcome | External authentication adapter; session/recovery port pending `DEC-038` |
+| Identity and session boundary | Platform identity reference, authenticated session assurance, workload identity verification | Workspace membership, resource ownership, subject identity, authorization outcome | External authentication adapter; local recovery success route unavailable under `DEC-038`, production recovery separately assurance-gated |
 | Workspace, subject, and membership capability | Workspace, membership, subject, relationship, ownership lifecycle | Document/fact access decisions inferred from role alone | Workspace commands/queries; authorization; audit; event publication |
 | Authorization capability | Versioned policy evaluation and minimal-disclosure decisions | Authentication provider internals or protected content | Policy-decision port used by every enforcement point; policy/config registry |
 | Sharing and grant capability | Purpose/resource/field/action/time-scoped grants, invitation/link lifecycle | Underlying resource content | Authorization; notification; signed grant redemption; audit |
@@ -258,7 +259,7 @@ flowchart TB
 | Z6 | Outside platform trust; adapter, consent, residency, minimization, encryption, and reconciliation required. | Only contract-approved minimum payload. Official public-source snapshots are separated from household data. |
 | Z7 | Operations is not a content backdoor. Audit and telemetry are separate stores and purposes. | Privacy-safe references and structured control outcomes; restricted incident evidence only in an approved security store. |
 
-An **Australian residency realm** overlays every zone. It is not synonymous with one region, store, or provider. The placement label follows each data class and derivative through processing, indexing, backup, support, analytics, export, and restoration. Until `DEC-040` is approved, the architecture preserves placement/policy hooks and blocks any route whose compliance cannot be established; it does not invent a cross-border exception.
+An **Australian residency realm** overlays every zone. It is not synonymous with one region, store, or provider. The placement label follows each data class and derivative through processing, indexing, backup, support, analytics, export, and restoration. `DEC-049` and `ADR-ARCH-007` supersede the earlier production-provider non-selection in `DEC-040`: Australia East is primary and only explicitly inventoried Australian paired-region roles may use Australia Southeast. Any data-role, processor, support, telemetry, backup, failover, or exception route without current eligibility evidence remains blocked; consent does not invent a cross-border exception.
 
 Shared reference-plane source snapshots may be reused across workspaces only when they contain governed public/official material and no household identifier, query, credential, or personalized response. A source retrieval containing personal information becomes workspace-scoped content.
 
@@ -269,9 +270,9 @@ Shared reference-plane source snapshots may be reused across workspaces only whe
 | Canonical domain records | Aggregate-owned, workspace-scoped, revisioned; mutable only through valid transitions, with additive history for consequential state. | Backed up and recovered consistently with events/audit; deletion fence governs later purge. |
 | Immutable original artifacts | Put-once bytes plus integrity/provenance; never overwritten by processing or metadata change. | Purged only through controlled deletion; integrity verified; restore honors deletion fence. |
 | Quarantine artifacts | Isolated bytes and restricted verdicts; not an ordinary vault view. | Release/delete only by approved policy; late scan results cannot bypass state. |
-| Evidence occurrences and source snapshots | Immutable/append-only, exact source and temporal provenance. | May be tombstoned/purged subject to `DEC-039`; retained references must not leak content. |
+| Evidence occurrences and source snapshots | Immutable/append-only, exact source and temporal provenance. | Document-linked data follows the `DEC-053` deletion ledger; other retained classes require their approved lifecycle and must not leak content. |
 | Event journal/outbox | Durable transition publication and replay metadata; payload minimized and versioned. | Retention supports required replay/audit without becoming a content copy. |
-| Audit ledger | Append-only privacy-safe evidence of security/consequence actions. | Retention/minimization tension is unresolved by `DEC-039`; deleted resource values are not retained in ordinary audit. |
+| Audit ledger | Append-only privacy-safe evidence of security/consequence actions. | `DEC-053` permits only content-minimized document deletion evidence; account/workspace and lawful-retention policy remain separate release inputs, and deleted values are never retained in ordinary audit. |
 | Configuration/reference registry | Versioned draft/approved/active/superseded packages with effective time and publication history. | Prior versions retained for reconstruction; unsafe version cannot activate. |
 | Full-text/semantic/graph projections | Derived, workspace/source/version tagged, eventually convergent, rebuildable. | Delete/revoke filtered synchronously by fences/policy, then physically purged and acknowledged. |
 | Cache/conversation/session projections | Short-lived derivative with workspace, actor/grant, source and policy fingerprint. | Revocation/deletion invalidates or bypasses immediately according to policy. |
@@ -362,7 +363,7 @@ sequenceDiagram
     end
 ```
 
-No branch promotes an extracted value to canonical truth, requirement fulfilment, approval, or closure. `DEC-036` determines the final suspected-clinical retention branch; ordinary processing remains blocked until then.
+No branch promotes an extracted value to canonical truth, requirement fulfilment, approval, or closure. Approved `DEC-036` routes suspected clinical material to isolated `POLICY_HOLD`, denies ordinary preview/extraction/search/graph/AI/sharing/export, permits deletion, and requires explicit safe reclassification before ordinary processing.
 
 ### 10.3 Search and cited answer
 
@@ -409,7 +410,7 @@ No branch promotes an extracted value to canonical truth, requirement fulfilment
 3. Deletion creates a durable case and authoritative deny/deletion fence before purge fan-out.
 4. Each canonical, artifact, derived, cache, connector, export, analytics, and backup role acknowledges pending/complete/exception state under its contract.
 5. Late events, retries, reindex, and restore honor the fence and cannot reactivate data.
-6. Completion is claimed only against the approved active-purge, backup-expiry, and minimized-audit conditions in `DEC-039`; until then the UI shows residuals truthfully.
+6. Document completion is claimed only after the `DEC-053` 30-day Trash boundary and coordinated purge/crypto-shred acknowledgements pass; account/workspace deletion, lawful-retention exceptions, and unresolved residuals remain separately and truthfully represented.
 
 ## 11. Authorization enforcement model
 
@@ -464,7 +465,7 @@ Rebuild creates a new projection generation from authoritative records and versi
 | Authorization unavailable/stale | Fail protected access/effect closed; show privacy-safe unavailability. | Reuse cached broad allow or reveal matching-resource existence. |
 | Artifact integrity mismatch | Isolate, stop processing/access, record security incident and evidence. | Rehash and silently accept changed bytes. |
 | Scanner unavailable/timeout | Keep content isolated and retry/escalate. | Bypass scanning for availability. |
-| Clinical policy uncertain | Stop ordinary processing and show policy-pending containment. | Classify as insurance evidence or choose the `DEC-036` retention branch. |
+| Suspected clinical content | Apply approved `DEC-036` `POLICY_HOLD`; deny ordinary processing and allow only authorized deletion or explicit safe reclassification. | Infer a final clinical disposition, expose content, or bypass the hold for availability. |
 | OCR/parser/model failure | Retain original and prior derived history; return retry/review/degraded state. | Fabricate fields, citations, comparison, or success. |
 | Event delivery unavailable | Retain canonical transition plus durable outbox/equivalent; expose backlog. | Commit a required transition with no recoverable publication. |
 | Duplicate/out-of-order event | Deduplicate or reconcile using event ID/revision and monotonic state rules. | Repeat notification, action, approval, version, or purge effects. |
@@ -533,24 +534,26 @@ Extension is achieved through versioned resource kinds, policies, configuration 
 | `ARCH-P1-054` | Backup restore, replay, rebuild, resync, and late callbacks MUST apply the current deletion ledger and crypto-shred state before data becomes serviceable. |
 | `ARCH-P1-055` | Web/mobile releases and Azure deployments MUST carry source-to-artifact provenance, contract/configuration versions, security evidence, and environment identity; production/public/real-data routes remain disabled until `DEC-054` gates pass. |
 
-## 16. Current decision boundaries
+## 16. Current decision and activation boundaries
 
-| Decision | Architecture kept open | Safe draft boundary |
+| Decision | Selected architecture | Remaining fence |
 |---|---|---|
-| `DEC-030` — proposed slices | Deployment and data partitioning are not coupled to slice boundaries. | Traceability labels slices as proposed; implementation gate remains closed. |
-| `DEC-031` — connectors | Import/action ports and consent/reconciliation contracts exist without an enabled provider list. | Upload, camera, and manual entry only are assumed; connector adapters remain disabled until selected. |
-| `DEC-032` — continuity release | Grant/approval/evidence primitives can support a future release case. | No automated incapacity/death trigger releases content; curated export and ordinary grants remain separate. |
-| `DEC-033` — export envelope | Manifest/package schema is extensible and records exclusions. | No final claim of “complete” categories until approved. |
-| `DEC-034` — readiness score | Derived-score port/projection is optional and permission-aware. | Omit the aggregate score; individual authorized findings may exist. |
-| `DEC-035` — launch pack | Configuration loader and contract validation accept versioned packs. | No document type, schema, requirement profile, or governed source is hard-coded as public-launch scope. |
-| `DEC-036` — clinical handling | Isolated policy-pending state blocks ordinary processing. | Do not select reject, quarantine-for-decision, or encrypted-original retention as the final behavior. |
-| `DEC-037` — channels | Task model and notification port are channel-neutral. | Do not enable or promise a delivery channel not approved by the decision. |
-| `DEC-038` — recovery | Authentication/session boundary exposes a recovery port and audit hooks. | Support/operator cannot reset ownership or disclose content; final recovery flow remains disabled/conditional. |
+| `DEC-030` — continuous slices | All four Phase 1 slices are one authorized implementation program; deployment/data partitioning are not coupled to slice labels. | Slice completion still requires its exact evidence gates; authorization is not completion. |
+| `DEC-031`, `045`, `055` — capture/connectors | Upload, camera, bulk and manual routes are approved; named connector adapters may be implemented consent-first behind provider-neutral ports. | No exact external provider activates without credentials, minimal scopes, consent, deletion, route and conformance evidence. |
+| `DEC-032` — continuity release | Automated emergency/incapacity/after-death release is excluded from Phase 1. | No trigger/enrolment/timer/release state; ordinary grants and curated exports stay separate. |
+| `DEC-033` — export envelope | Complete authorized portability categories are required with a versioned manifest and declared exclusions. | Third-party rights, current authorization, integrity and temporary-artifact cleanup must pass before release. |
+| `DEC-034` — readiness score | Item-level explainable findings are allowed; aggregate/hidden readiness or risk scoring is prohibited. | No score projection, threshold, rank, traffic light or proxy may activate. |
+| `DEC-035` — launch pack | Governed synthetic Australian-first packs are approved for local/dev testing. | Public coverage requires a reviewed production package and cannot be inferred from fixtures. |
+| `DEC-036` — clinical handling | Suspected clinical content enters isolated `POLICY_HOLD`; ordinary processing is denied, deletion is allowed, and safe reclassification is explicit. | No ordinary processing or final medical/clinical inference may be invented. |
+| `DEC-037` — channels | In-app notifications are required and the product model remains channel-neutral. | Customer email/push requires separate consent/configuration/conformance; framework Product Authority email is not product-channel completion. |
+| `DEC-038` — recovery | Recovery and owner-transfer success routes are unavailable in the local Phase 1 profile. | Production recovery requires a separate assurance decision; support/email/family status cannot bypass it. |
 | `DEC-053` — document deletion | Deletion fences, per-store acknowledgements, backup residual and audit-minimization states implement the approved 30-day Trash contract. | Account/workspace deletion and lawful retention remain separate; no restore/replay resurrection. |
 | `DEC-049` — Azure/Australian realm | Every data class/copy/processor has placement-policy hooks and evidence for the approved Azure routes. | Unverified identity/support/telemetry/backup control-plane behavior blocks the affected production route. |
 | `DEC-050` — customer encryption | Client-only plaintext processing and encrypted synchronization are the default. | No cloud plaintext fallback or operator content access; missing local capability is explicit. |
 | `DEC-052` — clients | React web and Flutter mobile implement the same product contracts. | Contract/behavior parity is required; UI implementation is intentionally separate. |
 | `DEC-054` — activation | Azure `dev`/`stage` may use synthetic data; production remains defined but unprovisioned. | Real data, public DNS, external providers, store publication, and production provisioning stay gated. |
+| `DEC-055` — synthetic Azure experience | Azure-generated HTTPS dev deployment and disabled-first provider preparation are approved; plaintext intelligence remains device-local. | Exact provider activation and permanent custom-domain/DNS remain owner-controlled release inputs. |
+| `DEC-P1-056` — managed-dependant transition | Stable subject identity, history/provenance preservation, explicit revisioned attempts, permission recalculation, and no fabricated identity/authority remain mandatory. | Phase 1 is an approved fail-closed fence; no independent access, credential/key/grant/inherited/delegated/ownership transfer, or resource reassignment may occur. Richer semantics require a later governed change. |
 
 ## 17. Requirement traceability
 
@@ -591,11 +594,11 @@ Extension is achieved through versioned resource kinds, policies, configuration 
 
 ## 18. Readiness and validation obligations
 
-Before this architecture can support implementation readiness:
+Before an exact slice or story can claim implementation readiness:
 
-1. the draft PRD and applicable open decisions are approved or conditional branches are excluded from the slice;
+1. the approved PRD and decision register are current, including the `DEC-P1-056` fail-closed managed-dependant transition fence;
 2. [`ARCH-DOM-001`](02-domain-model.md), the authorization/security architecture, privacy/deletion contract, API/event schemas, NFRs, and initial reference-data schemas agree with these boundaries;
-3. proposed ADRs decide deployment, persistence, identity, key, processing, AI, messaging, observability, and residency mechanisms without weakening the rules above;
+3. accepted ADRs and any story-specific adapter decisions cover deployment, persistence, identity, key, processing, AI, messaging, observability, and residency mechanisms without weakening the rules above;
 4. contract tests prove adapters are replaceable and fail safely;
 5. end-to-end tests prove current authorization across direct and derived channels, immutable evidence, durable publication, stale/degraded states, bound approval, deletion fences, audit, and residency; and
 6. traceability links every implemented component and test to `ARCH-P1-*`, `DOM-P1-*`, `REQ-P1-*`, `UC-P1-*`, security/NFR, API/event, and backlog IDs.

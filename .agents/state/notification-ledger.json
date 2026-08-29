@@ -53,6 +53,25 @@
       "deliveryObservedAt": "2026-08-29T15:00:58.775Z",
       "deliveryReconciliationStatus": "PASS",
       "deliveryReconciliationEvidence": "TERMINAL_PROVIDER_EVIDENCE_RECONFIRMED"
+    },
+    {
+      "key": "doculyra:dec-p1-056:first-blocking-notification",
+      "eventType": "BLOCKING_DECISION",
+      "subject": "[Doculyra][ACTION REQUIRED][DEC-P1-056] Managed-dependant transition boundary",
+      "authoritativeUrl": "https://github.com/syedtabishmobin/DocumentManagement/issues/33",
+      "fingerprint": "4e0c46cd1f43e3410f58b26bfcdccdf0d6fc36dc875e8ea796850f453a2f6716",
+      "providerOperationId": "8cae76f5-8ed8-520a-97a6-f8c241fee9f9",
+      "status": "SENT",
+      "attemptCount": 2,
+      "firstRecordedAt": "2026-08-29T17:24:22.967900+00:00",
+      "lastUpdatedAt": "2026-08-29T17:37:38.528038+00:00",
+      "evidence": "ACS_RECIPIENT_DELIVERED",
+      "providerMessageId": "8cae76f5-8ed8-520a-97a6-f8c241fee9f9",
+      "providerSubmissionStatus": "Succeeded",
+      "submittedAt": "2026-08-29T17:25:55.320312+00:00",
+      "lastDeliveryCheckAt": "2026-08-29T17:37:38.528038+00:00",
+      "deliveryStatus": "Delivered",
+      "deliveryObservedAt": "2026-08-29T17:25:59.562Z"
     }
   ]
 }

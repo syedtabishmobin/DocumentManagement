@@ -3,29 +3,29 @@
 | Field | Value |
 |---|---|
 | Document ID | `ARCH-WSP-001` |
-| Version | `0.1` |
-| Status | **DRAFT — product-owner, architecture, security, and privacy approval required** |
+| Version | `0.2` |
+| Status | **ACTIVE IMPLEMENTATION CONTRACT — Phase 1 fail-closed transition fence approved by `DEC-P1-056`** |
 | Product phase | Phase 1 — PERSONAL and FAMILY workspaces; ORGANISATION reserved |
 | Jurisdiction | Australia first; jurisdiction-neutral core |
-| Updated | 26 August 2026 |
-| Normative basis | `DEC-002`, `DEC-003`, `DEC-006`, `DEC-008`, `DEC-020`–`DEC-023`; draft product, architecture, data, and security contracts |
+| Updated | 30 August 2026 |
+| Normative basis | Approved `DEC-002`, `003`, `006`, `008`, `020`–`023`, `030`–`055`, `DEC-P1-056`; approved PRD and accepted architecture/security/data contracts |
 | Companions | [`ARCH-DOM-001`](02-domain-model.md), [`ARCH-DATA-001`](03-logical-data-model.md), [`SEC-AUTH-001`](../06-security/02-authorization-model.md) |
 
 ## 1. Purpose, authority, and boundary
 
-This document defines the Phase 1 workspace and participation model: identities, subjects, relationships, owner bindings, memberships, roles, grants, resource/field/edge/action access, family administration, managed-dependant transition fences, guest access, recovery, and continuity boundaries. Stable draft rules use `WSP-P1-*` IDs.
+This document defines the Phase 1 workspace and participation model: identities, subjects, relationships, owner bindings, memberships, roles, grants, resource/field/edge/action access, family administration, managed-dependant transition fences, guest access, recovery, and continuity boundaries. Stable implementation rules use `WSP-P1-*` IDs.
 
-The hierarchy in [`CODEX.md`](../../CODEX.md) applies. Approved decisions outrank this draft. The [Phase 1 PRD](../01-product/02-phase-1-prd.md), [use-case catalogue](../01-product/04-use-case-catalogue.md), [personas and journeys](../01-product/05-personas-and-journeys.md), architecture/domain/data documents, and security contracts are draft inputs.
+The hierarchy in [`CODEX.md`](../../CODEX.md) applies. Approved decisions and accepted ADRs outrank this contract. The [Phase 1 PRD](../01-product/02-phase-1-prd.md) is the approved product baseline; use-case, journey and backlog views remain subordinate planning artifacts where their status wording has not yet been reconciled.
 
 This model is an authorization and domain contract, not an identity-provider, policy-engine, token, database, or UI selection. Role labels below describe product concepts; the versioned configuration catalogue owns actual role, permission, relationship, action, and state identifiers under `DEC-007` and `REQ-P1-WS-005`.
 
-The following remain deliberately unresolved:
+The following are explicit decision or release fences, not implicit implementation choices:
 
-- managed-dependant consent, authority, eligibility, challenge, privacy, and transfer behavior (`REQ-P1-WS-007`, `UC-P1-015`);
-- automated emergency, incapacity, or after-death release (`DEC-032`);
-- account/workspace recovery and ownership-transfer ceremony (`DEC-038`);
-- deletion timing and retained-audit treatment (`DEC-039`); and
-- residency processors/routes affecting invitations, support, notifications, and recovery (`DEC-040`).
+- the Phase 1 managed-dependant transition fence is approved by `DEC-P1-056`; richer independent transfer/delegation semantics remain out of scope and require a later governed change;
+- automated emergency, incapacity, or after-death release is excluded from Phase 1 by approved `DEC-032`;
+- local account/workspace recovery and ownership-transfer success routes are unavailable under approved `DEC-038`; production recovery requires a separate assurance decision;
+- production document deletion follows approved `DEC-053`; account/workspace deletion and lawful-retention exceptions remain separate governed release contracts; and
+- Azure/Australian placement follows `DEC-049`/`055`, while each invitation, support, notification, backup, failover or external processing route still requires exact eligibility evidence.
 
 ## 2. Core concepts and non-equivalences
 
@@ -49,7 +49,7 @@ The following remain deliberately unresolved:
 
 ### 3.1 Identity, workspace, subject, and ownership
 
-| Rule ID | Draft workspace rule |
+| Rule ID | Workspace rule |
 |---|---|
 | `WSP-P1-001` | Authentication establishes an `IdentityId` and assurance context only; it MUST NOT establish workspace, subject, membership, ownership, or resource authority by itself. |
 | `WSP-P1-002` | Every protected human/service operation MUST name exactly one validated workspace context before resource resolution; identity alone is never the tenant boundary. |
@@ -64,7 +64,7 @@ The following remain deliberately unresolved:
 
 ### 3.2 Membership, roles, and authority separation
 
-| Rule ID | Draft workspace rule |
+| Rule ID | Workspace rule |
 |---|---|
 | `WSP-P1-011` | Membership records participation, lifecycle, and policy attributes for one identity in one workspace; it MUST NOT store an unbounded list of effective content permissions as truth. |
 | `WSP-P1-012` | An identity MUST have at most one current membership for a configured participation class in a workspace; invitation and prior-membership history remain additive. |
@@ -79,7 +79,7 @@ The following remain deliberately unresolved:
 
 ### 3.3 Grants and resource, field, edge, and action access
 
-| Rule ID | Draft workspace rule |
+| Rule ID | Workspace rule |
 |---|---|
 | `WSP-P1-021` | An access grant MUST bind grantor/authority, grantee/access subject, workspace, purpose, resource and optional field/edge/action scope, valid time, policy version, delegation/export constraints, and lifecycle. |
 | `WSP-P1-022` | A grantor MUST possess current delegation authority for every delegated scope/action and MUST NOT delegate broader authority, duration, purpose, export, or onward-sharing rights than policy permits. |
@@ -96,17 +96,17 @@ The following remain deliberately unresolved:
 
 ### 3.4 Lifecycle, dependant, guest, recovery, and continuity fences
 
-| Rule ID | Draft workspace rule |
+| Rule ID | Workspace rule |
 |---|---|
 | `WSP-P1-033` | Workspace creation MUST atomically or recoverably establish the workspace, one owner binding, owner membership, owner subject link, configuration/residency context, and required audit/event evidence without orphan or duplicate state. |
-| `WSP-P1-034` | Owner transfer, recovery, or succession MUST remain disabled or policy-pending until `DEC-038` defines assurance, challenge, delay, private-resource, key, support, and abuse controls. |
+| `WSP-P1-034` | Owner transfer, recovery, or succession MUST remain unavailable in the local Phase 1 profile under approved `DEC-038`; no production success route may activate until a separate assurance decision defines challenge, delay, private-resource, key, support, and abuse controls. |
 | `WSP-P1-035` | An invitation MUST bind intended workspace, participation class, inviter authority, audience, expiry, and safe acceptance challenge; accepting it cannot confer authority beyond the resulting membership and explicit grants. |
 | `WSP-P1-036` | Member departure/removal MUST inventory active grants, assignments, approvals, actions, sessions, links, notifications, exports, connectors, and owner obligations and reconcile them under policy without silently transferring private resources. |
 | `WSP-P1-037` | Managed-dependant transition MUST preserve the existing `SubjectId`, evidence, facts, dependencies, authority history, and audit; it MUST NOT recreate the subject or rewrite prior caregiver provenance. |
 | `WSP-P1-038` | A managed dependant MUST NOT receive fabricated credentials, contact details, identity, membership, consent, or ownership merely because a caregiver created the subject. |
-| `WSP-P1-039` | Until consent/authority/eligibility/challenge rules for `UC-P1-015` are approved, a dependant transition may be recorded only as proposed/policy-pending and MUST NOT activate independent access or reassign resources. |
+| `WSP-P1-039` | Under approved `DEC-P1-056`, `UC-P1-015` is a Phase 1 fail-closed fence: a revisioned attempt may be represented, but it MUST NOT create independent access, credentials, keys, membership, grants, ownership transfer, inherited/delegated authority, consent, export authority, or resource reassignment. |
 | `WSP-P1-040` | A guest/adviser MUST be limited to explicit purpose, resources, fields, actions, duration, and audience and MUST NOT enumerate members, subjects, counts, facets, graph topology, private tasks, audit, or exports outside the grant. |
-| `WSP-P1-041` | Automated emergency, incapacity, or after-death release MUST remain disabled while `DEC-032` is open; a relationship, nomination, timer, external event, or support assertion cannot trigger disclosure. |
+| `WSP-P1-041` | Under approved `DEC-032`, automated emergency, incapacity, or after-death release MUST remain absent in Phase 1; a relationship, nomination, timer, external event, or support assertion cannot trigger disclosure. |
 | `WSP-P1-042` | Ordinary time-limited grants and owner-created curated exports MUST remain separate from continuity release and MUST NOT be reinterpreted as evidence or consent for an automatic release. |
 | `WSP-P1-043` | Account recovery, workspace owner recovery, managed-dependant transition, and continuity release MUST remain separate workflows with independent authority, evidence, delay, challenge, revocation, and audit semantics. |
 | `WSP-P1-044` | Every ownership, membership, role, relationship-authority, invitation, grant, redemption, revocation, dependant-transition, recovery, and continuity attempt/outcome MUST produce privacy-safe audit evidence. |
@@ -234,7 +234,7 @@ stateDiagram-v2
     Fenced --> Deleted: policy-defined purge completion
 ```
 
-The final deletion timing is not specified while `DEC-039` is open. Recovery/owner-transfer transitions are absent while `DEC-038` is open.
+Production document deletion uses the approved `DEC-053` immediate fence, 30-calendar-day restricted Trash/restore interval, and coordinated final purge. Account/workspace deletion, lawful-retention exceptions, and their retained-audit rules remain separate governed workflows. Recovery/owner-transfer success transitions are unavailable locally under `DEC-038` and cannot activate in production without a separate assurance decision.
 
 ### 9.2 Invitation and participation
 
@@ -273,20 +273,19 @@ A managed dependant is a `Subject` with no required identity or membership. Docu
 - consent or challenge requirements where applicable; and
 - the requested action and time.
 
-### 10.2 Reserved transition sequence
+### 10.2 Phase 1 fail-closed transition sequence
 
-`UC-P1-015` is catalogue-only and not implementation-ready. While its consent design is unresolved, only a policy-pending proposal may be represented. A future approved sequence must at minimum:
+`UC-P1-015` is an approved negative safety contract under `DEC-P1-056` and [Issue #33](https://github.com/syedtabishmobin/DocumentManagement/issues/33#issuecomment-5463877570). A transition attempt uses an explicit revisioned state such as proposed, validating, blocked, failed, cancelled or recovered. Phase 1 defines no independent-transfer success state.
 
-1. strongly establish the independent identity and eligibility without fabricating contact or identity history;
-2. resolve that identity to the existing subject through reviewed evidence;
-3. preserve the existing `SubjectId`, document/fact/evidence/dependency IDs, valid/transaction history, and caregiver provenance;
-4. inventory resource ownership, subject linkage, field/edge privacy, grants, authority bases, tasks, approvals, exports, and audit visibility;
-5. preview to authorized parties which authorities remain, expire, require consent, or require challenge under the approved policy;
-6. create the membership, subject–identity link, and any grants as separate versioned transitions;
-7. invalidate stale caregiver/subject authorization projections and reauthorize all pending work; and
-8. provide challenge, cancellation, repair, and privacy-safe audit behavior.
+1. Resolve the existing stable subject separately from any asserted identity, age, relationship, invitation, membership or grant.
+2. Capture the attempt, initiator, policy/configuration version and expected revision without storing sensitive evidence in ordinary audit.
+3. Validate current authority and the Phase 1 fence before any mutation. Missing, ambiguous, stale or unsupported inputs deny.
+4. Preserve `SubjectId`, documents, facts, evidence, dependencies, valid/transaction history and caregiver provenance.
+5. Commit only the blocked/failed/cancelled/recovered attempt state and its outbox/audit evidence atomically where practical; no access-bearing object is created or broadened.
+6. On interruption, ambiguity, partial application, concurrency conflict or retry, recover to the last authorised state, invalidate stale authorization projections and recalculate current permissions before returning a result.
+7. Independently test deny, retry, rollback/recovery, partial-failure, stale-projection, concurrent-policy/grant and privacy-safe audit cases.
 
-This list specifies invariants, not the final age, evidence, notice, consent, waiting period, ownership, or reassignment outcome. Those are product/privacy decisions and may not be inferred from family relationship.
+Advanced identity enablement, document-level transfer, inherited-right preservation, delegated authority chains, credentials, keys, independent membership, ownership reassignment and enterprise entitlement transfer are a later governed capability. The stable-subject and versioned-policy extension points are preserved, but Phase 1 must not imply those outcomes.
 
 ## 11. Guest and delegated-access fence
 
@@ -315,7 +314,7 @@ High-impact execution, export release, artifact/citation redemption, and destruc
 
 ### 12.1 Ordinary supported preparation
 
-Before automated continuity is approved, a user may use only:
+Under the approved Phase 1 exclusion in `DEC-032`, a user may use only:
 
 - an ordinary explicit, time-bounded grant under the normal sharing policy; or
 - an owner-initiated, separately authorized curated export package under the export contract.
@@ -324,7 +323,7 @@ Neither route is called incapacity/death release. Neither can silently broaden s
 
 ### 12.2 Automated continuity
 
-While `DEC-032` remains open:
+Under approved `DEC-032`:
 
 - no continuity trigger, nominee role, timer, external webhook, support assertion, or relationship state can release content;
 - no future-release key, link, or dormant broad grant may be activated;
@@ -335,7 +334,7 @@ Any future proposal requires a new decision/ADR and threat-model update covering
 
 ### 12.3 Account/workspace recovery
 
-Recovery proves restoration of an identity/account/workspace authority under a future ceremony. It does not prove incapacity/death, consent, or authority over another subject. While `DEC-038` remains open, support, email possession, family relationship, invitation history, device possession, or prior owner status cannot transfer factors, keys, owner binding, private resources, grants, or export authority.
+Recovery proves restoration of an identity/account/workspace authority under a future separately approved ceremony. It does not prove incapacity/death, consent, or authority over another subject. Under approved `DEC-038`, the local success route is unavailable; support, email possession, family relationship, invitation history, device possession, or prior owner status cannot transfer factors, keys, owner binding, private resources, grants, or export authority. Production recovery remains disabled until a separate assurance decision is recorded.
 
 ## 13. Current-authorization projection strategy
 
@@ -348,7 +347,7 @@ Role/grant/resource labels may be materialized into search, graph, vector, cache
 - deletion generation/fence watermark; and
 - projection generation, transform version, source watermark, and build time.
 
-Every output resolves current authoritative policy. If the projection is stale, misses an invalidation, lacks required attributes, or cannot perform field/edge filtering, it returns only opaque candidate IDs to an enforcing owner or fails closed. This is the proposed strategy in [`ADR-ARCH-003`](06-adrs/ADR-003-current-authorization-for-derived-projections.md), not acceptance of a specific policy/index product.
+Every output resolves current authoritative policy. If the projection is stale, misses an invalidation, lacks required attributes, or cannot perform field/edge filtering, it returns only opaque candidate IDs to an enforcing owner or fails closed. This is the accepted strategy in [`ADR-ARCH-003`](06-adrs/ADR-003-current-authorization-for-derived-projections.md), not acceptance of a specific policy/index product.
 
 ## 14. Audit and privacy requirements
 
@@ -370,10 +369,10 @@ Audit uses stable references, policy/version, safe reason/action codes, state tr
 
 | Boundary | Required state now | Primary threats/controls |
 |---|---|---|
-| Managed dependant | Subject without fabricated identity; transition policy-pending | `THR-P1-004`–`006`; `AUTH-P1-006`, `PRIV-P1-023` |
+| Managed dependant (`DEC-P1-056`) | Subject without fabricated identity; explicit revisioned transition attempts fail closed and cannot activate independent transfer | `THR-P1-004`–`006`; `AUTH-P1-006`, `PRIV-P1-023`; [Issue #33 decision](https://github.com/syedtabishmobin/DocumentManagement/issues/33#issuecomment-5463877570) |
 | Guest/adviser | Explicit grant, no enumeration/export/onward share by default | `THR-P1-003`–`006`, `014`; `AUTH-P1-016`–`019` |
 | Automated continuity (`DEC-032`) | Disabled; false trigger releases nothing | `THR-P1-025`; `AUTH-P1-033`, `PRIV-P1-024` |
-| Recovery/owner transfer (`DEC-038`) | Disabled/policy-pending; no support/email/family bypass | `THR-P1-001`–`002`, `020`; `AUTH-P1-032`, `PRIV-P1-025` |
+| Recovery/owner transfer (`DEC-038`) | Local success route unavailable; production separately assurance-gated; no support/email/family bypass | `THR-P1-001`–`002`, `020`; `AUTH-P1-032`, `PRIV-P1-025` |
 | Revocation and stale projections | Current authorization at output; invalidate all derivatives | `THR-P1-005`–`007`; `AUTH-P1-019`–`024` |
 | Export/deletion | Separate high-impact authority; per-item policy/fence | `THR-P1-022`–`024`; `AUTH-P1-015`, `034` |
 | Support/operator | No standing content access or household impersonation | `THR-P1-020`; `SEC-P1-025`–`026`, `AUTH-P1-026`–`027` |
@@ -400,9 +399,9 @@ Before this model supports implementation readiness, tests must prove:
 6. guest-link guess, forward, reuse, wrong audience, expiry, revoke, and timing/enumeration attacks reveal no household context;
 7. revocation between enqueue and execution, mid-conversation, signed access, notification, export, and action fails closed or visibly reconciles completed effects;
 8. relationship/caregiver/professional/support/owner labels alone cannot confer subject authority or private-content access;
-9. recovery and automated continuity routes are absent or deny while `DEC-032`/`038` remain open;
+9. recovery and automated continuity routes are absent or deny under approved `DEC-032`/`038` boundaries;
 10. membership removal does not delete, re-own, or lose authored evidence/history and cannot orphan the owner binding;
 11. audit views record required events without leaking protected identities, relationships, resources, or content; and
 12. Phase 2 roles/workspace features remain inert and absent from Phase 1 actor surfaces.
 
-Exact authorization-propagation and security release targets are governed by [`ARCH-NFR-001`](05-non-functional-requirements.md). No identity provider, policy engine, token format, role store, or directory product is selected here.
+Exact authorization-propagation and security release targets are governed by [`ARCH-NFR-001`](05-non-functional-requirements.md). This logical contract does not activate Entra External ID or select a policy engine, token format, role store, or directory data model; those adapter and release choices remain governed by accepted ADRs and environment gates.

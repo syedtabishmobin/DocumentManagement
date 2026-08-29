@@ -1,0 +1,115 @@
+{
+  "schemaVersion": "1.0.0",
+  "baselineId": "DOCULYRA-BUILD-P1-2026.08.30.1",
+  "status": "IN_REVIEW",
+  "recordedAt": "2026-08-30T03:30:00+10:00",
+  "candidateRevision": "PENDING",
+  "authority": {
+    "vision": {
+      "id": "PROD-VIS-001",
+      "document": "docs/01-product/02-phase-1-prd.md",
+      "documentId": "PROD-PRD-001",
+      "version": "0.3"
+    },
+    "decisions": "docs/00-context/decision-register.md",
+    "sourceHierarchy": "CODEX.md",
+    "governedWorkIssue": "https://github.com/syedtabishmobin/DocumentManagement/issues/32",
+    "resolvedDecision": "https://github.com/syedtabishmobin/DocumentManagement/issues/33#issuecomment-5463877570"
+  },
+  "approvedHierarchy": {
+    "outcomes": [
+      "OUT-P1-001", "OUT-P1-002", "OUT-P1-003", "OUT-P1-004", "OUT-P1-005", "OUT-P1-006", "OUT-P1-007"
+    ],
+    "metrics": [
+      "MET-P1-001", "MET-P1-002", "MET-P1-003", "MET-P1-004", "MET-P1-005", "MET-P1-006", "MET-P1-007", "MET-P1-008", "MET-P1-009", "MET-P1-010", "MET-P1-011", "MET-P1-012", "MET-P1-013", "MET-P1-014", "MET-P1-015", "MET-P1-016", "MET-P1-017", "MET-P1-018", "MET-P1-019", "MET-P1-020", "MET-P1-021", "MET-P1-022"
+    ],
+    "epics": [
+      "EPIC-P1-001", "EPIC-P1-002", "EPIC-P1-003", "EPIC-P1-004", "EPIC-P1-005", "EPIC-P1-006", "EPIC-P1-007", "EPIC-P1-008", "EPIC-P1-009", "EPIC-P1-010", "EPIC-P1-011", "EPIC-P1-012"
+    ],
+    "features": [
+      "FEAT-P1-001", "FEAT-P1-002", "FEAT-P1-003", "FEAT-P1-004", "FEAT-P1-005", "FEAT-P1-006", "FEAT-P1-007", "FEAT-P1-008", "FEAT-P1-009", "FEAT-P1-010", "FEAT-P1-011", "FEAT-P1-012", "FEAT-P1-013", "FEAT-P1-014", "FEAT-P1-015", "FEAT-P1-016", "FEAT-P1-017", "FEAT-P1-018", "FEAT-P1-019", "FEAT-P1-020", "FEAT-P1-021", "FEAT-P1-022", "FEAT-P1-023", "FEAT-P1-024", "FEAT-P1-025", "FEAT-P1-026", "FEAT-P1-027", "FEAT-P1-028", "FEAT-P1-029", "FEAT-P1-030", "FEAT-P1-031"
+    ],
+    "stories": [
+      "STORY-P1-001", "STORY-P1-002", "STORY-P1-003", "STORY-P1-004", "STORY-P1-005", "STORY-P1-006", "STORY-P1-007", "STORY-P1-008", "STORY-P1-009", "STORY-P1-010", "STORY-P1-011", "STORY-P1-012", "STORY-P1-013", "STORY-P1-014", "STORY-P1-015", "STORY-P1-016", "STORY-P1-017", "STORY-P1-018", "STORY-P1-019", "STORY-P1-020", "STORY-P1-021", "STORY-P1-022", "STORY-P1-023", "STORY-P1-024", "STORY-P1-025", "STORY-P1-026", "STORY-P1-027", "STORY-P1-028", "STORY-P1-029", "STORY-P1-030", "STORY-P1-031", "STORY-P1-032", "STORY-P1-033", "STORY-P1-034", "STORY-P1-035", "STORY-P1-036", "STORY-P1-037", "STORY-P1-038", "STORY-P1-039", "STORY-P1-040", "STORY-P1-041", "STORY-P1-042", "STORY-P1-043", "STORY-P1-044", "STORY-P1-045", "STORY-P1-046", "STORY-P1-047", "STORY-P1-048", "STORY-P1-049"
+    ],
+    "storyAcceptancePattern": "AC-STORY-P1-###-##",
+    "storyAcceptanceCount": 98,
+    "testCount": 104
+  },
+  "epicStoryOwnership": {
+    "EPIC-P1-001": ["STORY-P1-001", "STORY-P1-002", "STORY-P1-003", "STORY-P1-049"],
+    "EPIC-P1-002": ["STORY-P1-004", "STORY-P1-005", "STORY-P1-006", "STORY-P1-007"],
+    "EPIC-P1-003": ["STORY-P1-008", "STORY-P1-009", "STORY-P1-010"],
+    "EPIC-P1-004": ["STORY-P1-011", "STORY-P1-012", "STORY-P1-013", "STORY-P1-014", "STORY-P1-015", "STORY-P1-026"],
+    "EPIC-P1-005": ["STORY-P1-016", "STORY-P1-017", "STORY-P1-018", "STORY-P1-019", "STORY-P1-020"],
+    "EPIC-P1-006": ["STORY-P1-021", "STORY-P1-022", "STORY-P1-023", "STORY-P1-024", "STORY-P1-025"],
+    "EPIC-P1-007": ["STORY-P1-027", "STORY-P1-028", "STORY-P1-029", "STORY-P1-030"],
+    "EPIC-P1-008": ["STORY-P1-031", "STORY-P1-032", "STORY-P1-033", "STORY-P1-038"],
+    "EPIC-P1-009": ["STORY-P1-034", "STORY-P1-035", "STORY-P1-036", "STORY-P1-042", "STORY-P1-043"],
+    "EPIC-P1-010": ["STORY-P1-037", "STORY-P1-041"],
+    "EPIC-P1-011": ["STORY-P1-039", "STORY-P1-040", "STORY-P1-044", "STORY-P1-045"],
+    "EPIC-P1-012": ["STORY-P1-046", "STORY-P1-047", "STORY-P1-048"]
+  },
+  "workControl": {
+    "plannedStoryState": "PLANNED_UNISSUED",
+    "activeStoryIssueRequired": true,
+    "activeStoryAttributionRequired": true,
+    "historicalBoundedEvidence": {
+      "issue": "https://github.com/syedtabishmobin/DocumentManagement/issues/2",
+      "pullRequest": "https://github.com/syedtabishmobin/DocumentManagement/pull/4",
+      "stories": ["STORY-P1-001", "STORY-P1-002", "STORY-P1-003", "STORY-P1-039", "STORY-P1-040"],
+      "completionEffect": "NONE"
+    }
+  },
+  "definitionOfReady": [
+    "approved outcome, feature and exact requirement ownership",
+    "atomic observable acceptance criteria including negative and unavailable states",
+    "dependency and activation fences",
+    "architecture, security/privacy, data/domain, AI and UX applicability",
+    "exact developer and independent test expectations",
+    "synthetic fixtures and environment class",
+    "migration, rollback or forward-repair and observability expectations",
+    "no unresolved material decision affecting the story",
+    "attributed authoritative GitHub Issue before execution"
+  ],
+  "baselineAcceptanceCriteria": [
+    "AC-BL-P1-001", "AC-BL-P1-002", "AC-BL-P1-003", "AC-BL-P1-004", "AC-BL-P1-005",
+    "AC-BL-P1-006", "AC-BL-P1-007", "AC-BL-P1-008", "AC-BL-P1-009", "AC-BL-P1-010"
+  ],
+  "evidence": {
+    "implementationStatus": "docs/10-backlog/05-personal-family-implementation-status.md",
+    "remainingWork": "docs/10-backlog/06-personal-family-remaining-work.md",
+    "testManifest": "docs/12-testing/fixtures/test-scenarios.v1.json",
+    "implementationEvidenceManifest": "docs/12-testing/fixtures/implementation-evidence.v1.json",
+    "dependencyGraphCommand": "pnpm build:graph",
+    "traceabilityAuditCommand": "pnpm trace:audit"
+  },
+  "environmentState": {
+    "agent-local": "AVAILABLE",
+    "dev": "SYNTHETIC_PREVIEW_AVAILABLE",
+    "stage": "DEFINED_NOT_PROVISIONED",
+    "uat": "NOT_YET_APPLICABLE",
+    "prod": "DEFINED_NOT_PROVISIONED",
+    "businessAcceptance": "NOT_STARTED"
+  },
+  "acceptedNonBlockingExceptions": [
+    "Numeric outcome targets remain provisional until representative calibration and Product Authority approval.",
+    "No product outcome, feature, story or story acceptance criterion is currently proven complete.",
+    "Product Stage, BA and UAT evidence is not yet applicable and cannot be represented as passing.",
+    "Historical Issue #2 execution predates complete agent telemetry; GitHub, PR, CI and independent-QA evidence is retained and no telemetry is fabricated.",
+    "Production legal review, launch content, processor matrices, subscription, real-data processing, provider activation, DNS and store publication remain release gates."
+  ],
+  "blockingDecisions": [],
+  "reviewEvidence": {
+    "productBa": "CONSULTED — corrections authored; exact candidate review pending",
+    "architectureSecurityData": "CONSULTED — corrections authored and DEC-P1-056 resolved; exact candidate review pending",
+    "aiUx": "CONSULTED — corrections authored; exact candidate review pending",
+    "independentBaselineReview": "NOT_STARTED"
+  },
+  "changeControl": {
+    "materialChangesRequireNewBaselineVersion": true,
+    "materialChangeExamples": ["vision", "outcome", "metric definition", "feature", "story", "acceptance criterion", "architecture decision", "security/privacy boundary", "data/domain semantic", "AI evaluation gate", "UX journey"],
+    "routineImplementationDetailsMayEvolve": true,
+    "historicalBaselineRetentionRequired": true
+  }
+}

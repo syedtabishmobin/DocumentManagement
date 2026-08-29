@@ -97,12 +97,17 @@ From the repository root:
 pnpm install --frozen-lockfile
 pnpm verify:framework
 pnpm verify:observability
+pnpm verify:baseline
+pnpm build:graph
+pnpm trace:audit
 pnpm verify:spec
 pnpm typecheck
 pnpm test
 pnpm build
 pnpm verify
 ```
+
+`pnpm verify:baseline` checks the controlled goal/feature/story/AC/test inventory and reciprocal ownership. `pnpm build:graph --format json` produces the dependency-aware story queue. `pnpm trace:audit` returns `END_TO_END_TRACEABILITY_COMPLETE` only when the exact baseline has independent approval and no material blocking decision. The current baseline record is `docs/10-backlog/build-baseline.v1.json`; every product story starts as `PLANNED_UNISSUED` and needs its own attributed GitHub Issue and Definition-of-Ready check before implementation.
 
 Framework-specific tools:
 

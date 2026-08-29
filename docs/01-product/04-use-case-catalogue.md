@@ -3,18 +3,18 @@
 | Field | Value |
 |---|---|
 | Document ID | `PROD-UC-001` |
-| Version | `0.1` |
-| Status | `DRAFT — derived from draft PRD; product-owner approval required` |
+| Version | `0.2` |
+| Status | `APPROVED DERIVED BUILD BASELINE — implementation and release evidence remain gated` |
 | Product phase | Phase 1 — Personal and Family |
 | Jurisdiction | Australia first; jurisdiction-neutral core |
-| Updated | 26 August 2026 |
-| Primary source | `docs/01-product/02-phase-1-prd.md` version `0.1` |
+| Updated | 30 August 2026 — build-baseline traceability reconciliation |
+| Primary source | `docs/01-product/02-phase-1-prd.md` version `0.3` |
 
 ## 1. Authority, scope, and interpretation
 
-This catalogue refines the draft Phase 1 requirements into observable end-to-end behaviour. It does not approve the PRD, close an open decision, select a provider, or authorize implementation. `CODEX.md` and the source-of-truth hierarchy continue to apply.
+This catalogue refines the approved Phase 1 requirements into observable end-to-end behaviour. It does not independently change the PRD, select or activate a provider, prove implementation completion, or authorize production use. `CODEX.md` and the source-of-truth hierarchy continue to apply.
 
-The words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** have the same draft status as the requirements they refine. A flow marked `CONDITIONAL` remains unavailable until its linked decision and specialist contract are approved. Alternatives describe required handling of boundary conditions; they are not optional implementation shortcuts.
+The words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** inherit the status of the approved requirements they refine. A release-gated flow remains unavailable until its exact activation evidence passes. Alternatives describe required handling of boundary conditions; they are not optional implementation shortcuts.
 
 Stable IDs follow these rules:
 
@@ -51,17 +51,16 @@ Stable IDs follow these rules:
 | `UC-P1-008` | Resolve an expected-document or document-health finding | `P1-S3`–`P1-S4` | `REQUIRED`; score conditional | Detailed | `REQ-P1-HLT-001`–`REQ-P1-HLT-005` |
 | `UC-P1-009` | Share, delegate, expire, and revoke access | `P1-S4` | `REQUIRED`; automatic continuity conditional | Detailed | `REQ-P1-SHR-001`–`REQ-P1-SHR-005` |
 | `UC-P1-010` | Manage a task, reminder, and notification | `P1-S3`–`P1-S4` | `REQUIRED`; channels conditional | Detailed | `REQ-P1-NTF-001`–`REQ-P1-NTF-004` |
-| `UC-P1-011` | Export an authorized portable workspace package | `P1-S4` | `REQUIRED`; envelope proposed | Detailed | `REQ-P1-TRUST-006` |
+| `UC-P1-011` | Export an authorized portable workspace package | `P1-S4` | `REQUIRED`; approved envelope | Detailed | `REQ-P1-TRUST-006` |
 | `UC-P1-012` | Delete and purge a governed resource | `P1-S4` | `REQUIRED`; timing open | Detailed | `REQ-P1-TRUST-007` |
 | `UC-P1-013` | Enforce workspace and derivative isolation across a workflow | All | `REQUIRED` | Detailed cross-cutting | `REQ-P1-WS-004`, `REQ-P1-TRUST-002` |
-| `UC-P1-014` | Ingest from a cloud or private-email connector | `P1-S4` | `CONDITIONAL` on `DEC-031` | Catalogue only | `REQ-P1-ING-009`, `REQ-P1-TRUST-009` |
-| `UC-P1-015` | Transition a managed dependant to independent access | `P1-S4` | `CONDITIONAL` on consent design | Catalogue only | `REQ-P1-WS-007` |
-| `UC-P1-016` | Release continuity information after incapacity or death | `P1-S4` | `CONDITIONAL` on `DEC-032` | Catalogue only | `REQ-P1-SHR-004` |
-| `UC-P1-017` | Recover an account or workspace | `P1-S4` | `CONDITIONAL` on `DEC-038` | Catalogue only | `REQ-P1-TRUST-001`, `REQ-P1-TRUST-008` |
-| `UC-P1-018` | Publish consequential reference configuration | `P1-S3` | `REQUIRED` | Catalogue only | `REQ-P1-CFG-001`–`REQ-P1-CFG-004` |
-| `UC-P1-019` | Inspect a privacy-safe audit history | All | `REQUIRED` | Catalogue only | `REQ-P1-TRUST-003`–`REQ-P1-TRUST-004` |
-
-Catalogue-only entries require the same detailed template before implementation. Their omission from section 5 is not implementation authority.
+| `UC-P1-014` | Ingest from a cloud or private-email connector | `P1-S4` | `REQUIRED / RELEASE GATED` | Detailed | `REQ-P1-ING-009`, `REQ-P1-TRUST-009` |
+| `UC-P1-015` | Preserve a managed dependant through an authority-transition fence | `P1-S4` | `REQUIRED SAFE BOUNDARY` | Detailed | `REQ-P1-WS-007` |
+| `UC-P1-016` | Keep automated continuity release unavailable | `P1-S4` | `INTENTIONALLY UNAVAILABLE` | Detailed absence | `REQ-P1-SHR-004` |
+| `UC-P1-017` | Keep account/workspace recovery and ownership transfer unavailable | `P1-S4` | `INTENTIONALLY UNAVAILABLE` | Detailed absence | `REQ-P1-TRUST-001`, `REQ-P1-TRUST-008` |
+| `UC-P1-018` | Publish consequential reference configuration | `P1-S3` | `REQUIRED` | Detailed | `REQ-P1-CFG-001`–`REQ-P1-CFG-004` |
+| `UC-P1-019` | Inspect a privacy-safe audit history | All | `REQUIRED` | Detailed | `REQ-P1-TRUST-003`–`REQ-P1-TRUST-004` |
+| `UC-P1-020` | Discover Doculyra and enter account creation or sign-in | `P1-S1` / cross-slice | `REQUIRED` | Detailed | `REQ-P1-PLT-001`, `REQ-P1-PLT-003` |
 
 ## 4. Cross-cutting invariants
 
@@ -90,8 +89,8 @@ Every detailed use case inherits these invariants:
 | Preconditions | The identity is authenticated and eligible; workspace, role, permission, relationship, and jurisdiction reference data are active; the requested workspace type is permitted in Phase 1. |
 | Trigger | An eligible identity selects **Create personal workspace** or **Create family workspace**. |
 | Linked requirements | `REQ-P1-WS-001`–`REQ-P1-WS-005`, `REQ-P1-TRUST-001`–`REQ-P1-TRUST-004`, `REQ-P1-CFG-001`, `REQ-P1-CFG-003` |
-| Linked gaps/decisions | `GAP-010`; `DEC-002`, `DEC-003`, `DEC-007`, `DEC-020`, `DEC-022`, `DEC-023`; slice sequencing remains proposed in `DEC-030` |
-| Open-decision dependency | Account/workspace recovery is outside this flow until `DEC-038`; managed-dependant transfer is outside this flow pending the consent design. |
+| Linked gaps/decisions | `GAP-010`; `DEC-002`, `DEC-003`, `DEC-007`, `DEC-020`, `DEC-022`, `DEC-023`; slice sequencing is approved by `DEC-030` |
+| Release-gated dependency | Account/workspace recovery is intentionally unavailable under `DEC-038`; managed-dependant transition remains fail-closed until an approved applicable consent/authority policy exists. |
 
 #### Main flow
 
@@ -150,8 +149,8 @@ Record the actor, workspace and membership IDs, requested and resulting type, ju
 | Preconditions | The actor has create permission in the selected workspace and target resource scope; supported-format and processing profiles are active; ingestion dependencies can report health. |
 | Trigger | The actor submits a file, camera capture, or manual record. |
 | Linked requirements | `REQ-P1-ING-001`–`REQ-P1-ING-008`, `REQ-P1-DOC-001`, `REQ-P1-DOC-004`, `REQ-P1-DOC-006`, `REQ-P1-DOC-007`, `REQ-P1-AI-001`–`REQ-P1-AI-006`, `REQ-P1-TRUST-002`–`REQ-P1-TRUST-004` |
-| Linked gaps/decisions | `GAP-003`, `GAP-004`, `GAP-009`; `DEC-005`, `DEC-006`, `DEC-008`, `DEC-009`, `DEC-021`, `DEC-024`; connector paths depend on `DEC-031`; suspected clinical-record disposition depends on `DEC-036`; launch formats depend on `DEC-035` |
-| Open-decision dependency | Until `DEC-036`, synthetic clinical-record detection must stop ordinary extraction/indexing/AI and surface an explicit policy-pending outcome; no reject/retain default is selected here. |
+| Linked gaps/decisions | `GAP-003`, `GAP-004`, `GAP-009`; `DEC-005`, `DEC-006`, `DEC-008`, `DEC-009`, `DEC-024`, `DEC-031`, `DEC-035`, `DEC-036`, `DEC-045`, `DEC-052`; connector activation and public format coverage remain evidence-gated |
+| Approved safety boundary | `DEC-036` requires isolated `POLICY_HOLD`, blocks ordinary preview/extraction/search/graph/AI/sharing/export, allows deletion, and requires explicit safe reclassification before ordinary processing. |
 
 #### Main flow
 
@@ -218,7 +217,7 @@ Preserve acquisition attempt, idempotency key, immutable artifact ID/hash, claim
 | Trigger | An actor opens a document, adds replacement evidence, requests comparison, or initiates a lifecycle transition. |
 | Linked requirements | `REQ-P1-DOC-001`–`REQ-P1-DOC-005`, `REQ-P1-DOC-008`, `REQ-P1-ING-005`, `REQ-P1-ING-007`, `REQ-P1-ING-008`, `REQ-P1-SRCH-002`, `REQ-P1-SRCH-005`, `REQ-P1-FCT-001`, `REQ-P1-ACT-005`–`REQ-P1-ACT-008` |
 | Linked gaps/decisions | `GAP-003`, `GAP-004`, `GAP-005`; `DEC-004`, `DEC-005`, `DEC-006`, `DEC-008`, `DEC-009`; purge timing remains open in `DEC-039` |
-| Open-decision dependency | This use case defines lifecycle semantics but delegates final purge execution to `UC-P1-012`; it does not choose cooling-off, backup expiry, or retained-audit periods. |
+| Release-evidence dependency | This use case defines lifecycle semantics and delegates final purge execution to `UC-P1-012`; `DEC-053` sets the 30-calendar-day document Trash/restore window, while backup expiry and lawful/account-retention exceptions require their applicable release evidence and policy. |
 
 #### Main flow
 
@@ -280,7 +279,7 @@ Record immutable artifact identities and hashes, logical-document/version links,
 | Trigger | New evidence contradicts an active value, an actor proposes a correction/change, or reprocessing changes a derived occurrence. |
 | Linked requirements | `REQ-P1-FCT-001`–`REQ-P1-FCT-006`, `REQ-P1-ING-005`, `REQ-P1-ING-007`, `REQ-P1-ING-008`, `REQ-P1-GPH-001`–`REQ-P1-GPH-004`, `REQ-P1-ACT-001`, `REQ-P1-ACT-005`, `REQ-P1-ACT-006`, `REQ-P1-AI-003`–`REQ-P1-AI-005` |
 | Linked gaps/decisions | `GAP-002`, `GAP-003`, `GAP-004`, `GAP-009`; `DEC-004`, `DEC-006`, `DEC-007`, `DEC-008`, `DEC-020` |
-| Open-decision dependency | Managed-dependant ownership/transition decisions do not permit reassignment of fact history until the consent design for `REQ-P1-WS-007` is approved. |
+| Release-gated dependency | The approved transition fence does not permit reassignment of fact history; any active transition requires an approved applicable consent/authority policy under `REQ-P1-WS-007`. |
 
 #### Main flow
 
@@ -341,8 +340,8 @@ Preserve occurrence and resolution IDs, subject/entity and fact-definition IDs, 
 | Preconditions | The actor is authenticated or holds a valid guest grant; eligible resources have current authorization metadata and evidence anchors; retrieval health is observable. |
 | Trigger | The actor submits a search, filter, comparison request, or question. |
 | Linked requirements | `REQ-P1-SRCH-001`–`REQ-P1-SRCH-005`, `REQ-P1-GPH-002`, `REQ-P1-GPH-004`, `REQ-P1-FCT-004`, `REQ-P1-FCT-006`, `REQ-P1-AI-001`–`REQ-P1-AI-007`, `REQ-P1-TRUST-002`–`REQ-P1-TRUST-004` |
-| Linked gaps/decisions | `GAP-003`, `GAP-009`; `DEC-006`, `DEC-008`, `DEC-009`, `DEC-022`; the launch document/source profile depends on `DEC-035`; residency/provider processing depends on `DEC-040` |
-| Open-decision dependency | An adapter may process content only under the approved residency and data-processing matrix; unsupported processing must be blocked or disclosed before consent, not assumed. |
+| Linked gaps/decisions | `GAP-003`, `GAP-009`; `DEC-006`, `DEC-008`, `DEC-009`, `DEC-035`, `DEC-040`, `DEC-049`, `DEC-050`; public launch profiles and exact processing routes remain release-gated |
+| Release-gated dependency | An adapter may process content only under the approved applicable residency/data-processing route; unsupported or unproven processing must be blocked or disclosed before consent, not assumed. |
 
 #### Main flow
 
@@ -405,8 +404,8 @@ Record actor/grant, workspace, capability ID/version, authorization-policy versi
 | Preconditions | An active versioned monitoring rule and subscription/context exist; jurisdiction, effective period, source and applicability metadata are valid; the service can report scheduler/source/parser health. |
 | Trigger | A date/periodic schedule is due, a user/life event is recorded, a document/dependency version changes, or a governed source is retrieved/observed. |
 | Linked requirements | `REQ-P1-MON-001`–`REQ-P1-MON-007`, `REQ-P1-CFG-002`–`REQ-P1-CFG-004`, `REQ-P1-GPH-001`, `REQ-P1-GPH-003`, `REQ-P1-GPH-005`, `REQ-P1-ACT-001`, `REQ-P1-ACT-003`, `REQ-P1-ACT-004`, `REQ-P1-TRUST-004` |
-| Linked gaps/decisions | `GAP-002`, `GAP-006`; `DEC-001`, `DEC-006`, `DEC-007`, `DEC-008`, `DEC-020`; launch source coverage depends on `DEC-035`; external processing/residency depends on `DEC-040` |
-| Open-decision dependency | No source or topic is a launch commitment until `DEC-035`; the system must disclose enabled coverage and gaps rather than extrapolate from the overall domain envelope. |
+| Linked gaps/decisions | `GAP-002`, `GAP-006`; `DEC-001`, `DEC-006`, `DEC-007`, `DEC-008`, `DEC-020`, `DEC-035`, `DEC-040`, `DEC-049`; public source coverage and exact external routes remain release-gated |
+| Release-gated dependency | `DEC-035` permits governed synthetic sources but no source or topic is a public launch commitment until the reviewed production package passes; the system must disclose enabled coverage and gaps rather than extrapolate from the domain envelope. |
 
 #### Main flow
 
@@ -472,7 +471,7 @@ Record rule/subscription/source/version IDs, trigger strategy and ID, scheduler/
 | Trigger | A durable change candidate becomes eligible for impact assessment. |
 | Linked requirements | `REQ-P1-ACT-001`–`REQ-P1-ACT-008`, `REQ-P1-GPH-002`–`REQ-P1-GPH-005`, `REQ-P1-FCT-002`–`REQ-P1-FCT-004`, `REQ-P1-MON-005`–`REQ-P1-MON-007`, `REQ-P1-NTF-001`, `REQ-P1-NTF-002`, `REQ-P1-SHR-005`, `REQ-P1-AI-001`–`REQ-P1-AI-006` |
 | Linked gaps/decisions | `GAP-004`, `GAP-005`, `GAP-009`; `DEC-001`, `DEC-004`, `DEC-005`, `DEC-006`, `DEC-007`, `DEC-008`, `DEC-009`, `DEC-020` |
-| Open-decision dependency | External connector actions are available only for approved adapters/scope under `DEC-031`; action data processing must satisfy `DEC-040`. |
+| Release-gated dependency | External connector actions are available only for adapters whose exact scope, consent, route and conformance gates pass under `DEC-031`, `DEC-045`, and the applicable processing/residency policy. |
 
 #### Main flow
 
@@ -538,8 +537,8 @@ Preserve change and assessment IDs, exact rule/snapshot/evidence, applicability 
 | Preconditions | A versioned requirement profile or health rule is active and applicable, or a non-authoritative guidance rule is clearly labelled; relevant context and evidence can be evaluated under current authorization. |
 | Trigger | The service detects potentially missing, expired, stale, superseded, or contradictory evidence, or a user opens a readiness review. |
 | Linked requirements | `REQ-P1-HLT-001`–`REQ-P1-HLT-005`, `REQ-P1-FCT-004`, `REQ-P1-FCT-006`, `REQ-P1-MON-002`, `REQ-P1-MON-005`–`REQ-P1-MON-007`, `REQ-P1-ACT-003`–`REQ-P1-ACT-006`, `REQ-P1-ACT-008`, `REQ-P1-NTF-001`, `REQ-P1-NTF-002` |
-| Linked gaps/decisions | `GAP-001`, `GAP-008`; `DEC-006`, `DEC-007`, `DEC-008`, `DEC-020`; launch profiles depend on `DEC-035`; aggregate scoring depends on `DEC-034` |
-| Open-decision dependency | The finding workflow is required. No aggregate readiness/content-health score may be exposed until `DEC-034` is approved and its permission-safe metric/UX validation passes. |
+| Linked gaps/decisions | `GAP-001`, `GAP-008`; `DEC-006`, `DEC-007`, `DEC-008`, `DEC-020`, `DEC-034`, `DEC-035`; public launch profiles remain release-gated |
+| Approved safety boundary | The finding workflow is required. `DEC-034` prohibits aggregate or hidden readiness/content-health/compliance/risk scoring in Phase 1; item-level UX and negative evidence remain required. |
 
 #### Main flow
 
@@ -608,8 +607,8 @@ Record requirement-profile/rule/version, applicability inputs and rationale, sou
 | Preconditions | Grantor is currently authorized to delegate the selected scope; recipient identity/contact, resources, fields, actions, purpose, duration, and onward-sharing policy are valid. |
 | Trigger | A grantor invites a member/guest, creates a guest link, changes scope, revokes access, or a grant reaches expiry. |
 | Linked requirements | `REQ-P1-WS-004`–`REQ-P1-WS-007`, `REQ-P1-SHR-001`–`REQ-P1-SHR-005`, `REQ-P1-SRCH-003`, `REQ-P1-GPH-002`, `REQ-P1-GPH-004`, `REQ-P1-TRUST-002`, `REQ-P1-TRUST-004`, `REQ-P1-TRUST-009` |
-| Linked gaps/decisions | `GAP-007`; `DEC-003`, `DEC-006`, `DEC-008`, `DEC-023`; automatic emergency/incapacity/after-death release depends on `DEC-032` |
-| Open-decision dependency | Ordinary explicit/time-aware grants and curated packs are specified here. Automated trigger-based continuity release is disabled until `DEC-032` approves evidence, delay, challenge, consent, revocation, and jurisdiction rules. |
+| Linked gaps/decisions | `GAP-007`; `DEC-003`, `DEC-006`, `DEC-008`, `DEC-023`, `DEC-032`, `DEC-033`; automated emergency/incapacity/after-death release is excluded |
+| Approved safety boundary | Ordinary explicit/time-aware grants and the approved curated export envelope are specified here. `DEC-032` requires automated trigger-based continuity release to remain unavailable in Phase 1. |
 
 #### Main flow
 
@@ -672,8 +671,8 @@ Record grantor/recipient or token identity, exact scope and exclusions, purpose,
 | Preconditions | An authorized recommendation, obligation, or user-created permitted task exists; task/workflow, severity, preference, quiet-period, and channel configuration are active. |
 | Trigger | A task is created/assigned, becomes due, changes state, meets escalation rules, or a user requests acknowledgement, snooze, reassign, complete, reopen, or dismiss. |
 | Linked requirements | `REQ-P1-NTF-001`–`REQ-P1-NTF-004`, `REQ-P1-ACT-003`, `REQ-P1-ACT-007`, `REQ-P1-ACT-008`, `REQ-P1-HLT-002`, `REQ-P1-SHR-005`, `REQ-P1-TRUST-002`–`REQ-P1-TRUST-004` |
-| Linked gaps/decisions | `GAP-004`; `DEC-006`, `DEC-007`, `DEC-008`; in-app baseline/email/push sequencing depends on `DEC-037` |
-| Open-decision dependency | In-app notification behaviour is the proposed baseline. Email/push channels remain behind a channel-neutral contract and unavailable until their sequencing, consent, privacy, and escalation rules are approved under `DEC-037`. |
+| Linked gaps/decisions | `GAP-004`; `DEC-006`, `DEC-007`, `DEC-008`, `DEC-037`, `DEC-045`; external customer-channel activation remains evidence-gated |
+| Release-gated dependency | In-app notification behaviour is required. Email/push/SMS customer channels remain behind a channel-neutral contract and unavailable until exact consent, privacy, configuration, route, and conformance evidence passes. |
 
 #### Main flow
 
@@ -737,8 +736,8 @@ Record task/source/recommendation/obligation IDs, owner/assignee, workflow/versi
 | Preconditions | The actor is strongly authenticated under the approved policy; export authority and scope are current; an export schema/manifest version and retention policy are active. |
 | Trigger | The actor requests export for a workspace, subject, selected resources, or another supported authorized scope. |
 | Linked requirements | `REQ-P1-TRUST-002`–`REQ-P1-TRUST-006`, `REQ-P1-WS-004`, `REQ-P1-SHR-001`, `REQ-P1-SHR-003`, `REQ-P1-DOC-001`–`REQ-P1-DOC-004`, `REQ-P1-FCT-006`, `REQ-P1-GPH-002`, `REQ-P1-GPH-004` |
-| Linked gaps/decisions | `GAP-007`; `DEC-003`, `DEC-005`, `DEC-008`, `DEC-009`, `DEC-022`; complete portability envelope depends on `DEC-033`; residency/processing depends on `DEC-040` |
-| Open-decision dependency | Export capability is required, but the complete envelope—originals, versions, derived data, facts, relationships, applicable rules, tasks, reminders, grants, and audit history—remains proposed under `DEC-033`. Until approved, contracts must version and disclose the enabled envelope rather than silently default to originals-only or claim completeness. |
+| Linked gaps/decisions | `GAP-007`; `DEC-003`, `DEC-005`, `DEC-008`, `DEC-009`, `DEC-022`, `DEC-033`, `DEC-040`, `DEC-049`; production route evidence remains gated |
+| Approved boundary | The complete envelope—originals, versions, derived data, facts, relationships, applicable rules, tasks, reminders, grants, and audit history—is approved by `DEC-033`, subject to current authorization and third-party rights. Every export still versions and declares its actual envelope and cannot claim completion until validation passes. |
 
 #### Main flow
 
@@ -804,7 +803,7 @@ Record requester/grant, scope, strong-auth result reference, authorization-polic
 | Trigger | An authorized actor requests trash, restore, resource purge, account deletion, or cancellation within an allowed cooling-off period. |
 | Linked requirements | `REQ-P1-DOC-003`, `REQ-P1-ING-002`, `REQ-P1-ING-008`, `REQ-P1-ING-009`, `REQ-P1-TRUST-002`–`REQ-P1-TRUST-005`, `REQ-P1-TRUST-007`, `REQ-P1-TRUST-009`, `REQ-P1-FCT-001`, `REQ-P1-GPH-002`, `REQ-P1-SRCH-003` |
 | Linked gaps/decisions | `DEC-005`, `DEC-006`, `DEC-008`, `DEC-022`; active purge objective, cooling-off, backup expiry, and retained-audit minimization depend on `DEC-039`; residency placement/DR implications depend on `DEC-040` |
-| Open-decision dependency | This use case defines required states and safety invariants but does not invent durations. User-facing completion promises and production timers remain blocked until `DEC-039` is approved. |
+| Approved boundary | `DEC-053` defines the production 30-calendar-day document Trash/restore window and coordinated final purge; `DEC-039` governs the local profile and broader account/lawful-retention distinctions. Runtime timers and completion claims still require objective environment evidence. |
 
 #### Main flow
 
@@ -922,18 +921,168 @@ Record actor/service class, workspace and safe target reference, action class, p
 
 `AC-UC-P1-013-04` — **Given** an operator lacks exceptional-access authorization, **when** support tooling attempts to view raw household content, **then** access is denied and the attempt is privacy-safely audited.
 
-## 6. Catalogue-only use-case boundaries
+### `UC-P1-014` — Ingest from a cloud or private-email connector
 
-The following entries are intentionally not implementation-ready and require a future detailed specification using the section 5 template:
-
-| Use case | Required boundary before detail/implementation |
+| Field | Specification |
 |---|---|
-| `UC-P1-014` | `DEC-031`/`045`/`055` allow disabled-first adapters; consent, external identity/version, permission preservation, sync cursors, revocation, deletion, retention, and provider-neutral conformance must be specified and tested before live activation. |
-| `UC-P1-015` | The consent, guardianship/authority, age/eligibility, challenge, privacy, field/resource reassignment, and audit rules for managed-dependant transition must be approved; existing evidence and history may not be recreated. |
-| `UC-P1-016` | Automatic emergency/incapacity/after-death release is intentionally unavailable under `DEC-032`. Ordinary grants cannot be repurposed as automatic release. |
-| `UC-P1-017` | Account/workspace recovery and ownership transfer are intentionally unavailable under `DEC-038`. No support, key, family, or evidence-upload path may weaken authentication or authorization. |
-| `UC-P1-018` | Reference-data schemas, publication authority, validation, effective dating, approval, impact preview, deterministic replay, rollback/forward repair, and affected-finding treatment must be normative. |
-| `UC-P1-019` | Audit schema, tamper evidence, event coverage, safe provenance, tenant scope, access control, retention/minimization, export treatment, and incident-use policy must be normative. |
+| Objective | Import user-selected evidence through a provider-neutral connector while preserving consent, source identity/version, permissions, provenance, route eligibility, revocation, deletion, and truthful failure state. |
+| Primary actors | `ACT-HO`, `ACT-FA`, `ACT-AM` |
+| Supporting actors | `ACT-WS`, connector/provider adapter |
+| Preconditions | The adapter contract exists. Live use additionally requires exact credentials, redirect origins, minimal scopes, consent copy, token protection, route/residency eligibility, revocation/deletion semantics, audit, and provider conformance evidence. |
+| Trigger | An authorized user opens connector settings or selects an eligible configured provider/import route. |
+| Linked requirements | `REQ-P1-ING-009`, `REQ-P1-TRUST-002`, `REQ-P1-TRUST-005`, `REQ-P1-TRUST-009` |
+| Approved boundary | `DEC-045` and `DEC-055` authorize disabled-first adapter implementation; registration or configuration alone does not activate a provider or authorize transfer. |
+
+#### Observable flow and alternatives
+
+1. The product displays provider status, purpose, requested scopes, data route, retained-data consequence, and disconnect/revocation behavior before consent.
+2. An ineligible or incomplete adapter remains visibly unavailable and cannot produce a success state, callback, token, import, cursor, or transfer.
+3. An eligible adapter binds state/PKCE, callback, identity, workspace, consent version, scope set, selected items, and source item/version identifiers.
+4. Imported items enter the same governed ingestion and authorization boundaries as local capture while preserving connector provenance and retry-safe cursors.
+5. Disconnect or consent withdrawal stops future retrieval; retained imported evidence follows the disclosed governed deletion policy.
+6. Timeout, partial import, duplicate callback/event, permission drift, provider deletion, revocation, or route ineligibility remains visible and reconcilable without duplicate logical effects.
+
+#### Acceptance scenarios
+
+`AC-UC-P1-014-01` — **Given** a provider is missing any required activation evidence, **when** a user or direct callback attempts connection/import, **then** the provider remains visibly unavailable, no token or content is accepted, no simulated success is shown, and the denial is privacy-safely audited.
+
+`AC-UC-P1-014-02` — **Given** an eligible configured provider and explicit user consent, **when** selected items are imported, retried, disconnected, or revoked, **then** source identity/version, scope, consent, provenance, cursor, permissions and retained-data state remain reconstructable, duplicates converge safely, and future retrieval stops after revocation.
+
+### `UC-P1-015` — Preserve a managed dependant through an authority-transition fence
+
+| Field | Specification |
+|---|---|
+| Objective | Preserve a managed dependant's stable subject, evidence, fact, relationship, and audit history while preventing age, relationship, invitation, or account creation from silently transferring authority. |
+| Primary actors | `ACT-HO`, `ACT-FA`, `ACT-MD`; later eligible `ACT-AM` |
+| Supporting actors | `ACT-WS` |
+| Preconditions | A managed-dependant subject exists separately from identity and membership. No transition activates without an approved, versioned consent/authority policy and required evidence. |
+| Trigger | An authorized actor proposes login enablement, independent access, membership, or a future transition for the dependant. |
+| Linked requirements | `REQ-P1-WS-003`, `REQ-P1-WS-007`, `REQ-P1-SHR-001`, `REQ-P1-SHR-003` |
+| Approved boundary | Phase 1 requires preservation and a fail-closed transition fence; it does not authorize age-based, relationship-based, support-driven, or automatic reassignment of authority. |
+
+#### Observable flow and alternatives
+
+1. The product resolves the subject independently from any proposed identity, membership, relationship, invitation, or grant.
+2. Existing evidence and provenance remain attached to the stable subject and are never recreated, relabelled, or reassigned to manufacture a transition.
+3. Without an approved applicable policy and evidence, the request remains unavailable or policy-blocked and creates no credentials, membership, grant, key access, export authority, or ownership effect.
+4. Phase 1 records an explicit revisioned transition-attempt state and a privacy-safe audit result. No independent-access transfer state can activate; incomplete, ambiguous, failed, retried, rolled-back, stale, concurrent, or partially applied work recovers to the last authorised state and forces permission recalculation.
+5. Richer independent transfer/delegation semantics remain a later governed capability. Phase 1 preserves stable identifiers and extension points without implying transferred document rights, inherited authority, delegation chains, credentials, keys, ownership, or private-resource access.
+
+#### Acceptance scenarios
+
+`AC-UC-P1-015-01` — **Given** a dependant reaches an age, receives an invitation, or is linked to a new identity without an approved applicable transition policy, **when** independent access is requested, **then** no membership, credential, grant, key, ownership, export, or hidden-content authority is created and the blocked state is explicit.
+
+`AC-UC-P1-015-02` — **Given** an incomplete, ambiguous, failed, retried, rolled-back, stale, concurrent, or partially applied transition attempt, **when** access is evaluated, **then** it converges to the last authorised state, preserves the stable subject and all historical evidence/provenance, recalculates permission projections, records privacy-safe audit/recovery evidence, and grants no broader access.
+
+### `UC-P1-016` — Keep automated continuity release unavailable
+
+| Field | Specification |
+|---|---|
+| Objective | Prove that emergency, incapacity, and after-death events cannot automatically release restricted content or authority in Phase 1. |
+| Primary actors | `ACT-HO`, `ACT-FA`, `ACT-AM`, `ACT-GU` |
+| Supporting actors | `ACT-WS` |
+| Preconditions | Ordinary grants and curated exports may exist; no automatic-release policy, trigger, event consumer, configuration record, or support override is active. |
+| Trigger | A user, event, configuration, integration, or operator attempts emergency/incapacity/after-death release. |
+| Linked requirements | `REQ-P1-SHR-004`, `REQ-P1-TRUST-002`, `REQ-P1-TRUST-004` |
+| Approved boundary | `DEC-032` excludes automated emergency, incapacity, and after-death release from Phase 1. |
+
+#### Acceptance scenarios
+
+`AC-UC-P1-016-01` — **Given** any claimed emergency, incapacity, death, inactivity, date, relationship, or external signal, **when** automated release is attempted, **then** no restricted content, grant, key, membership, ownership, notification, or export authority is created and the unavailable boundary is visible and audited without sensitive claim detail.
+
+`AC-UC-P1-016-02` — **Given** an ordinary grant or curated export exists, **when** a caller tries to repurpose it as automatic continuity release or enable release through configuration/direct access, **then** current explicit scope still applies and the attempt fails without broadening access.
+
+### `UC-P1-017` — Keep account/workspace recovery and ownership transfer unavailable
+
+| Field | Specification |
+|---|---|
+| Objective | Prove that recovery, ownership transfer, support, family relationship, and key-reset routes cannot weaken authentication, customer-controlled encryption, or resource authorization. |
+| Primary actors | `ACT-HO`, `ACT-FA`, `ACT-AM` |
+| Supporting actors | `ACT-WS`, `ACT-OP` |
+| Preconditions | Recovery and ownership-transfer activation records and externally callable success routes do not exist. |
+| Trigger | A user or operator requests password/account/workspace recovery, ownership transfer, key reset, evidence upload, or support override. |
+| Linked requirements | `REQ-P1-TRUST-001`, `REQ-P1-TRUST-002`, `REQ-P1-TRUST-008`, `REQ-P1-CRYPTO-002` |
+| Approved boundary | `DEC-038` keeps recovery and ownership transfer unavailable until a separate production assurance decision. |
+
+#### Acceptance scenarios
+
+`AC-UC-P1-017-01` — **Given** an unauthenticated or partially authenticated caller supplies an email, relationship claim, document, support request, or guessed workspace, **when** recovery or ownership transfer is attempted, **then** no account/workspace existence, content, factor, key, membership, grant, or owner state is disclosed or changed.
+
+`AC-UC-P1-017-02` — **Given** an authenticated administrator or operator invokes a direct route, port, configuration, replay, or support path, **when** the unavailable capability is requested, **then** the result remains `POLICY_BLOCKED` or equivalent, ordinary access is unchanged, abuse is bounded, and the attempt is content-minimally audited.
+
+### `UC-P1-018` — Publish consequential reference configuration
+
+| Field | Specification |
+|---|---|
+| Objective | Move a versioned consequential configuration package through proposal, validation, independent review/approval, publication, effective dating, activation, supersession, rollback/forward repair, impact assessment, and replay without rewriting history. |
+| Primary actors | Authorized configuration maintainer; independent reviewer/approver |
+| Supporting actors | `ACT-WS`, `ACT-OP` |
+| Preconditions | The package declares schema/version, owner, jurisdiction, applicability, evidence/source, effective dates, compatibility, review requirements, and affected consumers. |
+| Trigger | An authorized maintainer proposes a new or changed package. |
+| Linked requirements | `REQ-P1-CFG-001`–`REQ-P1-CFG-004`, `REQ-P1-TRUST-003`, `REQ-P1-TRUST-004` |
+| Approved boundary | Configuration may implement approved policy but cannot independently create product scope, weaken security/privacy, activate a provider, or override a higher-authority decision. |
+
+#### Observable flow and alternatives
+
+1. Validation rejects dangling IDs, invalid schemas, missing authority/evidence/applicability, unsafe compatibility, and unapproved external routes before publication.
+2. Proposal, review, approval, publication, and activation authorities are separated according to risk.
+3. Activation is atomic and effective-dated; consumers acknowledge compatible versions before consequential use.
+4. Supersession and repair preserve prior package, decision, findings, replay inputs, and audit history.
+5. A failed activation leaves the prior eligible version active and the failure visible; rollback cannot revive revoked permissions or erase decisions already made under an earlier version.
+
+#### Acceptance scenarios
+
+`AC-UC-P1-018-01` — **Given** a package is invalid, incomplete, expired, unapproved, incompatible, or attempts to activate forbidden scope/provider behavior, **when** publication or activation is attempted, **then** no consumer uses it, the prior eligible version remains authoritative, and actionable validation evidence is recorded.
+
+`AC-UC-P1-018-02` — **Given** an approved effective-dated package changes a consequential rule, **when** it activates, supersedes, rolls back, or is forward-repaired, **then** affected findings are identified, replay is deterministic, consumer acknowledgements are visible, and no prior evidence or decision history is rewritten.
+
+### `UC-P1-019` — Inspect a privacy-safe audit history
+
+| Field | Specification |
+|---|---|
+| Objective | Let an authorized user reconstruct security- and consequence-relevant activity without exposing raw document content, secrets, restricted values, or unauthorized resource existence. |
+| Primary actors | `ACT-HO`, `ACT-FA`, `ACT-AM`, `ACT-GU` within exact grant scope |
+| Supporting actors | `ACT-WS`, authorized `ACT-OP` |
+| Preconditions | Audit records are append-only/tamper-evident, workspace-scoped, content-minimized, correlated, retained under policy, and independently authorized from source resources. |
+| Trigger | An authorized actor opens, filters, exports, or verifies an audit history or evidence link. |
+| Linked requirements | `REQ-P1-TRUST-002`–`REQ-P1-TRUST-004`, `REQ-P1-TRUST-006`, `REQ-P1-TRUST-007` |
+| Approved boundary | Audit visibility does not grant source-content access and cannot reveal hidden resource existence through actors, targets, counts, filters, correlations, errors, timing, or exports. |
+
+#### Acceptance scenarios
+
+`AC-UC-P1-019-01` — **Given** an authorized actor requests permitted activity, **when** the history is viewed or exported, **then** actor/service, action, authorized target reference, policy/reason, decision, outcome, correlation and time are reconstructable while raw content, secrets and unauthorized values remain absent.
+
+`AC-UC-P1-019-02` — **Given** a foreign workspace, restricted target, stale grant, tampered record/chain, retention boundary, or audit-store failure, **when** history is requested or verified, **then** disclosure fails closed or visibly degrades, tamper/failure evidence is preserved, and no ordinary workflow falsely claims complete audit evidence.
+
+### `UC-P1-020` — Discover Doculyra and enter account creation or sign-in
+
+| Field | Specification |
+|---|---|
+| Objective | Help an unauthenticated prospective user understand Doculyra, its trust and preview boundaries, and enter the governed account-creation or sign-in flow. |
+| Primary actors | Prospective `ACT-HO` or `ACT-FA`; unauthenticated visitor |
+| Supporting actors | Public web client |
+| Preconditions | Public product, privacy, terms, and account-entry routes are deployed independently from customer workspace authorization. |
+| Trigger | A visitor opens the public site or follows a public product, legal, create-account, or sign-in route. |
+| Linked requirements | `REQ-P1-PLT-001`, `REQ-P1-PLT-003`; `AC-P1-PUB-001`, `AC-P1-A11Y-001` |
+| Approved boundary | Public content uses `PROD-VIS-001`, `DEC-044`, and `DEC-047`; it is not evidence of production readiness, legal approval, active providers, completed controls, or permission to use real personal data. |
+
+#### Observable flow and alternatives
+
+1. The visitor can navigate product, intelligence/features, privacy/security, about/company, contact, privacy, and terms content without authentication.
+2. Create-account and sign-in actions route to the governed authentication/onboarding entry with intent preserved.
+3. The experience shows development-preview, synthetic-data, unavailable-provider, and non-advice boundaries wherever omission could create a false production or authority claim.
+4. Missing contact/provider configuration is shown as unavailable; route errors do not disclose account/workspace existence or fall through to authenticated data.
+5. Public navigation and content remain operable under applicable responsive, keyboard, screen-reader, focus, contrast, reflow, and error requirements.
+
+#### Acceptance scenarios
+
+`AC-UC-P1-020-01` — **Given** an unauthenticated visitor on a supported viewport or assistive-technology path, **when** they traverse public product, privacy/security, about/contact, privacy, terms, create-account and sign-in routes, **then** every route is operable without a session, the approved identity and preview boundaries remain consistent, and no customer/workspace data is requested or exposed.
+
+`AC-UC-P1-020-02` — **Given** a provider, contact route, production legal detail, or control is unavailable or incomplete, **when** the visitor encounters its public representation or enters account creation/sign-in, **then** the exact unavailable/preview state is shown without simulated success, unsupported assurance or production claims, silent external transfer, or loss of the selected account-entry intent.
+
+## 6. Resolved catalogue boundaries
+
+`UC-P1-014`–`UC-P1-020` now have detailed, testable product boundaries. This closes the missing-product-detail basis of `TRACE-GAP-P1-UC-001`; implementation, specialist contracts, activation evidence, and independent test execution remain separately gated and must not be inferred from catalogue completeness.
 
 ## 7. Approved-decision impact matrix
 
@@ -953,11 +1102,11 @@ The following entries are intentionally not implementation-ready and require a f
 
 ## 8. Requirement coverage summary
 
-| Requirement family | Covered by detailed use cases | Remaining catalogue-only or specialist refinement |
+| Requirement family | Covered by detailed use cases | Remaining specialist or delivery refinement |
 |---|---|---|
-| `REQ-P1-WS-*` | `UC-P1-001`, `009`, `013` | Managed-dependant transition in `UC-P1-015` |
+| `REQ-P1-WS-*` | `UC-P1-001`, `009`, `013`, `015` | Transition activation still requires an approved applicable consent/authority policy; the fail-closed fence is detailed. |
 | `REQ-P1-DOC-*` | `UC-P1-002`, `003`, `012` | Synthetic dev formats and clinical hold are approved; public coverage and runtime evidence remain gated |
-| `REQ-P1-ING-*` | `UC-P1-002`, `003`, `012` | Connector ingestion in `UC-P1-014` |
+| `REQ-P1-ING-*` | `UC-P1-002`, `003`, `012`, `014` | Connector implementation is detailed; each live provider remains activation-gated. |
 | `REQ-P1-FCT-*` | `UC-P1-004`, `007`, `013` | Data-model and bitemporal schemas remain specialist contracts |
 | `REQ-P1-GPH-*` | `UC-P1-004`–`007`, `013` | Graph catalogue, traversal limits, and storage-neutral contracts remain specialist detail |
 | `REQ-P1-SRCH-*` | `UC-P1-003`, `005`, `013` | Retrieval/evaluation contracts remain specialist detail |
@@ -965,14 +1114,15 @@ The following entries are intentionally not implementation-ready and require a f
 | `REQ-P1-HLT-*` | `UC-P1-008` | Explainable item-level findings required; aggregate scoring prohibited by `DEC-034` |
 | `REQ-P1-ACT-*` | `UC-P1-004`, `007`, `008`, `010` | External connector effects remain activation-gated under `DEC-031`/`045` |
 | `REQ-P1-NTF-*` | `UC-P1-010` | In-app required; external channels remain activation-gated under `DEC-037`/`045` |
-| `REQ-P1-SHR-*` | `UC-P1-009`, `013` | Automated continuity in `UC-P1-016` is intentionally unavailable under `DEC-032` |
+| `REQ-P1-SHR-*` | `UC-P1-009`, `013`, `015`, `016` | `UC-P1-016` defines the required tested absence of automated continuity under `DEC-032`. |
 | `REQ-P1-AI-*` | `UC-P1-002`, `004`–`008`, `013` | Capability schemas and evaluations remain specialist contracts |
-| `REQ-P1-TRUST-*` | All detailed use cases, especially `UC-P1-011`–`013` | Recovery remains unavailable; audit, deletion, residency, and production assurance evidence remain incomplete |
-| `REQ-P1-CFG-*` | Cross-cutting in `UC-P1-001`, `002`, `006`, `008`; publication in `UC-P1-018` | Reference schemas and publication contract remain required |
+| `REQ-P1-TRUST-*` | All detailed use cases, especially `UC-P1-011`–`019` | Recovery remains intentionally unavailable; audit, deletion, residency, and production assurance execution evidence remain incomplete. |
+| `REQ-P1-CFG-*` | Cross-cutting in `UC-P1-001`, `002`, `006`, `008`; detailed publication in `UC-P1-018` | Exact reference schemas/packages and execution evidence remain specialist and delivery work. |
+| `REQ-P1-PLT-*` | Cross-client use cases plus public entry in `UC-P1-020` | Client parity, accessibility and release evidence remain incomplete. |
 
 ## 9. Validation and handoff requirements
 
-Before any use case is implementation-ready, the owning backlog item must:
+Before an owning backlog item enters implementation for any use case, it must:
 
 1. Link the exact `UC-*`, `AC-UC-*`, `REQ-*`, `GAP-*`, decision, security, API/event, UX, NFR, reference-data, and test IDs.
 2. Replace every open-decision branch affecting the slice with an approved decision or an explicitly unavailable capability.

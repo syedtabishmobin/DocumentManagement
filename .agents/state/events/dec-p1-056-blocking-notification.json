@@ -1,0 +1,31 @@
+{
+  "key": "doculyra:dec-p1-056:first-blocking-notification",
+  "eventType": "BLOCKING_DECISION",
+  "projectId": "doculyra",
+  "subject": "[Doculyra][ACTION REQUIRED][DEC-P1-056] Managed-dependant transition boundary",
+  "authoritativeUrl": "https://github.com/syedtabishmobin/DocumentManagement/issues/33",
+  "requiredAction": "Record Option A, B, or C as the authoritative Product Authority decision on GitHub Issue #33.",
+  "reason": "Phase 1 cannot safely invent age, eligibility, consent, authority, challenge, private-resource, credential, key, or jurisdiction semantics for managed-dependant transition.",
+  "appliesTo": [
+    "STORY-P1-040 and UC-P1-015",
+    "TRACE-GAP-P1-API-013 and TRACE-GAP-P1-REF-003",
+    "Final Doculyra Build Baseline approval"
+  ],
+  "recommendation": "Option A: keep Phase 1 as a tested fail-closed transition fence and defer independent-access transfer semantics to a later governed change.",
+  "alternatives": [
+    "Option B: define and implement complete transition semantics in Phase 1, expanding product, legal, privacy, security, data and UX scope.",
+    "Option C: remove transition representation from Phase 1, losing the explicit negative safety contract."
+  ],
+  "blocked": [
+    "Final STORY-P1-040 status and acceptance wording",
+    "Final Build Baseline approval"
+  ],
+  "continuing": [
+    "All unrelated documentation, backlog and traceability reconciliation",
+    "Baseline validation tooling and review preparation"
+  ],
+  "remaining": [
+    "Apply the selected boundary to product, use-case, backlog and test records",
+    "Obtain exact-candidate independent baseline review"
+  ]
+}

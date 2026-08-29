@@ -3,10 +3,10 @@
 | Field | Value |
 |---|---|
 | Document ID | `BLG-TRACE-001` |
-| Version | `0.2` |
-| Status | **ACTIVE — static specification coverage; implementation status is recorded separately** |
+| Version | `0.3` |
+| Status | **RECONCILED BUILD-BASELINE TRACE — exact-candidate independent review pending** |
 | Product phase | Phase 1 — Personal and Family |
-| Updated | 29 August 2026 |
+| Updated | 30 August 2026 |
 
 ## 1. Purpose and authority legend
 
@@ -18,20 +18,20 @@ This matrix shows which backlog item carries each Phase 1 requirement, feature, 
 | `DRAFT` | A specialist contract or target still needs accountable review or execution evidence; draft status does not revoke the approved Phase 1 implementation baseline. |
 | `APPROVED` | `DEC-030`–`055` define the Phase 1 dev/stage implementation baseline, selected architecture, and production/provider fences. |
 | `RELEASE GATED` | Implementation may proceed inside the approved abstraction, but live-provider activation, real-customer-data processing, or production release requires the named evidence. |
-| `DISABLED / CATALOGUE-ONLY` | Contract shape or absence boundary is documented, but the user capability is not implementation-ready or enabled. |
+| `INTENTIONALLY UNAVAILABLE` | A detailed negative product contract is baselined; the unsafe capability remains absent and must be proved non-activatable. |
 | `MISSING` | Required owning contract/evidence does not exist; a named `TRACE-GAP-P1-*` must close before readiness. |
 
 ## 2. Static coverage summary
 
 | Namespace | Source total | Backlog-covered | Static orphan count | Qualification |
 |---|---:|---:|---:|---|
-| `REQ-P1-*` | 100 | 100 | 0 | Every requirement is named by at least one story; the approved baseline is not evidence of story completion. |
-| `FEAT-P1-*` | 30 | 30 | 0 | Every feature is assigned to a vertical story group; conditional features retain decision fences. |
-| `UC-P1-*` | 19 | 19 | 0 | `UC-P1-001`–`013` have detailed flows; `UC-P1-014`–`019` are catalogue-only and counted separately, not implementation-ready. |
+| `REQ-P1-*` | 101 | 101 | 0 | Every requirement is named by at least one story; the approved baseline is not evidence of story completion. |
+| `FEAT-P1-*` | 31 | 31 | 0 | Every feature is assigned to a vertical story group; conditional features retain activation/release fences. |
+| `UC-P1-*` | 20 | 20 | 0 | `UC-P1-001`–`020` have detailed flows and testable product acceptance scenarios. |
 | `EPIC-P1-*` | 12 | 12 | 0 | Each story has one primary epic. |
-| `STORY-P1-*` | 48 | 48 | 0 | Each has state, owner, upstream/downstream traces, migration/repair, negative/failure/audit evidence, two ACs, and a future-test gap. |
-| `AC-STORY-P1-*` | 96 | 96 | 0 | Exactly two ACs per story; all are covered by stable test IDs, but passing evidence is incomplete. |
-| `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*` | 101 | 101 referenced by 48/48 stories | 0 static | Historical `TRACE-GAP-P1-TEST-001` is closed. Unexecuted or insufficient cases remain open delivery evidence; `ENG-TST-P1-*` and `AI-EVAL-P1-*` remain owning standards, not substitutes. |
+| `STORY-P1-*` | 49 | 49 | 0 | Each has state, owner, upstream/downstream traces, migration/repair, negative/failure/audit evidence, two ACs, and exact future tests. |
+| `AC-STORY-P1-*` | 98 | 98 | 0 | Exactly two ACs per story; all are covered by stable test IDs, but passing evidence is incomplete. |
+| `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*` | 104 | 104 referenced by 49/49 stories | 0 static | All product tests have forward and reverse ownership. Fourteen source-test files are separately mapped in `implementation-evidence.v1.json`; execution remains delivery evidence. |
 
 The static comparison is reproducible with stable-ID extraction from the product and backlog artifacts. It does not evaluate semantic sufficiency or contract approval.
 
@@ -62,17 +62,18 @@ Each row lists the requirements traced to the feature. Cross-cutting security, p
 | `FEAT-P1-019` | `REQ-P1-ACT-005`, `REQ-P1-ACT-006`, `REQ-P1-ACT-007`, `REQ-P1-ACT-008` | `STORY-P1-032`, `033` | `UC-P1-004`, `007` | External effects are activation-gated; evidence-closure API gap remains |
 | `FEAT-P1-020` | `REQ-P1-HLT-001`, `REQ-P1-HLT-002`, `REQ-P1-HLT-003`, `REQ-P1-HLT-005` | `STORY-P1-034`, `035` | `UC-P1-008` | Synthetic dev profiles permitted; public profiles release-gated; API gap remains |
 | `FEAT-P1-021` | `REQ-P1-NTF-001`, `REQ-P1-NTF-002`, `REQ-P1-NTF-003` | `STORY-P1-036` | `UC-P1-007`, `008`, `010` | DRAFT in-app baseline |
-| `FEAT-P1-022` | `REQ-P1-CFG-002`, `REQ-P1-CFG-003`, `REQ-P1-CFG-004` | `STORY-P1-037` | `UC-P1-018` | `UC-P1-018` catalogue-only; publication API gap and public activation gate remain |
+| `FEAT-P1-022` | `REQ-P1-CFG-002`, `REQ-P1-CFG-003`, `REQ-P1-CFG-004` | `STORY-P1-037` | `UC-P1-018` | Detailed product AC exists; publication API and public activation evidence remain delivery work |
 | `FEAT-P1-023` | `REQ-P1-SHR-005` | `STORY-P1-038` | `UC-P1-007`, `010`, `013` | `DRAFT`; `TRACE-GAP-P1-API-012` |
 | `FEAT-P1-024` | `REQ-P1-SHR-001`, `REQ-P1-SHR-002`, `REQ-P1-SHR-003`, `REQ-P1-WS-006`, `REQ-P1-CRYPTO-002` | `STORY-P1-039` | `UC-P1-009`, `011`, `013` | Ordinary grants only; authorization and key-envelope scope must remain aligned |
-| `FEAT-P1-025` | `REQ-P1-SHR-004`, `REQ-P1-WS-007` | `STORY-P1-040`, `048` | `UC-P1-015`, `016` | Dependant policy/API gaps remain; `DEC-032` excludes automatic continuity release |
+| `FEAT-P1-025` | `REQ-P1-SHR-004`, `REQ-P1-WS-007` | `STORY-P1-040`, `048` | `UC-P1-015`, `016` | `DEC-P1-056` approves the fail-closed dependant fence with richer transfer deferred; `DEC-032` excludes automatic continuity release |
 | `FEAT-P1-026` | `REQ-P1-ING-009`, `REQ-P1-TRUST-009` | `STORY-P1-041` | `UC-P1-014` | Provider adapters may be implemented disabled-first; live activation and event/reference coverage remain gated |
 | `FEAT-P1-027` | `REQ-P1-NTF-004` | `STORY-P1-042` | `UC-P1-010` | In-app required; email/SMS adapters may be implemented but live delivery remains activation-gated |
 | `FEAT-P1-028` | `REQ-P1-HLT-004` | `STORY-P1-043` | `UC-P1-008` | Aggregate and hidden scoring intentionally unavailable under approved `DEC-034` |
 | `FEAT-P1-029` | `REQ-P1-TRUST-006`, `REQ-P1-TRUST-007`, `REQ-P1-DEL-001`, `REQ-P1-DEL-002` | `STORY-P1-044`, `045` | `UC-P1-011`, `012` | Approved export envelope, `DEC-053` Trash/purge lifecycle, and `DEC-049` routes apply |
 | `FEAT-P1-030` | `REQ-P1-TRUST-005`, `REQ-P1-TRUST-008`, `REQ-P1-OPS-001` | `STORY-P1-046`, `047` | `UC-P1-011`–`013`, `017` | Azure Australian route baseline approved; recovery remains intentionally unavailable |
+| `FEAT-P1-031` | `REQ-P1-PLT-003` | `STORY-P1-049` | `UC-P1-020` | React public product/trust/legal/account-entry surface is approved for synthetic dev/stage; production content, legal approval, DNS and launch remain gated. |
 
-This table covers all 100 distinct requirement IDs. Cross-cutting requirements may appear under multiple affected features; source coverage is counted by distinct ID, not by table-cell occurrence.
+This table covers all 101 distinct requirement IDs. Cross-cutting requirements may appear under multiple affected features; source coverage is counted by distinct ID, not by table-cell occurrence.
 
 ## 4. Use-case coverage and readiness
 
@@ -91,12 +92,13 @@ This table covers all 100 distinct requirement IDs. Cross-cutting requirements m
 | `UC-P1-011` | `STORY-P1-039`, `044`, `046` | `APPROVED BASELINE — detailed` | Approved export and Australian route policies require implementation evidence |
 | `UC-P1-012` | `STORY-P1-011`, `015`, `045` | `APPROVED BASELINE — detailed` | `DEC-053` Trash/restore/purge contract requires full implementation evidence |
 | `UC-P1-013` | `STORY-P1-003`, `008`, `009`, `019`–`021`, `039`, `046` | `APPROVED BASELINE — detailed` | Zero-tolerance negative authorization and eligible-route evidence required |
-| `UC-P1-014` | `STORY-P1-041` | `CATALOGUE-ONLY / RELEASE GATED` | `TRACE-GAP-P1-UC-001`; live activation and event/reference coverage remain gated |
-| `UC-P1-015` | `STORY-P1-040` | `CATALOGUE-ONLY` | `TRACE-GAP-P1-UC-001`; dependant policy/API gaps |
-| `UC-P1-016` | `STORY-P1-048` | `CATALOGUE-ONLY / INTENTIONALLY UNAVAILABLE` | `TRACE-GAP-P1-UC-001`; automatic continuity excluded by `DEC-032` |
-| `UC-P1-017` | `STORY-P1-047` | `CATALOGUE-ONLY / INTENTIONALLY UNAVAILABLE` | `TRACE-GAP-P1-UC-001`; recovery/ownership transfer excluded by `DEC-038` |
-| `UC-P1-018` | `STORY-P1-010`, `037` | `CATALOGUE-ONLY` | `TRACE-GAP-P1-UC-001`; configuration-publication API and public activation evidence remain |
-| `UC-P1-019` | `STORY-P1-009` | `CATALOGUE-ONLY` | `TRACE-GAP-P1-UC-001`; detailed audit-view/admin product AC absent |
+| `UC-P1-014` | `STORY-P1-041` | `APPROVED BASELINE — detailed / RELEASE GATED` | Live activation and provider event/reference coverage remain gated |
+| `UC-P1-015` | `STORY-P1-040` | `APPROVED BASELINE — detailed fail-closed fence` | `DEC-P1-056`; independent-transfer API/reference semantics intentionally absent until later governed change |
+| `UC-P1-016` | `STORY-P1-048` | `APPROVED BASELINE — detailed / INTENTIONALLY UNAVAILABLE` | Automatic continuity excluded by `DEC-032` |
+| `UC-P1-017` | `STORY-P1-047` | `APPROVED BASELINE — detailed / INTENTIONALLY UNAVAILABLE` | Recovery/ownership transfer excluded by `DEC-038` |
+| `UC-P1-018` | `STORY-P1-010`, `037` | `APPROVED BASELINE — detailed` | Configuration-publication API and public activation evidence remain delivery work |
+| `UC-P1-019` | `STORY-P1-009` | `APPROVED BASELINE — detailed` | Runtime audit-view/admin implementation and evidence remain delivery work |
+| `UC-P1-020` | `STORY-P1-049` | `APPROVED BASELINE — detailed / RELEASE GATED` | Synthetic React public surface exists; production legal/content/DNS/launch evidence remains gated |
 
 ## 5. Downstream contract trace by story cluster
 
@@ -113,11 +115,12 @@ The exact rule IDs for each story are in `BLG-STORY-001`; this table provides th
 | `027`–`029` | Monitor/source/change aggregates and temporal/event contracts | Source-health/change/applicability flows | `API-P1-144`–`152`; `EVT-P1-015`–`019`; change API gap | Source/SSRF/stale/route/non-disclosure controls | `DIT-MON`, `DIT-SRC`; monitoring/source records disabled | Replay/source/parser/stale/coverage/a11y/ops tests | `DEC-035`, `040`; `API-008` |
 | `031`–`033`, `038` | Recommendation/approval/action/evidence aggregates | Consequence/approval/action/minimal-disclosure flows | `API-P1-153`–`161`; `EVT-P1-020`–`024`; evidence-closure/minimal API gaps | Bound approval, separation, unknown effect, disclosure | `DIT-IMP`; AI proposals inert; action/evidence states | Action race/reconcile/evidence/audit/a11y tests | `API-009`, `012`; connector effect `DEC-031` |
 | `034`–`036`, `042`, `043` | Requirement/task/notification projection contracts | Health/task/notification flows and score absence | `API-P1-162`–`169`, disabled `183`; `EVT-P1-025`, `026`; event/API gaps | Finding/task/cause/privacy/current-auth controls | `DIT-HLT`; requirement/notification states; no score record | State-separation/a11y/delivery/absence tests | `API-010`; `EVT-002`; `DEC-034`, `035`, `037`, `040` |
-| `037` | Configuration publication/activation/compatibility contracts | No Phase 1 admin console; safe enabled-coverage state | `EVT-P1-031`; no publication API | Privileged separation/config injection/audit | All owner publication rules; all packs DRAFT/disabled | Reference/config/compatibility/rollback/replay gates | UC catalogue-only; `API-011`; `DEC-035` |
-| `039`, `040`, `048` | Workspace/grant/dependant/continuity fences | Sharing/dependant/continuity flows | Grant API/events; transition/continuity gaps | Delegation, revocation, dependant/private resource, false trigger | Access-control records; dependant/continuity records absent | Grant race/a11y/absence/abuse tests | UC/API/EVT/REF gaps; `DEC-032` |
+| `037` | Configuration publication/activation/compatibility contracts | No Phase 1 admin console; safe enabled-coverage state | `EVT-P1-031`; no publication API | Privileged separation/config injection/audit | All owner publication rules; all packs DRAFT/disabled | Reference/config/compatibility/rollback/replay gates | Detailed UC; `API-011`; `DEC-035` |
+| `039`, `040`, `048` | Workspace/grant/dependant/continuity fences | Sharing/dependant/continuity flows | Grant API/events; transition endpoint intentionally absent; continuity disabled | Delegation, revocation, dependant/private resource, false trigger | Access-control records; richer dependant/continuity records intentionally absent | Grant race/a11y/fail-closed transition/absence/abuse tests | `DEC-P1-056`; `DEC-032`; future transfer requires change control |
 | `041` | Connector ports and consent/residency/deletion contract | Unavailable settings boundary only | Disabled `API-P1-177`–`180`; no connector events | Connector token/scope/drift/replay/deletion/route threats | `CON-P1-001`–`035`; no connector records | Provider-neutral adapter conformance after decisions | `DEC-031`, `040`; UC/EVT/REF gaps |
 | `044`, `045` | Export/deletion cases, fence/tombstone/purge/restore | Export/deletion critical flows | `API-P1-170`–`175`; `EVT-P1-027`–`030`, `011` | Export/deletion/resurrection/retention/residency controls | All owning DIT/AI deletion; no invented timing | Fidelity, per-class purge, restore/resurrection, a11y | `DEC-033`, `039`, `040` |
 | `046`, `047` | Route/residency and recovery absence contracts | Safe blocked/recovery-unavailable states | Cross-cut route rules; disabled `API-P1-181`; no recovery event | Residency/egress/support/recovery takeover controls | Processor matrix/recovery records absent | Placement/restore/failover and route/state absence tests | `DEC-038`, `040`; API/EVT/REF gaps |
+| `049` | Public product/trust/legal/account-entry contract | `UX-FLOW-P1-031`; `UX-SCR-P1-046`, `047`; React-only public surfaces | Existing web routes/components; no product API required | Public copy minimisation, no fabricated legal/launch assurance, accessible navigation | No AI authority or content processing | `TEST-CON-P1-015`, `TEST-SEC-P1-020`, `TEST-E2E-P1-024` | Production legal/content/DNS/launch release gates |
 
 ## 6. API/event availability and orphan report
 
@@ -151,7 +154,7 @@ All 12 schema/catalogue files and current 415 stable reference IDs pass the refe
 | Health | Synthetic requirement profile/options/alternative/waiver/fulfilment and exact states | Dev fixtures approved; API gap; no score record by design under `DEC-034`. |
 | Notifications | `channel.IN_APP`, disabled `EMAIL`/`PUSH`, synthetic templates | In-app required; external channels activation-gated; event gap. |
 | Connectors | None | `TRACE-GAP-P1-REF-002`; adapters may be built disabled-first, live activation gated. |
-| Dependant transition | None | `TRACE-GAP-P1-REF-003`; catalogue-only use case. |
+| Dependant transition | Phase 1 default-deny/action records plus revisioned fail-closed attempt contract | `TRACE-GAP-P1-REF-003` resolved as intentional absence by `DEC-P1-056`; richer policy catalogue is a later governed capability. |
 | Residency matrix | Jurisdiction identity only | `TRACE-GAP-P1-REF-005`; `DEC-040`. |
 | Recovery/continuity | None | `TRACE-GAP-P1-REF-006`; intentional absence under approved `DEC-038`/`032`. |
 
@@ -159,7 +162,7 @@ No existing reference record is an implementation orphan: all packs are used by 
 
 ## 8. Test, accessibility, NFR, and operational evidence gaps
 
-- `TRACE-GAP-P1-TEST-001` is **CLOSED**: `TST-IDX-001` defines 101 stable cases and 48/48 stories reference exact applicable IDs. Stable mapping does not imply a passing execution result.
+- `TRACE-GAP-P1-TEST-001` is **CLOSED**: `TST-IDX-001` defines 104 stable cases and 49/49 stories reference exact applicable IDs; all 14 source-test files have reverse evidence mappings. Stable mapping does not imply a passing product execution result.
 - `TRACE-GAP-P1-A11Y-001`: `A11Y-P1-001`–`056` is referenced across every applicable story, but product/specialist approval, pinned browser/assistive-technology versions, disabled-user evidence, implementation test IDs, and a release conformance report are absent.
 - `TRACE-GAP-P1-TARGET-001`: applicable `NFR-P1-001`–`045` targets are referenced and retain `PROVISIONAL`/zero-tolerance labels. No story converts them into an SLA or approves the launch workload/capacity/cost envelope.
 - `ENG-TST-P1-001`–`042`, `OPS-CICD-P1-001`–`030`, `OPS-DEP-P1-001`–`032`, `OPS-DR-P1-001`–`032`, and `OPS-OBS-P1-001`–`032` define future evidence but are not execution results.
@@ -187,16 +190,17 @@ No existing reference record is an implementation orphan: all packs are used by 
 | `DEC-050`, `051` | `APPROVED` | Document storage, sharing, deletion, and trust stories | Two-layer encryption and customer/workspace key isolation are mandatory. |
 | `DEC-052` | `APPROVED` | All user-facing stories | React web and Flutter iOS/Android clients proceed concurrently against shared contracts. |
 | `DEC-053` | `APPROVED` | `007`, `009`, `011`, `044`, `045` and all derived-data deletion consumers | Immediate fence, 30-calendar-day Trash/restore, then coordinated purge/non-resurrection. |
+| `DEC-P1-056` | `APPROVED` | `002`, `003`, `039`, `040` | Explicit revisioned transition attempts fail closed; partial/uncertain state cannot broaden access; richer independent transfer/delegation is later governed scope. |
 
 ## 10. Current orphan and drift findings
 
 | Finding | Classification | Disposition |
 |---|---|---|
 | No uncovered `REQ-P1-*`, `FEAT-P1-*`, `UC-P1-*`, epic, story, or story AC | Static coverage result | Re-run on every product/backlog change; semantic review still required. |
-| `UC-P1-014`–`019` lack detailed implementation-grade product AC | Product orphan/gap | `TRACE-GAP-P1-UC-001`; keep stories disabled/absence-only. |
+| `UC-P1-014`–`020` now have detailed implementation-grade product AC | Closed product gap | Detailed flows, alternatives and acceptance scenarios are owned by `PROD-UC-001`; runtime evidence remains future story work. |
 | Named API/event semantic surface gaps | Contract gaps | `TRACE-GAP-P1-API-001`–`014`, `EVT-001`–`003`; resolve in API/event owners before story readiness. |
-| Fact, connector, dependant, residency, recovery/continuity reference records absent | Reference gaps/intentional fences | `TRACE-GAP-P1-REF-001`–`006`; do not invent defaults. |
-| No backlog story lacks stable test IDs; 48/48 are mapped | Closed historical test-trace gap | `TRACE-GAP-P1-TEST-001` closed by `TST-IDX-001` v0.1. Execution/evidence remains DRAFT/NOT_RUN/INSUFFICIENT, and the test trace validator must still prove all 96 story ACs plus negative/failure/race/migration/a11y/evaluation obligations. |
+| Fact, connector, residency, recovery/continuity reference records absent; dependant transfer catalogue intentionally absent | Reference gaps/intentional fences | `TRACE-GAP-P1-REF-001`, `002`, `005`, `006` remain delivery/release dependencies; `REF-003` is resolved by `DEC-P1-056`. Do not invent defaults. |
+| No backlog story or source-test file lacks stable trace ownership | Closed historical test/reverse-trace gap | `TST-IDX-001` v0.2 covers 104 tests/98 story ACs; `implementation-evidence.v1.json` maps 14/14 source-test files. Execution evidence remains DRAFT/PLANNED. |
 | Root `TRACEABILITY.md`, `SPECIFICATION-READINESS.md`, and repository navigation reflect all current draft packs | Closed governance/navigation drift | `TRACE-GAP-P1-GOV-001` closed 26 August 2026; reopen on detected drift. |
 
 ## 11. Change-control rule

@@ -3,8 +3,8 @@
 | Field | Value |
 |---|---|
 | Document ID | `ARCH-IDX-001` |
-| Status | Active navigation aid; all linked contracts remain DRAFT |
-| Updated | 26 August 2026 |
+| Status | Active navigation and implementation-contract index; accepted ADRs and remaining fences are explicit |
+| Updated | 30 August 2026 |
 
 ## Reading order
 
@@ -24,9 +24,11 @@
 | `DATA-P1-*` | `ARCH-DATA-001` | Logical records, keys, temporal constraints, scope, lineage, projections, and migration implications |
 | `WSP-P1-*` | `ARCH-WSP-001` | Identity, subject, relationship, membership, grant, dependant, guest, and continuity boundaries |
 | `NFR-P1-*` | `ARCH-NFR-001` | Measurable provisional service, security, accessibility, recovery, freshness, and cost targets |
-| `ADR-ARCH-*` | `06-adrs/` | Proposed cross-cutting architecture decisions |
+| `ADR-ARCH-*` | `06-adrs/` | Accepted cross-cutting architecture decisions and their explicit release fences |
 
-Every ADR is currently `PROPOSED`. None selects a cloud, framework, database, identity, OCR, model, vector, graph, notification, scanning, analytics, or observability provider. Numeric NFR targets remain approval-labelled and cannot be treated as contractual SLOs until approved.
+`ADR-ARCH-001`–`011` are accepted for Phase 1 implementation. Together with approved decisions they select the durable consistency model, Azure/Bicep environment and managed-service baseline, PostgreSQL canonical persistence, React/NestJS/Flutter stack, customer-controlled client encryption, 30-day document Trash/purge contract, and device-local RAG boundary. Provider-neutral ports remain mandatory, and exact SKUs, production activation, external provider credentials/routes, customer-facing external channels, and other named release inputs remain gated where their ADRs say so.
+
+`DEC-P1-056` is approved in [GitHub Issue #33](https://github.com/syedtabishmobin/DocumentManagement/issues/33#issuecomment-5463877570): `WSP-P1-037`–`039` preserve stable subject history and implement an explicit, revisioned, independently tested fail-closed Phase 1 fence. Independent access-transfer/delegation semantics are a later governed capability. Numeric NFR targets remain approval-labelled and cannot be treated as contractual SLOs until approved.
 
 ## Handoff boundary
 

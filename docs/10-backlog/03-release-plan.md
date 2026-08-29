@@ -3,10 +3,10 @@
 | Field | Value |
 |---|---|
 | Document ID | `BLG-REL-001` |
-| Version | `0.2` |
+| Version | `0.3` |
 | Status | **APPROVED CONTINUOUS PHASE 1 BUILD — dev/stage deployment authorized; production promotion remains gated** |
 | Product phase | Phase 1 — Personal and Family |
-| Updated | 28 August 2026 |
+| Updated | 30 August 2026 |
 
 ## 1. Release stance
 
@@ -21,7 +21,7 @@ This plan sequences specification-backed vertical slices. It sets no calendar da
 | `P1-S1` — Secure household vault | An eligible household can establish an isolated workspace, capture through required routes, preserve exact originals, inspect durable status, and operate under current authorization/audit/configuration. | `STORY-P1-001`–`010` | PRD/slice baseline approved; identity/auth/security/privacy/audit architecture accepted; required capture routes and safe `DEC-035`/`036` boundary approved or explicitly synthetic-only; route eligibility known. | S1 functional, negative-auth/privacy, immutable-original, idempotency/retry, quarantine, configuration, accessibility, migration/repair, NFR, audit, and telemetry gates pass; no open decision is silently activated. |
 | `P1-S2` — Understand and retrieve | Authorized users can inspect document history/evidence, resolve facts/conflicts/dependencies, search, compare, and receive cited limited answers. | `STORY-P1-011`–`025` | S1 exit; evidence/fact/graph/search/AI schemas and proposed ADRs approved; enabled type/schema/capability/processor routes known; evaluation fixtures and gates approved. | Exact citation redemption and current authorization pass across document/fact/edge/search/AI; bitemporal/history/reprocessing integrity pass; AI safety/quality/cost/accessibility and degraded states pass. |
 | `P1-S3` — Monitor and close the loop | Governed observations detect change, establish applicability/impact, support bound approval/action, verify closure, explain evidence health, and coordinate in-app work. | `STORY-P1-026`–`038` | S2 exit; source/rule/profile pack approved under `DEC-035`; monitoring/action ports, approval authorities, configuration publication, and source/residency routes approved. | Source health and coverage truthfulness, replay/dedup, applicability/impact, stale approval, action unknown/partial/reconcile, evidence closure, health alternatives, task/in-app accessibility, and audit/operations gates pass. |
-| `P1-S4` — Family launch and portability | Households can share exact scopes, manage dependant boundaries, export declared data, use 30-day Trash/restore, and see truthful connector/channel/score/recovery/continuity/residency availability. | `STORY-P1-039`–`048` | S3 exit; ordinary sharing/export approved; `DEC-049`–`053` contracts implemented; still-open `DEC-031`–`038` routes retained as disabled/absence boundaries. | Grant/key-envelope revocation, export manifest/limitations, Trash/restore/final purge/resurrection, residency denial, dependant transition, decision-fence, accessibility, recovery/continuity non-bypass, and production operations evidence pass. |
+| `P1-S4` — Family launch and portability | Households can share exact scopes, manage fail-closed dependant boundaries, use truthful public/account entry, export declared data, use 30-day Trash/restore, and see truthful connector/channel/score/recovery/continuity/residency availability. | `STORY-P1-039`–`049` | S3 exit; ordinary sharing/export and `DEC-P1-056` fence approved; `DEC-049`–`053` contracts implemented; activation/release-gated routes retained as disabled/absence boundaries. | Grant/key-envelope revocation, public-entry truth/accessibility, export manifest/limitations, Trash/restore/final purge/resurrection, residency denial, fail-closed dependant transition, recovery/continuity non-bypass, and production operations evidence pass. |
 
 `STORY-P1-026` belongs to the S3 sequence because its conformed current view is consumed by monitoring, but it remains in `EPIC-P1-004` because document evidence owns its semantics.
 
@@ -73,6 +73,7 @@ Validator success alone is necessary specification evidence, not a slice exit.
 | `DEC-050` | Every document path uses customer-controlled client encryption; platform processing cannot add a plaintext fallback. | All document, AI, export, sharing and recovery stories |
 | `DEC-052` | Critical journeys and semantics ship on React web and Flutter iOS/Android; a platform omission needs an explicit release exception. | All user-facing stories |
 | `DEC-054` | IaC and complete Phase 1 implementation may proceed continuously; only synthetic/test data is allowed in the current dev/stage subscription. | All |
+| `DEC-P1-056` | Implement only the explicit revisioned fail-closed transition fence; no partial/uncertain state broadens access. Richer independent transfer/delegation is later governed scope. | `STORY-P1-040` |
 
 If a decision changes, the affected requirements, architecture/security/data/API/event/UX/reference data, stories/AC, tests, migration/compatibility, operations, and user-facing claims must be revised as one governed change. A feature flag, environment variable, or deployment choice cannot approve scope.
 

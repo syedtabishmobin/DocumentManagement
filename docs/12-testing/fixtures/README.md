@@ -3,9 +3,9 @@
 | Field | Value |
 |---|---|
 | Document ID | `TST-FIX-001` |
-| Version | `0.1` |
+| Version | `0.2` |
 | Status | **DRAFT — synthetic scaffolding only; no launch dataset, service, workload, target, or route is approved** |
-| Updated | 26 August 2026 |
+| Updated | 30 August 2026 |
 
 ## Files and authority
 
@@ -15,6 +15,7 @@
 | [`synthetic-fixtures.v1.json`](synthetic-fixtures.v1.json) | Deterministic non-personal workspace, authority, artifact, evidence, fact, graph, source, workflow, security, deletion and migration inputs. |
 | [`ai-evaluation-datasets.v1.json`](ai-evaluation-datasets.v1.json) | Synthetic evaluation dataset/slice/gold/adjudication scaffolds. All statistical launch gates remain insufficient. |
 | [`workload-and-fault-profiles.v1.json`](workload-and-fault-profiles.v1.json) | Non-representative diagnostic workloads and deterministic provider-neutral fault schedules. |
+| [`implementation-evidence.v1.json`](implementation-evidence.v1.json) | Privacy-safe source-test inventory, story/AC or explicit framework-only classification, supplemental forward ownership, evidence type and bounded historical Issue/PR references. Source presence never claims product completion. |
 
 The manifests are inputs to the prose catalogues, not runtime production configuration. They do not supersede product requirements, schemas, reference data, AI evaluation rules, security controls or NFRs.
 
@@ -50,4 +51,4 @@ Run:
 python3 scripts/validate-test-traceability.py
 ```
 
-The validator rejects malformed or duplicate-key JSON; duplicate or dangling test/input IDs; owner-document inventory mismatch; non-DRAFT, non-synthetic or representative version `0.1` data; unreserved endpoints; credential/private-key/token patterns; realistic email, public IP or payment-number patterns; unknown upstream trace IDs; and uncovered current requirements, product ACs, backlog stories or story ACs. It prints exact coverage counts and never treats a missing upstream backlog file as passing backlog evidence.
+The validator rejects malformed or duplicate-key JSON; duplicate or dangling test/input IDs; owner-document inventory mismatch; non-DRAFT/non-PLANNED product definitions; unreserved endpoints; credential/private-key/token patterns; realistic email, public IP or payment-number patterns; unknown upstream trace IDs; uncovered current requirements, product ACs, backlog stories or story ACs; tests without forward story ownership; reverse story traces without reciprocal ownership; unmapped or missing source-test paths; framework-only evidence claiming product scope; and any source-level product-completion claim. It prints exact coverage counts and never treats source presence, historical bounded QA, or a missing upstream backlog file as product completion evidence.

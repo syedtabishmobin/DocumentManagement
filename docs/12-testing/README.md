@@ -3,10 +3,10 @@
 | Field | Value |
 |---|---|
 | Document ID | `TST-IDX-001` |
-| Version | `0.1` |
-| Status | **DRAFT — implementation, tools, representative environments, targets, and release authority are not selected** |
+| Version | `0.3` |
+| Status | **RECONCILED BUILD-BASELINE CANDIDATE — all product tests remain DRAFT/PLANNED and require execution evidence** |
 | Product phase | Phase 1 — Personal and Family |
-| Updated | 26 August 2026 |
+| Updated | 30 August 2026 |
 
 ## Purpose and authority
 
@@ -35,7 +35,7 @@ The governing test contract is [`ENG-TST-001`](../08-engineering/06-testing-stan
 | `TEST-PERF-P1-###` | `TST-PRF-001` | Performance/Capacity Quality | Availability, latency, throughput, freshness, isolation, cost. |
 | `TEST-DR-P1-###` | `TST-PRF-001` | Resilience/Operations Quality | Faults, replay, migration repair, restore, RPO/RTO, DR. |
 
-IDs are never recycled. A renamed or moved test retains its ID and owner history. A retired test remains in the manifest with `RETIRED`, a replacement or retirement reason, and effective metadata; it is never deleted to make coverage appear complete. Version `0.1` defines `TEST-UNIT-P1-001`–`010`, `TEST-CON-P1-001`–`012`, `TEST-AI-P1-001`–`015`, `TEST-SEC-P1-001`–`015`, `TEST-E2E-P1-001`–`020`, `TEST-PERF-P1-001`–`010`, and `TEST-DR-P1-001`–`008`.
+IDs are never recycled. A renamed or moved test retains its ID and owner history. A retired test remains in the manifest with `RETIRED`, a replacement or retirement reason, and effective metadata; it is never deleted to make coverage appear complete. The current inventory defines `TEST-UNIT-P1-001`–`012`, `TEST-CON-P1-001`–`015`, `TEST-AI-P1-001`–`015`, `TEST-SEC-P1-001`–`020`, `TEST-E2E-P1-001`–`024`, `TEST-PERF-P1-001`–`010`, and `TEST-DR-P1-001`–`008`: 104 DRAFT/PLANNED definitions in total.
 
 ## Machine-readable source of trace truth
 
@@ -44,6 +44,7 @@ IDs are never recycled. A renamed or moved test retains its ID and owner history
 - [`fixtures/synthetic-fixtures.v1.json`](fixtures/synthetic-fixtures.v1.json) — deterministic non-personal workspaces, documents, sources, and policies;
 - [`fixtures/ai-evaluation-datasets.v1.json`](fixtures/ai-evaluation-datasets.v1.json) — versioned synthetic evaluation slices and adjudication contracts; and
 - [`fixtures/workload-and-fault-profiles.v1.json`](fixtures/workload-and-fault-profiles.v1.json) — provider-neutral workload, concurrency, clock, delivery, and fault profiles.
+- [`fixtures/implementation-evidence.v1.json`](fixtures/implementation-evidence.v1.json) — privacy-safe source-test paths, bounded story/AC or framework-only ownership, supplemental forward story ownership, and historical Issue/PR evidence that never implies product completion.
 
 All fixtures are synthetic, local-test-only, privacy classified, deterministic, and outbound denied. Reserved `.invalid` endpoints are descriptive values only and never enabled services. No manifest contains real household data, credentials, routable service endpoints, or an assertion of Australian processing.
 
@@ -61,4 +62,4 @@ Run from the repository root:
 python3 scripts/validate-test-traceability.py
 ```
 
-The validator checks JSON shape, stable/unique IDs, owner-document agreement, fixture references, exact upstream trace IDs, requirement/acceptance/backlog coverage reporting, deterministic/synthetic/privacy metadata, reserved endpoints, and credential/personal-data canaries. It complements rather than replaces the specification, API/event, and reference-data validators.
+The validator checks JSON shape, stable/unique IDs, owner-document agreement, fixture references, exact upstream trace IDs, reciprocal story/test ownership, every discovered source-test path, framework-only separation, no false product-completion claim, requirement/acceptance/backlog coverage reporting, deterministic/synthetic/privacy metadata, reserved endpoints, and credential/personal-data canaries. It complements rather than replaces the specification, API/event, and reference-data validators.
