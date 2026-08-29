@@ -1,6 +1,6 @@
 # OBSERVABILITY READINESS REPORT
 
-Governed by [Issue #11](https://github.com/syedtabishmobin/DocumentManagement/issues/11). This report covers the Agent Operations & Observability installation only; no general product-development queue item was started.
+Governed by [Issue #11](https://github.com/syedtabishmobin/DocumentManagement/issues/11) and candidate [PR #12](https://github.com/syedtabishmobin/DocumentManagement/pull/12). This report covers the Agent Operations & Observability installation only; no general product-development queue item was started.
 
 ## 1. Repository/framework state discovered
 
@@ -59,7 +59,7 @@ pnpm verify:observability         # contract, privacy and aggregation smoke test
 codex agents                      # native interactive local session view
 ```
 
-The online status proof returned one active Issue #11 agent, zero pending decision Issues, zero defects and zero PRs at the time of capture; it also showed `agent-local=AVAILABLE`, `dev=SYNTHETIC_PREVIEW_AVAILABLE`, `stage/prod=DEFINED_NOT_PROVISIONED`, notification failure and unavailable native token/cost telemetry.
+The online status proof returned one active Issue #11 agent on PR #12, zero pending decision Issues and zero open defects; it also showed `agent-local=AVAILABLE`, `dev=SYNTHETIC_PREVIEW_AVAILABLE`, `stage/prod=DEFINED_NOT_PROVISIONED`, UAT not ready, notification failure and unavailable native token/cost telemetry.
 
 ## 7. Privacy/security controls
 
