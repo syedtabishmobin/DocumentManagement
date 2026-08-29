@@ -16,6 +16,7 @@
     "agent:status": "python3 scripts/agent_ops.py status",
     "agent:tree": "python3 scripts/agent_ops.py tree",
     "agent:summary": "python3 scripts/agent_ops.py summary",
+    "agent:prune": "python3 scripts/agent_ops.py prune",
     "verify:spec": "python3 scripts/validate-specifications.py && python3 scripts/validate-api-contracts.py && python3 scripts/validate-reference-data.py && python3 scripts/validate-test-traceability.py",
     "verify": "pnpm verify:framework && pnpm verify:spec && pnpm typecheck && pnpm test && pnpm build"
   },

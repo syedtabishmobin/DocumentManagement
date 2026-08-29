@@ -16,6 +16,33 @@ ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_PATH = ROOT / ".agents/observability/event-schema.json"
 CONFIG_PATH = ROOT / ".agents/project/observability.json"
 PROVENANCE = {"MEASURED", "PROVIDER_REPORTED", "ATTRIBUTED", "ESTIMATED", "UNAVAILABLE"}
+EVENT_STATE_RULES = {
+    "AGENT_STARTED": {"STARTING", "RUNNING", "TESTING"},
+    "AGENT_COMPLETED": {"COMPLETED"},
+    "AGENT_FAILED": {"FAILED"},
+    "AGENT_BLOCKED": {"BLOCKED"},
+    "SUBAGENT_SPAWNED": {"STARTING"},
+    "HANDOFF_CREATED": {"HANDOFF"},
+    "TEST_STARTED": {"TESTING"},
+    "TEST_PASSED": {"TESTING", "RUNNING"},
+    "TEST_FAILED": {"TESTING", "BLOCKED", "FAILED"},
+    "QUALITY_GATE_PASSED": {"TESTING", "RUNNING", "COMPLETED"},
+    "QUALITY_GATE_FAILED": {"TESTING", "BLOCKED", "FAILED"},
+    "HUMAN_DECISION_REQUIRED": {"BLOCKED"},
+    "HUMAN_DECISION_RESOLVED": {"RUNNING", "TESTING"},
+    "UAT_READY": {"COMPLETED"},
+}
+STATE_TRANSITIONS = {
+    "STARTING": {"STARTING", "RUNNING", "TESTING", "BLOCKED", "HANDOFF", "FAILED"},
+    "RUNNING": {"RUNNING", "TESTING", "BLOCKED", "HANDOFF", "COMPLETED", "FAILED", "IDLE"},
+    "TESTING": {"TESTING", "RUNNING", "BLOCKED", "HANDOFF", "COMPLETED", "FAILED"},
+    "BLOCKED": {"BLOCKED", "RUNNING", "TESTING", "HANDOFF", "COMPLETED", "FAILED"},
+    "HANDOFF": {"HANDOFF", "RUNNING", "TESTING", "BLOCKED", "COMPLETED", "FAILED"},
+    "IDLE": {"IDLE", "STARTING", "RUNNING"},
+    "COMPLETED": {"COMPLETED"},
+    "FAILED": {"FAILED"},
+    "NOT_APPLICABLE": {"NOT_APPLICABLE"},
+}
 FORBIDDEN_KEY_PARTS = {
     "prompt", "credential", "password", "secret", "documentcontent", "document_content",
     "customercontent", "customer_content", "toolinput", "tool_input", "tooloutput", "tool_output",
@@ -174,6 +201,26 @@ def validate_event(event: dict[str, Any], config: dict[str, Any] | None = None) 
         errors.append("SUBAGENT_SPAWNED requires parentAgentId")
     if event.get("eventType") in {"AGENT_BLOCKED", "HUMAN_DECISION_REQUIRED"} and not event.get("blocker"):
         errors.append(f"{event.get('eventType')} requires blocker details")
+    allowed_states = EVENT_STATE_RULES.get(event.get("eventType"))
+    if allowed_states and event.get("state") not in allowed_states:
+        errors.append(f"{event.get('eventType')} cannot use state {event.get('state')}; expected {sorted(allowed_states)}")
+    team = load_json(ROOT / ".agents/project/team.json")
+    capabilities = load_json(ROOT / ".agents/capabilities/registry.json")
+    tools = load_json(ROOT / ".agents/tools/registry.json")
+    allowed_roles = {item["id"] for item in team.get("persistentRoles", [])}
+    allowed_capabilities = {item["id"] for item in capabilities.get("capabilities", [])}
+    allowed_capabilities.update(capability for role in team.get("persistentRoles", []) for capability in role.get("capabilities", []))
+    allowed_skills = {path.parent.name for path in (ROOT / ".agents/skills").glob("*/SKILL.md")}
+    allowed_skills.update(config.get("attribution", {}).get("externalSkillIds", []))
+    allowed_tools = {item["id"] for item in tools.get("tools", [])}
+    allowed_tools.update(config.get("attribution", {}).get("externalToolIds", []))
+    allowed_adapters = {item["id"] for item in config.get("adapters", [])}
+    if event.get("roleId") and event["roleId"] not in allowed_roles:
+        errors.append(f"event.roleId is not registered: {event['roleId']}")
+    for field, allowed in (("capabilityIds", allowed_capabilities), ("skillIds", allowed_skills), ("toolIds", allowed_tools), ("adapterIds", allowed_adapters)):
+        for item in event.get(field, []):
+            if item not in allowed:
+                errors.append(f"event.{field} contains unregistered ID: {item}")
     allowed_hosts = set(config.get("privacy", {}).get("evidenceHosts", []))
     for location, url in (
         ("event.workItem.url", event.get("workItem", {}).get("url")),
@@ -195,6 +242,55 @@ def validate_event(event: dict[str, Any], config: dict[str, Any] | None = None) 
         metric = usage.get(key)
         if metric and ((metric.get("value") is None) != (metric.get("currency") is None)):
             errors.append(f"event.usage.{key} value and currency must both be present or absent")
+    return sorted(set(errors))
+
+
+def validate_event_sequence(events: list[dict[str, Any]]) -> list[str]:
+    """Validate per-run lifecycle and parent graph invariants after individual validation."""
+    errors: list[str] = []
+    for event in events:
+        errors.extend(f"{event.get('eventId', 'unknown')}: {error}" for error in validate_event(event))
+    ordered = sorted(events, key=lambda event: (datetime.fromisoformat(event["occurredAt"].replace("Z", "+00:00")), event["eventId"]))
+    states: dict[tuple[str, str], str] = {}
+    parents: dict[tuple[str, str], str | None] = {}
+    keys = {(event["runId"], event["agentId"]) for event in ordered}
+    for event in ordered:
+        key = (event["runId"], event["agentId"])
+        parent = event.get("parentAgentId")
+        if parent:
+            parent_key = (event["runId"], parent)
+            if parent_key not in keys:
+                errors.append(f"run {event['runId']} agent {event['agentId']} references missing parent {parent}")
+            previous_parent = parents.get(key)
+            if previous_parent and previous_parent != parent:
+                errors.append(f"run {event['runId']} agent {event['agentId']} changes parent from {previous_parent} to {parent}")
+            parents[key] = parent
+        else:
+            parents.setdefault(key, None)
+        previous_state = states.get(key)
+        state = event["state"]
+        if previous_state and state not in STATE_TRANSITIONS[previous_state]:
+            errors.append(f"run {event['runId']} agent {event['agentId']} has illegal state transition {previous_state}->{state}")
+        states[key] = state
+
+    visiting: set[tuple[str, str]] = set()
+    visited: set[tuple[str, str]] = set()
+
+    def visit(key: tuple[str, str]) -> None:
+        if key in visiting:
+            errors.append(f"run {key[0]} contains a cyclic parent graph at agent {key[1]}")
+            return
+        if key in visited:
+            return
+        visiting.add(key)
+        parent = parents.get(key)
+        if parent:
+            visit((key[0], parent))
+        visiting.remove(key)
+        visited.add(key)
+
+    for key in keys:
+        visit(key)
     return sorted(set(errors))
 
 
@@ -235,6 +331,11 @@ def validate_configuration() -> list[str]:
         errors.append("native cost status must use metric provenance")
     if config.get("privacy", {}).get("rawPromptsAllowed") is not False:
         errors.append("raw prompt persistence must remain disabled")
+    attribution = config.get("attribution", {})
+    for field in ("externalSkillIds", "externalToolIds"):
+        values = attribution.get(field, [])
+        if len(values) != len(set(values)) or any(not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,79}", item) for item in values):
+            errors.append(f"observability attribution {field} must contain unique normalized IDs")
     if config.get("autonomousQueueGate", {}).get("status") != "BLOCKED":
         notifications = load_json(ROOT / ".agents/config/notifications.json").get("adapter", {})
         operational = notifications.get("implementation") == "IMPLEMENTED" and notifications.get("activation") == "ENABLED" and notifications.get("deliveryConformance") == "PASS"
@@ -250,6 +351,8 @@ def validate_configuration() -> list[str]:
         errors.append("metric catalog must define the exact provenance vocabulary")
     if "INCLUSIVE" not in metric_catalog.get("usageRule", "") or "SELF_ONLY" not in metric_catalog.get("usageRule", ""):
         errors.append("metric catalog must document no-double-count aggregation")
+    if "currency" not in metric_catalog.get("currencyRule", "").lower():
+        errors.append("metric catalog must prohibit mixed-currency aggregation")
     required_event_types = {
         "AGENT_STARTED", "AGENT_COMPLETED", "AGENT_FAILED", "AGENT_BLOCKED", "SUBAGENT_SPAWNED", "HANDOFF_CREATED",
         "WORK_ITEM_STARTED", "WORK_ITEM_COMPLETED", "CAPABILITY_SELECTED", "SKILL_STARTED", "SKILL_COMPLETED", "SKILL_FAILED",

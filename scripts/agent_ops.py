@@ -47,9 +47,10 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
-def read_events(path: Path) -> list[dict[str, Any]]:
+def read_events(path: Path, at: datetime | None = None) -> list[dict[str, Any]]:
     if not path.exists():
         return []
+    prune_store(path, at)
     events: list[dict[str, Any]] = []
     with path.open(encoding="utf-8") as handle:
         fcntl.flock(handle.fileno(), fcntl.LOCK_SH)
@@ -65,18 +66,32 @@ def read_events(path: Path) -> list[dict[str, Any]]:
                 raise ValueError(f"invalid event at {path}:{number}: {'; '.join(errors)}")
             events.append(event)
         fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
-    return sorted(events, key=lambda event: (parse_time(event["occurredAt"]), event["eventId"]))
+    observed_at = at or datetime.now(timezone.utc)
+    future = [event["eventId"] for event in events if parse_time(event["occurredAt"]) > observed_at + timedelta(minutes=5)]
+    if future:
+        raise ValueError(f"events are more than five minutes in the future: {', '.join(sorted(future))}")
+    retained = prune_events(events, config()["runtimeStore"]["retentionDays"], observed_at)
+    sequence_errors = validate_observability.validate_event_sequence(retained)
+    if sequence_errors:
+        raise ValueError(f"invalid event sequence in {path}: {'; '.join(sequence_errors)}")
+    return sorted(retained, key=lambda event: (parse_time(event["occurredAt"]), event["eventId"]))
 
 
-def prune_events(events: list[dict[str, Any]], retention_days: int) -> list[dict[str, Any]]:
-    threshold = datetime.now(timezone.utc) - timedelta(days=retention_days)
+def prune_events(events: list[dict[str, Any]], retention_days: int, at: datetime | None = None) -> list[dict[str, Any]]:
+    threshold = (at or datetime.now(timezone.utc)) - timedelta(days=retention_days)
     return [event for event in events if parse_time(event["occurredAt"]) >= threshold]
 
 
-def append_event(event: dict[str, Any], path: Path) -> None:
+def append_event(event: dict[str, Any], path: Path, at: datetime | None = None) -> None:
+    at = at or datetime.now(timezone.utc)
     errors = validate_observability.validate_event(event)
     if errors:
         raise ValueError("; ".join(errors))
+    occurred_at = parse_time(event["occurredAt"])
+    if occurred_at < at - timedelta(days=config()["runtimeStore"]["retentionDays"]):
+        raise ValueError("event is older than the configured retention window")
+    if occurred_at > at + timedelta(minutes=5):
+        raise ValueError("event occurredAt is more than five minutes in the future")
     path.parent.mkdir(parents=True, exist_ok=True)
     path.parent.chmod(0o700)
     path.touch(mode=0o600, exist_ok=True)
@@ -95,8 +110,11 @@ def append_event(event: dict[str, Any], path: Path) -> None:
                 existing.append(existing_event)
         if any(item.get("eventId") == event["eventId"] for item in existing):
             raise ValueError(f"duplicate eventId {event['eventId']}")
-        retained = prune_events(existing, config()["runtimeStore"]["retentionDays"])
+        retained = prune_events(existing, config()["runtimeStore"]["retentionDays"], at)
         retained.append(event)
+        sequence_errors = validate_observability.validate_event_sequence(retained)
+        if sequence_errors:
+            raise ValueError("; ".join(sequence_errors))
         handle.seek(0)
         handle.truncate()
         for item in sorted(retained, key=lambda value: (parse_time(value["occurredAt"]), value["eventId"])):
@@ -107,6 +125,43 @@ def append_event(event: dict[str, Any], path: Path) -> None:
     path.chmod(0o600)
 
 
+def prune_store(path: Path, at: datetime | None = None) -> tuple[int, int]:
+    """Physically remove expired events under an exclusive lock."""
+    at = at or datetime.now(timezone.utc)
+    if not path.exists():
+        return 0, 0
+    with path.open("r+", encoding="utf-8") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        events: list[dict[str, Any]] = []
+        for number, line in enumerate(handle, start=1):
+            if not line.strip():
+                continue
+            try:
+                item = json.loads(line)
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"invalid JSONL at {path}:{number}: {exc}") from exc
+            item_errors = validate_observability.validate_event(item)
+            if item_errors:
+                raise ValueError(f"invalid event at {path}:{number}: {'; '.join(item_errors)}")
+            events.append(item)
+        future = [event["eventId"] for event in events if parse_time(event["occurredAt"]) > at + timedelta(minutes=5)]
+        if future:
+            raise ValueError(f"events are more than five minutes in the future: {', '.join(sorted(future))}")
+        retained = prune_events(events, config()["runtimeStore"]["retentionDays"], at)
+        sequence_errors = validate_observability.validate_event_sequence(retained)
+        if sequence_errors:
+            raise ValueError("; ".join(sequence_errors))
+        handle.seek(0)
+        handle.truncate()
+        for item in sorted(retained, key=lambda value: (parse_time(value["occurredAt"]), value["eventId"])):
+            handle.write(json.dumps(item, sort_keys=True, separators=(",", ":")) + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
+        fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    path.chmod(0o600)
+    return len(events), len(retained)
+
+
 def git_value(*args: str) -> str | None:
     result = subprocess.run(["git", *args], cwd=ROOT, text=True, capture_output=True, check=False)
     return result.stdout.strip() if result.returncode == 0 and result.stdout.strip() else None
@@ -114,11 +169,14 @@ def git_value(*args: str) -> str | None:
 
 def aggregate_agent_states(events: list[dict[str, Any]], at: datetime | None = None) -> list[dict[str, Any]]:
     at = at or datetime.now(timezone.utc)
-    by_agent: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    sequence_errors = validate_observability.validate_event_sequence(events)
+    if sequence_errors:
+        raise ValueError("; ".join(sequence_errors))
+    by_agent: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
     for event in events:
-        by_agent[event["agentId"]].append(event)
+        by_agent[(event["runId"], event["agentId"])].append(event)
     result: list[dict[str, Any]] = []
-    for agent_id, agent_events in by_agent.items():
+    for (run_id, agent_id), agent_events in by_agent.items():
         agent_events.sort(key=lambda event: (parse_time(event["occurredAt"]), event["eventId"]))
         latest = agent_events[-1]
         started = next((event for event in agent_events if event["eventType"] == "AGENT_STARTED"), agent_events[0])
@@ -140,7 +198,7 @@ def aggregate_agent_states(events: list[dict[str, Any]], at: datetime | None = N
         result.append({
             "agentId": agent_id,
             "parentAgentId": latest_with("parentAgentId"),
-            "runId": latest["runId"],
+            "runId": run_id,
             "roleId": latest_with("roleId"),
             "modelProfile": latest_with("modelProfile"),
             "workItem": latest_with("workItem"),
@@ -162,7 +220,7 @@ def aggregate_agent_states(events: list[dict[str, Any]], at: datetime | None = N
             "lastObservedAt": latest["occurredAt"],
             "active": latest["state"] in ACTIVE_STATES,
         })
-    return sorted(result, key=lambda item: (item["parentAgentId"] or "", item["agentId"]))
+    return sorted(result, key=lambda item: (item["runId"], item["parentAgentId"] or "", item["agentId"]))
 
 
 def issue_severity(body: str, labels: list[dict[str, Any]]) -> str:
@@ -176,7 +234,10 @@ def issue_severity(body: str, labels: list[dict[str, Any]]) -> str:
 
 def github_snapshot() -> dict[str, Any]:
     def gh(*args: str) -> tuple[list[Any] | None, str | None]:
-        result = subprocess.run(["gh", *args], cwd=ROOT, text=True, capture_output=True, check=False)
+        try:
+            result = subprocess.run(["gh", *args], cwd=ROOT, text=True, capture_output=True, check=False, timeout=20)
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return None, f"GitHub query unavailable: {type(exc).__name__}"
         if result.returncode != 0:
             return None, (result.stderr.strip() or "GitHub query failed")
         try:
@@ -186,23 +247,34 @@ def github_snapshot() -> dict[str, Any]:
 
     issues, issue_error = gh("issue", "list", "--state", "open", "--limit", "100", "--json", "number,title,url,labels,body")
     prs, pr_error = gh("pr", "list", "--state", "open", "--limit", "50", "--json", "number,title,url,headRefName,statusCheckRollup")
-    if issues is None:
-        return {"availability": "UNAVAILABLE", "reason": issue_error}
-    minimized = [{key: item[key] for key in ("number", "title", "url", "labels")} for item in issues]
-    decisions = [item for item in minimized if any(label["name"] == "type:decision" for label in item.get("labels", []))]
+    issue_availability = "MEASURED" if issues is not None else "UNAVAILABLE"
+    pull_request_availability = "MEASURED" if prs is not None else "UNAVAILABLE"
+    availability = "MEASURED" if issues is not None and prs is not None else "UNAVAILABLE" if issues is None and prs is None else "PARTIAL"
+    minimized = [{key: item[key] for key in ("number", "title", "url", "labels")} for item in (issues or [])]
+    decisions = [item for item in minimized if any(label["name"] == "type:decision" for label in item.get("labels", []))] if issues is not None else None
     defects: list[dict[str, Any]] = []
-    for raw, item in zip(issues, minimized):
+    for raw, item in zip(issues or [], minimized):
         if any(label["name"] == "type:defect" for label in item.get("labels", [])):
             defects.append({**item, "severity": issue_severity(raw.get("body", ""), item.get("labels", []))})
-    defects_by_severity = Counter(item["severity"] for item in defects)
-    uat_records = [item for item in minimized if any(label["name"] == "uat:ready" for label in item.get("labels", []))]
-    return {"availability": "MEASURED", "openIssues": minimized, "pendingDecisions": decisions, "openDefects": defects, "defectsBySeverity": dict(defects_by_severity), "openUatReadyRecords": uat_records, "openPullRequests": prs or [], "pullRequestError": pr_error}
+    defects_by_severity = Counter(item["severity"] for item in defects) if issues is not None else None
+    uat_records = [item for item in minimized if any(label["name"] == "uat:ready" for label in item.get("labels", []))] if issues is not None else None
+    return {
+        "availability": availability,
+        "sourceAvailability": {"issues": issue_availability, "pullRequests": pull_request_availability},
+        "openIssues": minimized if issues is not None else None,
+        "pendingDecisions": decisions,
+        "openDefects": defects if issues is not None else None,
+        "defectsBySeverity": dict(defects_by_severity) if defects_by_severity is not None else None,
+        "openUatReadyRecords": uat_records,
+        "openPullRequests": prs,
+        "errors": {key: value for key, value in (("issues", issue_error), ("pullRequests", pr_error)) if value},
+    }
 
 
 def notification_snapshot() -> dict[str, Any]:
     cfg = load_json(ROOT / ".agents/config/notifications.json")
     adapter = cfg["adapter"]
-    operational = adapter["implementation"] == "IMPLEMENTED" and adapter["activation"] == "ENABLED" and adapter["deliveryConformance"] == "PASS"
+    operational = adapter["implementation"] == "IMPLEMENTED" and adapter["activation"] == "ENABLED" and adapter["deliveryConformance"] == "PASS" and adapter["sendAllowed"] is True
     ledger = load_json(ROOT / cfg["ledger"])
     return {
         "operational": operational,
@@ -219,9 +291,12 @@ def status_snapshot(events: list[dict[str, Any]], online: bool = False, at: date
     agents = aggregate_agent_states(events, at)
     env = load_json(ROOT / ".agents/project/environments.json")
     current = config()
-    github = github_snapshot() if online else {"availability": "NOT_QUERIED", "command": "pnpm agent:status --online"}
+    github = github_snapshot() if online else {"availability": "NOT_QUERIED", "sourceAvailability": {"issues": "NOT_QUERIED", "pullRequests": "NOT_QUERIED"}, "command": "pnpm agent:status --online"}
     by_environment = {item["id"]: item["status"] for item in env["environments"]}
-    uat_state = "READY_RECORD_OPEN" if github.get("openUatReadyRecords") else ("NOT_READY" if online else "NOT_QUERIED")
+    if github.get("sourceAvailability", {}).get("issues") == "MEASURED":
+        uat_state = "READY_RECORD_OPEN" if github.get("openUatReadyRecords") else "NOT_READY"
+    else:
+        uat_state = "UNAVAILABLE" if online else "NOT_QUERIED"
     return {
         "generatedAt": now_iso(),
         "projectId": current["projectId"],
@@ -241,19 +316,24 @@ def status_snapshot(events: list[dict[str, Any]], online: bool = False, at: date
 
 def tree_rows(agents: list[dict[str, Any]], work_item: str | None = None) -> list[dict[str, Any]]:
     selected = [item for item in agents if not work_item or item.get("workItem", {}).get("id") == work_item]
-    by_parent: dict[str | None, list[dict[str, Any]]] = defaultdict(list)
-    ids = {item["agentId"] for item in selected}
+    by_parent: dict[tuple[str, str] | None, list[dict[str, Any]]] = defaultdict(list)
+    ids = {(item["runId"], item["agentId"]) for item in selected}
     for item in selected:
-        parent = item.get("parentAgentId") if item.get("parentAgentId") in ids else None
+        parent_key = (item["runId"], item["parentAgentId"]) if item.get("parentAgentId") else None
+        parent = parent_key if parent_key in ids else None
         by_parent[parent].append(item)
     rows: list[dict[str, Any]] = []
 
-    def visit(parent: str | None, depth: int) -> None:
-        for item in sorted(by_parent.get(parent, []), key=lambda value: value["agentId"]):
+    def visit(parent: tuple[str, str] | None, depth: int) -> None:
+        for item in sorted(by_parent.get(parent, []), key=lambda value: (value["runId"], value["agentId"])):
             rows.append({"depth": depth, **item})
-            visit(item["agentId"], depth + 1)
+            visit((item["runId"], item["agentId"]), depth + 1)
 
     visit(None, 0)
+    if len(rows) != len(selected):
+        visible = {(row["runId"], row["agentId"]) for row in rows}
+        missing = sorted(f"{run_id}:{agent_id}" for run_id, agent_id in ids - visible)
+        raise ValueError(f"agent tree contains unreachable or cyclic agents: {', '.join(missing)}")
     return rows
 
 
@@ -266,30 +346,67 @@ def summary_snapshot(events: list[dict[str, Any]], window_days: int = 7, at: dat
     skills = Counter(item for event in selected for item in event.get("skillIds", []))
     tools = Counter(item for event in selected for item in event.get("toolIds", []))
     quality = Counter(event.get("quality", {}).get("status") for event in selected if event.get("quality", {}).get("status"))
-    usage: dict[str, Counter[str]] = defaultdict(Counter)
-    seen_records: set[str] = set()
-    duplicate_records = 0
-    inclusive_records = 0
+    records_by_id: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for event in selected:
         record = event.get("usage")
-        if not record:
-            continue
-        record_id = record["recordId"]
-        if record_id in seen_records:
-            duplicate_records += 1
-            continue
-        seen_records.add(record_id)
-        if record["scope"] == "INCLUSIVE":
+        if record:
+            records_by_id[record["recordId"]].append(record)
+    reconciled: list[dict[str, Any]] = []
+    duplicate_records = sum(max(0, len(records) - 1) for records in records_by_id.values())
+    inclusive_records = 0
+    conflicting_records = 0
+    for records in records_by_id.values():
+        self_records = [record for record in records if record["scope"] == "SELF_ONLY"]
+        if not self_records:
             inclusive_records += 1
             continue
-        for key in ("inputTokens", "cachedInputTokens", "outputTokens", "reasoningTokens", "totalTokens", "credits", "providerCost", "toolCost"):
+        canonical = json.dumps(self_records[0], sort_keys=True, separators=(",", ":"))
+        if any(json.dumps(record, sort_keys=True, separators=(",", ":")) != canonical for record in self_records[1:]):
+            conflicting_records += 1
+            continue
+        reconciled.append(self_records[0])
+
+    usage: dict[str, Counter[str]] = defaultdict(Counter)
+    cost_usage: dict[str, dict[str, Counter[str]]] = defaultdict(lambda: defaultdict(Counter))
+    metric_units = {
+        "inputTokens": "tokens", "cachedInputTokens": "tokens", "outputTokens": "tokens",
+        "reasoningTokens": "tokens", "totalTokens": "tokens", "credits": "credits",
+    }
+    for record in reconciled:
+        for key in ("inputTokens", "cachedInputTokens", "outputTokens", "reasoningTokens", "totalTokens", "credits"):
             metric = record[key]
             if metric["value"] is not None:
                 usage[key][metric["provenance"]] += metric["value"]
+        for key in ("providerCost", "toolCost"):
+            metric = record[key]
+            if metric["value"] is not None:
+                cost_usage[key][metric["currency"]][metric["provenance"]] += metric["value"]
     usage_output: dict[str, Any] = {}
-    for key in ("inputTokens", "cachedInputTokens", "outputTokens", "reasoningTokens", "totalTokens", "credits", "providerCost", "toolCost"):
+    for key in ("inputTokens", "cachedInputTokens", "outputTokens", "reasoningTokens", "totalTokens", "credits"):
         buckets = dict(usage.get(key, {}))
-        usage_output[key] = {"byProvenance": buckets, "status": "UNAVAILABLE" if not buckets else "AVAILABLE_WITH_RECORDED_PROVENANCE"}
+        usage_output[key] = {"unit": metric_units[key], "byProvenance": buckets, "status": "UNAVAILABLE" if not buckets else "AVAILABLE_WITH_RECORDED_PROVENANCE"}
+    for key in ("providerCost", "toolCost"):
+        currencies = {currency: dict(values) for currency, values in cost_usage.get(key, {}).items()}
+        usage_output[key] = {"unit": "currency", "byCurrencyAndProvenance": currencies, "status": "UNAVAILABLE" if not currencies else "AVAILABLE_WITH_RECORDED_PROVENANCE"}
+
+    context_counts: dict[str, Counter[str]] = defaultdict(Counter)
+    context_ratios: dict[str, dict[str, list[float]]] = defaultdict(lambda: defaultdict(list))
+    for event in selected:
+        for key, metric in event.get("contextEfficiency", {}).items():
+            if metric["value"] is None:
+                continue
+            if key in {"cacheRatio", "contextReuseRatio"}:
+                context_ratios[key][metric["provenance"]].append(metric["value"])
+            else:
+                context_counts[key][metric["provenance"]] += metric["value"]
+    context_output: dict[str, Any] = {}
+    context_units = {"filesLoaded": "count", "unchangedFilesReloaded": "count", "largeOutputBytes": "bytes", "discoveryScans": "count"}
+    for key, unit in context_units.items():
+        buckets = dict(context_counts.get(key, {}))
+        context_output[key] = {"unit": unit, "byProvenance": buckets, "status": "UNAVAILABLE" if not buckets else "AVAILABLE_WITH_RECORDED_PROVENANCE"}
+    for key in ("contextReuseRatio", "cacheRatio"):
+        buckets = {provenance: sum(values) / len(values) for provenance, values in context_ratios.get(key, {}).items()}
+        context_output[key] = {"unit": "ratio", "averageByProvenance": buckets, "status": "UNAVAILABLE" if not buckets else "AVAILABLE_WITH_RECORDED_PROVENANCE"}
     return {
         "generatedAt": now_iso(),
         "windowDays": window_days,
@@ -302,7 +419,8 @@ def summary_snapshot(events: list[dict[str, Any]], window_days: int = 7, at: dat
         "failures": sum(type_counts[item] for item in ("AGENT_FAILED", "SKILL_FAILED", "TOOL_FAILED", "TEST_FAILED", "QUALITY_GATE_FAILED", "DEFECT_RETEST_FAILED")),
         "retries": type_counts["RETRY_RECORDED"],
         "usage": usage_output,
-        "usageReconciliation": {"uniqueRecordIds": len(seen_records), "duplicatesExcluded": duplicate_records, "inclusiveParentRollupsExcluded": inclusive_records, "aggregationScope": "SELF_ONLY"},
+        "contextEfficiency": context_output,
+        "usageReconciliation": {"uniqueRecordIds": len(records_by_id), "duplicatesExcluded": duplicate_records, "inclusiveParentRollupsExcluded": inclusive_records, "conflictingSelfRecordsExcluded": conflicting_records, "aggregationScope": "SELF_ONLY"},
     }
 
 
@@ -311,14 +429,19 @@ def print_status(snapshot: dict[str, Any]) -> None:
     print(f"Active agents: {len(snapshot['activeAgents'])}; blocked: {len(snapshot['blockedAgents'])}; events: {snapshot['runtimeStore']['eventCount']}")
     for agent in snapshot["agents"]:
         work = agent.get("workItem") or {}
-        print(f"- {agent['agentId']} [{agent['state']}] role={agent.get('roleId') or 'UNAVAILABLE'} work={work.get('kind', 'UNAVAILABLE')}:{work.get('id', 'UNAVAILABLE')} capability={','.join(agent['capabilityIds']) or 'UNAVAILABLE'} skills={','.join(agent['skillIds']) or 'UNAVAILABLE'} tools={','.join(agent['toolIds']) or 'UNAVAILABLE'} adapters={','.join(agent['adapterIds']) or 'UNAVAILABLE'} branch={agent.get('branch') or 'UNAVAILABLE'} worktree={agent.get('worktree') or 'UNAVAILABLE'} pr={(agent.get('pullRequest') or {}).get('number', 'UNAVAILABLE')} quality={(agent.get('quality') or {}).get('status', 'UNAVAILABLE')}")
+        print(f"- {agent['agentId']} run={agent['runId']} [{agent['state']}] role={agent.get('roleId') or 'UNAVAILABLE'} work={work.get('kind', 'UNAVAILABLE')}:{work.get('id', 'UNAVAILABLE')} capability={','.join(agent['capabilityIds']) or 'UNAVAILABLE'} skills={','.join(agent['skillIds']) or 'UNAVAILABLE'} tools={','.join(agent['toolIds']) or 'UNAVAILABLE'} adapters={','.join(agent['adapterIds']) or 'UNAVAILABLE'} branch={agent.get('branch') or 'UNAVAILABLE'} worktree={agent.get('worktree') or 'UNAVAILABLE'} pr={(agent.get('pullRequest') or {}).get('number', 'UNAVAILABLE')} quality={(agent.get('quality') or {}).get('status', 'UNAVAILABLE')}")
         if agent.get("blocker"):
             print(f"  blocker={agent['blocker']['kind']}:{agent['blocker']['id']} status={agent['blocker']['status']}")
     github = snapshot["github"]
-    if github["availability"] == "MEASURED":
-        print(f"GitHub: MEASURED; pending decisions={len(github.get('pendingDecisions', []))}; open defects={len(github.get('openDefects', []))} by severity={github.get('defectsBySeverity', {})}; open PRs={len(github.get('openPullRequests', []))}")
-    else:
-        print(f"GitHub: {github['availability']}; pending decisions=UNAVAILABLE; open defects=UNAVAILABLE; open PRs=UNAVAILABLE")
+    issue_available = github.get("sourceAvailability", {}).get("issues") == "MEASURED"
+    pr_available = github.get("sourceAvailability", {}).get("pullRequests") == "MEASURED"
+    decisions_text = str(len(github.get("pendingDecisions") or [])) if issue_available else "UNAVAILABLE"
+    defects_text = str(len(github.get("openDefects") or [])) if issue_available else "UNAVAILABLE"
+    severity_text = str(github.get("defectsBySeverity") or {}) if issue_available else "UNAVAILABLE"
+    prs_text = str(len(github.get("openPullRequests") or [])) if pr_available else "UNAVAILABLE"
+    print(f"GitHub: {github['availability']}; pending decisions={decisions_text}; open defects={defects_text} by severity={severity_text}; open PRs={prs_text}")
+    for source, error in github.get("errors", {}).items():
+        print(f"  {source}=UNAVAILABLE ({error})")
     print("DEV/STAGE/UAT: " + ", ".join(f"{key}={value}" for key, value in snapshot["releaseState"].items()))
     notification = snapshot["notifications"]
     print(f"Email notification: operational={notification['operational']} implementation={notification['implementation']} activation={notification['activation']} conformance={notification['deliveryConformance']}")
@@ -436,6 +559,7 @@ def create_parser() -> argparse.ArgumentParser:
     summary = sub.add_parser("summary", help="show quality-linked usage and performance summary")
     summary.add_argument("--window-days", type=int, default=7)
     summary.add_argument("--json", action="store_true")
+    sub.add_parser("prune", help="physically remove events outside configured retention")
     return parser
 
 
@@ -455,6 +579,10 @@ def main() -> int:
             append_event(event, path)
             print(f"Recorded {event['eventType']} {event['eventId']} in {path}")
             return 0
+        if args.command == "prune":
+            before, after = prune_store(path)
+            print(f"Pruned {before - after} expired events; retained {after} in {path}")
+            return 0
         events = read_events(path)
         if args.command == "status":
             snapshot = status_snapshot(events, args.online)
@@ -471,7 +599,7 @@ def main() -> int:
             else:
                 for row in rows:
                     work = row.get("workItem") or {}
-                    print(f"{'  ' * row['depth']}- {row['agentId']} [{row['state']}] role={row.get('roleId') or 'UNAVAILABLE'} work={work.get('id', 'UNAVAILABLE')} durationMs={row['durationMs']}")
+                    print(f"{'  ' * row['depth']}- {row['agentId']} run={row['runId']} [{row['state']}] role={row.get('roleId') or 'UNAVAILABLE'} work={work.get('id', 'UNAVAILABLE')} durationMs={row['durationMs']}")
         elif args.command == "summary":
             if args.window_days < 1:
                 parser.error("--window-days must be positive")

@@ -12,7 +12,7 @@ Validate a structured record with `python3 scripts/validate_agent_framework.py -
 
 Use `python3 scripts/notification_ledger.py plan <event.json>` to resolve deduplicated recipients and truthful adapter status. Use `python3 scripts/notification_ledger.py record <event.json> --status <status> --evidence <url>` to record an exactly-once result. `SENT` is rejected unless configuration is operational and a provider message ID is supplied.
 
-Use `pnpm agent:status`, `pnpm agent:tree`, and `pnpm agent:summary` for the local Agent Operations interface. Add `--online` to status for current GitHub context. `scripts/agent_ops.py emit` validates and appends metadata-only events to the Git-ignored local store.
+Use `pnpm agent:status`, `pnpm agent:tree`, and `pnpm agent:summary` for the local Agent Operations interface. Add `--online` to status for current GitHub context. `pnpm agent:prune` physically removes events outside retention. `scripts/agent_ops.py emit` validates and appends metadata-only events to the Git-ignored local store.
 
 ## Specification validation
 

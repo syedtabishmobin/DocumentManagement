@@ -11,18 +11,18 @@
     "eventType": {"enum": ["AGENT_STARTED", "AGENT_COMPLETED", "AGENT_FAILED", "AGENT_BLOCKED", "AGENT_STATE_CHANGED", "SUBAGENT_SPAWNED", "HANDOFF_CREATED", "WORK_ITEM_STARTED", "WORK_ITEM_COMPLETED", "CAPABILITY_SELECTED", "SKILL_STARTED", "SKILL_COMPLETED", "SKILL_FAILED", "TOOL_STARTED", "TOOL_COMPLETED", "TOOL_FAILED", "TEST_STARTED", "TEST_PASSED", "TEST_FAILED", "DEFECT_CREATED", "DEFECT_FIX_READY", "DEFECT_RETEST_PASSED", "DEFECT_RETEST_FAILED", "QUALITY_GATE_PASSED", "QUALITY_GATE_FAILED", "HUMAN_DECISION_REQUIRED", "HUMAN_DECISION_RESOLVED", "ENVIRONMENT_PROMOTED", "UAT_READY", "RETRY_RECORDED", "NOTIFICATION_STATUS_CHANGED", "USAGE_RECORDED", "CONTEXT_OBSERVED"]},
     "occurredAt": {"type": "string", "format": "date-time"},
     "projectId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,63}$"},
-    "runId": {"type": "string", "minLength": 3, "maxLength": 128},
-    "agentId": {"type": "string", "minLength": 3, "maxLength": 128},
-    "parentAgentId": {"type": "string", "minLength": 3, "maxLength": 128},
+    "runId": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{2,127}$"},
+    "agentId": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{2,127}$"},
+    "parentAgentId": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{2,127}$"},
     "roleId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,63}$"},
-    "modelProfile": {"type": "string", "maxLength": 80},
-    "goalId": {"type": "string", "maxLength": 80},
-    "featureId": {"type": "string", "maxLength": 80},
+    "modelProfile": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,79}$"},
+    "goalId": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,79}$"},
+    "featureId": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,79}$"},
     "workItem": {
       "type": "object", "additionalProperties": false, "required": ["kind", "id"],
       "properties": {
         "kind": {"enum": ["GOAL", "FEATURE", "STORY", "TASK", "BUG", "DECISION", "RELEASE"]},
-        "id": {"type": "string", "maxLength": 80},
+        "id": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,79}$"},
         "url": {"type": "string", "maxLength": 300}
       }
     },
@@ -30,23 +30,23 @@
     "skillIds": {"type": "array", "maxItems": 32, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,79}$"}},
     "toolIds": {"type": "array", "maxItems": 32, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,79}$"}},
     "adapterIds": {"type": "array", "maxItems": 32, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,79}$"}},
-    "branch": {"type": "string", "maxLength": 160},
-    "worktree": {"type": "string", "maxLength": 300},
+    "branch": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._/-]{0,159}$"},
+    "worktree": {"type": "string", "pattern": "^/(?:[a-zA-Z0-9._-]+/)*[a-zA-Z0-9._-]+$", "maxLength": 300},
     "pullRequest": {
       "type": "object", "additionalProperties": false, "required": ["number", "url"],
       "properties": {"number": {"type": "integer", "minimum": 1}, "url": {"type": "string", "maxLength": 300}}
     },
     "environmentId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,63}$"},
-    "releaseCandidateId": {"type": "string", "maxLength": 100},
+    "releaseCandidateId": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$"},
     "state": {"enum": ["STARTING", "RUNNING", "TESTING", "BLOCKED", "HANDOFF", "COMPLETED", "FAILED", "IDLE", "NOT_APPLICABLE"]},
     "durationMs": {"type": "integer", "minimum": 0},
     "retryCount": {"type": "integer", "minimum": 0},
-    "handoffTargetAgentId": {"type": "string", "maxLength": 128},
+    "handoffTargetAgentId": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{2,127}$"},
     "blocker": {
       "type": "object", "additionalProperties": false, "required": ["kind", "id", "status"],
       "properties": {
         "kind": {"enum": ["HUMAN_DECISION", "DEFECT", "DEPENDENCY", "ENVIRONMENT", "PERMISSION", "EXTERNAL_ACTION"]},
-        "id": {"type": "string", "maxLength": 100},
+        "id": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$"},
         "status": {"enum": ["OPEN", "RESOLVED"]},
         "url": {"type": "string", "maxLength": 300}
       }
@@ -54,17 +54,17 @@
     "quality": {
       "type": "object", "additionalProperties": false,
       "properties": {
-        "gateId": {"type": "string", "maxLength": 100},
+        "gateId": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$"},
         "status": {"enum": ["PASS", "FAIL", "BLOCKED", "NOT_APPLICABLE", "PENDING"]},
-        "acceptanceCriterionId": {"type": "string", "maxLength": 100},
-        "defectId": {"type": "string", "maxLength": 100},
+        "acceptanceCriterionId": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$"},
+        "defectId": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,99}$"},
         "reworkCycle": {"type": "integer", "minimum": 0}
       }
     },
     "notification": {
       "type": "object", "additionalProperties": false, "required": ["eventKey", "status"],
       "properties": {
-        "eventKey": {"type": "string", "maxLength": 180},
+        "eventKey": {"type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._:-]{0,179}$"},
         "status": {"enum": ["RESERVED", "SENT", "FAILED", "EXTERNAL_ACTION_REQUIRED"]},
         "authoritativeUrl": {"type": "string", "maxLength": 300}
       }

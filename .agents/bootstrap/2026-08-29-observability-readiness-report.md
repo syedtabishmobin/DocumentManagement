@@ -56,6 +56,7 @@ pnpm agent:tree --work-item 11    # tree for one work item
 pnpm agent:summary                # seven-day quality/usage/cost summary
 pnpm agent:summary --window-days 30
 pnpm verify:observability         # contract, privacy and aggregation smoke tests
+pnpm agent:prune                  # physically remove events outside 30-day retention
 codex agents                      # native interactive local session view
 ```
 
@@ -66,7 +67,7 @@ The online status proof returned one active Issue #11 agent on PR #12, zero pend
 - Closed schema with unknown-field rejection before append.
 - Explicit rejection of raw prompt/content/tool-payload/credential fields, multiline arbitrary content, secret-like values, unsafe URLs and inconsistent usage provenance.
 - Runtime directory/file modes are restricted; writes use an exclusive lock, validated rewrite, flush and filesystem sync after pruning.
-- Runtime events are Git-ignored, metadata-only, separate from product content, and pruned to 30 days.
+- Runtime events are Git-ignored, metadata-only, separate from product content, pruned on append/query to 30 days, and removable explicitly with `pnpm agent:prune`.
 - Evidence URLs are HTTPS and limited to configured hosts without credentials/query strings/fragments.
 - Native `log_user_prompt` must remain false; external export is disabled until destination, filtering, identity, retention, residency and conformance are approved.
 
@@ -92,7 +93,9 @@ GitHub remains the authoritative phone-accessible decision/UAT record. Email is 
 
 The event/config model, local destination, lifecycle/attribution queries, privacy controls, validation, GitHub join and environment/quality/decision visibility pass. Autonomous queue readiness does not pass because the mandatory Product Authority email path is unavailable and no GitHub-only fallback has been accepted.
 
-Validation evidence: `pnpm verify` passed framework/observability, 140-document specifications, API/event/reference/traceability contracts, TypeScript typechecks, 41 local tests with two expected PostgreSQL-service skips, and all builds. `pnpm verify:observability` passed 12 focused tests. Azure Bicep compilation passed. Local Flutter tooling is unavailable, so Android/iOS artifact regression remains owned by the protected GitHub CI jobs. The skill-creator `quick_validate.py` could not start because its environment lacks `PyYAML`; no dependency was added. The repository's dependency-free validator passed all skill frontmatter, naming, descriptions, directory matching and capability registration.
+Validation evidence: `pnpm verify` passed framework/observability, 140-document specifications, API/event/reference/traceability contracts, TypeScript typechecks, 41 local tests with two expected PostgreSQL-service skips, and all builds. `pnpm verify:observability` now passes 28 focused tests, including regressions for independent QA defects #13–#16. Azure Bicep compilation passed. Protected PR #12 CI passed specifications/TypeScript, Android and iOS on the first candidate; replacement-candidate CI and independent retest remain required. Local Flutter tooling is unavailable. The skill-creator `quick_validate.py` could not start because its environment lacks `PyYAML`; no dependency was added. The repository's dependency-free validator passed all skill frontmatter, naming, descriptions, directory matching and capability registration.
+
+Independent QA blocked candidate `4dc03a0` with lifecycle/parent-graph [defect #13](https://github.com/syedtabishmobin/DocumentManagement/issues/13), prompt/retention [defect #14](https://github.com/syedtabishmobin/DocumentManagement/issues/14), usage/currency [defect #15](https://github.com/syedtabishmobin/DocumentManagement/issues/15), and partial-GitHub [defect #16](https://github.com/syedtabishmobin/DocumentManagement/issues/16). The replacement implementation adds fail-closed lifecycle/graph and attribution validation, normalized identifier fields, append/query retention with explicit pruning, deterministic self-only reconciliation with currency partitions, and per-source GitHub/UAT availability. These defects remain open until independent retest; PR #12 is not approved or merged.
 
 ## 11. Exact reasons for non-PASS result
 

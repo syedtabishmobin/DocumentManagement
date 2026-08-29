@@ -130,6 +130,9 @@ pnpm agent:summary
 # Validate schemas, adapters, privacy negatives and no-double-count aggregation
 pnpm verify:observability
 
+# Physically remove local events outside the configured 30-day retention window
+pnpm agent:prune
+
 # Native interactive local Codex session view, where supported by the installed CLI
 codex agents
 ```
@@ -152,7 +155,7 @@ python3 scripts/agent_ops.py emit \
 
 For a subagent add `--parent-agent-id <parent-agent-id>`. Emit state transitions for blocked decisions, handoffs, retries, tests, defects, gates and environment promotion. Complex usage records can be supplied with `--event-file <validated-json>`; every value must use `MEASURED`, `PROVIDER_REPORTED`, `ATTRIBUTED`, `ESTIMATED`, or `UNAVAILABLE`.
 
-The runtime store is `.agent-ops/runtime/events.jsonl`, mode-restricted and Git-ignored. It retains 30 days of operational metadata. The validator rejects unknown fields, raw prompt/content keys, secret-like values, unsafe evidence URLs and inconsistent provenance before persistence.
+The runtime store is `.agent-ops/runtime/events.jsonl`, mode-restricted and Git-ignored. Append and query paths enforce 30-day retention, and `pnpm agent:prune` performs explicit physical cleanup. The validator rejects unknown fields, non-normalized free text in identifier/code fields, raw prompt/content keys, secret-like values, unsafe evidence URLs, invalid lifecycle/parent graphs, unregistered attribution IDs and inconsistent provenance before persistence.
 
 Native Codex OpenTelemetry is supported by the installed runtime but disabled. OTel routing is configured only in the user's `~/.codex/config.toml`; a repository `.codex/config.toml` cannot enforce it. Doculyra also requires `log_user_prompt = false`, and native tool-result/error fields need a privacy-filtering collector before export. Do not enable an exporter or copy endpoints/credentials into the repository. The existing Azure Log Analytics/Application Insights infrastructure is the preferred future route to assess, but agent telemetry is not bound to it yet. Current token and cost values therefore report `UNAVAILABLE`, not zero.
 

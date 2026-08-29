@@ -3,6 +3,7 @@
   "provenance": ["MEASURED", "PROVIDER_REPORTED", "ATTRIBUTED", "ESTIMATED", "UNAVAILABLE"],
   "aggregationDimensions": ["project", "goal", "feature", "workItem", "agent", "role", "capability", "skill", "tool", "modelProfile", "environment", "releaseCandidate", "day", "week", "month"],
   "usageRule": "Deduplicate by usage.recordId and sum only SELF_ONLY records; INCLUSIVE records are display-only rollups.",
+  "currencyRule": "Aggregate cost only within the same ISO 4217 currency and provenance bucket; never sum unlike currencies.",
   "metrics": [
     {"id": "active_agents", "unit": "count", "source": "latest-agent-state", "qualityLink": "none"},
     {"id": "agent_duration", "unit": "milliseconds", "source": "durationMs-or-timestamp-delta", "qualityLink": "resultCode"},

@@ -28,6 +28,10 @@
     "tokenStatus": "UNAVAILABLE",
     "costStatus": "UNAVAILABLE"
   },
+  "attribution": {
+    "externalSkillIds": ["openai-docs", "skill-creator"],
+    "externalToolIds": ["codex-thread-coordination", "web"]
+  },
   "privacy": {
     "rawPromptsAllowed": false,
     "productContentAllowed": false,
