@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Delete, Get, Inject, NotFoundException, Param, Patch, Post, Req, Res, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Inject, NotFoundException, Param, Patch, Post, Req, Res, UnprocessableEntityException, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 import { askQuestionSchema, canonicalCreateWorkspaceSchema, configureWorkspaceSchema, createMemberSchema, createSubjectSchema, createTaskSchema, managePersonSchema, manualDocumentSchema, type Workspace, type WorkspaceAction } from "@document-management/contracts";
@@ -88,7 +88,22 @@ export class LocalController {
 
   @Post("v1/workspaces")
   async createCanonicalWorkspace(@Body() body: unknown, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
-    const input = canonicalCreateWorkspaceSchema.parse(body);
+    const parsed = canonicalCreateWorkspaceSchema.safeParse(body);
+    if (!parsed.success) {
+      const correlationId = normalizedCorrelationId(request.get("x-correlation-id"));
+      response.setHeader("X-Correlation-Id", correlationId);
+      response.setHeader("Content-Type", "application/problem+json");
+      throw new UnprocessableEntityException({
+        type: "urn:doculyra:problem:invalid-workspace-request",
+        title: "Workspace request could not be validated",
+        status: 422,
+        code: "INVALID_WORKSPACE_REQUEST",
+        correlation_id: correlationId,
+        retry_class: "DO_NOT_RETRY",
+        violations: [],
+      });
+    }
+    const input = parsed.data;
     const workspace = await this.createAndBindWorkspace(request, response, {
       name: input.workspace_type === "PERSONAL" ? "Personal workspace" : "Family workspace",
       type: input.workspace_type,
