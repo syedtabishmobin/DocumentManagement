@@ -1,4 +1,17 @@
-# Specification Validation
+# Repository validation
+
+## Agent framework
+
+Run `pnpm verify:framework` from the repository root. It executes:
+
+- `python3 scripts/validate_agent_framework.py`, which validates framework/profile separation, required paths, structured configuration, source links, small skills, notification routing/ledger, GitHub controls, CI integration, and bootstrap completion; and
+- `python3 scripts/test_agent_framework.py`, which exercises notification deduplication and validator invariants.
+
+Validate a structured record with `python3 scripts/validate_agent_framework.py --record <type> <file.json>`.
+
+Use `python3 scripts/notification_ledger.py plan <event.json>` to resolve deduplicated recipients and truthful adapter status. Use `python3 scripts/notification_ledger.py record <event.json> --status <status> --evidence <url>` to record an exactly-once result. `SENT` is rejected unless configuration is operational and a provider message ID is supplied.
+
+## Specification validation
 
 Run from the repository root:
 

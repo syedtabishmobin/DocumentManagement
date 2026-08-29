@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0.0",
+  "environments": [
+    {"id": "agent-local", "status": "AVAILABLE", "dataPolicy": "SYNTHETIC_ONLY", "promotionTarget": "dev"},
+    {"id": "dev", "status": "SYNTHETIC_PREVIEW_AVAILABLE", "provider": "AZURE", "region": "australiaeast", "promotionTarget": "stage", "externalAdapters": "CONFIGURED_DISABLED"},
+    {"id": "stage", "status": "DEFINED_NOT_PROVISIONED", "provider": "AZURE", "region": "australiaeast", "promotionTarget": "prod", "uatGateRequired": true},
+    {"id": "prod", "status": "DEFINED_NOT_PROVISIONED", "provider": "AZURE", "region": "australiaeast", "promotionTarget": null, "explicitProductAuthorityApprovalRequired": true}
+  ],
+  "githubEnvironments": {
+    "configured": [],
+    "desired": ["dev", "stage", "prod"],
+    "status": "EXTERNAL_ACTION_REQUIRED",
+    "reason": "No GitHub Environments are configured and deployment workflows are not yet bound to environment approval gates."
+  },
+  "sameArtifactPromotionRequired": true,
+  "productionDataAllowed": false
+}

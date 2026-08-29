@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-engineering-framework.invalid/protocols/contact.schema.json",
+  "title": "Authority contact configuration",
+  "type": "object",
+  "required": ["schemaVersion", "contacts", "routing"],
+  "properties": {
+    "schemaVersion": {"type": "string"},
+    "contacts": {"type": "array", "minItems": 2, "items": {"type": "object", "required": ["id", "role", "email"]}},
+    "routing": {"type": "object", "required": ["toContactId", "ccContactIds", "normalization", "deduplicateAcrossToAndCc", "resolved"]}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectId": "doculyra",
+  "productAuthorityContactId": "doculyra-product-authority",
+  "persistentRoles": [
+    {"id": "delivery-orchestrator", "contract": ".agents/roles/persistent.md", "capabilities": ["repository-discovery", "critical-decision", "handoff"]},
+    {"id": "product-ba", "contract": ".agents/roles/persistent.md", "capabilities": ["work-item-shaping", "acceptance-test-mapping", "business-acceptance"]},
+    {"id": "architecture-guardian", "contract": ".agents/roles/persistent.md", "capabilities": ["architecture-impact", "contract-review"]},
+    {"id": "qa-release-lead", "contract": ".agents/roles/persistent.md", "capabilities": ["independent-qa", "release-readiness"]},
+    {"id": "repository-steward", "contract": ".agents/roles/persistent.md", "capabilities": ["repository-controls", "framework-validation"]}
+  ],
+  "specialists": ["security-privacy", "data-domain", "ux-accessibility", "ai-quality-safety", "reliability-operations", "legal-compliance-adviser"],
+  "separationOfDuties": {
+    "developerMayProvideFinalIndependentQa": false,
+    "implementationAgentMayApproveProduction": false,
+    "productAuthorityRequiredForMaterialScopeAndProduction": true
+  },
+  "parallelism": {
+    "isolatedWorktreesRequired": true,
+    "contractFirst": true,
+    "overlappingPathOwnershipAllowed": false
+  }
+}

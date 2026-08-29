@@ -1,0 +1,52 @@
+name: Critical Product Authority decision
+description: Consequential choice with evidence, options, impacts, recommendation, and bounded blocked scope.
+title: "[DECISION] "
+labels: ["type:decision", "human-decision-required"]
+body:
+  - type: input
+    id: decision_id
+    attributes:
+      label: Decision ID
+      placeholder: DEC-
+    validations:
+      required: true
+  - type: textarea
+    id: question
+    attributes:
+      label: Exact question, required action, and where it applies
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Durable evidence and why this path stopped
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Meaningful options and impacts
+      description: Include scope, security/privacy, reliability, cost, lock-in, and operational impacts as applicable.
+    validations:
+      required: true
+  - type: textarea
+    id: recommendation
+    attributes:
+      label: Recommended option and rationale
+    validations:
+      required: true
+  - type: textarea
+    id: work_state
+    attributes:
+      label: Blocked work, continuing work, and remaining work after the decision
+    validations:
+      required: true
+  - type: input
+    id: notification_key
+    attributes:
+      label: Notification deduplication key/status
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: "Record the authorised decision in this Issue. Notification email replies are not an inbound control channel."

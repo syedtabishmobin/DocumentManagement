@@ -1,0 +1,13 @@
+# Path ownership identifies required reviewers; authority remains governed by CODEX.md and approved decisions.
+* @syedtabishmobin
+
+/AGENTS.md @syedtabishmobin
+/CODEX.md @syedtabishmobin
+/WORKFLOW.md @syedtabishmobin
+/04_USING_THIS_REPO_WITH_CODEX.md @syedtabishmobin
+/.agents/ @syedtabishmobin
+/.github/ @syedtabishmobin
+/docs/00-context/decision-register.md @syedtabishmobin
+/docs/06-security/ @syedtabishmobin
+/docs/09-devops/ @syedtabishmobin
+/infra/ @syedtabishmobin

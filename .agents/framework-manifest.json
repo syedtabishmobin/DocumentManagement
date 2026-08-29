@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0.0",
+  "framework": {
+    "name": "Agent Engineering Framework",
+    "version": "1.1.0",
+    "policyRoot": ".agents/framework",
+    "roleRoot": ".agents/roles",
+    "protocolRoot": ".agents/protocols"
+  },
+  "project": {
+    "id": "doculyra",
+    "profileRoot": ".agents/project",
+    "configurationRoot": ".agents/config"
+  },
+  "entrypoints": [
+    "AGENTS.md",
+    "CODEX.md",
+    "04_USING_THIS_REPO_WITH_CODEX.md",
+    "WORKFLOW.md"
+  ],
+  "validationCommand": "pnpm verify:framework"
+}

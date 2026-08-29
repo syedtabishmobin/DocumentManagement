@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-engineering-framework.invalid/protocols/notification-event.schema.json",
+  "title": "Deduplicated Product Authority notification event",
+  "type": "object",
+  "required": ["key", "eventType", "projectId", "subject", "authoritativeUrl", "requiredAction", "reason", "appliesTo", "recommendation", "alternatives", "blocked", "continuing", "remaining"],
+  "properties": {
+    "key": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]+$"},
+    "eventType": {"enum": ["BLOCKING_DECISION", "UAT_READY"]},
+    "projectId": {"type": "string"},
+    "subject": {"type": "string"},
+    "authoritativeUrl": {"type": "string", "format": "uri"},
+    "requiredAction": {"type": "string"},
+    "reason": {"type": "string"},
+    "appliesTo": {"type": "array", "items": {"type": "string"}},
+    "recommendation": {"type": "string"},
+    "alternatives": {"type": "array", "items": {"type": "string"}},
+    "blocked": {"type": "array", "items": {"type": "string"}},
+    "continuing": {"type": "array", "items": {"type": "string"}},
+    "remaining": {"type": "array", "items": {"type": "string"}},
+    "releaseEvidence": {"type": "string"},
+    "accessInstructions": {"type": "string"},
+    "deliveredScope": {"type": "array", "items": {"type": "string"}},
+    "acceptanceSummary": {"type": "string"},
+    "residualRisks": {"type": "array", "items": {"type": "string"}},
+    "businessAcceptanceStatus": {"enum": ["PASS", "FAIL", "BLOCKED", "NOT_STARTED"]},
+    "recommendedUatScenarios": {"type": "array", "items": {"type": "string"}}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"eventType": {"const": "UAT_READY"}}},
+      "then": {"required": ["releaseEvidence", "accessInstructions", "deliveredScope", "acceptanceSummary", "residualRisks", "businessAcceptanceStatus", "recommendedUatScenarios"]}
+    }
+  ],
+  "additionalProperties": false
+}

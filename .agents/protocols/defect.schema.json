@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-engineering-framework.invalid/protocols/defect.schema.json",
+  "title": "Evidence-backed defect",
+  "type": "object",
+  "required": ["id", "title", "failedCriterion", "environment", "candidate", "steps", "expected", "actual", "evidence", "severity", "owner", "retestRequired"],
+  "properties": {
+    "id": {"type": "string"},
+    "title": {"type": "string"},
+    "failedCriterion": {"type": "string"},
+    "environment": {"type": "string"},
+    "candidate": {"type": "string"},
+    "steps": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "expected": {"type": "string"},
+    "actual": {"type": "string"},
+    "evidence": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "severity": {"enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"]},
+    "owner": {"type": "string"},
+    "retestRequired": {"const": true}
+  },
+  "additionalProperties": true
+}

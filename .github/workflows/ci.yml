@@ -26,7 +26,8 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm verify
+      - name: Validate framework, specifications, TypeScript and tests
+        run: pnpm verify
       - name: Compile Azure Bicep
         run: az bicep build --file infra/main.bicep --outfile "${RUNNER_TEMP}/doculyra-main.json"
 

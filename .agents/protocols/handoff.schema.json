@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-engineering-framework.invalid/protocols/handoff.schema.json",
+  "title": "Governed handoff",
+  "type": "object",
+  "required": ["id", "workItem", "revision", "completed", "changedFiles", "validation", "decisions", "risks", "externalActions", "nextWork"],
+  "properties": {
+    "id": {"type": "string"},
+    "workItem": {"type": "string"},
+    "revision": {"type": "string"},
+    "completed": {"type": "array", "items": {"type": "string"}},
+    "changedFiles": {"type": "array", "items": {"type": "string"}},
+    "validation": {"type": "array", "items": {"type": "object", "required": ["command", "result"]}},
+    "decisions": {"type": "array", "items": {"type": "string"}},
+    "risks": {"type": "array", "items": {"type": "string"}},
+    "externalActions": {"type": "array", "items": {"type": "string"}},
+    "nextWork": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": true
+}

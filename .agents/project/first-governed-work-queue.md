@@ -1,0 +1,13 @@
+# First governed work queue
+
+This queue recommends dependency/risk order; GitHub Issues remains authoritative. Each application item must be shaped against the existing stable story/requirement/decision IDs before implementation.
+
+1. **Resolve remote repository enforcement (`DEC-FWK-001`, [Issue #1](https://github.com/syedtabishmobin/DocumentManagement/issues/1)).** Choose the GitHub plan/publicity and solo-owner review model needed to enforce protected `main`, required CI, sensitive-path ownership, branch deletion, and environment approvals without deadlocking delivery. Framework bootstrap continues; only remote enforcement is blocked.
+2. **Transactional durable authority persistence ([Issue #2](https://github.com/syedtabishmobin/DocumentManagement/issues/2)).** Extend the local `STORY-P1-001`–`003`, `039`, `040` foundation behind existing ports into production-grade persistence, concurrency, migrations, repair, and durable audit/event boundaries. Preserve existing IDs, idempotency and deny-by-default semantics.
+3. **Complete current-authorization coverage.** Extend authorization to fields, evidence, graph edges, search, answers/citations, tasks, exports and activity, with delegated grants, revocation propagation, minimal disclosure and side-channel evidence (`STORY-P1-003`, `019`–`023`, `038`, `039`).
+4. **Client encryption and immutable artifact lifecycle.** Implement reviewed envelope contracts, secure web/Flutter device keys, customer/workspace key grants, immutable Azure Blob artifacts, logical versions, integrity, rotation/revocation and crypto-shred (`DEC-050`; `STORY-P1-004`, `007`, `008`, `011`, `039`, `044`, `045`). Split contract/key-custody and storage work into isolated branches after shared interfaces are approved.
+5. **Durable ingestion, quarantine and audit.** Build transactional outbox/lease/retry/dead-letter/reconciliation, trustworthy content inspection, encrypted quarantine, and append-only privacy-safe audit (`STORY-P1-004`–`006`, `009`, `015`).
+6. **Environment/release control wiring.** Provision Stage only within `DEC-054`, bind workflows to governed environments, implement immutable candidate evidence and independent Stage QA/BA/UAT gates. Production stays unprovisioned.
+7. **Product Authority notification adapter.** Reuse prepared ACS infrastructure behind the vendor-neutral contract; implement recipient allow-list, managed-identity send, preferences/minimisation, deduplication, reconciliation, bounce/failure, audit/rate controls, and synthetic delivery conformance. Keep disabled until all gates pass.
+
+Connectors and hosted processing remain `CONFIGURED_DISABLED` until their own contract, authorization, consent, token-custody, deletion, security/privacy, and release evidence pass.

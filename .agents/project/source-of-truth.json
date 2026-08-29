@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1.0.0",
+  "authorityOrder": [
+    "current-authorised-user-instruction",
+    "docs/00-context/decision-register.md",
+    "accepted-adrs",
+    "normative-contracts-and-reference-data",
+    "product-requirements-and-acceptance-criteria",
+    "architecture-security-ai-ux-operations-specifications",
+    "correct-tests-and-evaluations",
+    "backlog",
+    "examples-and-prose",
+    "preserved-historical-handover"
+  ],
+  "entrypoints": ["AGENTS.md", "CODEX.md", "04_USING_THIS_REPO_WITH_CODEX.md", "WORKFLOW.md"],
+  "decisions": "docs/00-context/decision-register.md",
+  "productBaseline": "docs/01-product/02-phase-1-prd.md",
+  "implementationStatus": "docs/10-backlog/05-personal-family-implementation-status.md",
+  "remainingWork": "docs/10-backlog/06-personal-family-remaining-work.md",
+  "traceability": "docs/10-backlog/04-traceability-matrix.md",
+  "operations": "docs/09-devops/",
+  "tests": "docs/12-testing/",
+  "preservedReference": "docs/00-context/Document_Management_Product_Chat_Handover.md",
+  "controlPlane": "https://github.com/syedtabishmobin/DocumentManagement/issues"
+}

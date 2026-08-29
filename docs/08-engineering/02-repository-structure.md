@@ -6,14 +6,14 @@
 | Version | `0.2` |
 | Status | **APPROVED IMPLEMENTATION STRUCTURE under `DEC-041`, `DEC-054`, and `ADR-ARCH-006`–`009`** |
 | Product phase | Phase 1 — Personal and Family |
-| Updated | 28 August 2026 |
-| Current repository | Specifications under `docs/`, machine-readable contracts/reference data, TypeScript web/API/packages under `src/`, approved Flutter mobile boundary, and Bicep infrastructure boundary |
+| Updated | 29 August 2026 |
+| Current repository | Root governance/onboarding, reusable and project-specific agent controls under `.agents/`, specifications under `docs/`, machine-readable contracts/reference data, TypeScript web/API/packages under `src/`, approved Flutter mobile boundary, and Bicep infrastructure boundary |
 
 ## 1. Purpose and boundary
 
 This document defines ownership boundaries, dependency direction, generated-contract handling, migrations, test placement, and repository hygiene. Accepted ADRs select the current monorepo, React/NestJS/TypeScript implementation, Flutter mobile client, Azure adapters, and Bicep deployment boundary without allowing those selections to redefine canonical domain contracts.
 
-The current numbered specification directories under `docs/` remain authoritative according to [`CODEX.md`](../../CODEX.md). The `src/` directory contains the Phase 1 modular application authorized by `DEC-041` and `DEC-054`. `ADR-ARCH-006` and `ADR-ARCH-009` map the TypeScript and Flutter boundaries below; future adaptations require an accepted repository ADR with equivalent ownership and dependency enforcement.
+The current numbered specification directories under `docs/` remain authoritative according to [`CODEX.md`](../../CODEX.md). Root `AGENTS.md`, `WORKFLOW.md`, and `04_USING_THIS_REPO_WITH_CODEX.md` route humans and agents into that source hierarchy. The reusable Agent Engineering Framework, Doculyra profile, structured protocols/configuration, capabilities, skills, and durable framework state live under `.agents/`; they govern delivery without replacing product contracts. The `src/` directory contains the Phase 1 modular application authorized by `DEC-041` and `DEC-054`. `ADR-ARCH-006` and `ADR-ARCH-009` map the TypeScript and Flutter boundaries below; future adaptations require an accepted repository ADR with equivalent ownership and dependency enforcement.
 
 ## 2. Current immutable specification boundary
 
@@ -24,7 +24,9 @@ The current numbered specification directories under `docs/` remain authoritativ
 | `docs/02-architecture/06-adrs/` | Proposed/accepted design decisions | Status is enforced; PROPOSED is not implementation authority |
 | `docs/05-api/` | OpenAPI, event and connector contracts | Machine-readable OpenAPI/events are generated-input sources, never inferred from handlers |
 | `docs/11-reference-data/` | Inert JSON Schema/catalogue seed | Runtime publication is separate; DRAFT/disabled records cannot become production defaults |
-| `scripts/` | Specification/reference/API validation | Current commands remain repository gates |
+| `.agents/` | Reusable framework, Doculyra profile, roles, protocols, skills, tool/capability registries and non-secret ledger state | Framework policy stays separate from project configuration and product specifications; `pnpm verify:framework` enforces structure |
+| `.github/` | Issue/PR control plane, path ownership and CI | GitHub Issues is authoritative remote work/decision state; remote settings are reported separately when repository files cannot enforce them |
+| `scripts/` | Framework/specification/reference/API/test-traceability validation and notification ledger utility | Current commands remain repository gates |
 | `docs/08-engineering/` | This engineering contract pack | Specification only |
 
 Generated output, caches, dependency trees, local state, secrets, test recordings, binaries, reports, or runtime data must not be added to these source directories.
@@ -35,6 +37,10 @@ The following is the approved ownership model; directories are created increment
 
 ```text
 /
+├── AGENTS.md / CODEX.md / WORKFLOW.md / 04_USING_THIS_REPO_WITH_CODEX.md
+│                                  # governance and human/agent entry points
+├── .agents/                       # reusable framework + Doculyra profile/config/state
+├── .github/                       # Issues/PR controls, CODEOWNERS and CI
 ├── docs/                          # current numbered specification source of truth
 │   ├── 00-context/                # decisions, provenance and preserved handover
 │   ├── 01-product/ … 10-backlog/  # human-readable product-to-delivery contracts
@@ -69,7 +75,7 @@ The following is the approved ownership model; directories are created increment
 │   └── fixtures/                  # implementation-test generators and synthetic derivatives
 ├── tools/                         # repository-owned deterministic engineering tools
 ├── build/                         # declarative build/release sources, not produced artifacts
-└── scripts/                       # current repository validation entry points
+└── scripts/                       # framework and product validation entry points
 ```
 
 If multiple repositories are approved later, the same boundaries become versioned packages/contracts with explicit owners. Splitting a deployable must not allow direct database writes, provider types, or unaudited authority to cross aggregate/module boundaries.

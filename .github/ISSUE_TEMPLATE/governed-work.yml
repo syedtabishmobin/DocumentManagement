@@ -1,0 +1,58 @@
+name: Governed work
+description: Goal, feature, story, task, or external action with traceable acceptance evidence.
+title: "[WORK] "
+labels: ["type:work", "qa:required"]
+body:
+  - type: markdown
+    attributes:
+      value: "Do not include credentials, customer content, or sensitive values."
+  - type: input
+    id: stable_id
+    attributes:
+      label: Stable ID
+      placeholder: GOAL-, FEAT-, STORY-, TASK-, or EXT-
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Outcome and user/business value
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: In scope / out of scope
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria and required evidence
+      description: Use stable criterion IDs and include negative/failure states.
+    validations:
+      required: true
+  - type: textarea
+    id: traceability
+    attributes:
+      label: Requirements, decisions, ADRs, threats, NFRs, and parent work
+    validations:
+      required: true
+  - type: textarea
+    id: baseline
+    attributes:
+      label: Discovery evidence and REUSE/EXTEND/REFACTOR/REPLACE_SELECTIVELY/REBUILD decisions
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies, risks, owner, and specialist consultations
+    validations:
+      required: true
+  - type: textarea
+    id: qa
+    attributes:
+      label: Independent QA and release evidence plan
+    validations:
+      required: true

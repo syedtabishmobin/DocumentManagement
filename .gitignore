@@ -5,6 +5,8 @@
 # Generated local delivery archives; publish these as GitHub release assets when needed.
 /artifacts/
 node_modules/
+__pycache__/
+.agents/state/*.lock
 .pnpm-store/
 dist/
 coverage/

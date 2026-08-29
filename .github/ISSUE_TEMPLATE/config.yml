@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Repository onboarding and operating guide
+    url: https://github.com/syedtabishmobin/DocumentManagement/blob/main/04_USING_THIS_REPO_WITH_CODEX.md
+    about: Read the source-of-truth, workflow, commands, environment, and notification guidance before creating work.

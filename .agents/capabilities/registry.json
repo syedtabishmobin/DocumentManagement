@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "1.0.0",
+  "capabilities": [
+    {"id": "repository-discovery", "skill": ".agents/skills/repository-discovery/SKILL.md", "outputs": ["discovery-record"]},
+    {"id": "critical-decision", "skill": ".agents/skills/critical-decision/SKILL.md", "outputs": ["decision-record", "notification-event"]},
+    {"id": "acceptance-test-mapping", "skill": ".agents/skills/acceptance-test-mapping/SKILL.md", "outputs": ["work-item-record", "test-map"]},
+    {"id": "defect-evidence", "skill": ".agents/skills/defect-evidence/SKILL.md", "outputs": ["defect-record"]},
+    {"id": "release-readiness", "skill": ".agents/skills/release-readiness/SKILL.md", "outputs": ["release-evidence", "notification-event"]},
+    {"id": "github-issue-control-plane", "skill": ".agents/skills/github-issue-control-plane/SKILL.md", "outputs": ["authoritative-issue"]}
+  ]
+}

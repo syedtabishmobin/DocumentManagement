@@ -165,6 +165,8 @@ Before enabling synthetic email delivery:
 4. test only with synthetic content; and
 5. retain `DM_EXTERNAL_NOTIFICATIONS=disabled` until the delivery conformance suite passes.
 
+The repository Agent Engineering Framework adds the Product Authority decision/UAT notification contract and exactly-once ledger under `.agents/config/notifications.json`, `.agents/protocols/notification-event.schema.json`, and `.agents/state/notification-ledger.json`. This control plane does not activate ACS or replace the product notification requirements above. Until the runtime adapter and delivery conformance pass, it MUST record `EXTERNAL_ACTION_REQUIRED` and MUST NOT report email as sent.
+
 ## 9. Configuration and Key Vault inventory
 
 ### 9.1 Public environment configuration

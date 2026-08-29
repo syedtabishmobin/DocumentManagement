@@ -1,0 +1,15 @@
+{
+  "key": "decision:dec-fwk-001:first-blocking-notification",
+  "eventType": "BLOCKING_DECISION",
+  "projectId": "doculyra",
+  "subject": "[Doculyra][ACTION REQUIRED][DEC-FWK-001] Enforce protected main and environment gates",
+  "authoritativeUrl": "https://github.com/syedtabishmobin/DocumentManagement/issues/1",
+  "requiredAction": "Choose the GitHub plan/publicity and solo-owner review policy in Issue #1.",
+  "reason": "The current private repository plan does not expose branch protection or rulesets, and no GitHub Environments are configured.",
+  "appliesTo": ["main branch protection", "required Phase 1 checks", "sensitive-path ownership", "GitHub Environment approvals"],
+  "recommendation": "Keep the repository private, upgrade to a protection-capable plan, require PRs and Phase 1 checks now, and require one independent approval only after a second authorised reviewer exists.",
+  "alternatives": ["Make the repository public and configure protection.", "Remain private with procedural controls only."],
+  "blocked": ["Mechanical protected-main enforcement", "Mechanical GitHub Environment approval gates"],
+  "continuing": ["Repository-contained framework and CI controls", "Governed synthetic local/dev work"],
+  "remaining": ["Apply the selected remote settings", "Record settings evidence", "Revalidate the framework"]
+}

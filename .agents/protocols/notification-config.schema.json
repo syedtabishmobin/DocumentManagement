@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-engineering-framework.invalid/protocols/notification-config.schema.json",
+  "title": "Notification configuration",
+  "type": "object",
+  "required": ["projectId", "recipientConfiguration", "authoritativeDecisionChannel", "adapter", "events", "ledger", "nonOperationalResult"],
+  "properties": {
+    "projectId": {"type": "string"},
+    "recipientConfiguration": {"type": "string"},
+    "authoritativeDecisionChannel": {"type": "string"},
+    "adapter": {"type": "object", "required": ["kind", "implementation", "activation", "deliveryConformance", "sendAllowed"]},
+    "events": {"type": "object", "required": ["BLOCKING_DECISION", "UAT_READY"]},
+    "ledger": {"type": "string"},
+    "nonOperationalResult": {"const": "EXTERNAL_ACTION_REQUIRED"}
+  },
+  "additionalProperties": true
+}

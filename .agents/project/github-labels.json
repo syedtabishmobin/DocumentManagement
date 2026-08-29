@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0.0",
+  "labels": [
+    {"name": "type:work", "color": "1D76DB", "description": "Governed goal, feature, story, task, or external action"},
+    {"name": "type:defect", "color": "D73A4A", "description": "Evidence-backed failed criterion or regression"},
+    {"name": "type:decision", "color": "A371F7", "description": "Consequential decision requiring durable authority"},
+    {"name": "human-decision-required", "color": "B60205", "description": "Product Authority action is required"},
+    {"name": "external-action-required", "color": "FBCA04", "description": "Repository automation cannot complete a required remote or provider action"},
+    {"name": "uat:ready", "color": "0E8A16", "description": "Stage candidate passed required QA and business acceptance and awaits UAT"},
+    {"name": "qa:required", "color": "5319E7", "description": "Independent QA evidence is required"},
+    {"name": "qa:failed", "color": "B60205", "description": "Independent acceptance or regression evidence failed"},
+    {"name": "risk:high", "color": "D93F0B", "description": "High-risk change or unresolved exposure"},
+    {"name": "component:governance", "color": "0052CC", "description": "Repository governance and agent framework"},
+    {"name": "component:platform", "color": "006B75", "description": "CI, environments, infrastructure, release, or operations"},
+    {"name": "component:notifications", "color": "C2E0C6", "description": "Notification contract, adapter, delivery, or preferences"}
+  ]
+}

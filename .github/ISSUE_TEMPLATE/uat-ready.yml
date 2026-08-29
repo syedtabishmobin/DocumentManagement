@@ -1,0 +1,53 @@
+name: UAT-ready release candidate
+description: Stage candidate that passed required QA and BA/business acceptance and is ready for Product Authority testing.
+title: "[UAT READY] "
+labels: ["uat:ready", "qa:required"]
+body:
+  - type: input
+    id: candidate
+    attributes:
+      label: Release candidate, source revision, and artifact digests
+    validations:
+      required: true
+  - type: textarea
+    id: access
+    attributes:
+      label: Stage location and access instructions
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Delivered scope
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Acceptance, test, evaluation, and durable evidence links
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Independent QA and BA/business acceptance status
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Known residual defects and risks
+    validations:
+      required: true
+  - type: textarea
+    id: scenarios
+    attributes:
+      label: Recommended UAT scenarios and requested approval
+    validations:
+      required: true
+  - type: input
+    id: notification
+    attributes:
+      label: UAT-ready notification key/status
+    validations:
+      required: true

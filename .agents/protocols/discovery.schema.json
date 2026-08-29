@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agent-engineering-framework.invalid/protocols/discovery.schema.json",
+  "title": "Repository discovery record",
+  "type": "object",
+  "required": ["id", "assessedAt", "scope", "baseline", "evidence", "dispositions", "consultations", "risks", "recommendation"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^DISC-[A-Z0-9-]+$"},
+    "assessedAt": {"type": "string", "format": "date-time"},
+    "scope": {"type": "string", "minLength": 1},
+    "baseline": {"type": "object"},
+    "evidence": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+    "dispositions": {"type": "array", "minItems": 1, "items": {"type": "object", "required": ["area", "decision", "evidence"], "properties": {"area": {"type": "string"}, "decision": {"enum": ["REUSE", "EXTEND", "REFACTOR", "REPLACE_SELECTIVELY", "REBUILD"]}, "evidence": {"type": "string"}}}},
+    "consultations": {"type": "array", "items": {"type": "string"}},
+    "risks": {"type": "array", "items": {"type": "string"}},
+    "recommendation": {"type": "string", "minLength": 1}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "1.0.0",
+  "repository": "syedtabishmobin/DocumentManagement",
+  "visibility": "private",
+  "defaultBranch": "main",
+  "issuesEnabled": true,
+  "authoritativeWorkAndDecisionChannel": "GITHUB_ISSUES",
+  "branchNaming": "codex/<issue>-<short-name>",
+  "mergePreference": "SQUASH",
+  "deleteBranchOnMergeDesired": true,
+  "requiredWorkflow": "Phase 1 quality gates",
+  "requiredChecks": ["specifications-and-typescript", "flutter-android", "flutter-ios-simulator"],
+  "pullRequestRequired": true,
+  "codeOwnerReviewRequiredForSensitivePaths": true,
+  "remoteProtection": {
+    "observedRules": 0,
+    "rulesetApiStatus": "UNAVAILABLE_PRIVATE_PLAN",
+    "enforcement": "PROCEDURAL_ONLY",
+    "result": "EXTERNAL_ACTION_REQUIRED",
+    "requiredDecision": "Choose a GitHub plan/publicity and solo-owner review policy that can enforce protected main without deadlocking delivery."
+  }
+}

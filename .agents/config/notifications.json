@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectId": "doculyra",
+  "recipientConfiguration": ".agents/config/contacts.json",
+  "authoritativeDecisionChannel": "GITHUB_ISSUES",
+  "inboundEmailControlChannel": false,
+  "adapter": {
+    "kind": "AZURE_COMMUNICATION_SERVICES_EMAIL",
+    "implementation": "MISSING",
+    "activation": "CONFIGURED_DISABLED",
+    "authentication": "MANAGED_IDENTITY_REQUIRED",
+    "deliveryConformance": "NOT_RUN",
+    "sendAllowed": false,
+    "externalAction": "Implement the channel-neutral runtime adapter, synthetic-recipient allow-list, delivery reconciliation, failure/bounce handling, audit and conformance test before enabling email."
+  },
+  "events": {
+    "BLOCKING_DECISION": {
+      "subjectTemplate": "[Doculyra][ACTION REQUIRED][<Decision ID>] <short decision title>",
+      "authoritativeRecordRequired": true,
+      "deduplicationScope": "decision-id:first-blocking-notification"
+    },
+    "UAT_READY": {
+      "subjectTemplate": "[Doculyra][UAT READY][<Release Candidate>] <short release summary>",
+      "authoritativeRecordRequired": true,
+      "deduplicationScope": "release-candidate:uat-ready"
+    }
+  },
+  "ledger": ".agents/state/notification-ledger.json",
+  "nonOperationalResult": "EXTERNAL_ACTION_REQUIRED"
+}

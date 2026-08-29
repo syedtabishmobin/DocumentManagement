@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1.0.0",
+  "contacts": [
+    {
+      "id": "global-product-authority",
+      "role": "GLOBAL_PRODUCT_AUTHORITY",
+      "email": "tabish_mb@live.com"
+    },
+    {
+      "id": "doculyra-product-authority",
+      "role": "PROJECT_PRODUCT_AUTHORITY",
+      "projectId": "doculyra",
+      "email": "tabish_mb@live.com"
+    }
+  ],
+  "routing": {
+    "toContactId": "doculyra-product-authority",
+    "ccContactIds": ["global-product-authority"],
+    "normalization": "trim-and-lowercase",
+    "deduplicateAcrossToAndCc": true,
+    "resolved": {
+      "to": ["tabish_mb@live.com"],
+      "cc": []
+    }
+  }
+}

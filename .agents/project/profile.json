@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectId": "doculyra",
+  "product": "Doculyra",
+  "phase": "Phase 1 — Personal and Family",
+  "edition": "Doculyra Home",
+  "repository": "syedtabishmobin/DocumentManagement",
+  "sourceControl": "GITHUB",
+  "workManagement": "GITHUB_ISSUES",
+  "remoteHumanDecisionChannel": "GITHUB_ISSUES",
+  "frameworkVersion": "1.1.0",
+  "contacts": ".agents/config/contacts.json",
+  "notifications": ".agents/config/notifications.json",
+  "sourceOfTruth": ".agents/project/source-of-truth.json",
+  "team": ".agents/project/team.json",
+  "environments": ".agents/project/environments.json",
+  "implementationAuthority": ["DEC-041", "DEC-054"],
+  "activationFences": ["DEC-031", "DEC-032", "DEC-036", "DEC-037", "DEC-038", "DEC-049", "DEC-050", "DEC-053", "DEC-054", "DEC-055"]
+}

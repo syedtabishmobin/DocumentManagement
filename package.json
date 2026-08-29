@@ -11,8 +11,9 @@
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
+    "verify:framework": "python3 scripts/validate_agent_framework.py && python3 scripts/test_agent_framework.py",
     "verify:spec": "python3 scripts/validate-specifications.py && python3 scripts/validate-api-contracts.py && python3 scripts/validate-reference-data.py && python3 scripts/validate-test-traceability.py",
-    "verify": "pnpm verify:spec && pnpm typecheck && pnpm test && pnpm build"
+    "verify": "pnpm verify:framework && pnpm verify:spec && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
     "typescript": "^5.9.2"

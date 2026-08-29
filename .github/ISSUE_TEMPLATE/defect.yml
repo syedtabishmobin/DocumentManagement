@@ -1,0 +1,48 @@
+name: Evidence-backed defect
+description: Failed acceptance criterion or regression requiring independent retest.
+title: "[DEFECT] "
+labels: ["type:defect", "qa:failed"]
+body:
+  - type: input
+    id: failed_criterion
+    attributes:
+      label: Failed criterion / contract
+    validations:
+      required: true
+  - type: input
+    id: candidate
+    attributes:
+      label: Candidate, revision, and environment
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Synthetic fixture and minimal reproduction steps
+    validations:
+      required: true
+  - type: textarea
+    id: expected_actual
+    attributes:
+      label: Expected and actual result
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Durable privacy-safe evidence
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options: [CRITICAL, HIGH, MEDIUM, LOW]
+    validations:
+      required: true
+  - type: textarea
+    id: ownership
+    attributes:
+      label: Owning component, required fix evidence, and independent retest scope
+    validations:
+      required: true
