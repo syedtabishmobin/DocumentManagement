@@ -4,7 +4,7 @@
     {"id": "git", "purpose": "local source history and branches", "minimumAccess": "repository-read-write", "status": "AVAILABLE"},
     {"id": "github-issues", "purpose": "authoritative work and human decisions", "minimumAccess": "issues-read-write", "status": "AVAILABLE"},
     {"id": "github-actions", "purpose": "CI evidence", "minimumAccess": "actions-read; workflow contents read", "status": "AVAILABLE"},
-    {"id": "github-protection", "purpose": "remote protected-branch enforcement", "minimumAccess": "repository-admin and supporting plan", "status": "EXTERNAL_ACTION_REQUIRED"},
+    {"id": "github-protection", "purpose": "remote protected-branch enforcement", "minimumAccess": "repository-admin", "status": "AVAILABLE_ENFORCED"},
     {"id": "pnpm-node", "purpose": "TypeScript build/test/validation", "minimumAccess": "workspace read-write", "status": "AVAILABLE"},
     {"id": "flutter", "purpose": "iOS/Android analysis, tests and builds", "minimumAccess": "workspace read-write", "status": "AVAILABLE"},
     {"id": "azure-bicep", "purpose": "environment infrastructure", "minimumAccess": "scoped subscription/resource-group identities", "status": "DEV_FOUNDATION_AVAILABLE"},

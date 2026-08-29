@@ -2,12 +2,14 @@
   "id": "DEC-FWK-001",
   "title": "Enforce protected main and environment gates",
   "authority": "doculyra-product-authority",
-  "status": "OPEN",
+  "status": "APPROVED",
   "question": "Which GitHub plan/publicity and solo-owner review policy should enforce protected main, required checks, sensitive-path ownership and environment approvals without deadlocking delivery?",
   "evidence": [
     "The private repository has no branch protection, rulesets or GitHub Environments.",
     "GitHub rulesets and classic branch protection APIs both return HTTP 403 requiring GitHub Pro or a public repository.",
-    "Only one authorised Product Authority/repository owner is currently configured, so mandatory independent approval would deadlock delivery until a second reviewer exists."
+    "Only one authorised Product Authority/repository owner is currently configured, so mandatory independent approval would deadlock delivery until a second reviewer exists.",
+    "The Product Authority selected Option B and changed the repository visibility to public on 29 August 2026.",
+    "Public visibility enabled classic main-branch protection with strict required Phase 1 checks, pull requests, linear history, resolved conversations and administrator enforcement."
   ],
   "options": [
     {"id": "A", "description": "Keep private and upgrade to a protection-capable plan; require PR/checks now and enable one approval when a second authorised reviewer exists.", "impacts": ["Subscription cost", "Strong mechanical enforcement", "Preserves private visibility", "Requires a deliberate reviewer transition"]},
@@ -15,7 +17,12 @@
     {"id": "C", "description": "Remain private on the current plan with procedural controls only.", "impacts": ["No cost or visibility change", "Direct pushes and ungated environment actions cannot be mechanically prevented"]}
   ],
   "recommendation": {"optionId": "A", "reason": "It best preserves the current private posture while enabling enforceable CI, branch and environment controls; a zero-approval solo-owner phase avoids deadlock until a second authorised reviewer exists."},
-  "blockedScope": ["Remote protected-main enforcement", "Remote GitHub Environment approval gates"],
+  "selectedOptionId": "B",
+  "decision": "Make the repository public and configure enforceable remote protection. Require zero approving reviews while there is one authorised reviewer; move to one independent approval and required CODEOWNER review when a second authorised reviewer exists.",
+  "decidedAt": "2026-08-29",
+  "decisionEvidence": "https://github.com/syedtabishmobin/DocumentManagement/issues/1#issuecomment-5461369340",
+  "resolvedScope": ["Repository visibility decision", "Remote protected-main enforcement", "Required Phase 1 checks", "Branch cleanup after merge"],
+  "blockedScope": ["GitHub Environment approval gates remain unwired until deployment workflows and least-privilege identities are ready"],
   "continuingWork": ["Repository-contained framework bootstrap", "GitHub Issues/forms/labels/CODEOWNERS/CI controls", "Synthetic local/dev work inside DEC-041 and DEC-054"],
   "authoritativeUrl": "https://github.com/syedtabishmobin/DocumentManagement/issues/1"
 }

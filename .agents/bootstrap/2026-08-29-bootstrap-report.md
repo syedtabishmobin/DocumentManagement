@@ -46,7 +46,7 @@ Native subagent capability was not exposed in this session, so persistent/specia
 
 ## 8. Human decisions
 
-`DEC-FWK-001` is the only consequential bootstrap decision: select a GitHub plan/publicity and solo-owner review policy that can enforce protected `main` and environment approvals without deadlocking delivery. The affected remote-enforcement path is stopped; repository-contained controls and all safe bootstrap work continue. Authoritative Issue: https://github.com/syedtabishmobin/DocumentManagement/issues/1.
+`DEC-FWK-001` was the only consequential bootstrap decision. On 29 August 2026 the Product Authority selected Option B and made the repository public. Protected `main`, strict required Phase 1 checks, linear history, resolved conversations, administrator enforcement and branch cleanup are now enabled. Required approving reviews remain zero until a second authorised reviewer exists. GitHub Environment wiring remains separate release-control work. Authoritative Issue: https://github.com/syedtabishmobin/DocumentManagement/issues/1.
 
 ## 9. Notifications
 
@@ -62,8 +62,8 @@ The ordered queue is in `.agents/project/first-governed-work-queue.md`: remote e
 
 ## 12. External/admin actions
 
-- Resolve `DEC-FWK-001`, then configure protected `main`/required checks and GitHub Environment approval rules using a plan/policy that supports them.
-- Wire deployment workflows to `dev`/`stage`/`prod` GitHub Environments without granting production credentials to change/test jobs.
+- Protected `main` and required checks are resolved under `DEC-FWK-001` Option B.
+- Wire deployment workflows to `dev`/`stage`/`prod` GitHub Environments without granting production credentials to change/test jobs; this remains pending until those deployment identities and Stage/production gates are ready.
 - Implement and synthetically conformance-test the ACS notification adapter before changing send status; until then notifications remain `EXTERNAL_ACTION_REQUIRED`.
 
 ## 13. Validation
