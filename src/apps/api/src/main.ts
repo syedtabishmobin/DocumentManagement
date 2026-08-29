@@ -17,7 +17,7 @@ async function bootstrap(): Promise<void> {
     origin: origins,
     methods: ["GET", "POST", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "X-CSRF-Token", "X-Workspace-Id", "X-Purpose-Id", "Idempotency-Key", "X-Correlation-Id"],
-    exposedHeaders: ["X-CSRF-Token"],
+    exposedHeaders: ["X-CSRF-Token", "X-Correlation-Id", "ETag"],
     credentials: true,
   });
   app.setGlobalPrefix("api");

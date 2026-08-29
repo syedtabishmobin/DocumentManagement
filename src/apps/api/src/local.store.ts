@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, Optional } from "@nestjs/common";
+import { BadRequestException, ConflictException, Inject, Injectable, NotFoundException, Optional, UnprocessableEntityException } from "@nestjs/common";
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -34,6 +34,7 @@ import {
   type AuthorityOutboxEvent,
   type WorkspaceActor,
   type WorkspaceDatabase,
+  type WorkspaceCreationContext,
   type WorkspacePersistence,
   type WorkspaceState,
 } from "./workspace-state.js";
@@ -60,7 +61,39 @@ const ownerActions: WorkspaceAction[] = [
   "task.read", "task.create", "task.edit", "connector.read", "export.create", "audit.read",
 ];
 
-function auditRecord(workspaceId: string, actor: WorkspaceActor, type: string, resourceType: AuditRecord["resourceType"], detail: string, resourceId?: string, correlationId = randomUUID()): AuditRecord {
+export function currentWorkspaceConfiguration(): Pick<WorkspaceCreationContext, "jurisdictionPackRef" | "residencyPolicyRef" | "configurationVersion"> {
+  return {
+    jurisdictionPackRef: "jurisdiction.AU",
+    residencyPolicyRef: (process.env.DM_PROFILE ?? "local") === "local" ? "residency.local.synthetic" : "residency.azure.au.synthetic-preview",
+    configurationVersion: "configuration.local.synthetic@0.1",
+  };
+}
+
+export function normalizedCorrelationId(seed?: string): string {
+  const candidate = seed?.trim();
+  return candidate && /^[A-Za-z0-9._:-]{8,128}$/.test(candidate) ? candidate : randomUUID();
+}
+
+function workspaceCreationContext(input?: Partial<WorkspaceCreationContext>): WorkspaceCreationContext {
+  const configured = currentWorkspaceConfiguration();
+  const context: WorkspaceCreationContext = {
+    purposeId: input?.purposeId ?? "PUR-P1-001",
+    correlationId: normalizedCorrelationId(input?.correlationId),
+    jurisdictionPackRef: input?.jurisdictionPackRef ?? configured.jurisdictionPackRef,
+    residencyPolicyRef: input?.residencyPolicyRef ?? configured.residencyPolicyRef,
+    configurationVersion: input?.configurationVersion ?? configured.configurationVersion,
+    activation: input?.activation ?? "IMMEDIATE",
+  };
+  if (context.purposeId !== "PUR-P1-001") throw new BadRequestException("Workspace creation requires an approved explicit purpose");
+  if (
+    context.jurisdictionPackRef !== configured.jurisdictionPackRef ||
+    context.residencyPolicyRef !== configured.residencyPolicyRef ||
+    context.configurationVersion !== configured.configurationVersion
+  ) throw new UnprocessableEntityException("Workspace configuration is unavailable or no longer current");
+  return context;
+}
+
+function auditRecord(workspaceId: string, actor: WorkspaceActor, type: string, resourceType: AuditRecord["resourceType"], detail: string, resourceId?: string, correlationId: string = randomUUID()): AuditRecord {
   return {
     id: randomUUID(), workspaceId, type, resourceType, ...(resourceId ? { resourceId } : {}),
     actor: actor.displayName, actorId: actor.identityId, action: type, outcome: "SUCCEEDED",
@@ -72,18 +105,18 @@ function advanceAuthorizationEpoch(state: WorkspaceState, cause: AuthorizationEp
   state.authorizationEpoch = { workspaceId: state.workspace.id, value: state.authorizationEpoch.value + 1, cause, advancedAt: now() };
 }
 
-function initialState(actor: WorkspaceActor, name: string, type: Workspace["type"]): WorkspaceState {
+function initialState(actor: WorkspaceActor, name: string, type: Workspace["type"], context: WorkspaceCreationContext): WorkspaceState {
   const createdAt = now();
   const workspaceId = randomUUID();
   const ownerMembershipId = randomUUID();
   const ownerSubjectId = randomUUID();
   const ownerBindingId = randomUUID();
   const ownerGrantId = randomUUID();
-  const residencyPolicyRef = (process.env.DM_PROFILE ?? "local") === "local" ? "residency.local.synthetic" : "residency.azure.au.synthetic-preview";
   return {
     workspace: {
-      id: workspaceId, name, type, status: "ACTIVE", ownerBindingId, jurisdictionPackRef: "jurisdiction.AU",
-      residencyPolicyRef, configurationVersion: "configuration.local.synthetic@0.1", revision: 1, createdAt,
+      id: workspaceId, name, type, status: context.activation === "IMMEDIATE" ? "ACTIVE" : "PENDING_ACTIVATION", ownerBindingId,
+      jurisdictionPackRef: context.jurisdictionPackRef, residencyPolicyRef: context.residencyPolicyRef,
+      configurationVersion: context.configurationVersion, revision: 1, createdAt,
     },
     ownerBindings: [{ id: ownerBindingId, workspaceId, ownerIdentityId: actor.identityId, ownerMembershipId, authorityBasis: "WORKSPACE_CREATOR", state: "ACTIVE", validFrom: createdAt, recordedAt: createdAt, revision: 1 }],
     documents: [],
@@ -136,7 +169,7 @@ function initialState(actor: WorkspaceActor, name: string, type: Workspace["type
     audit: [{
       id: randomUUID(), workspaceId, type: "WORKSPACE_CREATED", resourceType: "WORKSPACE", resourceId: workspaceId,
       actor: actor.displayName, actorId: actor.identityId, action: "workspace.create", outcome: "SUCCEEDED",
-      policyVersion: "policy.local-explicit-grant@0.1", correlationId: randomUUID(), detail: `Created a ${type.toLowerCase()} workspace`, at: createdAt,
+      policyVersion: "policy.local-explicit-grant@0.1", correlationId: context.correlationId, detail: `Created a ${type.toLowerCase()} workspace`, at: createdAt,
     }],
     dependencies: [],
   };
@@ -376,7 +409,7 @@ export class LocalStore {
   async listWorkspaces(identityId: string): Promise<WorkspaceSummary[]> {
     const database = await this.readDatabase();
     return database.workspaces
-      .filter((state) => state.members.some((member) =>
+      .filter((state) => state.workspace.status === "ACTIVE" && state.members.some((member) =>
         member.workspaceId === state.workspace.id &&
         member.identityId === identityId &&
         member.state === "ACTIVE",
@@ -407,16 +440,28 @@ export class LocalStore {
     });
   }
 
-  async createWorkspace(actor: WorkspaceActor, name: string, type: Workspace["type"], idempotencyKey: string): Promise<Workspace> {
+  async createWorkspace(actor: WorkspaceActor, name: string, type: Workspace["type"], idempotencyKey: string, inputContext?: Partial<WorkspaceCreationContext>): Promise<Workspace> {
+    const context = workspaceCreationContext(inputContext);
     const keyHash = createHash("sha256").update(idempotencyKey).digest("hex");
-    const fingerprint = createHash("sha256").update(JSON.stringify({ name, type })).digest("hex");
+    const fingerprint = createHash("sha256").update(JSON.stringify({
+      operationId: "API-P1-101", name, type, purposeId: context.purposeId,
+      jurisdictionPackRef: context.jurisdictionPackRef,
+      residencyPolicyRef: context.residencyPolicyRef,
+      configurationVersion: context.configurationVersion,
+    })).digest("hex");
     return this.mutate((database) => {
       const prior = database.workspaceCreationReceipts.find((receipt) => receipt.identityId === actor.identityId && receipt.idempotencyKeyHash === keyHash);
       if (prior) {
-        if (prior.requestFingerprint !== fingerprint) throw new ConflictException("This workspace request key was already used for different input");
-        return this.state(database, prior.workspaceId).workspace;
+        const priorState = this.state(database, prior.workspaceId);
+        const legacyFingerprint = createHash("sha256").update(JSON.stringify({ name, type })).digest("hex");
+        const compatibleLegacyReceipt = prior.requestFingerprint === legacyFingerprint &&
+          priorState.workspace.jurisdictionPackRef === context.jurisdictionPackRef &&
+          priorState.workspace.residencyPolicyRef === context.residencyPolicyRef &&
+          priorState.workspace.configurationVersion === context.configurationVersion;
+        if (prior.requestFingerprint !== fingerprint && !compatibleLegacyReceipt) throw new ConflictException("This workspace request key was already used for different input");
+        return priorState.workspace;
       }
-      const state = initialState(actor, name, type);
+      const state = initialState(actor, name, type, context);
       database.workspaces.push(state);
       database.workspaceCreationReceipts.push({ identityId: actor.identityId, idempotencyKeyHash: keyHash, requestFingerprint: fingerprint, workspaceId: state.workspace.id, createdAt: state.workspace.createdAt });
       appendAuthorityOutbox(database, state, state.audit[0]!);
@@ -424,9 +469,26 @@ export class LocalStore {
     });
   }
 
+  async activateWorkspace(actor: WorkspaceActor, workspaceId: string, correlationId?: string): Promise<Workspace> {
+    return this.mutate((database) => {
+      const state = this.state(database, workspaceId);
+      const binding = state.ownerBindings.find((candidate) => candidate.state === "ACTIVE");
+      if (!binding || binding.ownerIdentityId !== actor.identityId) throw new NotFoundException("Workspace not available");
+      if (state.workspace.status === "ACTIVE") return state.workspace;
+      if (state.workspace.status !== "PENDING_ACTIVATION") throw new ConflictException("Workspace cannot be activated from its current state");
+      state.workspace.status = "ACTIVE";
+      state.workspace.revision += 1;
+      const audit = auditRecord(state.workspace.id, actor, "WORKSPACE_ACTIVATED", "WORKSPACE", "Activated workspace after identity binding", state.workspace.id, normalizedCorrelationId(correlationId));
+      state.audit.push(audit);
+      appendAuthorityOutbox(database, state, audit);
+      return state.workspace;
+    });
+  }
+
   async requireAuthorization(actor: WorkspaceActor, workspaceId: string, action: WorkspaceAction, resourceKind: "WORKSPACE" | "DOCUMENT" | "SUBJECT" | "TASK", resourceId?: string): Promise<void> {
     const database = await this.readDatabase();
     const state = this.state(database, workspaceId);
+    if (state.workspace.status !== "ACTIVE") throw new NotFoundException("Resource not available");
     const context = { identityId: actor.identityId, workspaceId, purposeId: "PUR-P1-001" as const, action, resourceKind, ...(resourceId ? { resourceId } : {}) };
     const decision = evaluateAuthorization(state, context);
     if (decision.decision !== "ALLOW") throw new NotFoundException("Resource not available");

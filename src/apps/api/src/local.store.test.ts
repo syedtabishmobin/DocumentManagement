@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -54,6 +55,71 @@ describe("LocalStore", () => {
     expect(persisted.schemaVersion).toBe(3);
     expect(persisted.authorityOutbox).toEqual(expect.arrayContaining([expect.objectContaining({ eventType: "WORKSPACE_CREATED" })]));
     expect(persisted.authorityOutbox.every((event) => Boolean(event.correlationId))).toBe(true);
+  });
+
+  it("keeps deferred workspace creation inaccessible until owner activation and replays the final outcome", async () => {
+    const correlationId = "corr-story-p1-001-activation";
+    const pending = await store.createWorkspace(actor, "Deferred household", "FAMILY", "workspace-deferred-key-0001", {
+      purposeId: "PUR-P1-001",
+      correlationId,
+      jurisdictionPackRef: "jurisdiction.AU",
+      residencyPolicyRef: "residency.local.synthetic",
+      configurationVersion: "configuration.local.synthetic@0.1",
+      activation: "DEFERRED",
+    });
+    expect(pending).toMatchObject({ status: "PENDING_ACTIVATION", revision: 1 });
+    expect((await store.listWorkspaces(actor.identityId)).map((workspace) => workspace.id)).not.toContain(pending.id);
+    await expect(store.requireAuthorization(actor, pending.id, "workspace.read", "WORKSPACE", pending.id)).rejects.toThrow("not available");
+    await expect(store.activateWorkspace({ identityId: "id_foreign", displayName: "Foreign actor" }, pending.id, correlationId)).rejects.toThrow("not available");
+
+    const activated = await store.activateWorkspace(actor, pending.id, correlationId);
+    expect(activated).toMatchObject({ status: "ACTIVE", revision: 2 });
+    await expect(store.requireAuthorization(actor, pending.id, "workspace.read", "WORKSPACE", pending.id)).resolves.toBeUndefined();
+    await expect(store.createWorkspace(actor, "Deferred household", "FAMILY", "workspace-deferred-key-0001", {
+      purposeId: "PUR-P1-001",
+      correlationId: "corr-story-p1-001-retry",
+      jurisdictionPackRef: "jurisdiction.AU",
+      residencyPolicyRef: "residency.local.synthetic",
+      configurationVersion: "configuration.local.synthetic@0.1",
+      activation: "DEFERRED",
+    })).resolves.toMatchObject({ id: pending.id, status: "ACTIVE", revision: 2 });
+
+    const persisted = JSON.parse(await readFile(join(directory, "state.json"), "utf8")) as {
+      workspaces: Array<{ workspace: { id: string }; audit: Array<{ type: string; correlationId: string }> }>;
+      authorityOutbox: Array<{ workspaceId: string; eventType: string; correlationId: string }>;
+    };
+    const state = persisted.workspaces.find((candidate) => candidate.workspace.id === pending.id)!;
+    expect(state.audit.map((entry) => [entry.type, entry.correlationId])).toEqual([
+      ["WORKSPACE_CREATED", correlationId],
+      ["WORKSPACE_ACTIVATED", correlationId],
+    ]);
+    expect(persisted.authorityOutbox.filter((event) => event.workspaceId === pending.id).map((event) => event.eventType)).toEqual(["WORKSPACE_CREATED", "WORKSPACE_ACTIVATED"]);
+  });
+
+  it("rejects stale or unknown workspace configuration before creating authority state", async () => {
+    const before = await store.listWorkspaces(actor.identityId);
+    await expect(store.createWorkspace(actor, "Unsafe household", "PERSONAL", "workspace-invalid-config-0001", {
+      purposeId: "PUR-P1-001",
+      correlationId: "corr-story-p1-001-invalid",
+      jurisdictionPackRef: "jurisdiction.AU",
+      residencyPolicyRef: "residency.local.synthetic",
+      configurationVersion: "configuration.unknown@9.9",
+      activation: "DEFERRED",
+    })).rejects.toThrow("unavailable or no longer current");
+    expect(await store.listWorkspaces(actor.identityId)).toEqual(before);
+  });
+
+  it("replays compatible legacy creation receipts without weakening current configuration binding", async () => {
+    const key = "workspace-legacy-receipt-0001";
+    const created = await store.createWorkspace(actor, "Legacy receipt household", "FAMILY", key);
+    const path = join(directory, "state.json");
+    const database = JSON.parse(await readFile(path, "utf8")) as { workspaceCreationReceipts: Array<{ requestFingerprint: string }> };
+    database.workspaceCreationReceipts.at(-1)!.requestFingerprint = createHash("sha256").update(JSON.stringify({ name: "Legacy receipt household", type: "FAMILY" })).digest("hex");
+    await writeFile(path, JSON.stringify(database));
+
+    const restarted = new LocalStore();
+    await expect(restarted.createWorkspace(actor, "Legacy receipt household", "FAMILY", key)).resolves.toMatchObject({ id: created.id });
+    await expect(restarted.createWorkspace(actor, "Changed legacy receipt household", "FAMILY", key)).rejects.toThrow("already used");
   });
 
   it("claims a legacy single-workspace owner without fabricating a second workspace", async () => {

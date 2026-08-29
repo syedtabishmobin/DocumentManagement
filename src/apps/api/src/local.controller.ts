@@ -1,8 +1,8 @@
-import { BadRequestException, Body, Controller, Delete, Get, Inject, NotFoundException, Param, Patch, Post, Req, Res, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, Inject, NotFoundException, Param, Patch, Post, Req, Res, UnprocessableEntityException, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
-import { askQuestionSchema, configureWorkspaceSchema, createMemberSchema, createSubjectSchema, createTaskSchema, managePersonSchema, manualDocumentSchema, type WorkspaceAction } from "@document-management/contracts";
-import { LocalStore, type WorkspaceActor } from "./local.store.js";
+import { askQuestionSchema, canonicalCreateWorkspaceSchema, configureWorkspaceSchema, createMemberSchema, createSubjectSchema, createTaskSchema, managePersonSchema, manualDocumentSchema, type Workspace, type WorkspaceAction } from "@document-management/contracts";
+import { currentWorkspaceConfiguration, LocalStore, normalizedCorrelationId, type WorkspaceActor } from "./local.store.js";
 import { IdentityStore } from "./identity.store.js";
 import { actorFor, requestIdentity, sessionToken, setSessionCredentials, type AuthenticatedRequest } from "./auth.controller.js";
 
@@ -22,6 +22,41 @@ export class LocalController {
     const context = this.workspaceContext(request);
     await this.store.requireAuthorization(context.actor, context.workspaceId, action, resourceKind, resourceId);
     return context;
+  }
+
+  private async createAndBindWorkspace(
+    request: AuthenticatedRequest,
+    response: Response,
+    input: { name: string; type: Workspace["type"]; jurisdictionPackRef: Workspace["jurisdictionPackRef"]; residencyPolicyRef: Workspace["residencyPolicyRef"]; configurationVersion: Workspace["configurationVersion"] },
+  ): Promise<Workspace> {
+    const identity = requestIdentity(request);
+    const token = sessionToken(request);
+    if (!token) throw new BadRequestException("Sign in required");
+    const purposeId = request.get("x-purpose-id")?.trim();
+    if (purposeId !== "PUR-P1-001") throw new BadRequestException("Workspace creation requires an approved explicit purpose");
+    const idempotencyKey = request.get("idempotency-key")?.trim();
+    if (!idempotencyKey || idempotencyKey.length < 16 || idempotencyKey.length > 200) throw new BadRequestException("A valid Idempotency-Key is required");
+    const correlationId = normalizedCorrelationId(request.get("x-correlation-id"));
+    response.setHeader("X-Correlation-Id", correlationId);
+
+    const provisioned = await this.store.createWorkspace(actorFor(identity), input.name, input.type, idempotencyKey, {
+      purposeId,
+      correlationId,
+      jurisdictionPackRef: input.jurisdictionPackRef,
+      residencyPolicyRef: input.residencyPolicyRef,
+      configurationVersion: input.configurationVersion,
+      activation: "DEFERRED",
+    });
+    if (!identity.onboardingComplete || identity.activeWorkspaceId !== provisioned.id) {
+      const result = await this.identities.completeOnboarding(identity.account.id, token, provisioned.id);
+      const activated = await this.store.activateWorkspace(actorFor(result.identity), provisioned.id, correlationId);
+      setSessionCredentials(response, result.credentials);
+      response.setHeader("ETag", `\"${activated.revision}\"`);
+      return activated;
+    }
+    const activated = await this.store.activateWorkspace(actorFor(identity), provisioned.id, correlationId);
+    response.setHeader("ETag", `\"${activated.revision}\"`);
+    return activated;
   }
 
   @Get("health")
@@ -48,16 +83,44 @@ export class LocalController {
   @Patch("workspace")
   async configureWorkspace(@Body() body: unknown, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
     const input = configureWorkspaceSchema.parse(body);
-    const identity = requestIdentity(request);
-    const idempotencyKey = request.get("idempotency-key")?.trim();
-    if (!idempotencyKey || idempotencyKey.length < 16 || idempotencyKey.length > 200) throw new BadRequestException("A valid Idempotency-Key is required");
-    const workspace = await this.store.createWorkspace(actorFor(identity), input.name, input.type, idempotencyKey);
-    if (identity.onboardingComplete && identity.activeWorkspaceId === workspace.id) return workspace;
-    const token = sessionToken(request);
-    if (!token) throw new BadRequestException("Sign in required");
-    const result = await this.identities.completeOnboarding(identity.account.id, token, workspace.id);
-    setSessionCredentials(response, result.credentials);
-    return workspace;
+    return this.createAndBindWorkspace(request, response, { ...input, ...currentWorkspaceConfiguration() });
+  }
+
+  @Post("v1/workspaces")
+  async createCanonicalWorkspace(@Body() body: unknown, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    const parsed = canonicalCreateWorkspaceSchema.safeParse(body);
+    if (!parsed.success) {
+      const correlationId = normalizedCorrelationId(request.get("x-correlation-id"));
+      response.setHeader("X-Correlation-Id", correlationId);
+      response.setHeader("Content-Type", "application/problem+json");
+      throw new UnprocessableEntityException({
+        type: "urn:doculyra:problem:invalid-workspace-request",
+        title: "Workspace request could not be validated",
+        status: 422,
+        code: "INVALID_WORKSPACE_REQUEST",
+        correlation_id: correlationId,
+        retry_class: "DO_NOT_RETRY",
+        violations: [],
+      });
+    }
+    const input = parsed.data;
+    const workspace = await this.createAndBindWorkspace(request, response, {
+      name: input.workspace_type === "PERSONAL" ? "Personal workspace" : "Family workspace",
+      type: input.workspace_type,
+      jurisdictionPackRef: input.jurisdiction_pack_ref as Workspace["jurisdictionPackRef"],
+      residencyPolicyRef: input.residency_policy_ref as Workspace["residencyPolicyRef"],
+      configurationVersion: input.configuration_version as Workspace["configurationVersion"],
+    });
+    return {
+      workspace_id: workspace.id,
+      workspace_type: workspace.type,
+      status: workspace.status,
+      owner_binding_id: workspace.ownerBindingId,
+      jurisdiction_pack_ref: workspace.jurisdictionPackRef,
+      residency_policy_ref: workspace.residencyPolicyRef,
+      configuration_version: workspace.configurationVersion,
+      revision: workspace.revision,
+    };
   }
 
   @Post("documents")

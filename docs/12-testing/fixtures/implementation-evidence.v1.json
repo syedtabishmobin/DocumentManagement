@@ -114,6 +114,18 @@
       "product_completion_claim": "NONE"
     },
     {
+      "path": "src/apps/api/src/workspace-creation.controller.test.ts",
+      "scope": "PRODUCT_BOUNDED",
+      "evidence_type": "DEVELOPER_INTEGRATION",
+      "source_state": "GOVERNED_DEVELOPER_EVIDENCE_PENDING_INDEPENDENT_QA",
+      "test_refs": ["TEST-UNIT-P1-002", "TEST-CON-P1-001", "TEST-SEC-P1-001", "TEST-SEC-P1-007", "TEST-E2E-P1-001", "TEST-DR-P1-002"],
+      "framework_acceptance_refs": [],
+      "story_refs": ["STORY-P1-001"],
+      "acceptance_refs": ["AC-STORY-P1-001-01", "AC-STORY-P1-001-02"],
+      "historical_work": [],
+      "product_completion_claim": "NONE"
+    },
+    {
       "path": "src/apps/api/src/notification-email.transport.test.ts",
       "scope": "FRAMEWORK_ONLY",
       "evidence_type": "FRAMEWORK_CONFORMANCE",

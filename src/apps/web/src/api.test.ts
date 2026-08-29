@@ -36,6 +36,7 @@ describe("web API request context", () => {
     const creationHeaders = new Headers(calls[1]!.init?.headers);
     expect(creationHeaders.get("X-CSRF-Token")).toBe("csrf-a");
     expect(creationHeaders.get("X-Workspace-Id")).toBeNull();
+    expect(creationHeaders.get("X-Purpose-Id")).toBe("PUR-P1-001");
     expect(creationHeaders.get("Idempotency-Key")).toBeTruthy();
 
     const dashboardHeaders = new Headers(calls[2]!.init?.headers);
