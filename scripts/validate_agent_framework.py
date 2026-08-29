@@ -24,7 +24,7 @@ REQUIRED_PATHS = [
     ".agents/project/github-labels.json", ".agents/config/contacts.json",
     ".agents/config/notifications.json", ".agents/capabilities/registry.json",
     ".agents/tools/registry.json", ".agents/state/notification-ledger.json",
-    ".agents/bootstrap/2026-08-29-bootstrap-report.md", ".github/CODEOWNERS",
+    ".agents/bootstrap/2026-08-29-bootstrap-report.md", ".agents/bootstrap/2026-08-30-final-autonomous-readiness-report.md", ".github/CODEOWNERS",
     ".github/pull_request_template.md", ".github/ISSUE_TEMPLATE/governed-work.yml",
     ".github/ISSUE_TEMPLATE/defect.yml", ".github/ISSUE_TEMPLATE/decision.yml",
     ".github/ISSUE_TEMPLATE/uat-ready.yml",
@@ -267,6 +267,10 @@ def validate_framework() -> list[str]:
     for marker in ("04_USING_THIS_REPO_WITH_CODEX.md", "Changed files", "External/admin actions", "First governed work queue"):
         if marker not in report:
             errors.append(f"bootstrap report is missing completion marker: {marker}")
+    final_readiness = (ROOT / ".agents/bootstrap/2026-08-30-final-autonomous-readiness-report.md").read_text(encoding="utf-8")
+    for marker in ("FINAL AUTONOMOUS READINESS REPORT", "Notification implementation status", "GitHub attribution evidence", "Outstanding external/admin actions", "Overall autonomous queue readiness: PARTIAL"):
+        if marker not in final_readiness:
+            errors.append(f"final autonomous readiness report is missing marker: {marker}")
     return errors
 
 

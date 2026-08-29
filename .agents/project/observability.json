@@ -53,6 +53,6 @@
   "notifications": ".agents/config/notifications.json",
   "autonomousQueueGate": {
     "status": "BLOCKED",
-    "reason": "PR #19 still requires exact-final-candidate independent QA including visible-attribution defect #24; after that, live managed-identity, sender/domain, diagnostic-log and terminal-delivery conformance remains blocked pending refreshed authorised Azure access."
+    "reason": "PR #19 repository candidate passed independent QA and defects #20-#24 are closed; autonomous execution remains blocked solely by live managed-identity, sender/domain, diagnostic-log, terminal-delivery and repeat-dispatch conformance pending refreshed authorised Azure access."
   }
 }

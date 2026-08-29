@@ -272,6 +272,7 @@ Wait for Azure Monitor ingestion and repeat `check-delivery` while the result is
 Open GitHub Issues first, then compare them with:
 
 - `.agents/project/current-state.md` for the latest framework/bootstrap assessment;
+- `.agents/bootstrap/2026-08-30-final-autonomous-readiness-report.md` for the latest notification and autonomous-queue gate evidence;
 - `.agents/project/first-governed-work-queue.md` for the recommended queue;
 - `docs/10-backlog/05-personal-family-implementation-status.md` for evidence-backed implementation status; and
 - `docs/10-backlog/06-personal-family-remaining-work.md` for the full Phase 1 gap inventory.
