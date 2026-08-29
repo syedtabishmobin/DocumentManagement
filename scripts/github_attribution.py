@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render and validate the Doculyra GitHub agent-attribution footer."""
+"""Render and validate Doculyra's three-level GitHub agent attribution."""
 
 from __future__ import annotations
 
@@ -32,6 +32,10 @@ def _items(value: str, separator: str, field: str) -> list[str]:
     if len(items) != len(set(items)):
         raise ValueError(f"{field} must not contain duplicate IDs")
     return items
+
+
+def _assignments(selected: dict[str, Any]) -> list[dict[str, Any]]:
+    return _load(ROOT / selected["identityAssignments"]).get("assignments", [])
 
 
 def _validate_registry_claims(values: dict[str, str], selected: dict[str, Any]) -> None:
@@ -73,51 +77,149 @@ def _validate_registry_claims(values: dict[str, str], selected: dict[str, Any]) 
             raise ValueError(f"tool_ids contains unregistered ID: {tool_id}")
 
 
-def render(values: dict[str, str], config: dict[str, Any] | None = None) -> str:
-    selected = config or load_config()
+def _validate_identity(values: dict[str, str], selected: dict[str, Any]) -> None:
+    if not re.fullmatch(selected["displayAgentIdPattern"], values["display_agent_id"]):
+        raise ValueError("display_agent_id is invalid")
+    if not re.fullmatch(selected["displayRunIdPattern"], values["display_run_id"]):
+        raise ValueError("display_run_id is invalid")
+    if not re.fullmatch(selected["activityPattern"], values["activity"]):
+        raise ValueError("activity is invalid")
+    if not re.fullmatch(selected["commitPattern"], values["commit"]):
+        raise ValueError("commit is invalid")
+    for field in ("display_role", "work_item_label"):
+        if not values[field].strip() or len(values[field]) > 200 or "\n" in values[field] or "\r" in values[field]:
+            raise ValueError(f"{field} must be bounded single-line text")
+    presentation = next((item for item in selected["rolePresentations"] if item["roleId"] == values["role_id"] and item["displayRole"] == values["display_role"] and re.fullmatch(item["displayIdPattern"], values["display_agent_id"])), None)
+    if not presentation:
+        raise ValueError("display agent ID and role do not match an approved role presentation")
+    assignment = next((item for item in _assignments(selected) if item.get("displayAgentId") == values["display_agent_id"] and item.get("displayRunId") == values["display_run_id"]), None)
+    if not assignment:
+        raise ValueError("display agent/run identity is not assigned")
+    expected = {
+        "displayRole": values["display_role"],
+        "runtimeAgentId": values["runtime_agent_id"],
+        "runtimeRunId": values["runtime_run_id"],
+        "roleId": values["role_id"],
+        "parentDisplayAgentId": values["parent_display_agent_id"],
+        "workItem": values["work_item"],
+    }
+    for field, expected_value in expected.items():
+        if assignment.get(field) != expected_value:
+            raise ValueError(f"assigned identity does not match {field}")
+    if assignment.get("status") != "ACTIVE":
+        raise ValueError("assigned identity is not active")
+    parent = values["parent_display_agent_id"]
+    if parent != selected["noParentValue"] and not any(item.get("displayAgentId") == parent for item in _assignments(selected)):
+        raise ValueError("parent_display_agent_id is not assigned")
+
+
+def _validate_values(values: dict[str, str], selected: dict[str, Any]) -> None:
     required = selected["requiredFields"]
     missing = [field for field in required if not values.get(field)]
     if missing:
         raise ValueError(f"missing attribution fields: {', '.join(missing)}")
+    unexpected = sorted(set(values) - set(required))
+    if unexpected:
+        raise ValueError(f"unexpected attribution fields: {', '.join(unexpected)}")
     pattern = re.compile(selected["identifierPattern"])
+    free_text_fields = {"display_role", "work_item_label"}
     for field in required:
-        items = _items(values[field], selected["listSeparator"], field) if field.endswith("_ids") else [values[field]]
+        if field in free_text_fields:
+            continue
+        items = _items(values[field], selected["listSeparator"], field) if field in selected["listFields"] else [values[field]]
+        if field == "parent_display_agent_id" and values[field] == selected["noParentValue"]:
+            continue
+        if field in {"display_agent_id", "display_run_id", "activity", "commit"}:
+            continue
         if any(not pattern.fullmatch(item) for item in items):
             raise ValueError(f"invalid attribution value for {field}")
     _validate_registry_claims(values, selected)
-    fields = "; ".join(f"{field}={values[field]}" for field in required)
-    return f"{selected['marker']}\n{selected['footerPrefix']} {fields}"
+    _validate_identity(values, selected)
+
+
+def visible_header(values: dict[str, str]) -> str:
+    return f"**🤖 {values['display_role']} · {values['display_agent_id']}**  \n`{values['activity']}` · `{values['display_run_id']}`"
+
+
+def execution_details(values: dict[str, str], selected: dict[str, Any]) -> str:
+    def bullets(field: str) -> str:
+        return "\n".join(f"- `{item}`" for item in _items(values[field], selected["listSeparator"], field))
+
+    return "\n".join([
+        "<details>",
+        "<summary>Agent execution details</summary>",
+        "",
+        f"Parent: {values['parent_display_agent_id']}",
+        f"Work item: {values['work_item_label']}",
+        "",
+        "Capabilities:",
+        bullets("capability_ids"),
+        "",
+        "Skills:",
+        bullets("skill_ids"),
+        "",
+        "Tools:",
+        bullets("tool_ids"),
+        "",
+        f"Commit: `{values['commit']}`",
+        f"Environment: `{values['environment']}`",
+        "",
+        "</details>",
+    ])
+
+
+def hidden_metadata(values: dict[str, str], selected: dict[str, Any]) -> str:
+    body = "\n".join(f"{field}={values[field]}" for field in selected["requiredFields"])
+    return f"{selected['markerStart']}\n{body}\n{selected['markerEnd']}"
+
+
+def render(values: dict[str, str], body: str = "", config: dict[str, Any] | None = None) -> str:
+    selected = config or load_config()
+    _validate_values(values, selected)
+    sections = [visible_header(values)]
+    if body.strip():
+        sections.append(body.strip())
+    sections.extend([execution_details(values, selected), hidden_metadata(values, selected)])
+    return "\n\n".join(sections)
 
 
 def validate(text: str, config: dict[str, Any] | None = None) -> list[str]:
     selected = config or load_config()
     errors: list[str] = []
-    if text.count(selected["marker"]) != 1:
-        errors.append("GitHub evidence must contain exactly one attribution marker")
+    normalized = text.rstrip()
+    if any(marker in normalized for marker in selected.get("legacyMarkers", [])):
+        errors.append("GitHub evidence uses legacy attribution metadata; v2 visible attribution is required")
+    if normalized.count(selected["markerStart"]) != 1:
+        errors.append("GitHub evidence must contain exactly one v2 agent-meta marker")
         return errors
-    footer = text.split(selected["marker"], 1)[1].strip()
-    if not footer.startswith(selected["footerPrefix"]):
-        errors.append("GitHub evidence attribution footer has an invalid prefix")
+    before, metadata = normalized.rsplit(selected["markerStart"], 1)
+    if not metadata.endswith(selected["markerEnd"]):
+        errors.append("GitHub evidence hidden agent metadata must be final")
         return errors
+    metadata = metadata[:-len(selected["markerEnd"])].strip()
     values: dict[str, str] = {}
-    for part in footer[len(selected["footerPrefix"]):].strip().split("; "):
-        if "=" not in part:
-            errors.append("GitHub evidence attribution footer is malformed")
+    for line in metadata.splitlines():
+        if "=" not in line:
+            errors.append("GitHub evidence hidden agent metadata is malformed")
             continue
-        key, value = part.split("=", 1)
+        key, value = line.split("=", 1)
         if key in values:
-            errors.append(f"GitHub evidence attribution repeats field {key}")
+            errors.append(f"GitHub evidence hidden agent metadata repeats field {key}")
         values[key] = value
-    unexpected = sorted(set(values) - set(selected["requiredFields"]))
-    if unexpected:
-        errors.append(f"GitHub evidence attribution contains unexpected fields: {', '.join(unexpected)}")
     try:
-        expected = render(values, selected)
+        _validate_values(values, selected)
     except ValueError as exc:
         errors.append(str(exc))
     else:
-        if not text.rstrip().endswith(expected):
-            errors.append("GitHub evidence attribution must be the final normalized footer")
+        header = visible_header(values)
+        if not text.startswith(header + "\n"):
+            errors.append("GitHub evidence must begin with the normalized visible agent identity")
+        details = execution_details(values, selected)
+        if before.count(details) != 1:
+            errors.append("GitHub evidence must contain exactly one matching execution-details block")
+        expected_metadata = hidden_metadata(values, selected)
+        if not text.rstrip().endswith(expected_metadata):
+            errors.append("GitHub evidence hidden agent metadata must be the final normalized block")
     return errors
 
 
@@ -125,14 +227,18 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="command", required=True)
     render_parser = subparsers.add_parser("render")
-    for field in load_config()["requiredFields"]:
-        render_parser.add_argument(f"--{field.replace('_', '-')}", required=True)
+    wrap_parser = subparsers.add_parser("wrap")
+    for command_parser in (render_parser, wrap_parser):
+        for field in load_config()["requiredFields"]:
+            command_parser.add_argument(f"--{field.replace('_', '-')}", required=True)
+    wrap_parser.add_argument("--body-file", required=True)
     validate_parser = subparsers.add_parser("validate")
     validate_parser.add_argument("path")
     args = parser.parse_args()
-    if args.command == "render":
+    if args.command in {"render", "wrap"}:
         values = {field: getattr(args, field) for field in load_config()["requiredFields"]}
-        print(render(values))
+        body = Path(args.body_file).read_text(encoding="utf-8") if args.command == "wrap" else ""
+        print(render(values, body))
         return 0
     errors = validate(Path(args.path).read_text(encoding="utf-8"))
     if errors:

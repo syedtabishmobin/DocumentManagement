@@ -15,13 +15,13 @@ Notification state: implementation=IMPLEMENTED; activation=CONFIGURED_DISABLED; 
 
 ## 2. Files/config changed
 
-- Framework/profile: `.agents/framework/operations-observability.md`, `.agents/framework-manifest.json` (v1.2.0), `.agents/project/observability.json`, profile/team/role/capability/tool registries.
+- Framework/profile: `.agents/framework/operations-observability.md`, `.agents/framework-manifest.json` (v1.3.0), `.agents/project/observability.json`, profile/team/role/capability/tool registries.
 - Definitions: `.agents/observability/README.md`, event schema, metric catalogue, query catalogue, privacy/retention policies and Codex OTel adapter contract.
 - Skills: `observability-status`, `telemetry-validation`, and `cost-performance-analysis`.
 - Runtime/query/test: `scripts/agent_ops.py`, `scripts/validate_observability.py`, `scripts/observability_smoke_test.py`, package scripts and framework validator integration.
 - Regression stabilization: `src/apps/api/src/postgres-workspace.integration.test.ts` now proves concurrent migration applicants before verify-only runtime concurrency and serializes destructive shared-schema fixtures.
 - Operations: `.gitignore`, `AGENTS.md`, `WORKFLOW.md`, `04_USING_THIS_REPO_WITH_CODEX.md`, `scripts/README.md`, current-state/queue reconciliation, this report and the observability discovery record.
-- Notification extension: ACS Email TypeScript transport/CLI/tests, Python ledger/validation/tests, structured GitHub attribution, Bicep managed-identity/diagnostic configuration, safe synthetic conformance packets and notification discovery evidence.
+- Notification extension: ACS Email TypeScript transport/CLI/tests, Python ledger/validation/tests, three-level GitHub attribution plus display assignments, Bicep managed-identity/diagnostic configuration, safe synthetic conformance packets and notification discovery evidence.
 - Volatile `.agent-ops/runtime/events.jsonl` is intentionally excluded from version control.
 
 ## 3. Event/metric model implemented
@@ -36,7 +36,7 @@ Lifecycle validation is per run, enforces legal state transitions and stable acy
 
 ## 4. Agent/capability/skill/tool attribution status
 
-**PASS for framework events; implemented for GitHub evidence.** A live Issue #11 event was queried with agent ID, operations role, work item, capabilities, seven invoked skills, four tools, two adapters, branch/worktree, environment, state and duration. Synthetic tests prove a root/QA child tree, terminal child state, blocked parent, decision and notification state. Material Issue #18 / PR #19 records use the normalized footer, whose role/capability/skill/tool claims are joined to the repository registries.
+**PASS for framework events; implemented and pending independent retest for GitHub evidence.** A live Issue #11 event was queried with agent ID, operations role, work item, capabilities, seven invoked skills, four tools, two adapters, branch/worktree, environment, state and duration. Synthetic tests prove a root/QA child tree, terminal child state, blocked parent, decision and notification state. Under defect #24, material records begin with a visible role/display identity, include collapsible parent/work/capability/skill/tool/revision/environment details, and end with hidden v2 metadata that separates display and runtime identities. Assignments and role/capability/skill/tool claims are registry-validated; implementation `ORCH-001` and independent QA `QA-SEC-003` remain distinct.
 
 Native Codex may expose model/session/runtime fields separately; unavailable values are not inferred. GitHub context is joined on demand and remains authoritative for Issues, decisions, defects, PRs and CI.
 
@@ -97,7 +97,7 @@ GitHub remains the authoritative phone-accessible decision/UAT record. Email is 
 
 **PARTIAL**
 
-The event/config model, local destination, lifecycle/attribution queries, privacy controls, validation, GitHub join, environment/quality/decision visibility and disabled notification implementation pass repository checks. Autonomous queue readiness does not pass because live Azure sender/domain/identity/diagnostic state and terminal email delivery have not been verified and no GitHub-only fallback has been accepted.
+The event/config model, local destination, lifecycle/attribution queries, privacy controls, validation, GitHub join, environment/quality/decision visibility and disabled notification implementation pass developer repository checks. Autonomous queue readiness does not pass because the final PR #19 candidate still requires independent QA including defect #24, live Azure sender/domain/identity/diagnostic state and terminal email delivery have not been verified, and no GitHub-only fallback has been accepted.
 
 Validation evidence: local `pnpm verify` passed framework/observability, 140-document specifications, API/event/reference/traceability contracts, TypeScript typechecks, 41 local tests with two honestly skipped PostgreSQL-service tests, and all builds. `pnpm verify:observability` passes 34 focused tests. Independent QA passed a separate 22-case adversarial suite and every OBS-AC-01–12 criterion on exact candidate `c025420aacb522f25952750e72b067bdbf86892c`. Protected [run 33250411214 attempt 1](https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33250411214/attempts/1) passed specifications/TypeScript, 31/31 API tests including both PostgreSQL 17 integrations, Bicep, Android and iOS; [attempt 2](https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33250411214/attempts/2) repeated the PostgreSQL/specification/Bicep job successfully. Local Flutter tooling is unavailable. The skill-creator `quick_validate.py` could not start because its environment lacks `PyYAML`; no dependency was added. The repository's dependency-free validator passed all skill frontmatter, naming, descriptions, directory matching and capability registration.
 
@@ -105,10 +105,10 @@ Independent QA originally blocked candidate `4dc03a0` with lifecycle/parent-grap
 
 ## 11. Exact reasons for non-PASS result
 
-The sole external gate-blocking reason is live notification conformance: the ACS Email adapter is implemented and configured-disabled, `sendAllowed=false`, and delivery conformance remains `BLOCKED_EXTERNAL_VALIDATION` after Azure management authentication was blocked by security defaults. The Doculyra project addendum requires terminally reconciled operational email or Product Authority acceptance of GitHub-only fallback before autonomous queue execution.
+The current repository gate is exact-final-candidate independent QA for PR #19, including visible attribution defect #24. After that passes, the sole external gate-blocking reason remains live notification conformance: the ACS Email adapter is implemented and configured-disabled, `sendAllowed=false`, and delivery conformance remains `BLOCKED_EXTERNAL_VALIDATION` after Azure management authentication was blocked by security defaults. The Doculyra project addendum requires terminally reconciled operational email or Product Authority acceptance of GitHub-only fallback before autonomous queue execution.
 
 Exact token/cost and context-efficiency data is unavailable, but this is labelled `UNAVAILABLE` and the global addendum says it must not alone block safe governed development. The approved local store satisfies the destination requirement without a new external provider.
 
 ## 12. Recommendation for starting the governed Doculyra work queue
 
-Do **not** start the autonomous product queue yet. Complete independent QA for the configured-disabled implementation, then refresh authorised Azure access and run the two governed terminal delivery/deduplication checks—or record explicit Product Authority acceptance of GitHub-only fallback. Re-run `pnpm agent:status --online` and both notification plans; only after the queue gate changes truthfully to pass should the existing application queue resume at current-authorization coverage.
+Do **not** start the autonomous product queue yet. Complete independent QA for the exact configured-disabled implementation and three-level attribution evidence, then refresh authorised Azure access and run the two governed terminal delivery/deduplication checks—or record explicit Product Authority acceptance of GitHub-only fallback. Re-run `pnpm agent:status --online` and both notification plans; only after the queue gate changes truthfully to pass should the existing application queue resume at current-authorization coverage.

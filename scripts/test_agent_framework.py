@@ -48,6 +48,25 @@ class FrameworkTests(unittest.TestCase):
         path.write_text('{"schemaVersion":"1.0.0","events":[]}\n', encoding="utf-8")
         return path
 
+    def qa_attribution(self) -> dict[str, str]:
+        return {
+            "display_agent_id": "QA-SEC-003",
+            "display_role": "Independent Security QA",
+            "activity": "security-verification",
+            "display_run_id": "RUN-20260829-0041",
+            "runtime_agent_id": "qa-codex-issue-18",
+            "runtime_run_id": "run-qa-notify-18-c590b243-20260829",
+            "role_id": "qa-release-lead",
+            "parent_display_agent_id": "ORCH-001",
+            "work_item": "issue-18/pr-19",
+            "work_item_label": "Issue #18 / PR #19",
+            "capability_ids": "telemetry-validation",
+            "skill_ids": "telemetry-validation",
+            "tool_ids": "github-issues,pnpm-node",
+            "commit": "3d92e8d",
+            "environment": "agent-local",
+        }
+
     def test_duplicate_recipient_is_removed_from_cc(self) -> None:
         expected_to = self.contacts["routing"]["resolved"]["to"]
         self.assertEqual(notification_ledger.resolve_recipients(self.contacts), {"to": expected_to, "cc": []})
@@ -385,31 +404,29 @@ class FrameworkTests(unittest.TestCase):
                 notification_ledger.validate_event(event, self.config)
 
     def test_github_agent_attribution_round_trip_and_missing_field_rejection(self) -> None:
-        values = {
-            "agent_id": "codex-test",
-            "run_id": "run-test",
-            "role_id": "qa-release-lead",
-            "work_item": "issue-18",
-            "capability_ids": "telemetry-validation",
-            "skill_ids": "telemetry-validation",
-            "tool_ids": "github-issues,pnpm-node",
-        }
-        footer = github_attribution.render(values)
-        self.assertEqual(github_attribution.validate(f"Evidence\n\n{footer}"), [])
-        values.pop("run_id")
-        with self.assertRaisesRegex(ValueError, "run_id"):
+        values = self.qa_attribution()
+        artifact = github_attribution.render(values, "Independent QA evidence.")
+        self.assertTrue(artifact.startswith("**🤖 Independent Security QA · QA-SEC-003**  \n`security-verification` · `RUN-20260829-0041`"))
+        self.assertIn("<summary>Agent execution details</summary>", artifact)
+        self.assertIn("Parent: ORCH-001", artifact)
+        self.assertIn("<!-- doculyra-agent-meta:v2", artifact)
+        self.assertGreater(artifact.index(values["runtime_agent_id"]), artifact.index("<!-- doculyra-agent-meta:v2"))
+        self.assertEqual(github_attribution.validate(artifact), [])
+        values.pop("runtime_run_id")
+        with self.assertRaisesRegex(ValueError, "runtime_run_id"):
             github_attribution.render(values)
 
+    def test_github_agent_attribution_rejects_legacy_misplaced_or_inconsistent_levels(self) -> None:
+        artifact = github_attribution.render(self.qa_attribution(), "Independent QA evidence.")
+        self.assertTrue(github_attribution.validate("Preamble\n" + artifact))
+        self.assertTrue(github_attribution.validate(artifact.replace("Parent: ORCH-001", "Parent: NONE", 1)))
+        self.assertTrue(github_attribution.validate(artifact.replace("display_agent_id=QA-SEC-003", "display_agent_id=QA-SEC-999")))
+        legacy = "Evidence\n\n<!-- doculyra-agent-attribution:v1 -->\nAgent attribution: agent_id=raw-runtime"
+        errors = github_attribution.validate(legacy)
+        self.assertTrue(any("legacy" in error for error in errors))
+
     def test_github_agent_attribution_rejects_unregistered_mismatched_and_duplicate_claims(self) -> None:
-        values = {
-            "agent_id": "codex-test",
-            "run_id": "run-test",
-            "role_id": "qa-release-lead",
-            "work_item": "issue-18",
-            "capability_ids": "telemetry-validation",
-            "skill_ids": "telemetry-validation",
-            "tool_ids": "github-issues,pnpm-node",
-        }
+        values = self.qa_attribution()
         variants = (
             ("role_id", "nonexistent-role", "not registered"),
             ("capability_ids", "critical-decision", "not authorised"),
@@ -419,6 +436,8 @@ class FrameworkTests(unittest.TestCase):
             ("tool_ids", "nonexistent-tool", "unregistered"),
             ("tool_ids", "github-issues,github-issues", "duplicate"),
             ("tool_ids", "github-issues,", "empty"),
+            ("runtime_agent_id", "different-runtime", "assigned"),
+            ("display_agent_id", "ORCH-001", "presentation"),
         )
         for field, value, message in variants:
             with self.subTest(field=field, value=value):

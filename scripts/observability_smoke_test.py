@@ -80,6 +80,16 @@ def fixture_events() -> list[dict[str, object]]:
 
 
 class ObservabilitySmokeTests(unittest.TestCase):
+    def test_display_identity_is_joined_without_replacing_runtime_correlation(self) -> None:
+        assignment = agent_ops.display_assignment(
+            "run-notification-readiness-20260829",
+            "codex-01a04b98-20f5-7831-8b62-3fe5bd5f4add",
+        )
+        self.assertIsNotNone(assignment)
+        self.assertEqual(assignment["displayAgentId"], "ORCH-001")
+        self.assertEqual(assignment["displayRunId"], "RUN-20260829-0040")
+        self.assertNotEqual(assignment["displayAgentId"], assignment["runtimeAgentId"])
+
     def test_fixture_events_validate(self) -> None:
         for item in fixture_events():
             self.assertEqual(validate_observability.validate_event(item), [], item["eventId"])

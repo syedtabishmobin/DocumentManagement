@@ -24,7 +24,7 @@ This file is the executable repository workflow. Reusable policy is in `.agents/
 2. Developers own implementation and unit tests. Update contracts, traceability, operational evidence, and status in the same change.
 3. Run `pnpm verify:framework`, then the narrow affected checks, then `pnpm verify` before review.
 4. Independent QA verifies acceptance criteria and affected regression paths. A failed criterion becomes an evidence-backed defect routed to the owning component; the fixer does not provide final independent retest.
-5. Use a pull request linked to the Issue. Complete `.github/pull_request_template.md`; append the configured agent-attribution footer to material agent-authored GitHub records; do not merge with unresolved blocking evidence.
+5. Use a pull request linked to the Issue. Complete `.github/pull_request_template.md`; wrap every material agent-authored GitHub record with the configured visible identity, collapsible execution details and final hidden metadata; do not merge with unresolved blocking evidence.
 6. Record material capability, skill, tool, test, gate, defect, handoff, retry, blocker and decision transitions. Validate with `pnpm verify:observability`; never persist raw prompts or tool/customer content.
 
 ## 4. Release and notify

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": "1.0.0",
+  "assignments": [
+    {
+      "displayAgentId": "ORCH-001",
+      "displayRole": "Framework Delivery Orchestrator",
+      "displayRunId": "RUN-20260829-0040",
+      "runtimeAgentId": "codex-01a04b98-20f5-7831-8b62-3fe5bd5f4add",
+      "runtimeRunId": "run-notification-readiness-20260829",
+      "roleId": "delivery-orchestrator",
+      "parentDisplayAgentId": "NONE",
+      "workItem": "issue-18/pr-19",
+      "status": "ACTIVE"
+    },
+    {
+      "displayAgentId": "QA-SEC-003",
+      "displayRole": "Independent Security QA",
+      "displayRunId": "RUN-20260829-0041",
+      "runtimeAgentId": "qa-codex-issue-18",
+      "runtimeRunId": "run-qa-notify-18-c590b243-20260829",
+      "roleId": "qa-release-lead",
+      "parentDisplayAgentId": "ORCH-001",
+      "workItem": "issue-18/pr-19",
+      "status": "ACTIVE"
+    }
+  ]
+}

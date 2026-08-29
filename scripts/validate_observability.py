@@ -366,6 +366,10 @@ def validate_configuration() -> list[str]:
         values = attribution.get(field, [])
         if len(values) != len(set(values)) or any(not re.fullmatch(r"[a-z0-9][a-z0-9-]{1,79}", item) for item in values):
             errors.append(f"observability attribution {field} must contain unique normalized IDs")
+    if attribution.get("githubMaterialAttribution") != ".agents/project/github-attribution.json" or attribution.get("displayIdentityAssignments") != ".agents/state/agent-display-assignments.json":
+        errors.append("observability attribution must join configured GitHub material records and display identity assignments")
+    if attribution.get("displayAndRuntimeIdentitySeparated") is not True:
+        errors.append("observability attribution must separate display and runtime identities")
     if config.get("autonomousQueueGate", {}).get("status") != "BLOCKED":
         notifications = load_json(ROOT / ".agents/config/notifications.json").get("adapter", {})
         operational = notifications.get("implementation") == "IMPLEMENTED" and notifications.get("activation") == "ENABLED" and notifications.get("deliveryConformance") == "PASS"

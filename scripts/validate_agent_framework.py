@@ -19,7 +19,7 @@ REQUIRED_PATHS = [
     ".agents/observability/event-schema.json", ".agents/observability/metric-catalog.json",
     ".agents/observability/queries/catalog.json", ".agents/project/profile.json",
     ".agents/project/team.json", ".agents/project/source-of-truth.json", ".agents/project/observability.json",
-    ".agents/project/github-attribution.json",
+    ".agents/project/github-attribution.json", ".agents/state/agent-display-assignments.json",
     ".agents/project/environments.json", ".agents/project/github.json",
     ".agents/project/github-labels.json", ".agents/config/contacts.json",
     ".agents/config/notifications.json", ".agents/capabilities/registry.json",
@@ -85,8 +85,8 @@ def validate_framework() -> list[str]:
         return errors
 
     manifest = load_json(ROOT / ".agents/framework-manifest.json")
-    if manifest.get("framework", {}).get("version") != "1.2.0":
-        errors.append("framework manifest must bind reusable framework version 1.2.0")
+    if manifest.get("framework", {}).get("version") != "1.3.0":
+        errors.append("framework manifest must bind reusable framework version 1.3.0")
     if manifest.get("project", {}).get("id") != "doculyra":
         errors.append("framework manifest must bind the Doculyra profile")
 
@@ -169,11 +169,50 @@ def validate_framework() -> list[str]:
             errors.append(f"notification ledger event {event.get('key')} has invalid status")
 
     attribution = load_json(ROOT / ".agents/project/github-attribution.json")
-    if attribution.get("marker") != "<!-- doculyra-agent-attribution:v1 -->":
-        errors.append("GitHub agent attribution must use the reviewed v1 marker")
-    expected_attribution_fields = {"agent_id", "run_id", "role_id", "work_item", "capability_ids", "skill_ids", "tool_ids"}
+    if attribution.get("schemaVersion") != "2.0.0" or attribution.get("markerStart") != "<!-- doculyra-agent-meta:v2" or attribution.get("markerEnd") != "-->":
+        errors.append("GitHub agent attribution must use the reviewed hidden v2 agent-meta block")
+    expected_attribution_fields = {
+        "display_agent_id", "display_role", "activity", "display_run_id", "runtime_agent_id", "runtime_run_id",
+        "role_id", "parent_display_agent_id", "work_item", "work_item_label", "capability_ids", "skill_ids",
+        "tool_ids", "commit", "environment",
+    }
     if set(attribution.get("requiredFields", [])) != expected_attribution_fields:
         errors.append("GitHub agent attribution required fields do not match the operations correlation contract")
+    if set(attribution.get("listFields", [])) != {"capability_ids", "skill_ids", "tool_ids"}:
+        errors.append("GitHub agent attribution list fields are invalid")
+    presentations = attribution.get("rolePresentations", [])
+    team_roles = {item.get("id") for item in load_json(ROOT / ".agents/project/team.json").get("persistentRoles", [])}
+    for presentation in presentations:
+        if presentation.get("roleId") not in team_roles or not presentation.get("displayRole"):
+            errors.append("GitHub agent role presentation must reference a registered role and visible label")
+        try:
+            re.compile(presentation.get("displayIdPattern", ""))
+        except re.error:
+            errors.append("GitHub agent role presentation has an invalid display-ID pattern")
+    assignments = load_json(ROOT / attribution.get("identityAssignments", "missing")).get("assignments", [])
+    display_run_pairs = [(item.get("displayAgentId"), item.get("displayRunId")) for item in assignments]
+    if not assignments or len(display_run_pairs) != len(set(display_run_pairs)):
+        errors.append("GitHub display agent/run assignments must be present and unique")
+    assigned_display_ids = {item.get("displayAgentId") for item in assignments}
+    runtime_run_ids = [item.get("runtimeRunId") for item in assignments]
+    if None in runtime_run_ids or len(runtime_run_ids) != len(set(runtime_run_ids)):
+        errors.append("GitHub runtime run assignments must be present and unique")
+    for assignment in assignments:
+        matching_presentation = any(
+            item.get("roleId") == assignment.get("roleId")
+            and item.get("displayRole") == assignment.get("displayRole")
+            and re.fullmatch(item.get("displayIdPattern", r"$^"), str(assignment.get("displayAgentId", "")))
+            for item in presentations
+        )
+        if not matching_presentation:
+            errors.append(f"GitHub display assignment {assignment.get('displayAgentId')} does not match a role presentation")
+        parent = assignment.get("parentDisplayAgentId")
+        if parent != attribution.get("noParentValue") and parent not in assigned_display_ids:
+            errors.append(f"GitHub display assignment {assignment.get('displayAgentId')} has an unknown parent")
+        if parent == assignment.get("displayAgentId"):
+            errors.append(f"GitHub display assignment {assignment.get('displayAgentId')} cannot parent itself")
+        if assignment.get("status") not in {"ACTIVE", "COMPLETED"}:
+            errors.append(f"GitHub display assignment {assignment.get('displayAgentId')} has invalid status")
 
     capabilities = load_json(ROOT / ".agents/capabilities/registry.json").get("capabilities", [])
     registered_skills = {item.get("skill") for item in capabilities}
