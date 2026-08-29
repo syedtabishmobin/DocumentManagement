@@ -20,6 +20,8 @@ Build-baseline and traceability controls:
 
 Register the display/runtime run pairing in `.agents/state/agent-display-assignments.json`, then use `python3 scripts/github_attribution.py wrap --body-file <body.md> ...` to generate the complete three-level material GitHub record. It begins with the visible role/display agent and display run, places collapsible parent/work/capability/skill/tool/revision/environment details immediately next, requires and preserves a non-empty full body after those details, and ends with hidden v2 metadata containing separate display and runtime identities. Run `python3 scripts/github_attribution.py validate <wrapped.md>` before publication; legacy v1-only, bodyless, or out-of-order records do not satisfy the material-record gate.
 
+Use one stable `workItem` correlation key for the whole assigned run—normally the governing Issue such as `issue-32`. Artifact-specific Level 2 text belongs in `workItemLabel`, so the Issue can display `Issue #32` and its PR can display `Issue #32 / PR #34` without changing the machine join. Completed assignments remain immutable valid history; `status` indicates lifecycle, not permission to rewrite or invalidate earlier evidence.
+
 Use `pnpm agent:status`, `pnpm agent:tree`, and `pnpm agent:summary` for the local Agent Operations interface. Add `--online` to status for current GitHub context. `pnpm agent:prune` physically removes events outside retention. `scripts/agent_ops.py emit` validates and appends metadata-only events to the Git-ignored local store.
 
 ## Specification validation

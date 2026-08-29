@@ -106,8 +106,8 @@ def _validate_identity(values: dict[str, str], selected: dict[str, Any]) -> None
     for field, expected_value in expected.items():
         if assignment.get(field) != expected_value:
             raise ValueError(f"assigned identity does not match {field}")
-    if assignment.get("status") != "ACTIVE":
-        raise ValueError("assigned identity is not active")
+    if assignment.get("status") not in {"ACTIVE", "COMPLETED"}:
+        raise ValueError("assigned identity status cannot validate material evidence")
     parent = values["parent_display_agent_id"]
     if parent != selected["noParentValue"] and not any(item.get("displayAgentId") == parent for item in _assignments(selected)):
         raise ValueError("parent_display_agent_id is not assigned")

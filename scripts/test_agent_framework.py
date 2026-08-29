@@ -495,6 +495,26 @@ class FrameworkTests(unittest.TestCase):
         self.assertEqual(artifact[details_end:metadata_start].strip(), body)
         self.assertEqual(github_attribution.validate(artifact), [])
 
+    def test_github_agent_attribution_reuses_stable_work_item_across_issue_and_pr_artifacts(self) -> None:
+        values = self.qa_attribution()
+        issue_values = dict(values, work_item_label="Issue #18")
+        pr_values = dict(values, work_item_label="Issue #18 / PR #19")
+        issue_artifact = github_attribution.render(issue_values, "Governed Issue evidence.")
+        pr_artifact = github_attribution.render(pr_values, "Governed pull-request evidence.")
+        self.assertEqual(github_attribution.validate(issue_artifact), [])
+        self.assertEqual(github_attribution.validate(pr_artifact), [])
+        self.assertIn("work_item=issue-18/pr-19", issue_artifact)
+        self.assertIn("work_item_label=Issue #18 / PR #19", pr_artifact)
+
+    def test_github_agent_attribution_completed_assignment_remains_historically_valid(self) -> None:
+        values = self.qa_attribution()
+        assignments = copy.deepcopy(github_attribution._assignments(github_attribution.load_config()))
+        assignment = next(item for item in assignments if item["displayAgentId"] == values["display_agent_id"])
+        assignment["status"] = "COMPLETED"
+        with patch("github_attribution._assignments", return_value=assignments):
+            artifact = github_attribution.render(values, "Immutable historical QA evidence.")
+            self.assertEqual(github_attribution.validate(artifact), [])
+
     def test_github_agent_attribution_rejects_legacy_misplaced_or_inconsistent_levels(self) -> None:
         artifact = github_attribution.render(self.qa_attribution(), "Independent QA evidence.")
         self.assertTrue(github_attribution.validate("Preamble\n" + artifact))
