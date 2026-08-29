@@ -1,5 +1,6 @@
-import { BadRequestException, Body, ConflictException, Controller, Delete, Get, HttpException, HttpStatus, Inject, NotFoundException, Param, Patch, Post, PreconditionFailedException, Req, Res, UnprocessableEntityException, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { BadRequestException, Body, ConflictException, Controller, Delete, Get, HttpException, HttpStatus, Inject, NotFoundException, Param, Patch, Post, PreconditionFailedException, Query, Req, Res, UnprocessableEntityException, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { createHash } from "node:crypto";
 import type { Response } from "express";
 import { askQuestionSchema, canonicalCreateSubjectSchema, canonicalCreateWorkspaceSchema, canonicalInviteMembershipSchema, canonicalUpdateMembershipSchema, canonicalUpdateSubjectSchema, configureWorkspaceSchema, createMemberSchema, createSubjectSchema, createTaskSchema, managePersonSchema, manualDocumentSchema, type Member, type SubjectRecord, type Workspace, type WorkspaceAction } from "@document-management/contracts";
 import { currentWorkspaceConfiguration, LocalStore, normalizedCorrelationId, type WorkspaceActor } from "./local.store.js";
@@ -65,8 +66,21 @@ export class LocalController {
     return { membership_id: member.id, workspace_id: member.workspaceId, ...(member.identityId ? { identity_id: member.identityId } : {}), ...(member.audienceRef ? { audience_ref: member.audienceRef } : {}), participation_class: member.role, status: member.invitationState === "PENDING" ? "PENDING" : member.state, role_assignment_refs: [], revision: member.revision };
   }
 
-  private collection(items: unknown[], workspaceId: string) {
-    return { items, page: { next_page_after: null, has_more: false, snapshot_ref: `workspace:${workspaceId}` }, coverage: { state: "COMPLETE_AUTHORIZED_VIEW", projection_generation: "authority-v1", source_watermark: "transactional-authority-store", policy_epoch: "current", deletion_fence_watermark: "current", limitations: [] } };
+  private collection(items: Array<Record<string, unknown>>, kind: "subjects" | "memberships", workspaceId: string, actorId: string, authority: { policyEpoch: number; grantEquivalence: string; sourceWatermark: string }, pageSizeValue: string | undefined, pageAfter: string | undefined, request: AuthenticatedRequest, response: Response) {
+    const pageSize = pageSizeValue === undefined ? 50 : Number(pageSizeValue);
+    if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 100) this.problem(request, response, HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_PAGINATION", "Pagination parameters could not be validated", "DO_NOT_RETRY");
+    if (pageAfter !== undefined && (pageAfter.length < 1 || pageAfter.length > 512)) this.problem(request, response, HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_PAGINATION", "Pagination parameters could not be validated", "DO_NOT_RETRY");
+    const ordered = [...items].sort((left, right) => String(left[`${kind === "subjects" ? "subject" : "membership"}_id`]).localeCompare(String(right[`${kind === "subjects" ? "subject" : "membership"}_id`])));
+    const snapshot = createHash("sha256").update(JSON.stringify(ordered)).digest("hex");
+    const cursor = (offset: number) => createHash("sha256").update(JSON.stringify({ kind, workspaceId, actorId, purposeId: "PUR-P1-001", snapshot, policyEpoch: authority.policyEpoch, grantEquivalence: authority.grantEquivalence, offset })).digest("base64url");
+    let start = 0;
+    if (pageAfter !== undefined) {
+      start = Array.from({ length: ordered.length }, (_, index) => index + 1).find((offset) => cursor(offset) === pageAfter) ?? -1;
+      if (start < 0) this.problem(request, response, HttpStatus.BAD_REQUEST, "INVALID_PAGE_CURSOR", "The page cursor is unavailable", "REFRESH_REQUIRED");
+    }
+    const end = Math.min(start + pageSize, ordered.length);
+    const hasMore = end < ordered.length;
+    return { items: ordered.slice(start, end), page: { next_page_after: hasMore ? cursor(end) : null, has_more: hasMore, snapshot_ref: `snapshot:${snapshot}` }, coverage: { state: "COMPLETE_AUTHORIZED_VIEW", projection_generation: "authority-v1", source_watermark: authority.sourceWatermark, policy_epoch: `epoch:${authority.policyEpoch}`, deletion_fence_watermark: "current", limitations: [] } };
   }
 
   private canonicalProblem(error: unknown, request: AuthenticatedRequest, response: Response): never {
@@ -220,14 +234,15 @@ export class LocalController {
   }
 
   @Get("v1/workspaces/:workspaceId/subjects")
-  async canonicalSubjects(@Param("workspaceId") workspaceId: string, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+  async canonicalSubjects(@Param("workspaceId") workspaceId: string, @Query("page_size") pageSize: string | undefined, @Query("page_after") pageAfter: string | undefined, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
     try {
       const context = this.workspaceContext(request, workspaceId);
       await this.store.requireAuthorization(context.actor, workspaceId, "subject.read", "WORKSPACE");
       this.correlation(request, response);
-      const items = (await this.store.listSubjects(workspaceId)).map((subject) => this.subjectView(subject));
+      const collection = await this.store.subjectCollection(workspaceId, context.actor.identityId);
+      const items = collection.items.map((subject) => this.subjectView(subject));
       response.setHeader("ETag", `\"subjects-${items.map((item) => item.revision).join("-")}\"`);
-      return this.collection(items, workspaceId);
+      return this.collection(items, "subjects", workspaceId, context.actor.identityId, collection, pageSize, pageAfter, request, response);
     } catch (error) { this.canonicalProblem(error, request, response); }
   }
 
@@ -270,14 +285,15 @@ export class LocalController {
   }
 
   @Get("v1/workspaces/:workspaceId/memberships")
-  async canonicalMemberships(@Param("workspaceId") workspaceId: string, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+  async canonicalMemberships(@Param("workspaceId") workspaceId: string, @Query("page_size") pageSize: string | undefined, @Query("page_after") pageAfter: string | undefined, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
     try {
       const context = this.workspaceContext(request, workspaceId);
       await this.store.requireAuthorization(context.actor, workspaceId, "workspace.admin", "WORKSPACE");
       this.correlation(request, response);
-      const items = (await this.store.listMemberships(workspaceId)).map((member) => this.membershipView(member));
+      const collection = await this.store.membershipCollection(workspaceId, context.actor.identityId);
+      const items = collection.items.map((member) => this.membershipView(member));
       response.setHeader("ETag", `\"memberships-${items.map((item) => item.revision).join("-")}\"`);
-      return this.collection(items, workspaceId);
+      return this.collection(items, "memberships", workspaceId, context.actor.identityId, collection, pageSize, pageAfter, request, response);
     } catch (error) { this.canonicalProblem(error, request, response); }
   }
 

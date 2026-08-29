@@ -751,6 +751,12 @@ export class LocalStore {
     return state.subjects.filter((subject) => subject.status === "ACTIVE");
   }
 
+  async subjectCollection(workspaceId: string, actorId: string): Promise<{ items: SubjectRecord[]; policyEpoch: number; grantEquivalence: string; sourceWatermark: string }> {
+    const state = this.state(await this.readDatabase(), workspaceId);
+    const grants = state.accessGrants.filter((grant) => grant.state === "ACTIVE" && grant.granteeIdentityId === actorId).map((grant) => ({ resourceKind: grant.resourceKind, resourceIds: [...grant.resourceIds].sort(), actions: [...grant.actions].sort(), purposeId: grant.purposeId, policyVersion: grant.policyVersion, revision: grant.revision })).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+    return { items: state.subjects.filter((subject) => subject.status === "ACTIVE"), policyEpoch: state.authorizationEpoch.value, grantEquivalence: commandHash(grants), sourceWatermark: state.audit.at(-1)?.id ?? "workspace-created" };
+  }
+
   async getSubject(workspaceId: string, subjectId: string): Promise<SubjectRecord> {
     const subject = (await this.listSubjects(workspaceId)).find((candidate) => candidate.id === subjectId);
     if (!subject) throw new NotFoundException("Resource not available");
@@ -760,6 +766,12 @@ export class LocalStore {
   async listMemberships(workspaceId: string): Promise<Member[]> {
     const state = this.state(await this.readDatabase(), workspaceId);
     return state.members.filter((member) => member.state === "ACTIVE");
+  }
+
+  async membershipCollection(workspaceId: string, actorId: string): Promise<{ items: Member[]; policyEpoch: number; grantEquivalence: string; sourceWatermark: string }> {
+    const state = this.state(await this.readDatabase(), workspaceId);
+    const grants = state.accessGrants.filter((grant) => grant.state === "ACTIVE" && grant.granteeIdentityId === actorId).map((grant) => ({ resourceKind: grant.resourceKind, resourceIds: [...grant.resourceIds].sort(), actions: [...grant.actions].sort(), purposeId: grant.purposeId, policyVersion: grant.policyVersion, revision: grant.revision })).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+    return { items: state.members.filter((member) => member.state === "ACTIVE"), policyEpoch: state.authorizationEpoch.value, grantEquivalence: commandHash(grants), sourceWatermark: state.audit.at(-1)?.id ?? "workspace-created" };
   }
 
   async getMembership(workspaceId: string, membershipId: string): Promise<Member> {
