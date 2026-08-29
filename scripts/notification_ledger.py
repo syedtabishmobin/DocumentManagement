@@ -308,7 +308,13 @@ def reconcile_delivery(event: dict[str, Any], config: dict[str, Any], ledger_pat
         existing["lastUpdatedAt"] = current.isoformat()
         if existing["status"] in {"SENT", "FAILED"}:
             first_terminal = existing.get("deliveryStatus")
-            if delivery_status == "PENDING" or delivery_status == first_terminal:
+            if delivery_status == first_terminal:
+                existing.update({
+                    "deliveryReconciliationStatus": "PASS",
+                    "deliveryReconciliationEvidence": "TERMINAL_PROVIDER_EVIDENCE_RECONFIRMED",
+                })
+                return existing
+            if delivery_status == "PENDING":
                 return existing
             existing.update({
                 "deliveryReconciliationStatus": "CONFLICTING_TERMINAL_IGNORED",

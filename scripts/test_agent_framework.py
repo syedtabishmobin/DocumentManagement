@@ -43,6 +43,16 @@ class FrameworkTests(unittest.TestCase):
         config["adapter"].update({"activation": "ENABLED", "deliveryConformance": "PASS", "sendAllowed": True})
         return config
 
+    def disabled_config(self) -> dict:
+        config = copy.deepcopy(self.config)
+        config["adapter"].update({
+            "activation": "CONFIGURED_DISABLED",
+            "deliveryConformance": "BLOCKED_EXTERNAL_VALIDATION",
+            "sendAllowed": False,
+            "conformanceSendAllowed": True,
+        })
+        return config
+
     def ledger(self, directory: str) -> Path:
         path = Path(directory) / "ledger.json"
         path.write_text('{"schemaVersion":"1.0.0","events":[]}\n', encoding="utf-8")
@@ -78,17 +88,26 @@ class FrameworkTests(unittest.TestCase):
             notification_ledger.resolve_recipients(contacts)
 
     def test_disabled_adapter_reports_external_action(self) -> None:
-        result = notification_ledger.plan(self.event, self.config, self.contacts, {"schemaVersion": "1.0.0", "events": []})
+        result = notification_ledger.plan(self.event, self.disabled_config(), self.contacts, {"schemaVersion": "1.0.0", "events": []})
         self.assertFalse(result["sendAllowed"])
         self.assertEqual(result["result"], "EXTERNAL_ACTION_REQUIRED")
 
     def test_conformance_mode_is_explicit_and_normal_send_remains_disabled(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             ledger_path = self.ledger(directory)
+            config = self.disabled_config()
             with self.assertRaisesRegex(ValueError, "not enabled"):
-                notification_ledger.reserve(self.event, self.config, self.contacts, ledger_path)
-            reserved = notification_ledger.reserve(self.event, self.config, self.contacts, ledger_path, conformance=True)
+                notification_ledger.reserve(self.event, config, self.contacts, ledger_path)
+            reserved = notification_ledger.reserve(self.event, config, self.contacts, ledger_path, conformance=True)
             self.assertTrue(reserved["acquired"])
+
+    def test_repository_notification_adapter_is_operational_after_live_conformance(self) -> None:
+        adapter = self.config["adapter"]
+        self.assertEqual(adapter["implementation"], "IMPLEMENTED")
+        self.assertEqual(adapter["activation"], "ENABLED")
+        self.assertEqual(adapter["deliveryConformance"], "PASS")
+        self.assertTrue(adapter["sendAllowed"])
+        self.assertFalse(adapter["conformanceSendAllowed"])
 
     def test_atomic_reservation_has_one_winner(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -147,6 +166,35 @@ class FrameworkTests(unittest.TestCase):
             self.assertEqual(conflicting["status"], "SENT")
             self.assertEqual(conflicting["deliveryStatus"], "Delivered")
             self.assertEqual(conflicting["deliveryReconciliationStatus"], "CONFLICTING_TERMINAL_IGNORED")
+
+    def test_successful_terminal_recheck_clears_stale_external_action_state(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            ledger_path = self.ledger(directory)
+            config = self.operational_config()
+            reservation = notification_ledger.reserve(self.event, config, self.contacts, ledger_path)
+            notification_ledger.mark_submitted(self.event, config, ledger_path, reservation["plan"]["providerOperationId"], "Succeeded")
+            notification_ledger.reconcile_delivery(
+                self.event,
+                config,
+                ledger_path,
+                reservation["plan"]["providerOperationId"],
+                "Delivered",
+            )
+            notification_ledger.record_reconciliation_failure(
+                self.event,
+                ledger_path,
+                "DELIVERY_RECONCILIATION_EXTERNAL_ACTION_REQUIRED",
+            )
+            recovered = notification_ledger.reconcile_delivery(
+                self.event,
+                config,
+                ledger_path,
+                reservation["plan"]["providerOperationId"],
+                "Delivered",
+            )
+            self.assertEqual(recovered["status"], "SENT")
+            self.assertEqual(recovered["deliveryReconciliationStatus"], "PASS")
+            self.assertEqual(recovered["deliveryReconciliationEvidence"], "TERMINAL_PROVIDER_EVIDENCE_RECONFIRMED")
 
     def test_pending_and_negative_delivery_are_truthful(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -479,6 +527,37 @@ class FrameworkTests(unittest.TestCase):
                 candidate[field] = value
                 with self.assertRaisesRegex(ValueError, message):
                     github_attribution.render(candidate)
+
+    def test_acs_diagnostic_setting_uses_unconditional_existing_resource_scope(self) -> None:
+        applications = (ROOT / "infra/modules/applications.bicep").read_text(encoding="utf-8")
+        self.assertIn(
+            "resource communicationService 'Microsoft.Communication/communicationServices@2023-04-01' existing = {",
+            applications,
+        )
+        self.assertNotIn(
+            "resource communicationService 'Microsoft.Communication/communicationServices@2023-04-01' existing = if",
+            applications,
+        )
+        diagnostic_start = applications.index(
+            "resource emailDeliveryDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview'"
+        )
+        diagnostic_end = applications.index("resource managedEnvironment", diagnostic_start)
+        self.assertIn("scope: communicationService", applications[diagnostic_start:diagnostic_end])
+        self.assertIn("empty(acsEmailRoleAssignmentName) ? guid(communicationService.id", applications)
+        role_start = applications.index("resource acsEmailSender 'Microsoft.Authorization/roleAssignments@2022-04-01'")
+        role_end = applications.index("resource emailDeliveryLogReader", role_start)
+        self.assertIn("scope: communicationService", applications[role_start:role_end])
+
+        development_parameters = (ROOT / "infra/environments/dev.bicepparam").read_text(encoding="utf-8")
+        self.assertRegex(
+            development_parameters,
+            r"param acsEmailRoleAssignmentName = '[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}'",
+        )
+        self.assertIn("param notificationAdapterActivated = true", development_parameters)
+        self.assertIn(
+            "{ name: 'DM_EXTERNAL_NOTIFICATIONS', value: notificationAdapterActivated ? 'enabled' : 'disabled' }",
+            applications,
+        )
 
 
 if __name__ == "__main__":

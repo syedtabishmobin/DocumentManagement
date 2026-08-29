@@ -33,7 +33,14 @@ param boxClientSecretConfigured bool = false
 param azureCommunicationServiceName string = ''
 param azureCommunicationEndpoint string = ''
 param emailFromAddress string = ''
+// Existing environments may have an approved role assignment created before
+// this template managed notification infrastructure. Supplying its immutable
+// assignment name adopts it without a delete/recreate permission gap.
+param acsEmailRoleAssignmentName string = ''
 param configureNotificationAdapterInfrastructure bool = false
+// Activation is independent from resource configuration. Enable only after the
+// exact sender, recipient route, identity, diagnostics and delivery suite pass.
+param notificationAdapterActivated bool = false
 param monthlyBudgetAud int = environment == 'dev' ? 25 : environment == 'stage' ? 75 : 500
 param alertEmail string = ''
 param budgetStartDate string = utcNow('yyyy-MM-dd')
@@ -95,7 +102,9 @@ module applications './modules/applications.bicep' = if (deployApplications) {
     azureCommunicationServiceName: azureCommunicationServiceName
     azureCommunicationEndpoint: azureCommunicationEndpoint
     emailFromAddress: emailFromAddress
+    acsEmailRoleAssignmentName: acsEmailRoleAssignmentName
     configureNotificationAdapterInfrastructure: configureNotificationAdapterInfrastructure
+    notificationAdapterActivated: notificationAdapterActivated
     tags: commonTags
   }
 }

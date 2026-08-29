@@ -21,7 +21,9 @@ param boxClientSecretConfigured bool
 param azureCommunicationServiceName string
 param azureCommunicationEndpoint string
 param emailFromAddress string
+param acsEmailRoleAssignmentName string
 param configureNotificationAdapterInfrastructure bool
+param notificationAdapterActivated bool
 param tags object
 
 var webAppName = 'ca-${resourcePrefix}-${environment}-web'
@@ -46,7 +48,10 @@ resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' existing = {
   name: logAnalyticsName
 }
 
-resource communicationService 'Microsoft.Communication/communicationServices@2023-04-01' existing = if (configureNotificationAdapterInfrastructure) {
+// Keep the existing resource symbolic and unconditional so extension resources
+// compile with the ACS resource scope. The resources that dereference it remain
+// fenced by configureNotificationAdapterInfrastructure.
+resource communicationService 'Microsoft.Communication/communicationServices@2023-04-01' existing = {
   name: azureCommunicationServiceName
 }
 
@@ -99,8 +104,8 @@ resource keyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01
 }
 
 resource acsEmailSender 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (configureNotificationAdapterInfrastructure) {
-  name: guid(communicationService!.id, runtimeIdentity.id, 'CommunicationAndEmailServiceOwner')
-  scope: communicationService!
+  name: empty(acsEmailRoleAssignmentName) ? guid(communicationService.id, runtimeIdentity.id, 'CommunicationAndEmailServiceOwner') : acsEmailRoleAssignmentName
+  scope: communicationService
   properties: {
     principalId: runtimeIdentity.properties.principalId
     principalType: 'ServicePrincipal'
@@ -120,7 +125,7 @@ resource emailDeliveryLogReader 'Microsoft.Authorization/roleAssignments@2022-04
 
 resource emailDeliveryDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (configureNotificationAdapterInfrastructure) {
   name: 'doculyra-email-delivery'
-  scope: communicationService!
+  scope: communicationService
   properties: {
     workspaceId: logs.id
     logAnalyticsDestinationType: 'Dedicated'
@@ -207,7 +212,7 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'DM_OUTBOUND_NETWORK', value: 'deny' }
             { name: 'DM_EXTERNAL_CONNECTORS', value: 'disabled' }
             { name: 'DM_CONNECTOR_ADAPTERS_READY', value: 'false' }
-            { name: 'DM_EXTERNAL_NOTIFICATIONS', value: 'disabled' }
+            { name: 'DM_EXTERNAL_NOTIFICATIONS', value: notificationAdapterActivated ? 'enabled' : 'disabled' }
             { name: 'AZURE_CLIENT_ID', value: runtimeIdentity.properties.clientId }
             { name: 'DM_LOG_ANALYTICS_WORKSPACE_ID', value: logs.properties.customerId }
             { name: 'DM_NOTIFICATION_CREDENTIAL_MODE', value: 'MANAGED_IDENTITY' }

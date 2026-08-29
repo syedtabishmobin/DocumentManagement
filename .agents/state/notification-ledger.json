@@ -11,6 +11,48 @@
       "firstRecordedAt": "2026-08-29T07:10:30Z",
       "lastUpdatedAt": "2026-08-29T07:10:30Z",
       "evidence": "https://github.com/syedtabishmobin/DocumentManagement/issues/1"
+    },
+    {
+      "key": "decision:dec-notify-018:first-blocking-notification",
+      "eventType": "BLOCKING_DECISION",
+      "subject": "[Doculyra][ACTION REQUIRED][DEC-NOTIFY-018] Complete ACS Email conformance",
+      "authoritativeUrl": "https://github.com/syedtabishmobin/DocumentManagement/issues/18",
+      "fingerprint": "e3dcdd19b21423324bcf930883dd6a9fbee113f7fe1cacf48e571bffbd2675d7",
+      "providerOperationId": "19f9db55-c611-5fbf-ad9a-7680d1cc1bc5",
+      "status": "SENT",
+      "attemptCount": 1,
+      "firstRecordedAt": "2026-08-29T14:59:25.158722+00:00",
+      "lastUpdatedAt": "2026-08-29T15:19:24.177804+00:00",
+      "evidence": "ACS_RECIPIENT_DELIVERED",
+      "providerMessageId": "19f9db55-c611-5fbf-ad9a-7680d1cc1bc5",
+      "providerSubmissionStatus": "Succeeded",
+      "submittedAt": "2026-08-29T14:59:33.718937+00:00",
+      "lastDeliveryCheckAt": "2026-08-29T15:19:24.177804+00:00",
+      "deliveryStatus": "Delivered",
+      "deliveryObservedAt": "2026-08-29T14:59:35.296Z",
+      "deliveryReconciliationStatus": "PASS",
+      "deliveryReconciliationEvidence": "TERMINAL_PROVIDER_EVIDENCE_RECONFIRMED"
+    },
+    {
+      "key": "release:rc-notify-018:uat-ready",
+      "eventType": "UAT_READY",
+      "subject": "[Doculyra][UAT READY][RC-NOTIFY-018] Synthetic notification conformance",
+      "authoritativeUrl": "https://github.com/syedtabishmobin/DocumentManagement/issues/18",
+      "fingerprint": "5cf50bd6ed694ac56f376680b49c7826f52381571e4fd0ba275e1bec0362b7f8",
+      "providerOperationId": "deac8f93-61a8-51bd-8510-6ac2744d8ddb",
+      "status": "SENT",
+      "attemptCount": 1,
+      "firstRecordedAt": "2026-08-29T15:00:46.513343+00:00",
+      "lastUpdatedAt": "2026-08-29T15:19:25.512750+00:00",
+      "evidence": "ACS_RECIPIENT_DELIVERED",
+      "providerMessageId": "deac8f93-61a8-51bd-8510-6ac2744d8ddb",
+      "providerSubmissionStatus": "Succeeded",
+      "submittedAt": "2026-08-29T15:00:57.296577+00:00",
+      "lastDeliveryCheckAt": "2026-08-29T15:19:25.512750+00:00",
+      "deliveryStatus": "Delivered",
+      "deliveryObservedAt": "2026-08-29T15:00:58.775Z",
+      "deliveryReconciliationStatus": "PASS",
+      "deliveryReconciliationEvidence": "TERMINAL_PROVIDER_EVIDENCE_RECONFIRMED"
     }
   ]
 }

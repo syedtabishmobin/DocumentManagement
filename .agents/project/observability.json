@@ -53,6 +53,6 @@
   "notifications": ".agents/config/notifications.json",
   "autonomousQueueGate": {
     "status": "BLOCKED",
-    "reason": "PR #19 repository candidate passed independent QA and defects #20-#24 are closed; autonomous execution remains blocked solely by live managed-identity, sender/domain, diagnostic-log, terminal-delivery and repeat-dispatch conformance pending refreshed authorised Azure access."
+    "reason": "Issue #18 live ACS Email conformance passes; autonomous execution remains blocked only until independent QA accepts the exact activation/evidence candidate. Product work still requires an explicit subsequent governed request."
   }
 }

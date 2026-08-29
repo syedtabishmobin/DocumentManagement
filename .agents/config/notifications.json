@@ -7,11 +7,11 @@
   "adapter": {
     "kind": "AZURE_COMMUNICATION_SERVICES_EMAIL",
     "implementation": "IMPLEMENTED",
-    "activation": "CONFIGURED_DISABLED",
+    "activation": "ENABLED",
     "authentication": "MANAGED_IDENTITY_REQUIRED",
-    "deliveryConformance": "BLOCKED_EXTERNAL_VALIDATION",
-    "sendAllowed": false,
-    "conformanceSendAllowed": true,
+    "deliveryConformance": "PASS",
+    "sendAllowed": true,
+    "conformanceSendAllowed": false,
     "transportCommand": [
       "node",
       "src/apps/api/dist/notification-email.cli.js"
@@ -33,7 +33,7 @@
       "terminalSuccessStatus": "Delivered",
       "terminalFailureStatuses": ["Bounced", "Quarantined", "FilteredSpam", "Suppressed", "Failed"]
     },
-    "externalAction": "Refresh authorised Azure management authentication, verify/deploy managed-identity ACS and Log Analytics permissions plus ACS email diagnostic settings, then deliver and reconcile both Issue #18 conformance events before activation."
+    "externalAction": "None. Repeat live conformance after any sender/domain, recipient, identity, RBAC, diagnostics, SDK, or provider configuration change."
   },
   "events": {
     "BLOCKING_DECISION": {
