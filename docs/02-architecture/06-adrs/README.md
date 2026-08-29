@@ -103,5 +103,5 @@ None of the five initial ADRs may become `ACCEPTED` until:
 - the draft PRD and applicable architecture/security contracts have an approved baseline or the ADR is explicitly scoped as a deferred abstraction;
 - the logical data/workspace/NFR models agree with the proposed decision;
 - failure, authorization, deletion, restore, residency, audit, migration, and portability tests are specified;
-- `DEC-038`–`DEC-040` behavior remains fenced where unresolved; and
+- approved `DEC-038` recovery/ownership-transfer unavailability remains fenced, while `DEC-039`–`DEC-040` behavior remains fenced where unresolved; and
 - no accepted ADR would make implementation unsafe or substantially disposable under the readiness gate.

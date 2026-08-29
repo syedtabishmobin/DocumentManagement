@@ -190,7 +190,7 @@ Microsoft Entra External ID is the selected production identity adapter under `A
 | Consequential approval/action | Current strong session plus action-specific authority and bound approval | Reauthorize immediately before execution. |
 | Export | Step-up authentication plus explicit export authority | Reauthorize package release/redemption. |
 | Document delete/restore/final purge | Step-up authentication plus exact destructive/restore authority and the `DEC-053` 30-day state contract | Document restore and account/workspace recovery remain distinct. |
-| MFA/recovery change | Existing strong factor or the future `DEC-038` recovery ceremony | No email/support-only bypass is assumed. |
+| MFA change | Existing strong factor | Approved `DEC-038` provides no recovery/ownership-transfer success ceremony in Phase 1; no email/support-only bypass is assumed, and any later ceremony requires a new governed decision. |
 
 Session state MUST contain opaque identifiers, not authorization truth that remains valid after policy/grant changes. Device remembrance is a revocable convenience, not independent authority. Web and mobile clients MAY persist only approved encrypted offline content and indexes, with OS/browser key protection, bounded retention, remote revocation state, device-loss handling, and the offline threat tests required by `ADR-ARCH-008`/`009`.
 

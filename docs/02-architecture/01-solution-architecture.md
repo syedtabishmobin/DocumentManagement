@@ -15,7 +15,7 @@
 
 This document defines the logical architecture needed to satisfy the approved Phase 1 product requirements. Its `ARCH-P1-*` rules are implementation constraints under `DEC-041` and `DEC-054`.
 
-The source-of-truth hierarchy in [`CODEX.md`](../../CODEX.md) applies. Approved entries in the [decision register](../00-context/decision-register.md) constrain this design. The [Phase 1 PRD](../01-product/02-phase-1-prd.md) version `0.2` is the approved product implementation baseline under `DEC-041`/`054`. The [feature catalogue](../01-product/03-feature-catalogue.md), [use-case catalogue](../01-product/04-use-case-catalogue.md), [personas and journeys](../01-product/05-personas-and-journeys.md), and [scope and metrics](../01-product/06-scope-and-success-metrics.md) are derived planning and measurement views; review labels in those views do not reopen approved decisions or override normative contracts.
+The source-of-truth hierarchy in [`CODEX.md`](../../CODEX.md) applies. Approved entries in the [decision register](../00-context/decision-register.md) constrain this design. The [Phase 1 PRD](../01-product/02-phase-1-prd.md) version `0.3` is the approved product implementation baseline under `DEC-041`/`054`. The [feature catalogue](../01-product/03-feature-catalogue.md), [use-case catalogue](../01-product/04-use-case-catalogue.md), [personas and journeys](../01-product/05-personas-and-journeys.md), and [scope and metrics](../01-product/06-scope-and-success-metrics.md) are derived planning and measurement views; review labels in those views do not reopen approved decisions or override normative contracts.
 
 Accepted ADRs select the current implementation while the logical boundaries remain provider-neutral:
 

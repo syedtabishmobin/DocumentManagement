@@ -25,7 +25,7 @@ This document deliberately does not select:
 - identifier encoding, encryption implementation, partition count, replication topology, or physical index syntax;
 - event sourcing, change-data-capture, ORM, migration framework, or transaction technology;
 - cloud, processor, identity, key, AI/OCR, analytics, or observability providers; or
-- retention, purge, backup-expiry, recovery, or cross-border durations left open by `DEC-038`–`DEC-040`.
+- retention, purge, backup-expiry, or cross-border durations left open by `DEC-039`–`DEC-040`; approved `DEC-038` instead keeps account/workspace recovery and ownership-transfer success routes unavailable in Phase 1.
 
 ## 2. Logical modelling conventions
 

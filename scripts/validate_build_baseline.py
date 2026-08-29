@@ -17,6 +17,9 @@ BASELINE_DOCUMENT_PATH = ROOT / "docs/10-backlog/08-build-baselines/DOCULYRA-BUI
 README_PATH = ROOT / "README.md"
 NFR_PATH = ROOT / "docs/02-architecture/05-non-functional-requirements.md"
 GOVERNED_AUTHORITY_PATH = ROOT / "docs/10-backlog/07-governed-work/GH-WORK-P1-AUTH-001.md"
+DECISION_REGISTER_PATH = ROOT / "docs/00-context/decision-register.md"
+SOLUTION_ARCHITECTURE_PATH = ROOT / "docs/02-architecture/01-solution-architecture.md"
+OPENAPI_PATH = ROOT / "docs/05-api/02-openapi.json"
 FEATURE_PATH = ROOT / "docs/01-product/03-feature-catalogue.md"
 METRIC_PATH = ROOT / "docs/01-product/06-scope-and-success-metrics.md"
 EPIC_PATH = ROOT / "docs/10-backlog/01-epics.md"
@@ -94,6 +97,49 @@ def validate() -> tuple[list[str], dict[str, int]]:
     for stale in ("`DEC-038` remains blocked", "decision blocked by `DEC-038`", "until `DEC-038` closes"):
         if stale in nfr_text:
             errors.append(f"NFR baseline treats approved DEC-038 as unresolved: {stale}")
+
+    decision_register = DECISION_REGISTER_PATH.read_text(encoding="utf-8")
+    if not re.search(r"\| `DEC-038` \| APPROVED \|", decision_register):
+        errors.append("decision register does not classify DEC-038 as APPROVED")
+    prohibited_dec038_phrases = (
+        "`DEC-038` remains blocked",
+        "`DEC-038` remains open",
+        "`DEC-038` is open",
+        "while `DEC-038` is open",
+        "while `DEC-038` open",
+        "until `DEC-038` closes",
+        "decision blocked by `DEC-038`",
+        "assurance model remains open in `DEC-038`",
+        "recovery assurance still requires `DEC-038`",
+        "Recovery assurance and support process require `DEC-038`",
+        "future `DEC-038` recovery ceremony",
+        "`DEC-038`–`DEC-040` behavior remains fenced where unresolved",
+        "No backup, restore, replica, snapshot, key, failover, or DR mechanism may close `DEC-038`",
+        "document restore does not close it",
+    )
+    for path in sorted((ROOT / "docs").rglob("*.md")):
+        if path == DECISION_REGISTER_PATH or "docs/00-context" in path.as_posix():
+            continue
+        text = path.read_text(encoding="utf-8")
+        for stale in prohibited_dec038_phrases:
+            if stale in text:
+                errors.append(f"{path.relative_to(ROOT)} treats approved DEC-038 as unresolved: {stale}")
+        for line in text.splitlines():
+            if line.startswith("| Open decisions |") and "DEC-038" in line:
+                errors.append(f"{path.relative_to(ROOT)} lists approved DEC-038 as an open decision")
+
+    solution_architecture = SOLUTION_ARCHITECTURE_PATH.read_text(encoding="utf-8")
+    if "approved `PROD-PRD-001` version `0.3`" not in solution_architecture:
+        errors.append("solution architecture normative basis does not bind approved PRD version 0.3")
+    if "Phase 1 PRD](../01-product/02-phase-1-prd.md) version `0.3` is the approved" not in solution_architecture:
+        errors.append("solution architecture body does not bind approved PRD version 0.3")
+    if "Phase 1 PRD](../01-product/02-phase-1-prd.md) version `0.2` is the approved" in solution_architecture:
+        errors.append("solution architecture retains stale approved PRD version 0.2")
+
+    openapi = json.loads(OPENAPI_PATH.read_text(encoding="utf-8"))
+    recovery_operation = openapi.get("paths", {}).get("/v1/workspaces/{workspaceId}/recovery-cases", {}).get("post", {})
+    if recovery_operation.get("x-decision-state", {}).get("DEC-038") != "APPROVED_PHASE1_UNAVAILABLE":
+        errors.append("OpenAPI recovery route does not represent approved DEC-038 Phase 1 unavailability")
 
     governed_authority = GOVERNED_AUTHORITY_PATH.read_text(encoding="utf-8")
     for stale in ("PR #4 remains blocked", "CI run pending PR", "independent architecture/data review pending", "PR/Issue links pending"):
