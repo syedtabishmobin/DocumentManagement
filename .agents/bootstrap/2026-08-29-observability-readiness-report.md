@@ -6,7 +6,7 @@ Notification state: implementation=IMPLEMENTED; activation=ENABLED; deliveryConf
 
 ## 1. Repository/framework state discovered
 
-The merged framework already provided reusable/project separation, GitHub Issues authority, protected-main CI, lifecycle events, privacy-safe local queries, attribution and a sound configured-disabled ACS Email adapter. Issue #18 extended that implementation rather than rebuilding it. Azure discovery identified Bicep diagnostic-scope defect #25; post-activation reconciliation identified stale-current-state defect #26; independent negative QA identified explicit-port endpoint defect #28. All have implementation fixes and require exact-candidate independent retest.
+The merged framework already provided reusable/project separation, GitHub Issues authority, protected-main CI, lifecycle events, privacy-safe local queries, attribution and a sound configured-disabled ACS Email adapter. Issue #18 extended that implementation rather than rebuilding it. Azure discovery identified Bicep diagnostic-scope defect #25; post-activation reconciliation identified stale-current-state defect #26; independent negative QA identified explicit-port endpoint defect #28. Independent `QA-SEC-003` retested and closed all three on accepted SHA `b9ce247330b269e16234b790b3d95c5e074379da`.
 
 ## 2. Files/config changed
 

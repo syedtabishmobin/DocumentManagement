@@ -80,6 +80,20 @@ def fixture_events() -> list[dict[str, object]]:
 
 
 class ObservabilitySmokeTests(unittest.TestCase):
+    def test_pass_gate_rejects_pending_exact_candidate_language(self) -> None:
+        errors = validate_observability.validate_pass_readiness_language(
+            "PASS",
+            {"synthetic-report.md": "All fixes require exact-candidate independent retest."},
+        )
+        self.assertTrue(any("contradicts PASS readiness" in error for error in errors))
+        self.assertEqual(
+            validate_observability.validate_pass_readiness_language(
+                "BLOCKED",
+                {"synthetic-report.md": "All fixes require exact-candidate independent retest."},
+            ),
+            [],
+        )
+
     def test_display_identity_is_joined_without_replacing_runtime_correlation(self) -> None:
         assignment = agent_ops.display_assignment(
             "run-notification-readiness-20260829",
