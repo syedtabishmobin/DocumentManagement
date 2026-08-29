@@ -3,7 +3,7 @@
   "baselineId": "DOCULYRA-BUILD-P1-2026.08.30.1",
   "status": "IN_REVIEW",
   "recordedAt": "2026-08-30T03:30:00+10:00",
-  "candidateRevision": "6587824d23622253e6877d11aea72a20337410ae",
+  "candidateRevision": "426be2cd207bb5417f70aedffb2b6304e666a274",
   "authority": {
     "vision": {
       "id": "PROD-VIS-001",
@@ -113,7 +113,7 @@
     "productBa": "CONSULTED — corrections authored; exact candidate review pending",
     "architectureSecurityData": "CONSULTED — corrections authored and DEC-P1-056 resolved; exact candidate review pending",
     "aiUx": "CONSULTED — corrections authored; exact candidate review pending",
-    "independentBaselineReview": "RETEST_PENDING — preliminary review opened defects #36–#38; remediation content revision 6587824d23622253e6877d11aea72a20337410ae"
+    "independentBaselineReview": "RETEST_PENDING — candidate 41b0f4b7c0eaaad388fd84c59c849ed8dd20385c failed #37 semantic consistency; remediation content revision 426be2cd207bb5417f70aedffb2b6304e666a274"
   },
   "changeControl": {
     "materialChangesRequireNewBaselineVersion": true,
