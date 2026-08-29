@@ -59,16 +59,18 @@ The dependency graph is generated with `pnpm build:graph`. `BASELINED`, `SHAPING
 
 ## Baseline acceptance criteria
 
-- `AC-BL-P1-001` — The authoritative vision, seven goals/outcomes and 22 measurable definitions are approved, uniquely owned and reciprocally linked.
-- `AC-BL-P1-002` — All 31 required features map to outcomes, all 49 stories map to exactly one feature and one primary epic, and every story inherits its feature's complete outcome set.
-- `AC-BL-P1-003` — Every story owns exactly two observable/testable ACs and exact planned developer/independent test expectations; all 104 tests and 14 source-test files have reverse ownership.
-- `AC-BL-P1-004` — Architecture, security/privacy, data/domain, AI/evaluation, UX/accessibility, migration/repair, environment and release dependencies are explicit without silently expanding another authority's scope.
-- `AC-BL-P1-005` — No known material requirement, story, implementation, test, issue, defect or decision is orphaned, duplicated, conflicting or falsely complete; preserved historical evidence is truthfully bounded.
-- `AC-BL-P1-006` — `DEC-P1-056` is reflected consistently as an explicit independently testable Phase 1 fail-closed fence, with richer independent transfer/delegation retained only as a later governed capability.
-- `AC-BL-P1-007` — Every story is `BASELINED` and `PLANNED_UNISSUED`; an attributed GitHub Issue, predecessor satisfaction and complete Definition of Ready are mandatory before implementation.
-- `AC-BL-P1-008` — `pnpm verify`, `pnpm verify:baseline`, deterministic `pnpm build:graph`, and the corrected end-to-end traceability re-audit pass on the exact reviewed candidate.
-- `AC-BL-P1-009` — GitHub three-level attribution, observability, Product Authority notification/deduplication, and absence of unresolved material decisions/defects remain validated.
-- `AC-BL-P1-010` — The approved record preserves Stage/BA/UAT/product completion as not yet applicable/not complete, records accepted non-blocking exceptions, and enforces versioned material-change control without freezing routine implementation detail.
+Issue #32's original stable meanings are preserved by the attributed [criterion amendment](https://github.com/syedtabishmobin/DocumentManagement/issues/32#issuecomment-5464068029). The machine baseline stores these exact ID/text pairs and the baseline validator rejects any human/machine divergence.
+
+- `AC-BL-P1-001`: every approved goal has measurable success criteria and exact feature coverage.
+- `AC-BL-P1-002`: every required feature has governed stories; every story has atomic testable acceptance criteria and explicit specialist dependencies.
+- `AC-BL-P1-003`: missing, orphaned, duplicate, conflicting, stale, and undocumented-scope findings are resolved or explicitly dispositioned without deleting useful history.
+- `AC-BL-P1-004`: test/evaluation expectations map to every acceptance criterion and reverse traceability covers material code, tests, Issues, defects, and PRs.
+- `AC-BL-P1-005`: GitHub work state reflects the approved baseline and can generate a dependency-aware build queue.
+- `AC-BL-P1-006`: an independent reviewer who did not author the material changes confirms Definition of Ready and baseline integrity against the exact candidate.
+- `AC-BL-P1-007`: the corrected end-to-end audit reports `END_TO_END_TRACEABILITY_COMPLETE`, or names approved non-blocking exceptions.
+- `AC-BL-P1-008`: observability, agent attribution, notifications, CI, and the absence of unresolved material human decisions are verified truthfully.
+- `AC-BL-P1-009`: durable baseline evidence records identifier/version, source versions, scope snapshot, ADR/security/data/AI/UX references, risks/exceptions, approvals, and controlled change rules.
+- `AC-BL-P1-010`: the approved `DEC-P1-056` Product Authority decision is represented as an explicit independently testable Phase 1 fail-closed ownership/access transition fence; richer independent transfer/delegation semantics remain a later governed capability.
 
 ## Current evidence and environment state
 

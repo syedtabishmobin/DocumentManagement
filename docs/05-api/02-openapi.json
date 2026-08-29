@@ -8119,7 +8119,7 @@
           "DEC-038"
         ],
         "x-decision-state": {
-          "DEC-038": "OPEN"
+          "DEC-038": "APPROVED_PHASE1_UNAVAILABLE"
         },
         "x-availability": "DISABLED_UNTIL_APPROVED"
       }

@@ -13,6 +13,10 @@ from build_dependency_graph import graph, topological_order
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE_PATH = ROOT / "docs/10-backlog/build-baseline.v1.json"
+BASELINE_DOCUMENT_PATH = ROOT / "docs/10-backlog/08-build-baselines/DOCULYRA-BUILD-P1-2026.08.30.1.md"
+README_PATH = ROOT / "README.md"
+NFR_PATH = ROOT / "docs/02-architecture/05-non-functional-requirements.md"
+GOVERNED_AUTHORITY_PATH = ROOT / "docs/10-backlog/07-governed-work/GH-WORK-P1-AUTH-001.md"
 FEATURE_PATH = ROOT / "docs/01-product/03-feature-catalogue.md"
 METRIC_PATH = ROOT / "docs/01-product/06-scope-and-success-metrics.md"
 EPIC_PATH = ROOT / "docs/10-backlog/01-epics.md"
@@ -26,6 +30,7 @@ FEATURE_RE = re.compile(r"FEAT-P1-\d{3}")
 EPIC_RE = re.compile(r"EPIC-P1-\d{3}")
 STORY_RE = re.compile(r"STORY-P1-\d{3}")
 AC_RE = re.compile(r"AC-STORY-P1-\d{3}-\d{2}")
+BASELINE_AC_RE = re.compile(r"^- `(AC-BL-P1-\d{3})`: (.+)$", re.MULTILINE)
 
 
 def sections(text: str, pattern: re.Pattern[str]) -> dict[str, str]:
@@ -54,9 +59,49 @@ def validate() -> tuple[list[str], dict[str, int]]:
     expected_epics = exact_set(hierarchy["epics"], "baseline epics", errors)
     expected_stories = exact_set(hierarchy["stories"], "baseline stories", errors)
     expected_baseline_acs = {f"AC-BL-P1-{item:03d}" for item in range(1, 11)}
-    actual_baseline_acs = exact_set(baseline.get("baselineAcceptanceCriteria", []), "baseline acceptance", errors)
+    criterion_records = baseline.get("baselineAcceptanceCriteria", [])
+    if not all(isinstance(item, dict) and {"id", "text", "source"}.issubset(item) for item in criterion_records):
+        errors.append("baseline acceptance criteria must contain machine-readable id/text/source records")
+        criterion_records = []
+    criterion_ids = [item["id"] for item in criterion_records]
+    actual_baseline_acs = exact_set(criterion_ids, "baseline acceptance", errors)
     if actual_baseline_acs != expected_baseline_acs:
         errors.append(f"baseline acceptance differs: missing={sorted(expected_baseline_acs-actual_baseline_acs)} unexpected={sorted(actual_baseline_acs-expected_baseline_acs)}")
+    baseline_document = BASELINE_DOCUMENT_PATH.read_text(encoding="utf-8")
+    document_criteria = dict(BASELINE_AC_RE.findall(baseline_document))
+    machine_criteria = {item["id"]: item["text"] for item in criterion_records}
+    if document_criteria != machine_criteria:
+        missing = sorted(set(machine_criteria) - set(document_criteria))
+        unexpected = sorted(set(document_criteria) - set(machine_criteria))
+        changed = sorted(key for key in set(machine_criteria) & set(document_criteria) if machine_criteria[key] != document_criteria[key])
+        errors.append(f"human/machine baseline criterion divergence: missing={missing} unexpected={unexpected} changed={changed}")
+    for item in criterion_records[:9]:
+        if item.get("source") != "Issue #32 original criterion":
+            errors.append(f"{item.get('id')} does not preserve its original Issue #32 identity")
+    amendment = baseline.get("authority", {}).get("acceptanceCriteriaAmendment", "")
+    if "issues/32#issuecomment-" not in amendment:
+        errors.append("baseline lacks the durable Issue #32 acceptance-criterion amendment")
+
+    readme = README_PATH.read_text(encoding="utf-8")
+    for stale in ("100 stable requirements", "48 stories", "All 48 stories"):
+        if stale in readme:
+            errors.append(f"README retains stale baseline inventory: {stale}")
+    for current in ("101 stable requirements", "31 features", "49 stories", "98 exact story acceptance criteria", "104 planned tests"):
+        if current not in readme:
+            errors.append(f"README omits current baseline inventory: {current}")
+
+    nfr_text = NFR_PATH.read_text(encoding="utf-8")
+    for stale in ("`DEC-038` remains blocked", "decision blocked by `DEC-038`", "until `DEC-038` closes"):
+        if stale in nfr_text:
+            errors.append(f"NFR baseline treats approved DEC-038 as unresolved: {stale}")
+
+    governed_authority = GOVERNED_AUTHORITY_PATH.read_text(encoding="utf-8")
+    for stale in ("PR #4 remains blocked", "CI run pending PR", "independent architecture/data review pending", "PR/Issue links pending"):
+        if stale in governed_authority:
+            errors.append(f"merged Issue #2/PR #4 evidence remains falsely pending: {stale}")
+    for final_evidence in ("4bb43cc51cca34751bf2f46f160a2f210728396c", "33246814008", "6c047bd01e73ab321f3234228ca58819c5ea7ca3"):
+        if final_evidence not in governed_authority:
+            errors.append(f"Issue #2/PR #4 governed record omits final evidence: {final_evidence}")
 
     feature_text = FEATURE_PATH.read_text(encoding="utf-8")
     feature_sections = sections(feature_text, re.compile(r"^### `(FEAT-P1-\d{3})`", re.MULTILINE))

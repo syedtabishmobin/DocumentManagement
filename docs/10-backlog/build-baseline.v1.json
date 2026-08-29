@@ -14,6 +14,7 @@
     "decisions": "docs/00-context/decision-register.md",
     "sourceHierarchy": "CODEX.md",
     "governedWorkIssue": "https://github.com/syedtabishmobin/DocumentManagement/issues/32",
+    "acceptanceCriteriaAmendment": "https://github.com/syedtabishmobin/DocumentManagement/issues/32#issuecomment-5464068029",
     "resolvedDecision": "https://github.com/syedtabishmobin/DocumentManagement/issues/33#issuecomment-5463877570"
   },
   "approvedHierarchy": {
@@ -73,8 +74,16 @@
     "attributed authoritative GitHub Issue before execution"
   ],
   "baselineAcceptanceCriteria": [
-    "AC-BL-P1-001", "AC-BL-P1-002", "AC-BL-P1-003", "AC-BL-P1-004", "AC-BL-P1-005",
-    "AC-BL-P1-006", "AC-BL-P1-007", "AC-BL-P1-008", "AC-BL-P1-009", "AC-BL-P1-010"
+    {"id": "AC-BL-P1-001", "text": "every approved goal has measurable success criteria and exact feature coverage.", "source": "Issue #32 original criterion"},
+    {"id": "AC-BL-P1-002", "text": "every required feature has governed stories; every story has atomic testable acceptance criteria and explicit specialist dependencies.", "source": "Issue #32 original criterion"},
+    {"id": "AC-BL-P1-003", "text": "missing, orphaned, duplicate, conflicting, stale, and undocumented-scope findings are resolved or explicitly dispositioned without deleting useful history.", "source": "Issue #32 original criterion"},
+    {"id": "AC-BL-P1-004", "text": "test/evaluation expectations map to every acceptance criterion and reverse traceability covers material code, tests, Issues, defects, and PRs.", "source": "Issue #32 original criterion"},
+    {"id": "AC-BL-P1-005", "text": "GitHub work state reflects the approved baseline and can generate a dependency-aware build queue.", "source": "Issue #32 original criterion"},
+    {"id": "AC-BL-P1-006", "text": "an independent reviewer who did not author the material changes confirms Definition of Ready and baseline integrity against the exact candidate.", "source": "Issue #32 original criterion"},
+    {"id": "AC-BL-P1-007", "text": "the corrected end-to-end audit reports `END_TO_END_TRACEABILITY_COMPLETE`, or names approved non-blocking exceptions.", "source": "Issue #32 original criterion"},
+    {"id": "AC-BL-P1-008", "text": "observability, agent attribution, notifications, CI, and the absence of unresolved material human decisions are verified truthfully.", "source": "Issue #32 original criterion"},
+    {"id": "AC-BL-P1-009", "text": "durable baseline evidence records identifier/version, source versions, scope snapshot, ADR/security/data/AI/UX references, risks/exceptions, approvals, and controlled change rules.", "source": "Issue #32 original criterion"},
+    {"id": "AC-BL-P1-010", "text": "the approved `DEC-P1-056` Product Authority decision is represented as an explicit independently testable Phase 1 fail-closed ownership/access transition fence; richer independent transfer/delegation semantics remain a later governed capability.", "source": "Issue #32 amendment 5464068029"}
   ],
   "evidence": {
     "implementationStatus": "docs/10-backlog/05-personal-family-implementation-status.md",

@@ -103,7 +103,7 @@ The system MUST:
 - `AI-GRD-P1-024` — Consequential effects require the owning workflow, current authorization, policy, exact reviewed input/effect hash, unexpired/unrevoked approval, target revision, idempotency, limits and reconciliation (`SEC-P1-024`).
 - `AI-GRD-P1-025` — Draft text/form/update output MUST remain visibly a draft with protected payload, source mapping, unresolved fields, preview and no direct send/submit/publish/sign capability.
 - `AI-GRD-P1-026` — Automated emergency/incapacity/death content release is prohibited while `DEC-032` remains open; an AI assessment cannot trigger release or create authority.
-- `AI-GRD-P1-027` — Account recovery/ownership transfer MUST NOT use AI inference or expose resources/grants while `DEC-038` is open.
+- `AI-GRD-P1-027` — Account recovery/ownership transfer MUST NOT use AI inference or expose resources/grants under the approved Phase 1 `DEC-038` unavailability fence.
 - `AI-GRD-P1-028` — Deletion/revocation/cancellation MUST be checked before processing, every protected tool read, result commit, review, release, cache use, replay and rebuild; late outputs cannot resurrect content.
 - `AI-GRD-P1-029` — Time, size, token, candidate, graph fan-out/depth, tool-call, retry, rate, concurrency and cost limits MUST be versioned and enforced outside the model without weakening safety controls.
 - `AI-GRD-P1-030` — Provider/model/tool refusal, timeout, invalid output, dependency failure, cost exhaustion or unknown external outcome MUST yield explicit degraded/reconciliation behavior and never fabricated success.

@@ -40,7 +40,7 @@ Every run reports independent client/server and stage timing, percentile method,
 | `TEST-DR-P1-004` | Safe-core recovery / provisional `NFR-P1-029` | RTO stops only when identity/auth, originals, canonical writes, audit, keys, policy, route and deletion gates pass—not infrastructure startup. |
 | `TEST-DR-P1-005` | Derived rebuild / provisional `NFR-P1-030` | New search/vector/graph/comparison/health generations rebuild from authority with policy/deletion/source watermarks and explicit stale/unavailable state until cutover. |
 | `TEST-DR-P1-006` | Backup control, sampled restore and full DR / provisional `NFR-P1-031` | Manifest completeness, chain/base, digests/counts, schema/config/key usability, per-role restore, timed exercise and content-free evidence. |
-| `TEST-DR-P1-007` | Recovery/ownership-transfer absence / `NFR-P1-032` | Restored identity/session/factor/membership/owner/grant creates no human authority or support bypass while `DEC-038` is open. |
+| `TEST-DR-P1-007` | Recovery/ownership-transfer absence / `NFR-P1-032` | Restored identity/session/factor/membership/owner/grant creates no human authority or support bypass under the approved Phase 1 `DEC-038` unavailability fence. |
 | `TEST-DR-P1-008` | Current-policy restore, unsafe rollback and forward repair | Isolated restore applies current authorization/quarantine/deletion/residency/schema; resurrection/ineligible route blocks; unsafe rollback rejected and additive repair reconciles. |
 
 ## 4. Workload and correctness contract
