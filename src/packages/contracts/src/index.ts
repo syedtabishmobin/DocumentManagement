@@ -427,6 +427,8 @@ export interface IngestionStageRun {
   inputGeneration: string;
   configurationVersion: string;
   replayGeneration: number;
+  attemptPolicyVersion: string;
+  attemptLimit: number;
   attempt: number;
   state: IngestionStageRunState;
   leaseOwnerHash: string;

@@ -93,6 +93,10 @@ type LegacyWorkspaceDatabase = {
 };
 
 const now = (): string => new Date().toISOString();
+const INGESTION_STAGE_ATTEMPT_POLICY = Object.freeze({
+  version: "ingestion-stage-attempt-policy@1.0",
+  maxAttempts: 3,
+});
 const trashDeadline = (deletedAt: string): string => {
   const deadline = new Date(deletedAt);
   deadline.setUTCDate(deadline.getUTCDate() + 30);
@@ -538,6 +542,7 @@ function stageExecutionKey(message: SyntheticStageMessage): string {
     inputGeneration: message.inputGeneration,
     configurationVersion: message.configurationVersion,
     replayGeneration: message.replayGeneration,
+    attemptPolicyVersion: INGESTION_STAGE_ATTEMPT_POLICY.version,
   });
 }
 
@@ -1581,13 +1586,6 @@ export class LocalStore {
         if (priorReceipt && !priorReceipt.runId) priorReceipt.runId = running.id;
         return { ingestionCase, run: running, disposition: "APPLIED" };
       }
-      if (running) {
-        running.state = "SUPERSEDED";
-        running.reasonCode = "LEASE_EXPIRED";
-        running.completedAt = at;
-      }
-
-      const attempt = ingestionCase.stageRuns.filter((run) => run.executionKeyHash === executionKeyHash).length + 1;
       const originalActor: WorkspaceActor = {
         identityId: ingestionCase.actorId,
         displayName: state.members.find((member) => member.identityId === ingestionCase.actorId)?.displayName ?? "Ingestion actor",
@@ -1597,10 +1595,39 @@ export class LocalStore {
       }, normalizedCorrelationId(message.eventId));
       const fromState = ingestionCase.state;
       const document = ingestionCase.documentId ? state.documents.find((candidate) => candidate.id === ingestionCase.documentId) : undefined;
+      if (running && running.attempt >= running.attemptLimit) {
+        running.state = "FAILED_TERMINAL";
+        running.reasonCode = "RETRY_BUDGET_EXHAUSTED";
+        running.completedAt = at;
+        ingestionCase.state = "FAILED_TERMINAL";
+        ingestionCase.mandatoryCheckpointState = "FAILED";
+        ingestionCase.revision += 1;
+        ingestionCase.updatedAt = at;
+        if (priorReceipt) {
+          priorReceipt.state = "APPLIED";
+          priorReceipt.runId = running.id;
+        } else {
+          ingestionCase.stageMessageReceipts.push({ eventId: message.eventId, executionKeyHash, messageFingerprint, expectedRevision: message.expectedRevision, state: "APPLIED", runId: running.id, recordedAt: at });
+        }
+        if (!ingestionCase.deadLetters.some((entry) => entry.executionKeyHash === executionKeyHash && entry.state === "OPEN")) {
+          ingestionCase.deadLetters.push({ id: randomUUID(), executionKeyHash, stageId: message.stageId, reasonCode: "RETRY_BUDGET_EXHAUSTED", attemptCount: running.attempt, state: "OPEN", correlationId: running.correlationId, createdAt: at });
+        }
+        appendIngestionStateEvent(database, state, workerActor, ingestionCase, fromState, running.reasonCode, "INTERNAL_STAGE_RUNTIME", message.eventId, running.correlationId, authorization, message.stageId);
+        recordAuthorityTransition(database, state, workerActor, "INGESTION_STAGE_RETRY_EXHAUSTED", "DOCUMENT", `Exhausted bounded ${message.stageId.toLowerCase()} stage budget after lease loss attempt ${running.attempt}`, ingestionCase.id, running.correlationId, { policyVersion: authorization.policyVersion, authorizationEpoch: authorization.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: authorization.reason });
+        return { ingestionCase, run: running, disposition: "APPLIED" };
+      }
+      if (running) {
+        running.state = "SUPERSEDED";
+        running.reasonCode = "LEASE_EXPIRED";
+        running.completedAt = at;
+      }
+
+      const attempt = ingestionCase.stageRuns.filter((run) => run.executionKeyHash === executionKeyHash).length + 1;
       const run: IngestionStageRun = {
         id: randomUUID(), stageId: message.stageId, executionKeyHash, eventId: message.eventId,
         contractVersion: message.contractVersion, inputGeneration: message.inputGeneration,
         configurationVersion: message.configurationVersion, replayGeneration: message.replayGeneration,
+        attemptPolicyVersion: INGESTION_STAGE_ATTEMPT_POLICY.version, attemptLimit: INGESTION_STAGE_ATTEMPT_POLICY.maxAttempts,
         attempt, state: "RUNNING", leaseOwnerHash,
         leaseExpiresAt: new Date(new Date(at).getTime() + message.leaseDurationSeconds * 1000).toISOString(),
         correlationId: normalizedCorrelationId(message.eventId), reasonCode: "LEASE_ACQUIRED", startedAt: at,
@@ -1703,7 +1730,7 @@ export class LocalStore {
         finish("BLOCKED", "FAILED_TERMINAL", "COST_POLICY_BLOCKED", "BLOCKED");
         ingestionCase.deadLetters.push({ id: randomUUID(), executionKeyHash, stageId: message.stageId, reasonCode: "COST_POLICY_BLOCKED", attemptCount: run.attempt, state: "OPEN", correlationId: run.correlationId, createdAt: at });
       } else if (message.outcome === "FAILED_RETRYABLE") {
-        if (run.attempt >= 3) {
+        if (run.attempt >= run.attemptLimit) {
           finish("FAILED_TERMINAL", "FAILED_TERMINAL", "RETRY_BUDGET_EXHAUSTED", "FAILED");
           if (!ingestionCase.deadLetters.some((entry) => entry.executionKeyHash === executionKeyHash && entry.state === "OPEN")) {
             ingestionCase.deadLetters.push({ id: randomUUID(), executionKeyHash, stageId: message.stageId, reasonCode: "RETRY_BUDGET_EXHAUSTED", attemptCount: run.attempt, state: "OPEN", correlationId: run.correlationId, createdAt: at });

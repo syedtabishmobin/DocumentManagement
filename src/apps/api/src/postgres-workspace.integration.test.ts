@@ -217,4 +217,45 @@ integration.sequential("PostgreSQL workspace authority integration", () => {
     const eventRows = await pool.query<{ count: number }>("SELECT COUNT(*)::int AS count FROM doculyra.authority_outbox WHERE event_type = 'EVT-P1-006' AND aggregate_id = $1 AND event_envelope->'payload'->>'stage_id' = 'VALIDATION'", [created.id]);
     expect(eventRows.rows[0]?.count).toBe(2);
   });
+
+  it("persists bounded lease-loss exhaustion and newer-generation repair across PostgreSQL restarts", async () => {
+    let store = new LocalStore(firstPersistence);
+    const workspace = await store.createWorkspace(actor, "Stage lease budget PostgreSQL household", "FAMILY", "real-postgres-stage-lease-budget-workspace-0001");
+    let fence = await store.startAuthorization(actor, workspace.id, "document.create", "WORKSPACE", workspace.id, { correlationId: "corr-real-postgres-stage-lease-create-auth" });
+    const created = await store.createIngestionCase(workspace.id, actor, "real-postgres-stage-lease-create-0001", { capture_route: "BROWSER_UPLOAD", format_profile_ref: "format-profile-synthetic@0.1", source_descriptor_ref: null }, fence, "corr-real-postgres-stage-lease-create");
+    fence = await store.startAuthorization(actor, workspace.id, "document.create", "WORKSPACE", workspace.id, { correlationId: "corr-real-postgres-stage-lease-receipt-auth" });
+    const received = await store.commitIngestionReceipt(workspace.id, actor, created.id, 1, "real-postgres-stage-lease-receipt-0001", { transfer_ref: "transfer-stage-lease-pg-001", byte_count: 32, content_digest_ref: "digest-stage-lease-pg-001" }, fence, "corr-real-postgres-stage-lease-receipt");
+    const crashing = {
+      eventId: "event-real-postgres-stage-lease-0001", ingestionCaseId: created.id, expectedRevision: received.revision,
+      stageId: "VALIDATION" as const, contractVersion: "ingestion-stage@1.0", inputGeneration: "input-generation-001",
+      configurationVersion: "configuration.local.synthetic@0.1", replayGeneration: 0, leaseOwner: "postgres-worker-a",
+      leaseDurationSeconds: 30, outcome: "SUCCEEDED" as const, reasonCode: "STAGE_COMPLETED", fault: "AFTER_LEASE_COMMIT" as const,
+    };
+
+    await expect(store.processIngestionStageMessage(workspace.id, { identityId: "workload_pg_stage", displayName: "PostgreSQL Stage Runner" }, crashing, "2026-08-30T02:00:00.000Z")).rejects.toThrow("after stage lease commit");
+    store = new LocalStore(new PostgresWorkspacePersistence({ pool, migrationMode: "verify", migrationsDirectory }));
+    await expect(store.processIngestionStageMessage(workspace.id, { identityId: "workload_pg_stage", displayName: "PostgreSQL Stage Runner" }, crashing, "2026-08-30T02:00:31.000Z")).rejects.toThrow("after stage lease commit");
+    store = new LocalStore(new PostgresWorkspacePersistence({ pool, migrationMode: "verify", migrationsDirectory }));
+    await expect(store.processIngestionStageMessage(workspace.id, { identityId: "workload_pg_stage", displayName: "PostgreSQL Stage Runner" }, crashing, "2026-08-30T02:01:02.000Z")).rejects.toThrow("after stage lease commit");
+
+    const { fault: _fault, ...withoutFault } = crashing;
+    const exhausted = await store.processIngestionStageMessage(workspace.id, { identityId: "workload_pg_stage", displayName: "PostgreSQL Stage Runner" }, withoutFault, "2026-08-30T02:01:33.000Z");
+    expect(exhausted).toMatchObject({ ingestionCase: { state: "FAILED_TERMINAL", deadLetters: [expect.objectContaining({ state: "OPEN", attemptCount: 3 })] }, run: { attempt: 3, attemptLimit: 3, attemptPolicyVersion: "ingestion-stage-attempt-policy@1.0", state: "FAILED_TERMINAL", reasonCode: "RETRY_BUDGET_EXHAUSTED" } });
+    expect(exhausted.ingestionCase.stageRuns?.map((run) => run.state)).toEqual(["SUPERSEDED", "SUPERSEDED", "FAILED_TERMINAL"]);
+    expect(exhausted.ingestionCase.stageRuns?.filter((run) => run.logicalEffectRef)).toHaveLength(0);
+
+    const aboveLimit = await store.processIngestionStageMessage(workspace.id, { identityId: "workload_pg_stage", displayName: "PostgreSQL Stage Runner" }, { ...withoutFault, eventId: "event-real-postgres-stage-lease-above-0001", expectedRevision: exhausted.ingestionCase.revision }, "2026-08-30T02:02:04.000Z");
+    expect(aboveLimit).toMatchObject({ disposition: "DUPLICATE", run: { attempt: 3, state: "FAILED_TERMINAL" } });
+    expect(aboveLimit.ingestionCase.stageRuns).toHaveLength(3);
+    expect(aboveLimit.ingestionCase.deadLetters).toHaveLength(1);
+
+    const repaired = await store.processIngestionStageMessage(workspace.id, { identityId: "workload_pg_stage", displayName: "PostgreSQL Stage Runner" }, { ...withoutFault, eventId: "event-real-postgres-stage-lease-repair-0001", expectedRevision: exhausted.ingestionCase.revision, replayGeneration: 1 }, "2026-08-30T02:02:05.000Z");
+    expect(repaired).toMatchObject({ ingestionCase: { state: "SAFETY_CHECKING", deadLetters: [expect.objectContaining({ state: "REPAIRED" })] }, run: { attempt: 1, replayGeneration: 1, state: "SUCCEEDED" } });
+
+    store = new LocalStore(new PostgresWorkspacePersistence({ pool, migrationMode: "verify", migrationsDirectory }));
+    const readFence = await store.startAuthorization(actor, workspace.id, "document.read", "WORKSPACE", workspace.id, { correlationId: "corr-real-postgres-stage-lease-read" });
+    const persisted = await store.getIngestionCase(workspace.id, actor, created.id, readFence, "corr-real-postgres-stage-lease-read");
+    expect(persisted.stageRuns?.filter((run) => run.replayGeneration === 0).map((run) => run.state)).toEqual(["SUPERSEDED", "SUPERSEDED", "FAILED_TERMINAL"]);
+    expect(persisted.stageRuns?.filter((run) => run.replayGeneration === 1)).toEqual([expect.objectContaining({ attempt: 1, state: "SUCCEEDED" })]);
+  });
 });

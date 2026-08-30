@@ -100,6 +100,58 @@ describe("durable provider-neutral ingestion stage runtime", () => {
     expect(persisted.deadLetters).toEqual([expect.objectContaining({ state: "REPAIRED", repairedAt: "2026-08-30T00:02:00.000Z" })]);
   });
 
+  it("counts repeated post-lease worker loss in one bounded generation across restart and requires a newer repair generation", async () => {
+    const { workspace, ingestionCase } = await receivedCase("lease-loss-budget");
+    const crashing = message(ingestionCase.id, ingestionCase.revision, "VALIDATION", "event-lease-loss-budget-0001", { fault: "AFTER_LEASE_COMMIT" });
+
+    await expect(store.processIngestionStageMessage(workspace.id, worker, crashing, "2026-08-30T00:10:00.000Z")).rejects.toThrow("after stage lease commit");
+    await expect(store.processIngestionStageMessage(workspace.id, worker, crashing, "2026-08-30T00:10:11.000Z")).rejects.toThrow("after stage lease commit");
+
+    store = new LocalStore();
+    let readFence = await store.startAuthorization(actor, workspace.id, "document.read", "WORKSPACE", workspace.id, { correlationId: "corr-stage-lease-loss-before-limit" });
+    let persisted = await store.getIngestionCase(workspace.id, actor, ingestionCase.id, readFence, "corr-stage-lease-loss-before-limit");
+    expect(persisted.stageRuns?.map((run) => ({ attempt: run.attempt, state: run.state }))).toEqual([
+      { attempt: 1, state: "SUPERSEDED" },
+      { attempt: 2, state: "RUNNING" },
+    ]);
+
+    await expect(store.processIngestionStageMessage(workspace.id, worker, crashing, "2026-08-30T00:10:22.000Z")).rejects.toThrow("after stage lease commit");
+    const exhausted = await store.processIngestionStageMessage(workspace.id, worker, withoutFault(crashing), "2026-08-30T00:10:33.000Z");
+    expect(exhausted).toMatchObject({
+      disposition: "APPLIED",
+      ingestionCase: { state: "FAILED_TERMINAL", mandatoryCheckpointState: "FAILED" },
+      run: { attempt: 3, attemptLimit: 3, attemptPolicyVersion: "ingestion-stage-attempt-policy@1.0", state: "FAILED_TERMINAL", reasonCode: "RETRY_BUDGET_EXHAUSTED" },
+    });
+    expect(exhausted.ingestionCase.stageRuns?.map((run) => ({ attempt: run.attempt, state: run.state, reasonCode: run.reasonCode }))).toEqual([
+      { attempt: 1, state: "SUPERSEDED", reasonCode: "LEASE_EXPIRED" },
+      { attempt: 2, state: "SUPERSEDED", reasonCode: "LEASE_EXPIRED" },
+      { attempt: 3, state: "FAILED_TERMINAL", reasonCode: "RETRY_BUDGET_EXHAUSTED" },
+    ]);
+    expect(exhausted.ingestionCase.deadLetters).toEqual([
+      expect.objectContaining({ state: "OPEN", attemptCount: 3, reasonCode: "RETRY_BUDGET_EXHAUSTED" }),
+    ]);
+    expect(exhausted.ingestionCase.stageRuns?.filter((run) => run.logicalEffectRef)).toHaveLength(0);
+
+    const aboveLimit = await store.processIngestionStageMessage(workspace.id, worker, message(ingestionCase.id, exhausted.ingestionCase.revision, "VALIDATION", "event-lease-loss-budget-above-0001"), "2026-08-30T00:10:44.000Z");
+    expect(aboveLimit).toMatchObject({ disposition: "DUPLICATE", run: { attempt: 3, state: "FAILED_TERMINAL" } });
+    expect(aboveLimit.ingestionCase.stageRuns).toHaveLength(3);
+    expect(aboveLimit.ingestionCase.deadLetters).toHaveLength(1);
+
+    const repaired = await store.processIngestionStageMessage(workspace.id, worker, message(ingestionCase.id, exhausted.ingestionCase.revision, "VALIDATION", "event-lease-loss-repair-0001", { replayGeneration: 1 }), "2026-08-30T00:11:00.000Z");
+    expect(repaired).toMatchObject({ ingestionCase: { state: "SAFETY_CHECKING" }, run: { attempt: 1, replayGeneration: 1, state: "SUCCEEDED" } });
+    expect(repaired.ingestionCase.deadLetters).toEqual([expect.objectContaining({ state: "REPAIRED" })]);
+
+    const oldGeneration = await store.processIngestionStageMessage(workspace.id, worker, message(ingestionCase.id, repaired.ingestionCase.revision, "VALIDATION", "event-lease-loss-old-generation-0001"), "2026-08-30T00:11:01.000Z");
+    expect(oldGeneration).toMatchObject({ disposition: "DUPLICATE", run: { replayGeneration: 0, state: "FAILED_TERMINAL" } });
+    expect(oldGeneration.ingestionCase.stageRuns?.filter((run) => run.replayGeneration === 0)).toHaveLength(3);
+
+    store = new LocalStore();
+    readFence = await store.startAuthorization(actor, workspace.id, "document.read", "WORKSPACE", workspace.id, { correlationId: "corr-stage-lease-loss-after-repair" });
+    persisted = await store.getIngestionCase(workspace.id, actor, ingestionCase.id, readFence, "corr-stage-lease-loss-after-repair");
+    expect(persisted).toMatchObject({ state: "SAFETY_CHECKING", deadLetters: [expect.objectContaining({ state: "REPAIRED" })] });
+    expect(persisted.stageRuns?.filter((run) => run.replayGeneration === 0).map((run) => run.state)).toEqual(["SUPERSEDED", "SUPERSEDED", "FAILED_TERMINAL"]);
+  });
+
   it("fails closed for contained state, ineligible route, cost policy and current authorization revocation", async () => {
     for (const [index, blocked] of [
       { routeEligible: false, reason: "PROCESSING_ROUTE_INELIGIBLE" },

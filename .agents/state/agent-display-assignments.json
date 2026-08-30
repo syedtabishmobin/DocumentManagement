@@ -285,6 +285,17 @@
       "roleId": "product-ba",
       "parentDisplayAgentId": "ORCH-009",
       "workItem": "issue-32",
+      "status": "COMPLETED"
+    },
+    {
+      "displayAgentId": "ORCH-011",
+      "displayRole": "Framework Delivery Orchestrator",
+      "displayRunId": "RUN-20260830-0081",
+      "runtimeAgentId": "codex-01a051b6-7efe-79e2-a09f-2ea895067927",
+      "runtimeRunId": "run-defect-60-fix-20260830",
+      "roleId": "delivery-orchestrator",
+      "parentDisplayAgentId": "ORCH-009",
+      "workItem": "issue-58/defect-60/pr-59",
       "status": "ACTIVE"
     }
   ]
