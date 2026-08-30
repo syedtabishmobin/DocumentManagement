@@ -137,6 +137,18 @@ export const canonicalReasonCommandSchema = z.object({
   reason_code: z.string().trim().regex(/^[A-Z][A-Z0-9_]{1,79}$/),
 }).strict();
 
+export const canonicalCreateIngestionCaseSchema = z.object({
+  capture_route: z.enum(["BROWSER_UPLOAD", "PWA_CAMERA_CAPTURE", "MANUAL_RECORD"]),
+  format_profile_ref: z.literal("format-profile-synthetic@0.1"),
+  source_descriptor_ref: z.string().min(1).max(200).nullable(),
+}).strict();
+
+export const canonicalCommitIngestionReceiptSchema = z.object({
+  transfer_ref: z.string().min(1).max(200),
+  byte_count: z.number().int().min(0).max(25 * 1024 * 1024),
+  content_digest_ref: z.string().min(1).max(200),
+}).strict();
+
 export const selectWorkspaceSchema = z.object({
   workspaceId: z.string().trim().min(1).max(200),
 });
@@ -194,6 +206,8 @@ export type CanonicalInviteMembershipInput = z.infer<typeof canonicalInviteMembe
 export type CanonicalUpdateMembershipInput = z.infer<typeof canonicalUpdateMembershipSchema>;
 export type CanonicalCreateAccessGrantInput = z.infer<typeof canonicalCreateAccessGrantSchema>;
 export type CanonicalReasonCommandInput = z.infer<typeof canonicalReasonCommandSchema>;
+export type CanonicalCreateIngestionCaseInput = z.infer<typeof canonicalCreateIngestionCaseSchema>;
+export type CanonicalCommitIngestionReceiptInput = z.infer<typeof canonicalCommitIngestionReceiptSchema>;
 export type SelectWorkspaceInput = z.infer<typeof selectWorkspaceSchema>;
 export type CreateSubjectInput = z.infer<typeof createSubjectSchema>;
 export type FilePermissions = z.infer<typeof filePermissionsSchema>;
@@ -376,6 +390,25 @@ export interface AuthorizationEpoch {
   value: number;
   cause: "WORKSPACE_CREATED" | "MEMBERSHIP_CHANGED" | "GRANT_CHANGED" | "SECURITY_CHANGED";
   advancedAt: string;
+}
+
+export interface IngestionCase {
+  id: string;
+  workspaceId: string;
+  acquisitionId: string;
+  actorId: string;
+  captureRoute: "BROWSER_UPLOAD" | "PWA_CAMERA_CAPTURE" | "MANUAL_RECORD";
+  formatProfileRef: "format-profile-synthetic@0.1";
+  sourceDescriptorRef: string | null;
+  state: "CREATED" | "RECEIVING" | "RECEIVED" | "VALIDATING" | "SAFETY_CHECKING" | "QUARANTINED" | "POLICY_HOLD" | "PROCESSING" | "NEEDS_REVIEW" | "PUBLISHING" | "READY" | "FAILED_RETRYABLE" | "FAILED_TERMINAL" | "CANCELLING" | "CANCELLED" | "DELETION_BLOCKED" | "PURGE_PENDING" | "PURGED";
+  artifactId: string | null;
+  documentId: string | null;
+  mandatoryCheckpointState: string;
+  degradationCodes: string[];
+  attempts: Array<{ id: string; kind: "CREATE" | "RECEIPT_COMMIT" | "CANCEL"; outcome: "SUCCEEDED"; correlationId: string; recordedAt: string; byteCount?: number; transferRefHash?: string; digestRefHash?: string }>;
+  revision: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AuditRecord {

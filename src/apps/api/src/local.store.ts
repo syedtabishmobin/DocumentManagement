@@ -9,12 +9,15 @@ import type {
   AuthorizationEpoch,
   ConnectorDescriptor,
   CanonicalCreateAccessGrantInput,
+  CanonicalCreateIngestionCaseInput,
+  CanonicalCommitIngestionReceiptInput,
   CreateSubjectInput,
   DashboardSnapshot,
   DependencyRecord,
   DocumentDetail,
   DocumentRecord,
   FactRecord,
+  IngestionCase,
   FilePermissions,
   ManagePersonInput,
   Member,
@@ -201,6 +204,7 @@ function initialState(actor: WorkspaceActor, name: string, type: Workspace["type
       policyVersion: "policy.local-explicit-grant@0.1", correlationId: context.correlationId, detail: `Created a ${type.toLowerCase()} workspace`, at: createdAt,
     }],
     dependencies: [],
+    ingestionCases: [],
     authorityCommandReceipts: [],
   };
 }
@@ -720,7 +724,7 @@ export class LocalStore {
     };
   }
 
-  async addDocument(workspaceId: string, actor: WorkspaceActor, file: Express.Multer.File, subjectIds: string[], captureRoute: DocumentRecord["captureRoute"], fence: AuthorizationFence, correlationId: string): Promise<DocumentRecord> {
+  async addDocument(workspaceId: string, actor: WorkspaceActor, file: Express.Multer.File, subjectIds: string[], captureRoute: DocumentRecord["captureRoute"], fence: AuthorizationFence, correlationId: string, idempotencyKey?: string): Promise<DocumentRecord> {
     return this.mutate(async (database) => {
       const state = this.state(database, workspaceId);
       this.requireEffectAuthorization(database, state, actor, fence, { action: "document.create", resourceKind: "WORKSPACE" }, correlationId);
@@ -728,8 +732,36 @@ export class LocalStore {
         throw new BadRequestException("Select at least one valid household person for this document");
       }
       const digest = createHash("sha256").update(file.buffer).digest("hex");
+      const ingestionFingerprint = { captureRoute, subjectIds: [...subjectIds].sort(), mediaType: file.mimetype || "application/octet-stream", byteCount: file.size, contentDigestRef: digest };
+      if (idempotencyKey) {
+        const receipt = priorCommandReceipt(state, actor, "API-P1-116", idempotencyKey, ingestionFingerprint);
+        if (receipt) {
+          const ingestionCase = state.ingestionCases.find((item) => item.id === receipt.resourceId);
+          const document = ingestionCase?.documentId ? state.documents.find((item) => item.id === ingestionCase.documentId) : undefined;
+          if (!document) throw new ConflictException("The prior command result is unavailable");
+          return document;
+        }
+      }
       const duplicate = state.documents.find((item) => item.sha256 === digest && item.status !== "DELETED");
-      if (duplicate) return duplicate;
+      const recordIngestion = (document: DocumentRecord) => {
+        if (!idempotencyKey) return;
+        const recordedAt = now();
+        const route = captureRoute === "CAMERA" ? "PWA_CAMERA_CAPTURE" : captureRoute === "MANUAL" ? "MANUAL_RECORD" : "BROWSER_UPLOAD";
+        const ingestionCase: IngestionCase = {
+          id: randomUUID(), workspaceId, acquisitionId: randomUUID(), actorId: actor.identityId, captureRoute: route,
+          formatProfileRef: "format-profile-synthetic@0.1", sourceDescriptorRef: null, state: "RECEIVED", artifactId: document.id, documentId: document.id,
+          mandatoryCheckpointState: "PENDING", degradationCodes: [],
+          attempts: [
+            { id: randomUUID(), kind: "CREATE", outcome: "SUCCEEDED", correlationId, recordedAt },
+            { id: randomUUID(), kind: "RECEIPT_COMMIT", outcome: "SUCCEEDED", correlationId, recordedAt, byteCount: file.size, digestRefHash: commandHash(digest) },
+          ],
+          revision: 2, createdAt: recordedAt, updatedAt: recordedAt,
+        };
+        state.ingestionCases.push(ingestionCase);
+        appendCommandReceipt(state, actor, "API-P1-116", idempotencyKey, ingestionFingerprint, ingestionCase.id, ingestionCase.revision);
+        recordAuthorityTransition(database, state, actor, "INGESTION_CASE_RECEIVED", "DOCUMENT", "Accepted one synthetic capture into a durable ingestion case without claiming safety, extraction, publication, or readiness", ingestionCase.id, correlationId, { policyVersion: fence.policyVersion, authorizationEpoch: fence.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: "EXPLICIT_GRANT" });
+      };
+      if (duplicate) { recordIngestion(duplicate); return duplicate; }
 
       const id = randomUUID();
       const textual = /^(text\/|application\/(json|xml))/.test(file.mimetype);
@@ -759,6 +791,7 @@ export class LocalStore {
       await mkdir(dirname(artifactPath), { recursive: true, mode: 0o700 });
       await writeFile(artifactPath, file.buffer, { mode: 0o600, flag: "wx" });
       state.documents.push(document);
+      recordIngestion(document);
       ensureDocumentIntelligence(state);
       state.notifications.unshift({
         id: randomUUID(),
@@ -826,9 +859,9 @@ export class LocalStore {
     });
   }
 
-  async addManualDocument(workspaceId: string, actor: WorkspaceActor, input: { name: string; content: string; subjectIds: string[] }, fence: AuthorizationFence, correlationId: string): Promise<DocumentRecord> {
+  async addManualDocument(workspaceId: string, actor: WorkspaceActor, input: { name: string; content: string; subjectIds: string[] }, fence: AuthorizationFence, correlationId: string, idempotencyKey?: string): Promise<DocumentRecord> {
     const buffer = Buffer.from(input.content, "utf8");
-    return this.addDocument(workspaceId, actor, { originalname: `${input.name}.txt`, mimetype: "text/plain", size: buffer.byteLength, buffer } as Express.Multer.File, input.subjectIds, "MANUAL", fence, correlationId);
+    return this.addDocument(workspaceId, actor, { originalname: `${input.name}.txt`, mimetype: "text/plain", size: buffer.byteLength, buffer } as Express.Multer.File, input.subjectIds, "MANUAL", fence, correlationId, idempotencyKey);
   }
 
   async addSubject(workspaceId: string, actor: WorkspaceActor, input: CreateSubjectInput, fence: AuthorizationFence, correlationId: string): Promise<SubjectRecord> {
@@ -1071,6 +1104,86 @@ export class LocalStore {
     const membership = (await this.listMemberships(workspaceId)).find((candidate) => candidate.id === membershipId);
     if (!membership) throw new NotFoundException("Resource not available");
     return membership;
+  }
+
+  async createIngestionCase(workspaceId: string, actor: WorkspaceActor, idempotencyKey: string, input: CanonicalCreateIngestionCaseInput, fence: AuthorizationFence, correlationId: string): Promise<IngestionCase> {
+    const result = await this.mutate((database): IngestionCase | "NOT_AVAILABLE" => {
+      const state = this.state(database, workspaceId);
+      if (fence.identityId !== actor.identityId || fence.workspaceId !== workspaceId || fence.action !== "document.create" || fence.resourceKind !== "WORKSPACE") return "NOT_AVAILABLE";
+      const decision = this.recordAuthorizationDecision(database, state, actor, this.effectContext(fence), correlationId);
+      if (decision.decision !== "ALLOW") return "NOT_AVAILABLE";
+      const receipt = priorCommandReceipt(state, actor, "API-P1-116", idempotencyKey, input);
+      if (receipt) return state.ingestionCases.find((item) => item.id === receipt.resourceId) ?? (() => { throw new ConflictException("The prior command result is unavailable"); })();
+      const recordedAt = now();
+      const ingestionCase: IngestionCase = {
+        id: randomUUID(), workspaceId, acquisitionId: randomUUID(), actorId: actor.identityId,
+        captureRoute: input.capture_route, formatProfileRef: input.format_profile_ref, sourceDescriptorRef: input.source_descriptor_ref,
+        state: "CREATED", artifactId: null, documentId: null, mandatoryCheckpointState: "PENDING", degradationCodes: [],
+        attempts: [{ id: randomUUID(), kind: "CREATE", outcome: "SUCCEEDED", correlationId, recordedAt }],
+        revision: 1, createdAt: recordedAt, updatedAt: recordedAt,
+      };
+      state.ingestionCases.push(ingestionCase);
+      appendCommandReceipt(state, actor, "API-P1-116", idempotencyKey, input, ingestionCase.id, ingestionCase.revision);
+      recordAuthorityTransition(database, state, actor, "INGESTION_CASE_CREATED", "DOCUMENT", "Created a durable synthetic acquisition case without claiming receipt, validation, extraction, or readiness", ingestionCase.id, correlationId, { policyVersion: decision.policyVersion, authorizationEpoch: decision.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: decision.reason });
+      return ingestionCase;
+    });
+    if (result === "NOT_AVAILABLE") throw new NotFoundException("Resource not available");
+    return result;
+  }
+
+  async getIngestionCase(workspaceId: string, actor: WorkspaceActor, ingestionCaseId: string, fence: AuthorizationFence, correlationId: string): Promise<IngestionCase> {
+    const state = this.state(await this.readDatabase(), workspaceId);
+    const ingestionCase = state.ingestionCases.find((item) => item.id === ingestionCaseId && item.actorId === actor.identityId);
+    if (!ingestionCase) throw new NotFoundException("Resource not available");
+    await this.reauthorize(fence, actor, "OUTPUT", correlationId);
+    return ingestionCase;
+  }
+
+  async commitIngestionReceipt(workspaceId: string, actor: WorkspaceActor, ingestionCaseId: string, expectedRevision: number, idempotencyKey: string, input: CanonicalCommitIngestionReceiptInput, fence: AuthorizationFence, correlationId: string): Promise<IngestionCase> {
+    const result = await this.mutate((database): IngestionCase | "NOT_AVAILABLE" | "STALE" => {
+      const state = this.state(database, workspaceId);
+      if (fence.identityId !== actor.identityId || fence.workspaceId !== workspaceId || fence.action !== "document.create" || fence.resourceKind !== "WORKSPACE") return "NOT_AVAILABLE";
+      const decision = this.recordAuthorizationDecision(database, state, actor, this.effectContext(fence), correlationId);
+      if (decision.decision !== "ALLOW") return "NOT_AVAILABLE";
+      const receipt = priorCommandReceipt(state, actor, "API-P1-117", idempotencyKey, { ingestionCaseId, ...input });
+      if (receipt) return state.ingestionCases.find((item) => item.id === receipt.resourceId) ?? "NOT_AVAILABLE";
+      const ingestionCase = state.ingestionCases.find((item) => item.id === ingestionCaseId && item.actorId === actor.identityId);
+      if (!ingestionCase) return "NOT_AVAILABLE";
+      if (ingestionCase.revision !== expectedRevision) return "STALE";
+      if (ingestionCase.state !== "CREATED" && ingestionCase.state !== "RECEIVING") throw new UnprocessableEntityException("Ingestion receipt cannot be committed in the current state");
+      const recordedAt = now();
+      ingestionCase.state = "RECEIVED"; ingestionCase.revision += 1; ingestionCase.updatedAt = recordedAt;
+      ingestionCase.attempts.push({ id: randomUUID(), kind: "RECEIPT_COMMIT", outcome: "SUCCEEDED", correlationId, recordedAt, byteCount: input.byte_count, transferRefHash: commandHash(input.transfer_ref), digestRefHash: commandHash(input.content_digest_ref) });
+      appendCommandReceipt(state, actor, "API-P1-117", idempotencyKey, { ingestionCaseId, ...input }, ingestionCase.id, ingestionCase.revision);
+      recordAuthorityTransition(database, state, actor, "INGESTION_RECEIPT_COMMITTED", "DOCUMENT", "Recorded complete synthetic acquisition receipt without claiming safety, extraction, publication, or readiness", ingestionCase.id, correlationId, { policyVersion: decision.policyVersion, authorizationEpoch: decision.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: decision.reason });
+      return ingestionCase;
+    });
+    if (result === "NOT_AVAILABLE") throw new NotFoundException("Resource not available");
+    if (result === "STALE") throw new PreconditionFailedException("Resource changed; refresh before retrying");
+    return result;
+  }
+
+  async cancelIngestionCase(workspaceId: string, actor: WorkspaceActor, ingestionCaseId: string, expectedRevision: number, idempotencyKey: string, reasonCode: string, fence: AuthorizationFence, correlationId: string): Promise<IngestionCase> {
+    const result = await this.mutate((database): IngestionCase | "NOT_AVAILABLE" | "STALE" => {
+      const state = this.state(database, workspaceId);
+      if (fence.identityId !== actor.identityId || fence.workspaceId !== workspaceId || fence.action !== "document.create" || fence.resourceKind !== "WORKSPACE") return "NOT_AVAILABLE";
+      const decision = this.recordAuthorizationDecision(database, state, actor, this.effectContext(fence), correlationId);
+      if (decision.decision !== "ALLOW") return "NOT_AVAILABLE";
+      const receipt = priorCommandReceipt(state, actor, "API-P1-119", idempotencyKey, { ingestionCaseId, reasonCode });
+      if (receipt) return state.ingestionCases.find((item) => item.id === receipt.resourceId) ?? "NOT_AVAILABLE";
+      const ingestionCase = state.ingestionCases.find((item) => item.id === ingestionCaseId && item.actorId === actor.identityId);
+      if (!ingestionCase) return "NOT_AVAILABLE";
+      if (ingestionCase.revision !== expectedRevision) return "STALE";
+      if (["CANCELLED", "PURGED"].includes(ingestionCase.state)) throw new UnprocessableEntityException("Ingestion case cannot be cancelled in the current state");
+      const recordedAt = now(); ingestionCase.state = "CANCELLED"; ingestionCase.revision += 1; ingestionCase.updatedAt = recordedAt;
+      ingestionCase.attempts.push({ id: randomUUID(), kind: "CANCEL", outcome: "SUCCEEDED", correlationId, recordedAt });
+      appendCommandReceipt(state, actor, "API-P1-119", idempotencyKey, { ingestionCaseId, reasonCode }, ingestionCase.id, ingestionCase.revision);
+      recordAuthorityTransition(database, state, actor, "INGESTION_CASE_CANCELLED", "DOCUMENT", `Cancelled a synthetic acquisition case using registered reason ${reasonCode}`, ingestionCase.id, correlationId, { policyVersion: decision.policyVersion, authorizationEpoch: decision.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: decision.reason });
+      return ingestionCase;
+    });
+    if (result === "NOT_AVAILABLE") throw new NotFoundException("Resource not available");
+    if (result === "STALE") throw new PreconditionFailedException("Resource changed; refresh before retrying");
+    return result;
   }
 
   async createCanonicalSubject(workspaceId: string, actor: WorkspaceActor, expectedWorkspaceRevision: number, idempotencyKey: string, input: { subject_kind: "PERSON"; authority_basis_ref: string | null }, fence: AuthorizationFence, correlationId: string): Promise<SubjectRecord> {

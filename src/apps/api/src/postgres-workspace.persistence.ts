@@ -155,6 +155,7 @@ function validateWorkspaceState(state: WorkspaceState): void {
     [state.accessGrants, "access grant"],
     [state.audit, "audit record"],
     [state.dependencies, "dependency"],
+    [state.ingestionCases, "ingestion case"],
     [state.authorityCommandReceipts, "authority command receipt"],
   ];
   for (const [items, kind] of scopedCollections) {
