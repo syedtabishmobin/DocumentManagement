@@ -8,6 +8,7 @@ import type {
   AuditRecord,
   AuthorizationEpoch,
   ConnectorDescriptor,
+  CanonicalCreateAccessGrantInput,
   CreateSubjectInput,
   DashboardSnapshot,
   DependencyRecord,
@@ -27,7 +28,7 @@ import type {
   WorkspaceSummary,
 } from "@document-management/contracts";
 import { classifyDocument, extractProfileFacts, normalizeQuestion } from "@document-management/domain";
-import { evaluateAuthorization } from "./authorization.policy.js";
+import { decisionFence, evaluateAuthorization, type AuthorizationContext, type AuthorizationDecision, type AuthorizationFence, type AuthorizationPhase } from "./authorization.policy.js";
 import { PostgresWorkspacePersistence } from "./postgres-workspace.persistence.js";
 import {
   normalizeAuthorityLifecycle,
@@ -79,6 +80,7 @@ const ownerActions: WorkspaceAction[] = [
   "workspace.read", "workspace.admin", "subject.read", "subject.create", "subject.edit", "subject.delete",
   "document.read", "document.create", "document.edit", "document.delete", "fact.review",
   "task.read", "task.create", "task.edit", "connector.read", "export.create", "audit.read",
+  "grant.read", "grant.create", "grant.revoke",
 ];
 
 export function currentWorkspaceConfiguration(): Pick<WorkspaceCreationContext, "jurisdictionPackRef" | "residencyPolicyRef" | "configurationVersion"> {
@@ -189,7 +191,7 @@ function initialState(actor: WorkspaceActor, name: string, type: Workspace["type
     accessGrants: [{
       id: ownerGrantId, workspaceId, grantorIdentityId: actor.identityId, granteeIdentityId: actor.identityId,
       purposeId: "PUR-P1-001", resourceKind: "WORKSPACE", resourceIds: [workspaceId], actions: ownerActions,
-      startsAt: createdAt, state: "ACTIVE", policyVersion: "policy.local-explicit-grant@0.1", onwardDelegation: false,
+      fieldRefs: ["*"], edgeRefs: ["*"], startsAt: createdAt, state: "ACTIVE", policyVersion: "policy.local-explicit-grant@0.2", effect: "ALLOW", onwardDelegation: false,
       exportAllowed: true, createdAt, revision: 1,
     }],
     authorizationEpoch: { workspaceId, value: 1, cause: "WORKSPACE_CREATED", advancedAt: createdAt },
@@ -354,6 +356,10 @@ function appendAuthorityOutbox(database: WorkspaceDatabase, state: WorkspaceStat
     actorId: audit.actorId,
     resourceType: audit.resourceType,
     ...(audit.resourceId ? { resourceId: audit.resourceId } : {}),
+    ...(audit.policyVersion ? { policyVersion: audit.policyVersion } : {}),
+    ...(audit.authorizationEpoch !== undefined ? { authorizationEpoch: audit.authorizationEpoch } : {}),
+    ...(audit.authorizationPhase ? { authorizationPhase: audit.authorizationPhase } : {}),
+    ...(audit.decisionReason ? { decisionReason: audit.decisionReason } : {}),
     occurredAt: audit.at,
   });
 }
@@ -367,8 +373,29 @@ function recordAuthorityTransition(
   detail: string,
   resourceId?: string,
   correlationId?: string,
+  authorization?: Pick<AuditRecord, "policyVersion" | "authorizationEpoch" | "authorizationPhase" | "decisionReason">,
 ): void {
   const audit = auditRecord(state.workspace.id, actor, type, resourceType, detail, resourceId, correlationId);
+  if (authorization) Object.assign(audit, authorization);
+  state.audit.push(audit);
+  appendAuthorityOutbox(database, state, audit);
+}
+
+function recordAuthorityDenial(
+  database: WorkspaceDatabase,
+  state: WorkspaceState,
+  actor: WorkspaceActor,
+  type: string,
+  action: WorkspaceAction,
+  detail: string,
+  correlationId: string,
+  authorization: Pick<AuditRecord, "policyVersion" | "authorizationEpoch" | "authorizationPhase" | "decisionReason">,
+): void {
+  const audit: AuditRecord = {
+    id: randomUUID(), workspaceId: state.workspace.id, type, resourceType: "WORKSPACE", resourceId: state.workspace.id,
+    actor: actor.displayName, actorId: actor.identityId, action, outcome: "DENIED", correlationId, detail, at: now(),
+    ...authorization,
+  };
   state.audit.push(audit);
   appendAuthorityOutbox(database, state, audit);
 }
@@ -471,7 +498,7 @@ export class LocalStore {
       const binding: WorkspaceOwnerBinding = { id: candidate.workspace.ownerBindingId, workspaceId: candidate.workspace.id, ownerIdentityId: actor.identityId, ownerMembershipId: owner.id, authorityBasis: "WORKSPACE_CREATOR", state: "ACTIVE", validFrom: candidate.workspace.createdAt, recordedAt, revision: 1 };
       candidate.ownerBindings.push(binding);
       candidate.subjectIdentityLinks.push({ id: randomUUID(), workspaceId: candidate.workspace.id, subjectId: subject.id, identityId: actor.identityId, evidenceKind: "WORKSPACE_CREATION", state: "ACTIVE", validFrom: candidate.workspace.createdAt, recordedAt, revision: 1 });
-      candidate.accessGrants.push({ id: randomUUID(), workspaceId: candidate.workspace.id, grantorIdentityId: actor.identityId, granteeIdentityId: actor.identityId, purposeId: "PUR-P1-001", resourceKind: "WORKSPACE", resourceIds: [candidate.workspace.id], actions: ownerActions, startsAt: recordedAt, state: "ACTIVE", policyVersion: "policy.local-explicit-grant@0.1", onwardDelegation: false, exportAllowed: true, createdAt: recordedAt, revision: 1 });
+      candidate.accessGrants.push({ id: randomUUID(), workspaceId: candidate.workspace.id, grantorIdentityId: actor.identityId, granteeIdentityId: actor.identityId, purposeId: "PUR-P1-001", resourceKind: "WORKSPACE", resourceIds: [candidate.workspace.id], fieldRefs: ["*"], edgeRefs: ["*"], actions: ownerActions, startsAt: recordedAt, state: "ACTIVE", policyVersion: "policy.local-explicit-grant@0.2", effect: "ALLOW", onwardDelegation: false, exportAllowed: true, createdAt: recordedAt, revision: 1 });
       candidate.authorizationEpoch = { workspaceId: candidate.workspace.id, value: candidate.authorizationEpoch.value + 1, cause: "SECURITY_CHANGED", advancedAt: recordedAt };
       recordAuthorityTransition(database, candidate, actor, "LEGACY_OWNER_LINKED", "MEMBERSHIP", "Linked the existing local owner to the migrated workspace authority records", owner.id);
       return { id: candidate.workspace.id, name: candidate.workspace.name, type: candidate.workspace.type, status: candidate.workspace.status, revision: candidate.workspace.revision };
@@ -523,13 +550,113 @@ export class LocalStore {
     });
   }
 
-  async requireAuthorization(actor: WorkspaceActor, workspaceId: string, action: WorkspaceAction, resourceKind: "WORKSPACE" | "DOCUMENT" | "SUBJECT" | "TASK", resourceId?: string): Promise<void> {
-    const database = await this.readDatabase();
-    const state = this.state(database, workspaceId);
-    if (state.workspace.status !== "ACTIVE") throw new NotFoundException("Resource not available");
-    const context = { identityId: actor.identityId, workspaceId, purposeId: "PUR-P1-001" as const, action, resourceKind, ...(resourceId ? { resourceId } : {}) };
-    const decision = evaluateAuthorization(state, context);
+  private async authorizationDecision(actor: WorkspaceActor, context: Omit<AuthorizationContext, "identityId" | "purposeId">, correlationId: string = randomUUID()): Promise<AuthorizationDecision> {
+    try {
+      return (await this.authorizationDecisions(actor, [context], correlationId))[0]!;
+    } catch {
+      throw new NotFoundException("Resource not available");
+    }
+  }
+
+  private async authorizationDecisions(actor: WorkspaceActor, contexts: Array<Omit<AuthorizationContext, "identityId" | "purposeId">>, correlationId: string): Promise<AuthorizationDecision[]> {
+    if (!contexts.length) return [];
+    const workspaceId = contexts[0]!.workspaceId;
+    if (contexts.some((context) => context.workspaceId !== workspaceId)) throw new NotFoundException("Resource not available");
+    return this.mutate((database) => {
+      const state = this.state(database, workspaceId);
+      return contexts.map((context) => this.recordAuthorizationDecision(database, state, actor, context, correlationId));
+    });
+  }
+
+  private recordAuthorizationDecision(database: WorkspaceDatabase, state: WorkspaceState, actor: WorkspaceActor, context: Omit<AuthorizationContext, "identityId" | "purposeId">, correlationId: string): AuthorizationDecision {
+    const decision = evaluateAuthorization(state, { ...context, identityId: actor.identityId, purposeId: "PUR-P1-001" });
+    const audit: AuditRecord = {
+      id: randomUUID(), workspaceId: state.workspace.id, type: decision.decision === "ALLOW" ? "AUTHORIZATION_ALLOWED" : "AUTHORIZATION_DENIED",
+      resourceType: context.resourceKind === "SUBJECT" ? "PERSON" : context.resourceKind, ...(context.resourceId ? { resourceId: context.resourceId } : {}),
+      actor: actor.displayName, actorId: actor.identityId, action: context.action, outcome: decision.decision === "ALLOW" ? "SUCCEEDED" : "DENIED",
+      policyVersion: decision.policyVersion, authorizationEpoch: decision.authorizationEpoch, authorizationPhase: decision.phase,
+      decisionReason: decision.reason, correlationId, detail: `Current authorization ${decision.decision.toLowerCase()} at ${decision.phase.toLowerCase()} using ${decision.reason}`,
+      at: now(),
+    };
+    state.audit.push(audit); appendAuthorityOutbox(database, state, audit);
+    return decision;
+  }
+
+  private effectContext(fence: AuthorizationFence): Omit<AuthorizationContext, "identityId" | "purposeId"> {
+    return {
+      workspaceId: fence.workspaceId, action: fence.action, resourceKind: fence.resourceKind,
+      ...(fence.resourceId ? { resourceId: fence.resourceId } : {}), ...(fence.fieldRef ? { fieldRef: fence.fieldRef } : {}),
+      ...(fence.edgeRef ? { edgeRef: fence.edgeRef } : {}), expectedAuthorizationEpoch: fence.authorizationEpoch,
+      expectedGrantId: fence.grantId, expectedGrantRevision: fence.grantRevision, expectedPolicyVersion: fence.policyVersion,
+      phase: "EFFECT",
+    };
+  }
+
+  private requireEffectAuthorization(database: WorkspaceDatabase, state: WorkspaceState, actor: WorkspaceActor, fence: AuthorizationFence, expected: { action: WorkspaceAction; resourceKind: AuthorizationContext["resourceKind"]; resourceId?: string }, correlationId: string): void {
+    if (
+      fence.identityId !== actor.identityId || fence.workspaceId !== state.workspace.id || fence.action !== expected.action ||
+      fence.resourceKind !== expected.resourceKind || (expected.resourceId !== undefined && fence.resourceId !== expected.resourceId)
+    ) throw new NotFoundException("Resource not available");
+    const decision = this.recordAuthorizationDecision(database, state, actor, this.effectContext(fence), correlationId);
     if (decision.decision !== "ALLOW") throw new NotFoundException("Resource not available");
+  }
+
+  async checkAuthorization(actor: WorkspaceActor, workspaceId: string, action: WorkspaceAction, resourceKind: "WORKSPACE" | "DOCUMENT" | "SUBJECT" | "TASK", resourceId?: string, options: { fieldRef?: string; edgeRef?: string; expectedAuthorizationEpoch?: number; expectedGrantId?: string; expectedGrantRevision?: number; expectedPolicyVersion?: AccessGrant["policyVersion"]; phase?: AuthorizationPhase; correlationId?: string } = {}): Promise<AuthorizationDecision> {
+    return this.authorizationDecision(actor, {
+      workspaceId, action, resourceKind, ...(resourceId ? { resourceId } : {}),
+      ...(options.fieldRef ? { fieldRef: options.fieldRef } : {}), ...(options.edgeRef ? { edgeRef: options.edgeRef } : {}),
+      ...(options.expectedAuthorizationEpoch !== undefined ? { expectedAuthorizationEpoch: options.expectedAuthorizationEpoch } : {}),
+      ...(options.expectedGrantId ? { expectedGrantId: options.expectedGrantId } : {}), ...(options.expectedGrantRevision !== undefined ? { expectedGrantRevision: options.expectedGrantRevision } : {}), ...(options.expectedPolicyVersion ? { expectedPolicyVersion: options.expectedPolicyVersion } : {}),
+      ...(options.phase ? { phase: options.phase } : {}),
+    }, options.correlationId);
+  }
+
+  async checkAuthorizationBatch(actor: WorkspaceActor, contexts: Array<{ workspaceId: string; action: WorkspaceAction; resourceKind: "WORKSPACE" | "DOCUMENT" | "SUBJECT" | "TASK"; resourceId?: string; fieldRef?: string; edgeRef?: string; expectedAuthorizationEpoch?: number; expectedGrantId?: string; expectedGrantRevision?: number; expectedPolicyVersion?: AccessGrant["policyVersion"]; phase?: AuthorizationPhase }>, correlationId: string): Promise<AuthorizationDecision[]> {
+    return this.authorizationDecisions(actor, contexts, correlationId);
+  }
+
+  async startAuthorization(actor: WorkspaceActor, workspaceId: string, action: WorkspaceAction, resourceKind: "WORKSPACE" | "DOCUMENT" | "SUBJECT" | "TASK", resourceId?: string, options: { fieldRef?: string; edgeRef?: string; expectedAuthorizationEpoch?: number; expectedGrantId?: string; expectedGrantRevision?: number; expectedPolicyVersion?: AccessGrant["policyVersion"]; phase?: AuthorizationPhase; correlationId?: string } = {}): Promise<AuthorizationFence> {
+    const context: AuthorizationContext = {
+      identityId: actor.identityId, workspaceId, purposeId: "PUR-P1-001", action, resourceKind, ...(resourceId ? { resourceId } : {}),
+      ...(options.fieldRef ? { fieldRef: options.fieldRef } : {}), ...(options.edgeRef ? { edgeRef: options.edgeRef } : {}),
+      ...(options.expectedAuthorizationEpoch !== undefined ? { expectedAuthorizationEpoch: options.expectedAuthorizationEpoch } : {}),
+      ...(options.expectedGrantId ? { expectedGrantId: options.expectedGrantId } : {}), ...(options.expectedGrantRevision !== undefined ? { expectedGrantRevision: options.expectedGrantRevision } : {}), ...(options.expectedPolicyVersion ? { expectedPolicyVersion: options.expectedPolicyVersion } : {}),
+      ...(options.phase ? { phase: options.phase } : {}),
+    };
+    const decision = await this.authorizationDecision(actor, context, options.correlationId);
+    const fence = decisionFence(context, decision);
+    if (!fence) throw new NotFoundException("Resource not available");
+    return fence;
+  }
+
+  async requireAuthorization(actor: WorkspaceActor, workspaceId: string, action: WorkspaceAction, resourceKind: "WORKSPACE" | "DOCUMENT" | "SUBJECT" | "TASK", resourceId?: string, options: { fieldRef?: string; edgeRef?: string; expectedAuthorizationEpoch?: number; expectedGrantId?: string; expectedGrantRevision?: number; expectedPolicyVersion?: AccessGrant["policyVersion"]; phase?: AuthorizationPhase; correlationId?: string } = {}): Promise<void> {
+    await this.startAuthorization(actor, workspaceId, action, resourceKind, resourceId, options);
+  }
+
+  async reauthorize(fence: AuthorizationFence, actor: WorkspaceActor, phase: Extract<AuthorizationPhase, "OUTPUT" | "EFFECT">, correlationId?: string): Promise<AuthorizationFence> {
+    if (actor.identityId !== fence.identityId) throw new NotFoundException("Resource not available");
+    return this.startAuthorization(actor, fence.workspaceId, fence.action, fence.resourceKind, fence.resourceId, {
+      ...(fence.fieldRef ? { fieldRef: fence.fieldRef } : {}), ...(fence.edgeRef ? { edgeRef: fence.edgeRef } : {}),
+      expectedAuthorizationEpoch: fence.authorizationEpoch, expectedGrantId: fence.grantId, expectedGrantRevision: fence.grantRevision, expectedPolicyVersion: fence.policyVersion,
+      phase, ...(correlationId ? { correlationId } : {}),
+    });
+  }
+
+  async reauthorizeBatch(fences: AuthorizationFence[], actor: WorkspaceActor, phase: Extract<AuthorizationPhase, "OUTPUT" | "EFFECT">, correlationId: string): Promise<AuthorizationFence[]> {
+    if (fences.some((fence) => fence.identityId !== actor.identityId)) throw new NotFoundException("Resource not available");
+    const decisions = await this.authorizationDecisions(actor, fences.map((fence) => ({
+      workspaceId: fence.workspaceId, action: fence.action, resourceKind: fence.resourceKind,
+      ...(fence.resourceId ? { resourceId: fence.resourceId } : {}), ...(fence.fieldRef ? { fieldRef: fence.fieldRef } : {}),
+      ...(fence.edgeRef ? { edgeRef: fence.edgeRef } : {}), expectedAuthorizationEpoch: fence.authorizationEpoch,
+      expectedGrantId: fence.grantId, expectedGrantRevision: fence.grantRevision, expectedPolicyVersion: fence.policyVersion, phase,
+    })), correlationId);
+    const renewed = decisions.map((decision, index) => decisionFence({
+      identityId: actor.identityId, workspaceId: fences[index]!.workspaceId, purposeId: "PUR-P1-001", action: fences[index]!.action,
+      resourceKind: fences[index]!.resourceKind, ...(fences[index]!.resourceId ? { resourceId: fences[index]!.resourceId } : {}),
+      ...(fences[index]!.fieldRef ? { fieldRef: fences[index]!.fieldRef } : {}), ...(fences[index]!.edgeRef ? { edgeRef: fences[index]!.edgeRef } : {}), phase,
+    }, decision));
+    if (renewed.some((fence) => !fence)) throw new NotFoundException("Resource not available");
+    return renewed as AuthorizationFence[];
   }
 
   async dashboard(workspaceId: string): Promise<DashboardSnapshot> {
@@ -552,9 +679,51 @@ export class LocalStore {
     };
   }
 
-  async addDocument(workspaceId: string, actor: WorkspaceActor, file: Express.Multer.File, subjectIds: string[], captureRoute: DocumentRecord["captureRoute"]): Promise<DocumentRecord> {
+  async authorizedDashboard(workspaceId: string, actor: WorkspaceActor, containerFence: AuthorizationFence, correlationId: string): Promise<DashboardSnapshot> {
+    if (containerFence.workspaceId !== workspaceId || containerFence.action !== "workspace.read" || containerFence.resourceKind !== "WORKSPACE" || containerFence.resourceId !== workspaceId) throw new NotFoundException("Resource not available");
+    await this.reauthorize(containerFence, actor, "OUTPUT", correlationId);
+    const epoch = containerFence.authorizationEpoch;
+    const snapshot = await this.dashboard(workspaceId);
+    const request = (action: WorkspaceAction, resourceKind: "WORKSPACE" | "DOCUMENT" | "SUBJECT" | "TASK", resourceId: string, fieldRef?: string, edgeRef?: string) => ({ workspaceId, action, resourceKind, resourceId, ...(fieldRef ? { fieldRef } : {}), ...(edgeRef ? { edgeRef } : {}), expectedAuthorizationEpoch: epoch, phase: "OUTPUT" as const });
+    const key = (context: ReturnType<typeof request>) => JSON.stringify([context.action, context.resourceKind, context.resourceId, context.fieldRef ?? "", context.edgeRef ?? ""]);
+    const evaluateBatch = async (contexts: Array<ReturnType<typeof request>>) => {
+      const decisions = await this.checkAuthorizationBatch(actor, contexts, correlationId);
+      return new Map(contexts.map((context, index) => [key(context), decisions[index]!.decision === "ALLOW"]));
+    };
+    const documentRequests = snapshot.documents.map((document) => request("document.read", "DOCUMENT", document.id));
+    const documentAllowed = await evaluateBatch(documentRequests);
+    const documents = snapshot.documents.filter((document) => documentAllowed.get(key(request("document.read", "DOCUMENT", document.id))));
+    const documentIds = new Set(documents.map((document) => document.id));
+    const factCandidates = snapshot.facts.filter((fact) => documentIds.has(fact.documentId));
+    const dependencyCandidates = snapshot.dependencies.filter((edge) => documentIds.has(edge.evidenceDocumentId));
+    const detailRequests = [
+      ...factCandidates.flatMap((fact) => [request("document.read", "DOCUMENT", fact.documentId, "fact.value"), request("document.read", "DOCUMENT", fact.documentId, "fact.evidence")]),
+      ...dependencyCandidates.map((edge) => request("document.read", "DOCUMENT", edge.evidenceDocumentId, undefined, `dependency.${edge.kind}`)),
+      ...snapshot.tasks.map((task) => request("task.read", "TASK", task.id, "task.detail")),
+      request("subject.read", "WORKSPACE", workspaceId, "subject.profile"), request("workspace.admin", "WORKSPACE", workspaceId, "membership.profile"),
+      request("workspace.read", "WORKSPACE", workspaceId, "notification.detail"), request("audit.read", "WORKSPACE", workspaceId, "audit.detail"), request("grant.read", "WORKSPACE", workspaceId, "grant.scope"),
+    ];
+    const detailAllowed = await evaluateBatch(detailRequests);
+    const isAllowed = (context: ReturnType<typeof request>) => detailAllowed.get(key(context)) === true;
+    const facts = factCandidates.filter((fact) => isAllowed(request("document.read", "DOCUMENT", fact.documentId, "fact.value")) && isAllowed(request("document.read", "DOCUMENT", fact.documentId, "fact.evidence")));
+    const dependencies = dependencyCandidates.filter((edge) => isAllowed(request("document.read", "DOCUMENT", edge.evidenceDocumentId, undefined, `dependency.${edge.kind}`)));
+    const tasks = snapshot.tasks.filter((task) => isAllowed(request("task.read", "TASK", task.id, "task.detail")));
+    const subjectsVisible = isAllowed(request("subject.read", "WORKSPACE", workspaceId, "subject.profile"));
+    const membersVisible = isAllowed(request("workspace.admin", "WORKSPACE", workspaceId, "membership.profile"));
+    const notificationsVisible = isAllowed(request("workspace.read", "WORKSPACE", workspaceId, "notification.detail"));
+    const auditVisible = isAllowed(request("audit.read", "WORKSPACE", workspaceId, "audit.detail"));
+    const grantsVisible = isAllowed(request("grant.read", "WORKSPACE", workspaceId, "grant.scope"));
+    return {
+      ...snapshot, documents, facts, dependencies, tasks,
+      notifications: notificationsVisible ? snapshot.notifications : [], members: membersVisible ? snapshot.members : [], subjects: subjectsVisible ? snapshot.subjects : [],
+      audit: auditVisible ? snapshot.audit : [], accessGrants: grantsVisible ? snapshot.accessGrants : [],
+    };
+  }
+
+  async addDocument(workspaceId: string, actor: WorkspaceActor, file: Express.Multer.File, subjectIds: string[], captureRoute: DocumentRecord["captureRoute"], fence: AuthorizationFence, correlationId: string): Promise<DocumentRecord> {
     return this.mutate(async (database) => {
       const state = this.state(database, workspaceId);
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "document.create", resourceKind: "WORKSPACE" }, correlationId);
       if (!subjectIds.length || subjectIds.some((subjectId) => !state.subjects.some((subject) => subject.id === subjectId && subject.status === "ACTIVE"))) {
         throw new BadRequestException("Select at least one valid household person for this document");
       }
@@ -605,13 +774,19 @@ export class LocalStore {
     });
   }
 
-  async documentDetail(workspaceId: string, id: string): Promise<DocumentDetail> {
+  async documentDetail(workspaceId: string, id: string, actor: WorkspaceActor, fence: AuthorizationFence, correlationId: string): Promise<DocumentDetail> {
     const state = this.state(await this.readDatabase(), workspaceId);
     const document = state.documents.find((item) => item.id === id);
     if (!document || document.status === "DELETED") throw new NotFoundException("Document not found");
     if (document.status === "POLICY_HOLD") throw new BadRequestException("This item is isolated and cannot be previewed in the ordinary document view");
+    await this.reauthorize(fence, actor, "OUTPUT", correlationId);
+    const contentDecision = await this.checkAuthorization(actor, workspaceId, "document.read", "DOCUMENT", id, { fieldRef: "document.content", expectedAuthorizationEpoch: fence.authorizationEpoch, phase: "OUTPUT", correlationId });
+    const factDecision = await this.checkAuthorization(actor, workspaceId, "document.read", "DOCUMENT", id, { fieldRef: "fact.value", expectedAuthorizationEpoch: fence.authorizationEpoch, phase: "OUTPUT", correlationId });
+    const evidenceDecision = await this.checkAuthorization(actor, workspaceId, "document.read", "DOCUMENT", id, { fieldRef: "fact.evidence", expectedAuthorizationEpoch: fence.authorizationEpoch, phase: "OUTPUT", correlationId });
     const artifactUrl = `/api/documents/${document.id}/artifact`;
-    const preview: DocumentDetail["preview"] = document.extractedText
+    const preview: DocumentDetail["preview"] = contentDecision.decision !== "ALLOW"
+      ? { kind: "UNAVAILABLE", message: "Preview is unavailable for the current access scope." }
+      : document.extractedText
       ? { kind: "TEXT", text: document.extractedText.slice(0, 100_000), artifactUrl }
       : document.mediaType.startsWith("image/")
         ? { kind: "IMAGE", artifactUrl }
@@ -620,23 +795,26 @@ export class LocalStore {
           : { kind: "UNAVAILABLE", artifactUrl, message: "A safe inline preview is not available for this format. You can open the exact local original." };
     return {
       document: documentSummary(document),
-      facts: state.facts.filter((fact) => fact.documentId === document.id),
-      dependencies: state.dependencies.filter((edge) => edge.evidenceDocumentId === document.id),
+      facts: factDecision.decision === "ALLOW" && evidenceDecision.decision === "ALLOW" ? state.facts.filter((fact) => fact.documentId === document.id) : [],
+      dependencies: (await Promise.all(state.dependencies.filter((edge) => edge.evidenceDocumentId === document.id).map(async (edge) => ({ edge, decision: await this.checkAuthorization(actor, workspaceId, "document.read", "DOCUMENT", id, { edgeRef: `dependency.${edge.kind}`, expectedAuthorizationEpoch: fence.authorizationEpoch, phase: "OUTPUT", correlationId }) })))).filter(({ decision }) => decision.decision === "ALLOW").map(({ edge }) => edge),
       preview,
     };
   }
 
-  async documentArtifact(workspaceId: string, id: string): Promise<{ buffer: Buffer; mediaType: string; name: string }> {
+  async documentArtifact(workspaceId: string, id: string, actor: WorkspaceActor, fence: AuthorizationFence, correlationId: string): Promise<{ buffer: Buffer; mediaType: string; name: string }> {
     const state = this.state(await this.readDatabase(), workspaceId);
     const document = state.documents.find((item) => item.id === id);
     if (!document || document.status === "DELETED") throw new NotFoundException("Document not found");
     if (document.status === "POLICY_HOLD") throw new BadRequestException("This item is isolated and cannot be opened");
+    await this.reauthorize(fence, actor, "OUTPUT", correlationId);
+    await this.startAuthorization(actor, workspaceId, "document.read", "DOCUMENT", id, { fieldRef: "document.content", expectedAuthorizationEpoch: fence.authorizationEpoch, phase: "OUTPUT", correlationId });
     return { buffer: await this.readArtifact(workspaceId, id), mediaType: document.mediaType, name: document.name };
   }
 
-  async reviewFact(workspaceId: string, actor: WorkspaceActor, id: string): Promise<FactRecord> {
+  async reviewFact(workspaceId: string, actor: WorkspaceActor, id: string, fence: AuthorizationFence, correlationId: string): Promise<FactRecord> {
     return this.mutate((database) => {
       const state = this.state(database, workspaceId);
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "fact.review", resourceKind: "WORKSPACE" }, correlationId);
       const fact = state.facts.find((item) => item.id === id);
       if (!fact) throw new NotFoundException("Extracted detail not found");
       const document = state.documents.find((item) => item.id === fact.documentId);
@@ -648,14 +826,15 @@ export class LocalStore {
     });
   }
 
-  async addManualDocument(workspaceId: string, actor: WorkspaceActor, input: { name: string; content: string; subjectIds: string[] }): Promise<DocumentRecord> {
+  async addManualDocument(workspaceId: string, actor: WorkspaceActor, input: { name: string; content: string; subjectIds: string[] }, fence: AuthorizationFence, correlationId: string): Promise<DocumentRecord> {
     const buffer = Buffer.from(input.content, "utf8");
-    return this.addDocument(workspaceId, actor, { originalname: `${input.name}.txt`, mimetype: "text/plain", size: buffer.byteLength, buffer } as Express.Multer.File, input.subjectIds, "MANUAL");
+    return this.addDocument(workspaceId, actor, { originalname: `${input.name}.txt`, mimetype: "text/plain", size: buffer.byteLength, buffer } as Express.Multer.File, input.subjectIds, "MANUAL", fence, correlationId);
   }
 
-  async addSubject(workspaceId: string, actor: WorkspaceActor, input: CreateSubjectInput): Promise<SubjectRecord> {
+  async addSubject(workspaceId: string, actor: WorkspaceActor, input: CreateSubjectInput, fence: AuthorizationFence, correlationId: string): Promise<SubjectRecord> {
     return this.mutate((database) => {
       const state = this.state(database, workspaceId);
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "subject.create", resourceKind: "WORKSPACE" }, correlationId);
       if (input.kind === "OWNER") throw new BadRequestException("Additional owner subjects and ownership transfer are unavailable");
       const createdAt = now();
       const subject: SubjectRecord = {
@@ -688,15 +867,20 @@ export class LocalStore {
     ];
   }
 
-  async ask(workspaceId: string, question: string, documentIds?: string[]): Promise<Answer> {
+  async ask(workspaceId: string, actor: WorkspaceActor, fence: AuthorizationFence, question: string, documentIds?: string[], correlationId: string = randomUUID()): Promise<Answer> {
     const state = this.state(await this.readDatabase(), workspaceId);
     const tokens = normalizeQuestion(question);
-    const allowed = state.documents.filter(
+    const candidates = state.documents.filter(
       (document) =>
         document.status === "READY" &&
         document.extractedText &&
         (!documentIds || documentIds.length === 0 || documentIds.includes(document.id)),
     );
+    const allowed = (await Promise.all(candidates.map(async (document) => {
+      const resource = await this.checkAuthorization(actor, workspaceId, "document.read", "DOCUMENT", document.id, { expectedAuthorizationEpoch: fence.authorizationEpoch, phase: "CANDIDATE", correlationId });
+      const content = resource.decision === "ALLOW" ? await this.checkAuthorization(actor, workspaceId, "document.read", "DOCUMENT", document.id, { fieldRef: "document.content", expectedAuthorizationEpoch: fence.authorizationEpoch, phase: "CANDIDATE", correlationId }) : resource;
+      return { document, allowed: resource.decision === "ALLOW" && content.decision === "ALLOW" };
+    }))).filter((candidate) => candidate.allowed).map((candidate) => candidate.document);
     const scored = allowed
       .map((document) => {
         const lines = document.extractedText!.split(/\r?\n/).filter(Boolean);
@@ -712,6 +896,7 @@ export class LocalStore {
       .slice(0, 4);
 
     if (scored.length === 0) {
+      await this.reauthorize(fence, actor, "OUTPUT", correlationId);
       return {
         answer: "I could not find enough evidence in the locally indexed documents to answer that question.",
         citations: [],
@@ -723,6 +908,8 @@ export class LocalStore {
     const citations = scored.flatMap(({ document, matches }) =>
       matches.map(({ line }) => ({ documentId: document.id, documentName: document.name, excerpt: line.slice(0, 360) })),
     );
+    await this.reauthorize(fence, actor, "OUTPUT", correlationId);
+    for (const citation of citations) await this.startAuthorization(actor, workspaceId, "document.read", "DOCUMENT", citation.documentId, { fieldRef: "document.content", expectedAuthorizationEpoch: fence.authorizationEpoch, phase: "OUTPUT", correlationId });
     return {
       answer: `The strongest local evidence says: ${citations.map((citation) => citation.excerpt).join(" ")}`,
       citations,
@@ -731,9 +918,10 @@ export class LocalStore {
     };
   }
 
-  async addMember(workspaceId: string, actor: WorkspaceActor, displayName: string, role: Member["role"]): Promise<Member> {
+  async addMember(workspaceId: string, actor: WorkspaceActor, displayName: string, role: Member["role"], fence: AuthorizationFence, correlationId: string): Promise<Member> {
     return this.mutate((database) => {
       const state = this.state(database, workspaceId);
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "workspace.admin", resourceKind: "WORKSPACE" }, correlationId);
       if (role === "OWNER") throw new BadRequestException("Ownership transfer is unavailable");
       const createdAt = now();
       const subject: SubjectRecord = { id: randomUUID(), workspaceId: state.workspace.id, displayName, kind: role === "MANAGED_DEPENDANT" ? "DEPENDANT" : "ADULT", relationship: "Family member", status: "ACTIVE", validFrom: createdAt, recordedAt: createdAt, createdAt, revision: 1, history: [] };
@@ -753,7 +941,7 @@ export class LocalStore {
 
   async subjectCollection(workspaceId: string, actorId: string): Promise<{ items: SubjectRecord[]; policyEpoch: number; grantEquivalence: string; sourceWatermark: string }> {
     const state = this.state(await this.readDatabase(), workspaceId);
-    const grants = state.accessGrants.filter((grant) => grant.state === "ACTIVE" && grant.granteeIdentityId === actorId).map((grant) => ({ resourceKind: grant.resourceKind, resourceIds: [...grant.resourceIds].sort(), actions: [...grant.actions].sort(), purposeId: grant.purposeId, policyVersion: grant.policyVersion, revision: grant.revision })).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+    const grants = state.accessGrants.filter((grant) => grant.state === "ACTIVE" && grant.granteeIdentityId === actorId).map((grant) => ({ resourceKind: grant.resourceKind, resourceIds: [...grant.resourceIds].sort(), fieldRefs: [...grant.fieldRefs].sort(), edgeRefs: [...grant.edgeRefs].sort(), actions: [...grant.actions].sort(), purposeId: grant.purposeId, policyVersion: grant.policyVersion, effect: grant.effect, expiresAt: grant.expiresAt ?? null, revision: grant.revision })).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
     return { items: state.subjects.filter((subject) => subject.status === "ACTIVE"), policyEpoch: state.authorizationEpoch.value, grantEquivalence: commandHash(grants), sourceWatermark: state.audit.at(-1)?.id ?? "workspace-created" };
   }
 
@@ -770,8 +958,113 @@ export class LocalStore {
 
   async membershipCollection(workspaceId: string, actorId: string): Promise<{ items: Member[]; policyEpoch: number; grantEquivalence: string; sourceWatermark: string }> {
     const state = this.state(await this.readDatabase(), workspaceId);
-    const grants = state.accessGrants.filter((grant) => grant.state === "ACTIVE" && grant.granteeIdentityId === actorId).map((grant) => ({ resourceKind: grant.resourceKind, resourceIds: [...grant.resourceIds].sort(), actions: [...grant.actions].sort(), purposeId: grant.purposeId, policyVersion: grant.policyVersion, revision: grant.revision })).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+    const grants = state.accessGrants.filter((grant) => grant.state === "ACTIVE" && grant.granteeIdentityId === actorId).map((grant) => ({ resourceKind: grant.resourceKind, resourceIds: [...grant.resourceIds].sort(), fieldRefs: [...grant.fieldRefs].sort(), edgeRefs: [...grant.edgeRefs].sort(), actions: [...grant.actions].sort(), purposeId: grant.purposeId, policyVersion: grant.policyVersion, effect: grant.effect, expiresAt: grant.expiresAt ?? null, revision: grant.revision })).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
     return { items: state.members.filter((member) => member.state === "ACTIVE"), policyEpoch: state.authorizationEpoch.value, grantEquivalence: commandHash(grants), sourceWatermark: state.audit.at(-1)?.id ?? "workspace-created" };
+  }
+
+  async accessGrantCollection(workspaceId: string, actorId: string): Promise<{ items: AccessGrant[]; policyEpoch: number; grantEquivalence: string; sourceWatermark: string }> {
+    const state = this.state(await this.readDatabase(), workspaceId);
+    const visible = state.accessGrants.filter((grant) => grant.grantorIdentityId === actorId || grant.granteeIdentityId === actorId || state.ownerBindings.some((binding) => binding.state === "ACTIVE" && binding.ownerIdentityId === actorId));
+    const equivalence = visible.map((grant) => ({ id: grant.id, revision: grant.revision, state: grant.state, policyVersion: grant.policyVersion })).sort((left, right) => left.id.localeCompare(right.id));
+    return { items: visible, policyEpoch: state.authorizationEpoch.value, grantEquivalence: commandHash(equivalence), sourceWatermark: state.audit.at(-1)?.id ?? "workspace-created" };
+  }
+
+  async getAccessGrant(workspaceId: string, grantId: string, actorId: string): Promise<AccessGrant> {
+    const state = this.state(await this.readDatabase(), workspaceId);
+    const grant = state.accessGrants.find((candidate) => candidate.id === grantId);
+    const visible = grant && (grant.grantorIdentityId === actorId || grant.granteeIdentityId === actorId || state.ownerBindings.some((binding) => binding.state === "ACTIVE" && binding.ownerIdentityId === actorId));
+    if (!visible || !grant) throw new NotFoundException("Resource not available");
+    return grant;
+  }
+
+  private resourceKindForRefs(state: WorkspaceState, refs: string[]): AccessGrant["resourceKind"] | undefined {
+    const kinds = new Set(refs.map((ref) => ref === state.workspace.id ? "WORKSPACE" : state.documents.some((item) => item.id === ref && item.status !== "DELETED") ? "DOCUMENT" : state.subjects.some((item) => item.id === ref && item.status === "ACTIVE") ? "SUBJECT" : state.tasks.some((item) => item.id === ref) ? "TASK" : "UNKNOWN"));
+    if (kinds.size !== 1 || kinds.has("UNKNOWN")) return undefined;
+    return [...kinds][0] as AccessGrant["resourceKind"];
+  }
+
+  async createAccessGrant(workspaceId: string, actor: WorkspaceActor, idempotencyKey: string, input: CanonicalCreateAccessGrantInput, fence: AuthorizationFence, correlationId: string): Promise<AccessGrant> {
+    const result = await this.mutate((database): AccessGrant | "NOT_AVAILABLE" => {
+      const state = this.state(database, workspaceId);
+      if (fence.identityId !== actor.identityId || fence.workspaceId !== workspaceId || fence.action !== "grant.create" || fence.resourceKind !== "WORKSPACE") return "NOT_AVAILABLE";
+      const effectDecision = this.recordAuthorizationDecision(database, state, actor, this.effectContext(fence), correlationId);
+      if (effectDecision.decision !== "ALLOW") return "NOT_AVAILABLE";
+      const ownerBinding = state.ownerBindings.find((binding) => binding.state === "ACTIVE" && binding.ownerIdentityId === actor.identityId);
+      const authorizingGrant = state.accessGrants.find((grant) => grant.id === fence.grantId && grant.revision === fence.grantRevision && grant.state === "ACTIVE" && grant.policyVersion === fence.policyVersion);
+      const ownerAuthoritySource = ownerBinding
+        && authorizingGrant?.grantorIdentityId === actor.identityId
+        && authorizingGrant.granteeIdentityId === actor.identityId
+        && authorizingGrant.resourceKind === "WORKSPACE"
+        && authorizingGrant.resourceIds.includes(workspaceId);
+      if (!ownerAuthoritySource) {
+        recordAuthorityDenial(
+          database,
+          state,
+          actor,
+          "ACCESS_GRANT_CREATION_DENIED",
+          "grant.create",
+          "Denied grant creation because the current Phase 1 authority source does not permit onward delegation",
+          correlationId,
+          {
+            policyVersion: effectDecision.policyVersion,
+            authorizationEpoch: effectDecision.authorizationEpoch,
+            authorizationPhase: "EFFECT",
+            decisionReason: "ONWARD_DELEGATION_NOT_PERMITTED",
+          },
+        );
+        return "NOT_AVAILABLE";
+      }
+      const receipt = priorCommandReceipt(state, actor, "API-P1-113", idempotencyKey, input);
+      if (receipt) return state.accessGrants.find((grant) => grant.id === receipt.resourceId) ?? (() => { throw new ConflictException("The prior command result is unavailable"); })();
+      const recipient = state.members.find((member) => member.identityId === input.grantee_ref && member.state === "ACTIVE" && member.invitationState === "ACTIVE");
+      const resourceKind = this.resourceKindForRefs(state, input.scope.resource_refs);
+      if (!recipient || !resourceKind) throw new UnprocessableEntityException("Grant scope or recipient is unavailable");
+      for (const resourceRef of input.scope.resource_refs) {
+        for (const action of input.scope.actions) {
+          const base = { identityId: actor.identityId, workspaceId, purposeId: "PUR-P1-001" as const, action, resourceKind, resourceId: resourceRef, phase: "EFFECT" as const };
+          if (evaluateAuthorization(state, base).decision !== "ALLOW") throw new UnprocessableEntityException("Grant exceeds current issuer authority");
+          for (const fieldRef of input.scope.field_refs) if (evaluateAuthorization(state, { ...base, fieldRef }).decision !== "ALLOW") throw new UnprocessableEntityException("Grant exceeds current issuer field authority");
+          for (const edgeRef of input.scope.edge_refs) if (evaluateAuthorization(state, { ...base, edgeRef }).decision !== "ALLOW") throw new UnprocessableEntityException("Grant exceeds current issuer edge authority");
+        }
+      }
+      const createdAt = now();
+      const grant: AccessGrant = {
+        id: randomUUID(), workspaceId, grantorIdentityId: actor.identityId, granteeIdentityId: input.grantee_ref,
+        purposeId: input.purpose_id, resourceKind, resourceIds: [...new Set(input.scope.resource_refs)],
+        fieldRefs: [...new Set(input.scope.field_refs)], edgeRefs: [...new Set(input.scope.edge_refs)], actions: [...new Set(input.scope.actions)],
+        startsAt: input.valid_from, ...(input.valid_to ? { expiresAt: input.valid_to } : {}), state: "ACTIVE",
+        policyVersion: input.policy_version, effect: "ALLOW", onwardDelegation: false, exportAllowed: input.scope.allow_export,
+        createdAt, revision: 1,
+      };
+      state.accessGrants.push(grant); advanceAuthorizationEpoch(state, "GRANT_CHANGED"); state.workspace.revision += 1;
+      recordAuthorityTransition(database, state, actor, "ACCESS_GRANT_CREATED", "WORKSPACE", "Created a bounded explicit grant after current issuer reauthorization", grant.id, correlationId, { policyVersion: grant.policyVersion, authorizationEpoch: state.authorizationEpoch.value, authorizationPhase: "EFFECT", decisionReason: "EXPLICIT_GRANT" });
+      appendCommandReceipt(state, actor, "API-P1-113", idempotencyKey, input, grant.id, grant.revision);
+      return grant;
+    });
+    if (result === "NOT_AVAILABLE") throw new NotFoundException("Resource not available");
+    return result;
+  }
+
+  async revokeAccessGrant(workspaceId: string, actor: WorkspaceActor, grantId: string, expectedRevision: number, idempotencyKey: string, reasonCode: string, fence: AuthorizationFence, correlationId: string): Promise<AccessGrant> {
+    const result = await this.mutate((database): AccessGrant | "NOT_AVAILABLE" | "STALE" => {
+      const state = this.state(database, workspaceId);
+      const receipt = priorCommandReceipt(state, actor, "API-P1-115", idempotencyKey, { grantId, reasonCode });
+      if (receipt) return state.accessGrants.find((grant) => grant.id === receipt.resourceId) ?? "NOT_AVAILABLE";
+      if (fence.identityId !== actor.identityId || fence.workspaceId !== workspaceId || fence.action !== "grant.revoke" || fence.resourceKind !== "WORKSPACE") return "NOT_AVAILABLE";
+      const effectDecision = this.recordAuthorizationDecision(database, state, actor, this.effectContext(fence), correlationId);
+      if (effectDecision.decision !== "ALLOW") return "NOT_AVAILABLE";
+      const grant = state.accessGrants.find((candidate) => candidate.id === grantId);
+      if (!grant) return "NOT_AVAILABLE";
+      if (grant.revision !== expectedRevision) return "STALE";
+      const revokedAt = now(); grant.state = "REVOKED"; grant.revokedAt = revokedAt; grant.revision += 1;
+      advanceAuthorizationEpoch(state, "GRANT_CHANGED"); state.workspace.revision += 1;
+      recordAuthorityTransition(database, state, actor, "ACCESS_GRANT_REVOKED", "WORKSPACE", `Revoked a bounded grant using registered reason ${reasonCode}`, grant.id, correlationId, { policyVersion: grant.policyVersion, authorizationEpoch: state.authorizationEpoch.value, authorizationPhase: "EFFECT", decisionReason: "EXPLICIT_GRANT" });
+      appendCommandReceipt(state, actor, "API-P1-115", idempotencyKey, { grantId, reasonCode }, grant.id, grant.revision);
+      return grant;
+    });
+    if (result === "NOT_AVAILABLE") throw new NotFoundException("Resource not available");
+    if (result === "STALE") throw new PreconditionFailedException("Resource changed; refresh before retrying");
+    return result;
   }
 
   async getMembership(workspaceId: string, membershipId: string): Promise<Member> {
@@ -780,11 +1073,12 @@ export class LocalStore {
     return membership;
   }
 
-  async createCanonicalSubject(workspaceId: string, actor: WorkspaceActor, expectedWorkspaceRevision: number, idempotencyKey: string, input: { subject_kind: "PERSON"; authority_basis_ref: string | null }, correlationId: string): Promise<SubjectRecord> {
+  async createCanonicalSubject(workspaceId: string, actor: WorkspaceActor, expectedWorkspaceRevision: number, idempotencyKey: string, input: { subject_kind: "PERSON"; authority_basis_ref: string | null }, fence: AuthorizationFence, correlationId: string): Promise<SubjectRecord> {
     return this.mutate((database) => {
       const state = this.state(database, workspaceId);
       const receipt = priorCommandReceipt(state, actor, "API-P1-105", idempotencyKey, input);
       if (receipt) return state.subjects.find((subject) => subject.id === receipt.resourceId) ?? (() => { throw new ConflictException("The prior command result is unavailable"); })();
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "subject.create", resourceKind: "WORKSPACE" }, correlationId);
       if (state.workspace.revision !== expectedWorkspaceRevision) throw new PreconditionFailedException("Workspace changed; refresh before retrying");
       const createdAt = now();
       const subject: SubjectRecord = { id: randomUUID(), workspaceId, displayName: "Represented person", kind: "OTHER", relationship: input.authority_basis_ref ? "Authorized representation" : "Household person", status: "ACTIVE", validFrom: createdAt, recordedAt: createdAt, createdAt, revision: 1, history: [] };
@@ -796,11 +1090,12 @@ export class LocalStore {
     });
   }
 
-  async proposeCanonicalSubjectChange(workspaceId: string, actor: WorkspaceActor, subjectId: string, expectedRevision: number, idempotencyKey: string, input: { operation: "PROPOSE_ATTRIBUTE_CORRECTION"; protected_change_ref: string | null; reason_code: string }, correlationId: string): Promise<SubjectRecord> {
+  async proposeCanonicalSubjectChange(workspaceId: string, actor: WorkspaceActor, subjectId: string, expectedRevision: number, idempotencyKey: string, input: { operation: "PROPOSE_ATTRIBUTE_CORRECTION"; protected_change_ref: string | null; reason_code: string }, fence: AuthorizationFence, correlationId: string): Promise<SubjectRecord> {
     const result = await this.mutate((database): SubjectRecord | "NOT_AVAILABLE" | "STALE" => {
       const state = this.state(database, workspaceId);
       const receipt = priorCommandReceipt(state, actor, "API-P1-107", idempotencyKey, { subjectId, ...input });
       if (receipt) return state.subjects.find((subject) => subject.id === receipt.resourceId) ?? "NOT_AVAILABLE";
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "subject.edit", resourceKind: "WORKSPACE" }, correlationId);
       const subject = state.subjects.find((candidate) => candidate.id === subjectId);
       if (!subject || subject.status !== "ACTIVE") {
         const denial = auditRecord(workspaceId, actor, "SUBJECT_CHANGE_REJECTED", "PERSON", "Rejected a protected subject proposal because the subject was unavailable", undefined, correlationId); denial.outcome = "DENIED";
@@ -822,11 +1117,12 @@ export class LocalStore {
     return result;
   }
 
-  async inviteCanonicalMembership(workspaceId: string, actor: WorkspaceActor, expectedWorkspaceRevision: number, idempotencyKey: string, input: { identity_or_audience_ref: string; participation_class: Exclude<Member["role"], "OWNER" | "FAMILY_ADMIN">; invitation_policy_ref: string }, correlationId: string): Promise<Member> {
+  async inviteCanonicalMembership(workspaceId: string, actor: WorkspaceActor, expectedWorkspaceRevision: number, idempotencyKey: string, input: { identity_or_audience_ref: string; participation_class: Exclude<Member["role"], "OWNER" | "FAMILY_ADMIN">; invitation_policy_ref: string }, fence: AuthorizationFence, correlationId: string): Promise<Member> {
     return this.mutate((database) => {
       const state = this.state(database, workspaceId);
       const receipt = priorCommandReceipt(state, actor, "API-P1-109", idempotencyKey, input);
       if (receipt) return state.members.find((member) => member.id === receipt.resourceId) ?? (() => { throw new ConflictException("The prior command result is unavailable"); })();
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "workspace.admin", resourceKind: "WORKSPACE" }, correlationId);
       if (state.workspace.revision !== expectedWorkspaceRevision) throw new PreconditionFailedException("Workspace changed; refresh before retrying");
       const createdAt = now();
       const subject: SubjectRecord = { id: randomUUID(), workspaceId, displayName: "Invited participant", kind: input.participation_class === "MANAGED_DEPENDANT" ? "DEPENDANT" : "ADULT", relationship: "Invited participant", status: "ACTIVE", validFrom: createdAt, recordedAt: createdAt, createdAt, revision: 1, history: [] };
@@ -838,11 +1134,12 @@ export class LocalStore {
     });
   }
 
-  async transitionCanonicalMembership(workspaceId: string, actor: WorkspaceActor, membershipId: string, expectedRevision: number, idempotencyKey: string, input: { transition: "SUSPEND" | "REACTIVATE" | "DEPART" | "REMOVE"; reason_code: string }, correlationId: string): Promise<Member> {
+  async transitionCanonicalMembership(workspaceId: string, actor: WorkspaceActor, membershipId: string, expectedRevision: number, idempotencyKey: string, input: { transition: "SUSPEND" | "REACTIVATE" | "DEPART" | "REMOVE"; reason_code: string }, fence: AuthorizationFence, correlationId: string): Promise<Member> {
     const result = await this.mutate((database): Member | "NOT_AVAILABLE" | "STALE" => {
       const state = this.state(database, workspaceId);
       const receipt = priorCommandReceipt(state, actor, "API-P1-111", idempotencyKey, { membershipId, ...input });
       if (receipt) return state.members.find((member) => member.id === receipt.resourceId) ?? "NOT_AVAILABLE";
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "workspace.admin", resourceKind: "WORKSPACE" }, correlationId);
       const member = state.members.find((candidate) => candidate.id === membershipId);
       if (!member) {
         const denial = auditRecord(workspaceId, actor, "MEMBERSHIP_CHANGE_REJECTED", "MEMBERSHIP", "Rejected a membership transition because the record was unavailable", undefined, correlationId); denial.outcome = "DENIED";
@@ -865,9 +1162,10 @@ export class LocalStore {
     return result;
   }
 
-  async createPerson(workspaceId: string, actor: WorkspaceActor, input: ManagePersonInput, correlationId?: string): Promise<SubjectRecord> {
+  async createPerson(workspaceId: string, actor: WorkspaceActor, input: ManagePersonInput, fence: AuthorizationFence, correlationId: string): Promise<SubjectRecord> {
     return this.mutate((database) => {
       const state = this.state(database, workspaceId);
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "subject.create", resourceKind: "WORKSPACE" }, correlationId);
       if (input.kind === "OWNER") throw new BadRequestException("Additional owners and ownership transfer are unavailable");
       const createdAt = now();
       const subject: SubjectRecord = { id: randomUUID(), workspaceId: state.workspace.id, displayName: input.displayName, kind: input.kind, relationship: input.relationship, ...(input.dateOfBirth ? { dateOfBirth: input.dateOfBirth } : {}), status: "ACTIVE", validFrom: createdAt, recordedAt: createdAt, createdAt, revision: 1, history: [] };
@@ -883,9 +1181,10 @@ export class LocalStore {
     });
   }
 
-  async updatePerson(workspaceId: string, actor: WorkspaceActor, id: string, expectedRevision: number, input: ManagePersonInput, correlationId?: string): Promise<SubjectRecord> {
+  async updatePerson(workspaceId: string, actor: WorkspaceActor, id: string, expectedRevision: number, input: ManagePersonInput, fence: AuthorizationFence, correlationId: string): Promise<SubjectRecord> {
     const result = await this.mutate((database): { state: "UPDATED"; subject: SubjectRecord } | { state: "NOT_AVAILABLE" } | { state: "STALE" } => {
       const state = this.state(database, workspaceId);
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "subject.edit", resourceKind: "WORKSPACE" }, correlationId);
       const subject = state.subjects.find((item) => item.id === id);
       if (!subject || subject.status !== "ACTIVE") {
         const denial = auditRecord(state.workspace.id, actor, "PERSON_CHANGE_REJECTED", "PERSON", "Rejected a person change because the current subject was unavailable", undefined, correlationId);
@@ -907,15 +1206,18 @@ export class LocalStore {
       subject.validFrom = changedAt; subject.recordedAt = changedAt;
       if (input.dateOfBirth) subject.dateOfBirth = input.dateOfBirth; else delete subject.dateOfBirth;
       let member = state.members.find((item) => item.subjectId === subject.id);
+      let authorityChanged = false;
       if (input.loginEnabled) {
         if (!member) {
           member = { id: randomUUID(), workspaceId: state.workspace.id, subjectId: subject.id, displayName: input.displayName, role: input.role, state: "ACTIVE", invitationState: "PENDING", permissions: input.permissions, validFrom: changedAt, recordedAt: changedAt, createdAt: changedAt, revision: 1, history: [] };
           state.members.push(member);
+          authorityChanged = true;
         } else {
           member.history.push(membershipHistory(member, changedAt));
           member.displayName = input.displayName; member.role = subject.kind === "OWNER" ? "OWNER" : input.role; member.state = "ACTIVE"; member.permissions = subject.kind === "OWNER" ? defaultPermissions(true) : input.permissions; member.revision += 1;
           member.validFrom = changedAt; member.recordedAt = changedAt; delete member.validTo;
           if (member.invitationState === "SUSPENDED" || member.invitationState === "NOT_INVITED") member.invitationState = "PENDING";
+          authorityChanged = true;
         }
         if (input.email) member.email = input.email; else delete member.email;
         if (input.mobile) member.mobile = input.mobile; else delete member.mobile;
@@ -923,8 +1225,9 @@ export class LocalStore {
         member.history.push(membershipHistory(member, changedAt));
         member.state = "REVOKED"; member.invitationState = "SUSPENDED"; member.revision += 1;
         member.validTo = changedAt; member.recordedAt = changedAt;
+        authorityChanged = true;
       }
-      advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
+      if (authorityChanged) advanceAuthorizationEpoch(state, "MEMBERSHIP_CHANGED");
       recordAuthorityTransition(database, state, actor, "PERSON_UPDATED", "PERSON", input.loginEnabled ? "Updated person and prospective membership settings; resource grants remain separate" : "Updated person details and disabled membership participation", subject.id, correlationId);
       return { state: "UPDATED", subject };
     });
@@ -933,9 +1236,10 @@ export class LocalStore {
     return result.subject;
   }
 
-  async deletePerson(workspaceId: string, actor: WorkspaceActor, id: string, expectedRevision: number, correlationId?: string): Promise<void> {
+  async deletePerson(workspaceId: string, actor: WorkspaceActor, id: string, expectedRevision: number, fence: AuthorizationFence, correlationId: string): Promise<void> {
     const result = await this.mutate((database): "RETIRED" | "NOT_AVAILABLE" | "STALE" => {
       const state = this.state(database, workspaceId);
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "subject.delete", resourceKind: "WORKSPACE" }, correlationId);
       const subject = state.subjects.find((item) => item.id === id);
       if (!subject || subject.status !== "ACTIVE") {
         const denial = auditRecord(state.workspace.id, actor, "PERSON_RETIREMENT_REJECTED", "PERSON", "Rejected a person retirement because the current subject was unavailable", undefined, correlationId);
@@ -966,9 +1270,10 @@ export class LocalStore {
     if (result === "STALE") throw new PreconditionFailedException("Resource changed; refresh before retrying");
   }
 
-  async addTask(workspaceId: string, actor: WorkspaceActor, input: { title: string; severity: TaskRecord["severity"]; dueAt?: string | undefined; documentId?: string | undefined }): Promise<TaskRecord> {
+  async addTask(workspaceId: string, actor: WorkspaceActor, input: { title: string; severity: TaskRecord["severity"]; dueAt?: string | undefined; documentId?: string | undefined }, fence: AuthorizationFence, correlationId: string): Promise<TaskRecord> {
     return this.mutate((database) => {
       const state = this.state(database, workspaceId);
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "task.create", resourceKind: "WORKSPACE" }, correlationId);
       const task: TaskRecord = {
         id: randomUUID(), workspaceId: state.workspace.id, title: input.title, severity: input.severity, state: "OPEN", createdAt: now(),
         ...(input.dueAt ? { dueAt: input.dueAt } : {}), ...(input.documentId ? { documentId: input.documentId } : {}),
@@ -979,9 +1284,10 @@ export class LocalStore {
     });
   }
 
-  async completeTask(workspaceId: string, actor: WorkspaceActor, id: string): Promise<TaskRecord> {
+  async completeTask(workspaceId: string, actor: WorkspaceActor, id: string, fence: AuthorizationFence, correlationId: string): Promise<TaskRecord> {
     return this.mutate((database) => {
       const state = this.state(database, workspaceId);
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "task.edit", resourceKind: "TASK", resourceId: id }, correlationId);
       const task = state.tasks.find((item) => item.id === id);
       if (!task) throw new NotFoundException("Task not found");
       task.state = "DONE";
@@ -990,9 +1296,10 @@ export class LocalStore {
     });
   }
 
-  async deleteDocument(workspaceId: string, actor: WorkspaceActor, id: string): Promise<{ documentId: string; state: "TRASHED"; deletedAt: string; purgeDueAt: string }> {
+  async deleteDocument(workspaceId: string, actor: WorkspaceActor, id: string, fence: AuthorizationFence, correlationId: string): Promise<{ documentId: string; state: "TRASHED"; deletedAt: string; purgeDueAt: string }> {
     return this.mutate((database) => {
       const state = this.state(database, workspaceId);
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "document.delete", resourceKind: "DOCUMENT", resourceId: id }, correlationId);
       const document = state.documents.find((item) => item.id === id);
       if (!document) throw new NotFoundException("Document not found");
       if (document.status === "DELETED" && document.deletedAt && document.purgeDueAt) {
@@ -1009,9 +1316,10 @@ export class LocalStore {
     });
   }
 
-  async restoreDocument(workspaceId: string, actor: WorkspaceActor, id: string, at = now()): Promise<DocumentRecord> {
+  async restoreDocument(workspaceId: string, actor: WorkspaceActor, id: string, fence: AuthorizationFence, correlationId: string, at = now()): Promise<DocumentRecord> {
     return this.mutate((database) => {
       const state = this.state(database, workspaceId);
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "document.edit", resourceKind: "DOCUMENT", resourceId: id }, correlationId);
       const document = state.documents.find((item) => item.id === id);
       if (!document || document.status !== "DELETED" || !document.purgeDueAt) throw new NotFoundException("Document is not in Trash");
       if (new Date(at).getTime() >= new Date(document.purgeDueAt).getTime()) throw new BadRequestException("The 30-day recovery period has ended");
@@ -1048,14 +1356,18 @@ export class LocalStore {
     });
   }
 
-  async exportWorkspace(workspaceId: string): Promise<WorkspaceState> {
-    const state = this.state(await this.readDatabase(), workspaceId);
-    return { ...state, documents: state.documents.map(({ extractedText: _content, ...document }) => document) } as WorkspaceState;
-  }
-
-  async recordRecoveryBlocked(workspaceId: string, actor: WorkspaceActor): Promise<{ caseId: string; workspaceId: string; caseKind: "WORKSPACE_RECOVERY"; state: "POLICY_BLOCKED"; decisionFence: "DEC-038"; createdAt: string; revision: 1 }> {
+  async exportWorkspace(workspaceId: string, actor: WorkspaceActor, fence: AuthorizationFence, correlationId: string): Promise<WorkspaceState> {
     return this.mutate((database) => {
       const state = this.state(database, workspaceId);
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "export.create", resourceKind: "WORKSPACE" }, correlationId);
+      return { ...state, documents: state.documents.map(({ extractedText: _content, ...document }) => document) } as WorkspaceState;
+    });
+  }
+
+  async recordRecoveryBlocked(workspaceId: string, actor: WorkspaceActor, fence: AuthorizationFence, correlationId: string): Promise<{ caseId: string; workspaceId: string; caseKind: "WORKSPACE_RECOVERY"; state: "POLICY_BLOCKED"; decisionFence: "DEC-038"; createdAt: string; revision: 1 }> {
+    return this.mutate((database) => {
+      const state = this.state(database, workspaceId);
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "workspace.read", resourceKind: "WORKSPACE", resourceId: workspaceId }, correlationId);
       const createdAt = now();
       const caseId = randomUUID();
       recordAuthorityTransition(database, state, actor, "RECOVERY_POLICY_BLOCKED", "WORKSPACE", "Recovery and ownership transfer remain unavailable under DEC-038", workspaceId);

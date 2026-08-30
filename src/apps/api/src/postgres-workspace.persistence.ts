@@ -47,6 +47,10 @@ interface OutboxRow extends QueryResultRow {
   actor_id: string;
   resource_type: AuthorityOutboxEvent["resourceType"];
   resource_id: string | null;
+  policy_version: string | null;
+  authorization_epoch: string | number | null;
+  authorization_phase: AuthorityOutboxEvent["authorizationPhase"] | null;
+  decision_reason: string | null;
   occurred_at: Date | string;
 }
 
@@ -119,6 +123,10 @@ function databaseFromRows(workspaces: WorkspaceRow[], receipts: ReceiptRow[], ou
       actorId: row.actor_id,
       resourceType: row.resource_type,
       ...(row.resource_id ? { resourceId: row.resource_id } : {}),
+      ...(row.policy_version ? { policyVersion: row.policy_version } : {}),
+      ...(row.authorization_epoch !== null ? { authorizationEpoch: Number(row.authorization_epoch) } : {}),
+      ...(row.authorization_phase ? { authorizationPhase: row.authorization_phase } : {}),
+      ...(row.decision_reason ? { decisionReason: row.decision_reason } : {}),
       occurredAt: iso(row.occurred_at),
     })),
   };
@@ -298,7 +306,7 @@ export class PostgresWorkspacePersistence implements WorkspacePersistence {
     const [workspaces, receipts, outbox] = await Promise.all([
       client.query<WorkspaceRow>("SELECT workspace_id, storage_revision, state FROM doculyra.workspace_state ORDER BY workspace_id"),
       client.query<ReceiptRow>("SELECT identity_id, idempotency_key_hash, request_fingerprint, workspace_id, created_at FROM doculyra.workspace_creation_receipt ORDER BY identity_id, idempotency_key_hash"),
-      client.query<OutboxRow>("SELECT event_id, workspace_id, aggregate_type, aggregate_id, aggregate_revision, event_type, schema_version, correlation_id, actor_id, resource_type, resource_id, occurred_at FROM doculyra.authority_outbox ORDER BY occurred_at, event_id"),
+      client.query<OutboxRow>("SELECT event_id, workspace_id, aggregate_type, aggregate_id, aggregate_revision, event_type, schema_version, correlation_id, actor_id, resource_type, resource_id, policy_version, authorization_epoch, authorization_phase, decision_reason, occurred_at FROM doculyra.authority_outbox ORDER BY occurred_at, event_id"),
     ]);
     return {
       database: databaseFromRows(workspaces.rows, receipts.rows, outbox.rows),
@@ -366,10 +374,10 @@ export class PostgresWorkspacePersistence implements WorkspacePersistence {
 
   private async persistOutbox(client: SqlClient, event: AuthorityOutboxEvent): Promise<void> {
     await client.query(
-      `INSERT INTO doculyra.authority_outbox(event_id, workspace_id, aggregate_type, aggregate_id, aggregate_revision, event_type, schema_version, correlation_id, actor_id, resource_type, resource_id, occurred_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      `INSERT INTO doculyra.authority_outbox(event_id, workspace_id, aggregate_type, aggregate_id, aggregate_revision, event_type, schema_version, correlation_id, actor_id, resource_type, resource_id, policy_version, authorization_epoch, authorization_phase, decision_reason, occurred_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
        ON CONFLICT (event_id) DO NOTHING`,
-      [event.id, event.workspaceId, event.aggregateType, event.aggregateId, event.aggregateRevision, event.eventType, event.schemaVersion, event.correlationId, event.actorId, event.resourceType, event.resourceId ?? null, event.occurredAt],
+      [event.id, event.workspaceId, event.aggregateType, event.aggregateId, event.aggregateRevision, event.eventType, event.schemaVersion, event.correlationId, event.actorId, event.resourceType, event.resourceId ?? null, event.policyVersion ?? null, event.authorizationEpoch ?? null, event.authorizationPhase ?? null, event.decisionReason ?? null, event.occurredAt],
     );
   }
 
