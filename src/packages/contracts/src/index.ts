@@ -407,9 +407,59 @@ export interface IngestionCase {
   degradationCodes: string[];
   attempts: Array<{ id: string; kind: "CREATE" | "RECEIPT_COMMIT" | "SAFETY_CHECK" | "CANCEL"; outcome: "SUCCEEDED"; correlationId: string; recordedAt: string; byteCount?: number; transferRefHash?: string; digestRefHash?: string }>;
   safetyAssessments?: Array<{ id: string; adapterRef: "synthetic-safety-adapter@0.1"; verdict: "CLEAN" | "MALICIOUS" | "INDETERMINATE" | "SUSPECTED_CLINICAL"; integrityState: "VERIFIED" | "INDETERMINATE"; reasonCode: string; digestRefHash: string; recordedAt: string }>;
+  stageRuns?: IngestionStageRun[];
+  stageMessageReceipts?: IngestionStageMessageReceipt[];
+  deadLetters?: IngestionDeadLetter[];
   revision: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export type IngestionStageId = "VALIDATION" | "SAFETY" | "PROCESSING" | "PUBLICATION";
+export type IngestionStageRunState = "RUNNING" | "SUCCEEDED" | "FAILED_RETRYABLE" | "FAILED_TERMINAL" | "CANCELLED" | "SUPERSEDED" | "BLOCKED";
+
+export interface IngestionStageRun {
+  id: string;
+  stageId: IngestionStageId;
+  executionKeyHash: string;
+  eventId: string;
+  contractVersion: string;
+  inputGeneration: string;
+  configurationVersion: string;
+  replayGeneration: number;
+  attemptPolicyVersion: string;
+  attemptLimit: number;
+  attempt: number;
+  state: IngestionStageRunState;
+  leaseOwnerHash: string;
+  leaseExpiresAt: string;
+  correlationId: string;
+  reasonCode: string;
+  logicalEffectRef?: string;
+  startedAt: string;
+  completedAt?: string;
+}
+
+export interface IngestionStageMessageReceipt {
+  eventId: string;
+  executionKeyHash: string;
+  messageFingerprint: string;
+  expectedRevision: number;
+  state: "PENDING" | "APPLIED" | "STALE_RECONCILED";
+  runId?: string;
+  recordedAt: string;
+}
+
+export interface IngestionDeadLetter {
+  id: string;
+  executionKeyHash: string;
+  stageId: IngestionStageId;
+  reasonCode: string;
+  attemptCount: number;
+  state: "OPEN" | "REPAIRED";
+  correlationId: string;
+  createdAt: string;
+  repairedAt?: string;
 }
 
 export interface AuditRecord {

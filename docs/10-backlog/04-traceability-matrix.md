@@ -31,7 +31,7 @@ This matrix shows which backlog item carries each Phase 1 requirement, feature, 
 | `EPIC-P1-*` | 12 | 12 | 0 | Each story has one primary epic. |
 | `STORY-P1-*` | 49 | 49 | 0 | Each has state, owner, upstream/downstream traces, migration/repair, negative/failure/audit evidence, two ACs, and exact future tests. |
 | `AC-STORY-P1-*` | 98 | 98 | 0 | Exactly two ACs per story; all are covered by stable test IDs, but passing evidence is incomplete. |
-| `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*` | 104 | 104 referenced by 49/49 stories | 0 static | All product tests have forward and reverse ownership. Fourteen source-test files are separately mapped in `implementation-evidence.v1.json`; execution remains delivery evidence. |
+| `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*` | 104 | 104 referenced by 49/49 stories | 0 static | All product tests have forward and reverse ownership. Twenty-three source-test files are separately mapped in `implementation-evidence.v1.json`; execution remains delivery evidence. |
 
 The static comparison is reproducible with stable-ID extraction from the product and backlog artifacts. It does not evaluate semantic sufficiency or contract approval.
 
@@ -162,7 +162,7 @@ No existing reference record is an implementation orphan: all packs are used by 
 
 ## 8. Test, accessibility, NFR, and operational evidence gaps
 
-- `TRACE-GAP-P1-TEST-001` is **CLOSED**: `TST-IDX-001` defines 104 stable cases and 49/49 stories reference exact applicable IDs; all 14 source-test files have reverse evidence mappings. Stable mapping does not imply a passing product execution result.
+- `TRACE-GAP-P1-TEST-001` is **CLOSED**: `TST-IDX-001` defines 104 stable cases and 49/49 stories reference exact applicable IDs; all 23 source-test files have reverse evidence mappings. Stable mapping does not imply a passing product execution result.
 - `TRACE-GAP-P1-A11Y-001`: `A11Y-P1-001`–`056` is referenced across every applicable story, but product/specialist approval, pinned browser/assistive-technology versions, disabled-user evidence, implementation test IDs, and a release conformance report are absent.
 - `TRACE-GAP-P1-TARGET-001`: applicable `NFR-P1-001`–`045` targets are referenced and retain `PROVISIONAL`/zero-tolerance labels. No story converts them into an SLA or approves the launch workload/capacity/cost envelope.
 - `ENG-TST-P1-001`–`042`, `OPS-CICD-P1-001`–`030`, `OPS-DEP-P1-001`–`032`, `OPS-DR-P1-001`–`032`, and `OPS-OBS-P1-001`–`032` define future evidence but are not execution results.
@@ -200,7 +200,7 @@ No existing reference record is an implementation orphan: all packs are used by 
 | `UC-P1-014`–`020` now have detailed implementation-grade product AC | Closed product gap | Detailed flows, alternatives and acceptance scenarios are owned by `PROD-UC-001`; runtime evidence remains future story work. |
 | Named API/event semantic surface gaps | Contract gaps | `TRACE-GAP-P1-API-001`–`014`, `EVT-001`–`003`; resolve in API/event owners before story readiness. |
 | Fact, connector, residency, recovery/continuity reference records absent; dependant transfer catalogue intentionally absent | Reference gaps/intentional fences | `TRACE-GAP-P1-REF-001`, `002`, `005`, `006` remain delivery/release dependencies; `REF-003` is resolved by `DEC-P1-056`. Do not invent defaults. |
-| No backlog story or source-test file lacks stable trace ownership | Closed historical test/reverse-trace gap | `TST-IDX-001` v0.2 covers 104 tests/98 story ACs; `implementation-evidence.v1.json` maps 14/14 source-test files. Execution evidence remains DRAFT/PLANNED. |
+| No backlog story or source-test file lacks stable trace ownership | Closed historical test/reverse-trace gap | `TST-IDX-001` v0.2 covers 104 tests/98 story ACs; `implementation-evidence.v1.json` maps 23/23 source-test files. Execution evidence remains DRAFT/PLANNED. |
 | Root `TRACEABILITY.md`, `SPECIFICATION-READINESS.md`, and repository navigation reflect all current draft packs | Closed governance/navigation drift | `TRACE-GAP-P1-GOV-001` closed 26 August 2026; reopen on detected drift. |
 
 ## 11. Change-control rule

@@ -23,6 +23,8 @@
     "agent:snapshot": "python3 scripts/control_centre.py snapshot",
     "agent:project": "python3 scripts/control_centre_project.py",
     "agent:project:reconcile": "python3 scripts/control_centre_project_reconcile.py",
+    "backlog:project": "python3 scripts/github_backlog_reconcile.py",
+    "backlog:project:apply": "python3 scripts/github_backlog_reconcile.py --apply",
     "verify:baseline": "python3 scripts/validate_build_baseline.py",
     "trace:audit": "python3 scripts/product_traceability_audit.py",
     "build:graph": "python3 scripts/build_dependency_graph.py",

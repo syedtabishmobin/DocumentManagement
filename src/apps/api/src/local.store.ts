@@ -18,6 +18,8 @@ import type {
   DocumentRecord,
   FactRecord,
   IngestionCase,
+  IngestionStageId,
+  IngestionStageRun,
   FilePermissions,
   ManagePersonInput,
   Member,
@@ -45,6 +47,43 @@ import {
   type WorkspaceState,
 } from "./workspace-state.js";
 
+export interface SyntheticStageMessage {
+  eventId: string;
+  ingestionCaseId: string;
+  expectedRevision: number;
+  stageId: IngestionStageId;
+  contractVersion: string;
+  inputGeneration: string;
+  configurationVersion: string;
+  replayGeneration: number;
+  leaseOwner: string;
+  leaseDurationSeconds: number;
+  outcome: "SUCCEEDED" | "FAILED_RETRYABLE" | "FAILED_TERMINAL";
+  reasonCode: string;
+  routeEligible?: boolean;
+  costAllowed?: boolean;
+  fault?: "BEFORE_LEASE_COMMIT" | "AFTER_LEASE_COMMIT" | "AFTER_EFFECT_COMMIT";
+}
+
+export interface SyntheticStageResult {
+  ingestionCase: IngestionCase;
+  run: IngestionStageRun | null;
+  disposition: "APPLIED" | "DUPLICATE" | "PENDING_ORDER" | "STALE_RECONCILED" | "LEASE_HELD";
+}
+
+export interface GenericIngestionJob {
+  jobId: string;
+  workspaceId: string;
+  jobKind: "DOCUMENT_INGESTION";
+  state: "QUEUED" | "RUNNING" | "BLOCKED" | "REVIEW_REQUIRED" | "RETRY_PENDING" | "FAILED_RETRYABLE" | "FAILED_TERMINAL" | "CANCELLED" | "DELETION_BLOCKED" | "SUCCEEDED";
+  acceptedOperationId: "API-P1-116";
+  correlationId: string;
+  createdAt: string;
+  revision: number;
+  resultRef: string | null;
+  failure: { code: string; retryClass: "SAFE_TO_RETRY" | "DO_NOT_RETRY" | "REFRESH_REQUIRED"; diagnosticRef: string | null } | null;
+}
+
 export type { WorkspaceActor } from "./workspace-state.js";
 
 type LegacyWorkspaceDatabase = {
@@ -54,6 +93,10 @@ type LegacyWorkspaceDatabase = {
 };
 
 const now = (): string => new Date().toISOString();
+const INGESTION_STAGE_ATTEMPT_POLICY = Object.freeze({
+  version: "ingestion-stage-attempt-policy@1.0",
+  maxAttempts: 3,
+});
 const trashDeadline = (deletedAt: string): string => {
   const deadline = new Date(deletedAt);
   deadline.setUTCDate(deadline.getUTCDate() + 30);
@@ -375,13 +418,17 @@ function appendIngestionStateEvent(
   ingestionCase: IngestionCase,
   fromState: IngestionCase["state"] | null,
   reasonCode: string,
-  operation: "API_P1_116" | "API_P1_117" | "API_P1_119" | "API_P1_120",
+  operation: "API_P1_116" | "API_P1_117" | "API_P1_119" | "API_P1_120" | "API_P1_143" | "INTERNAL_STAGE_RUNTIME",
   idempotencyKey: string,
   correlationId: string,
-  authorization: { policyVersion: string; authorizationEpoch: number },
+  authorization: { policyVersion: string; authorizationEpoch: number; decision?: "ALLOW" | "DENY"; reason?: string },
+  stageId = "INGESTION_ACQUISITION",
 ): void {
   const eventId = randomUUID();
   const occurredAt = ingestionCase.updatedAt;
+  const stageAttempt = operation === "INTERNAL_STAGE_RUNTIME"
+    ? [...(ingestionCase.stageRuns ?? [])].reverse().find((run) => run.stageId === stageId)?.attempt ?? 1
+    : Math.max(1, ingestionCase.attempts.length);
   const envelope = {
     event_id: eventId,
     event_type: "EVT-P1-006",
@@ -394,12 +441,12 @@ function appendIngestionStateEvent(
     aggregate_id: ingestionCase.id,
     aggregate_revision: ingestionCase.revision,
     aggregate_event_index: ingestionCase.revision - 1,
-    attempt: Math.max(1, ingestionCase.attempts.length),
+    attempt: stageAttempt,
     producer: { producer_id: "doculyra-api", operation },
-    actor: { actor_id: actor.identityId, actor_class: "HUMAN" },
+    actor: { actor_id: actor.identityId, actor_class: operation === "INTERNAL_STAGE_RUNTIME" ? "SERVICE" : "HUMAN" },
     authorization: {
       decision_ref: stableId("auth", correlationId, ingestionCase.id, String(ingestionCase.revision)),
-      decision: "ALLOW",
+      decision: authorization.decision ?? "ALLOW",
       policy_version: stableId("policy", authorization.policyVersion),
       authorization_epoch: `epoch:${authorization.authorizationEpoch}`,
     },
@@ -413,14 +460,16 @@ function appendIngestionStateEvent(
       retention_rule_ref: "retention.phase1.synthetic",
       deletion_lineage_ref: `workspace:${state.workspace.id}`,
     },
-    deletion_fence: { state: "NOT_FENCED", generation: 0 },
+    deletion_fence: ["DELETION_BLOCKED", "PURGE_PENDING", "PURGED"].includes(ingestionCase.state)
+      ? { state: "FENCED", generation: 1, deletion_case_id: stableId("deletion-case", ingestionCase.id) }
+      : { state: "NOT_FENCED", generation: 0 },
     payload: {
       transition_id: stableId("transition", ingestionCase.id, String(ingestionCase.revision)),
-      stage_id: "INGESTION_ACQUISITION",
+      stage_id: stageId,
       from_state: fromState,
       to_state: ingestionCase.state,
       reason_code: reasonCode,
-      attempt: Math.max(1, ingestionCase.attempts.length),
+      attempt: stageAttempt,
       publication_checkpoint_ref: `checkpoint:${ingestionCase.id}:${ingestionCase.revision}`,
       artifact_id: ingestionCase.artifactId,
     },
@@ -440,7 +489,7 @@ function appendIngestionStateEvent(
     policyVersion: authorization.policyVersion,
     authorizationEpoch: authorization.authorizationEpoch,
     authorizationPhase: "EFFECT",
-    decisionReason: "EXPLICIT_GRANT",
+    decisionReason: authorization.reason ?? "EXPLICIT_GRANT",
     eventEnvelope: envelope,
     occurredAt,
   });
@@ -483,6 +532,67 @@ function containedState(assessment: SyntheticSafetyAssessment): { caseState: Ing
   if (assessment.verdict === "CLEAN") return { caseState: "PROCESSING", checkpoint: "PASSED", documentStatus: "NEEDS_REVIEW", reviewReason: "Safety checks passed; ordinary processing has not yet completed." };
   if (assessment.verdict === "SUSPECTED_CLINICAL") return { caseState: "POLICY_HOLD", checkpoint: "BLOCKED", documentStatus: "POLICY_HOLD", reviewReason: "Contained; action unavailable under the current policy." };
   return { caseState: "QUARANTINED", checkpoint: "BLOCKED", documentStatus: "POLICY_HOLD", reviewReason: "Contained; action unavailable under the current safety policy." };
+}
+
+function stageExecutionKey(message: SyntheticStageMessage): string {
+  return commandHash({
+    ingestionCaseId: message.ingestionCaseId,
+    stageId: message.stageId,
+    contractVersion: message.contractVersion,
+    inputGeneration: message.inputGeneration,
+    configurationVersion: message.configurationVersion,
+    replayGeneration: message.replayGeneration,
+    attemptPolicyVersion: INGESTION_STAGE_ATTEMPT_POLICY.version,
+  });
+}
+
+function stageMessageFingerprint(message: SyntheticStageMessage): string {
+  return commandHash({
+    eventId: message.eventId, ingestionCaseId: message.ingestionCaseId, expectedRevision: message.expectedRevision,
+    stageId: message.stageId, contractVersion: message.contractVersion, inputGeneration: message.inputGeneration,
+    configurationVersion: message.configurationVersion, replayGeneration: message.replayGeneration,
+    outcome: message.outcome, reasonCode: message.reasonCode,
+    routeEligible: message.routeEligible ?? true, costAllowed: message.costAllowed ?? true,
+  });
+}
+
+function stageSuccessState(stageId: IngestionStageId): IngestionCase["state"] {
+  if (stageId === "VALIDATION") return "SAFETY_CHECKING";
+  if (stageId === "SAFETY") return "PROCESSING";
+  if (stageId === "PROCESSING") return "NEEDS_REVIEW";
+  return "READY";
+}
+
+function stageRunningState(stageId: IngestionStageId): IngestionCase["state"] {
+  if (stageId === "VALIDATION") return "VALIDATING";
+  if (stageId === "SAFETY") return "SAFETY_CHECKING";
+  if (stageId === "PROCESSING") return "PROCESSING";
+  return "PUBLISHING";
+}
+
+function genericJobState(state: IngestionCase["state"]): GenericIngestionJob["state"] {
+  if (["CREATED", "RECEIVING", "RECEIVED"].includes(state)) return "QUEUED";
+  if (["VALIDATING", "SAFETY_CHECKING", "PROCESSING", "PUBLISHING", "CANCELLING"].includes(state)) return "RUNNING";
+  if (["QUARANTINED", "POLICY_HOLD"].includes(state)) return "BLOCKED";
+  if (state === "NEEDS_REVIEW") return "REVIEW_REQUIRED";
+  if (state === "FAILED_RETRYABLE") return "FAILED_RETRYABLE";
+  if (state === "FAILED_TERMINAL") return "FAILED_TERMINAL";
+  if (state === "CANCELLED") return "CANCELLED";
+  if (["DELETION_BLOCKED", "PURGE_PENDING", "PURGED"].includes(state)) return "DELETION_BLOCKED";
+  return "SUCCEEDED";
+}
+
+function genericIngestionJob(ingestionCase: IngestionCase): GenericIngestionJob {
+  const state = genericJobState(ingestionCase.state);
+  const failureRun = [...(ingestionCase.stageRuns ?? [])].reverse().find((run) => ["FAILED_RETRYABLE", "FAILED_TERMINAL", "BLOCKED"].includes(run.state));
+  const correlationId = ingestionCase.attempts[0]?.correlationId ?? ingestionCase.stageRuns?.[0]?.correlationId ?? ingestionCase.id;
+  const retryClass = state === "FAILED_RETRYABLE" ? "SAFE_TO_RETRY" as const : state === "RETRY_PENDING" ? "REFRESH_REQUIRED" as const : "DO_NOT_RETRY" as const;
+  return {
+    jobId: ingestionCase.id, workspaceId: ingestionCase.workspaceId, jobKind: "DOCUMENT_INGESTION",
+    state, acceptedOperationId: "API-P1-116", correlationId, createdAt: ingestionCase.createdAt, revision: ingestionCase.revision,
+    resultRef: state === "SUCCEEDED" ? ingestionCase.stageRuns?.find((run) => run.stageId === "PUBLICATION" && run.state === "SUCCEEDED")?.logicalEffectRef ?? ingestionCase.documentId : null,
+    failure: failureRun ? { code: failureRun.reasonCode, retryClass, diagnosticRef: stableId("diagnostic", ingestionCase.id, failureRun.id) } : null,
+  };
 }
 
 function recordAuthorityTransition(
@@ -1305,6 +1415,11 @@ export class LocalStore {
     return ingestionCase;
   }
 
+  async getGenericIngestionJob(workspaceId: string, actor: WorkspaceActor, jobId: string, fence: AuthorizationFence, correlationId: string): Promise<GenericIngestionJob> {
+    const ingestionCase = await this.getIngestionCase(workspaceId, actor, jobId, fence, correlationId);
+    return genericIngestionJob(ingestionCase);
+  }
+
   async commitIngestionReceipt(workspaceId: string, actor: WorkspaceActor, ingestionCaseId: string, expectedRevision: number, idempotencyKey: string, input: CanonicalCommitIngestionReceiptInput, fence: AuthorizationFence, correlationId: string): Promise<IngestionCase> {
     const result = await this.mutate((database): IngestionCase | "NOT_AVAILABLE" | "STALE" => {
       const state = this.state(database, workspaceId);
@@ -1331,13 +1446,13 @@ export class LocalStore {
     return result;
   }
 
-  async cancelIngestionCase(workspaceId: string, actor: WorkspaceActor, ingestionCaseId: string, expectedRevision: number, idempotencyKey: string, reasonCode: string, fence: AuthorizationFence, correlationId: string): Promise<IngestionCase> {
+  async cancelIngestionCase(workspaceId: string, actor: WorkspaceActor, ingestionCaseId: string, expectedRevision: number, idempotencyKey: string, reasonCode: string, fence: AuthorizationFence, correlationId: string, operation: "API-P1-119" | "API-P1-143" = "API-P1-119"): Promise<IngestionCase> {
     const result = await this.mutate((database): IngestionCase | "NOT_AVAILABLE" | "STALE" => {
       const state = this.state(database, workspaceId);
       if (fence.identityId !== actor.identityId || fence.workspaceId !== workspaceId || fence.action !== "document.create" || fence.resourceKind !== "WORKSPACE") return "NOT_AVAILABLE";
       const decision = this.recordAuthorizationDecision(database, state, actor, this.effectContext(fence), correlationId);
       if (decision.decision !== "ALLOW") return "NOT_AVAILABLE";
-      const receipt = priorCommandReceipt(state, actor, "API-P1-119", idempotencyKey, { ingestionCaseId, reasonCode });
+      const receipt = priorCommandReceipt(state, actor, operation, idempotencyKey, { ingestionCaseId, reasonCode });
       if (receipt) return state.ingestionCases.find((item) => item.id === receipt.resourceId) ?? "NOT_AVAILABLE";
       const ingestionCase = state.ingestionCases.find((item) => item.id === ingestionCaseId && item.actorId === actor.identityId);
       if (!ingestionCase) return "NOT_AVAILABLE";
@@ -1346,14 +1461,19 @@ export class LocalStore {
       const fromState = ingestionCase.state;
       const recordedAt = now(); ingestionCase.state = "CANCELLED"; ingestionCase.revision += 1; ingestionCase.updatedAt = recordedAt;
       ingestionCase.attempts.push({ id: randomUUID(), kind: "CANCEL", outcome: "SUCCEEDED", correlationId, recordedAt });
-      appendCommandReceipt(state, actor, "API-P1-119", idempotencyKey, { ingestionCaseId, reasonCode }, ingestionCase.id, ingestionCase.revision);
+      appendCommandReceipt(state, actor, operation, idempotencyKey, { ingestionCaseId, reasonCode }, ingestionCase.id, ingestionCase.revision);
       recordAuthorityTransition(database, state, actor, "INGESTION_CASE_CANCELLED", "DOCUMENT", `Cancelled a synthetic acquisition case using registered reason ${reasonCode}`, ingestionCase.id, correlationId, { policyVersion: decision.policyVersion, authorizationEpoch: decision.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: decision.reason });
-      appendIngestionStateEvent(database, state, actor, ingestionCase, fromState, reasonCode, "API_P1_119", idempotencyKey, correlationId, decision);
+      appendIngestionStateEvent(database, state, actor, ingestionCase, fromState, reasonCode, operation === "API-P1-143" ? "API_P1_143" : "API_P1_119", idempotencyKey, correlationId, decision);
       return ingestionCase;
     });
     if (result === "NOT_AVAILABLE") throw new NotFoundException("Resource not available");
     if (result === "STALE") throw new PreconditionFailedException("Resource changed; refresh before retrying");
     return result;
+  }
+
+  async cancelGenericIngestionJob(workspaceId: string, actor: WorkspaceActor, jobId: string, expectedRevision: number, idempotencyKey: string, reasonCode: string, fence: AuthorizationFence, correlationId: string): Promise<GenericIngestionJob> {
+    const ingestionCase = await this.cancelIngestionCase(workspaceId, actor, jobId, expectedRevision, idempotencyKey, reasonCode, fence, correlationId, "API-P1-143");
+    return genericIngestionJob(ingestionCase);
   }
 
   async retryIngestionSafety(workspaceId: string, actor: WorkspaceActor, ingestionCaseId: string, expectedRevision: number, idempotencyKey: string, reasonCode: string, fence: AuthorizationFence, correlationId: string): Promise<IngestionCase> {
@@ -1398,6 +1518,255 @@ export class LocalStore {
     if (result === "POLICY_CONTAINED") throw new UnprocessableEntityException("Contained; action unavailable under the current policy");
     if (result === "RETRY_UNAVAILABLE") throw new UnprocessableEntityException("Safety retry is unavailable in the current state");
     return result;
+  }
+
+  async processIngestionStageMessage(workspaceId: string, workerActor: WorkspaceActor, message: SyntheticStageMessage, at = now()): Promise<SyntheticStageResult> {
+    if (message.ingestionCaseId.length < 1 || !/^[A-Za-z0-9._:-]{8,128}$/.test(message.eventId) || message.contractVersion.length < 1 || message.inputGeneration.length < 1 || message.configurationVersion.length < 1 || message.leaseOwner.length < 1 || !/^[A-Z][A-Z0-9_]{1,63}$/.test(message.reasonCode)) {
+      throw new BadRequestException("Stage message identity is incomplete");
+    }
+    if (!Number.isInteger(message.expectedRevision) || message.expectedRevision < 1 || !Number.isInteger(message.replayGeneration) || message.replayGeneration < 0) {
+      throw new BadRequestException("Stage message revision is invalid");
+    }
+    if (!Number.isInteger(message.leaseDurationSeconds) || message.leaseDurationSeconds < 1 || message.leaseDurationSeconds > 300) {
+      throw new BadRequestException("Stage lease duration is invalid");
+    }
+    if (message.fault === "BEFORE_LEASE_COMMIT") throw new Error("Synthetic fault before stage lease commit");
+
+    const executionKeyHash = stageExecutionKey(message);
+    const messageFingerprint = stageMessageFingerprint(message);
+    const leaseOwnerHash = commandHash(message.leaseOwner);
+    const claim = await this.mutate((database): SyntheticStageResult => {
+      const state = this.state(database, workspaceId);
+      const ingestionCase = state.ingestionCases.find((candidate) => candidate.id === message.ingestionCaseId);
+      if (!ingestionCase) throw new NotFoundException("Ingestion case not available");
+      ingestionCase.stageRuns ??= [];
+      ingestionCase.stageMessageReceipts ??= [];
+      ingestionCase.deadLetters ??= [];
+
+      const priorReceipt = ingestionCase.stageMessageReceipts.find((receipt) => receipt.eventId === message.eventId);
+      if (priorReceipt && priorReceipt.messageFingerprint !== messageFingerprint) throw new ConflictException("Stage event identity was reused for different immutable semantics");
+      if (priorReceipt?.state === "APPLIED") {
+        recordAuthorityTransition(database, state, workerActor, "INGESTION_STAGE_DUPLICATE_RECONCILED", "DOCUMENT", `Reconciled duplicate ${message.stageId.toLowerCase()} stage delivery without another logical effect`, ingestionCase.id, normalizedCorrelationId(message.eventId));
+        return { ingestionCase, run: ingestionCase.stageRuns.find((run) => run.id === priorReceipt.runId) ?? null, disposition: "DUPLICATE" };
+      }
+      if (priorReceipt?.state === "STALE_RECONCILED") {
+        recordAuthorityTransition(database, state, workerActor, "INGESTION_STAGE_STALE_RECONCILED", "DOCUMENT", `Reconciled stale ${message.stageId.toLowerCase()} stage delivery without changing canonical state`, ingestionCase.id, normalizedCorrelationId(message.eventId));
+        return { ingestionCase, run: null, disposition: "STALE_RECONCILED" };
+      }
+
+      const completedRun = ingestionCase.stageRuns.find((run) => run.executionKeyHash === executionKeyHash && ["SUCCEEDED", "FAILED_TERMINAL", "BLOCKED", "CANCELLED"].includes(run.state));
+      if (completedRun) {
+        if (priorReceipt) {
+          priorReceipt.state = "APPLIED";
+          priorReceipt.runId = completedRun.id;
+        } else {
+          ingestionCase.stageMessageReceipts.push({ eventId: message.eventId, executionKeyHash, messageFingerprint, expectedRevision: message.expectedRevision, state: "APPLIED", runId: completedRun.id, recordedAt: at });
+        }
+        recordAuthorityTransition(database, state, workerActor, "INGESTION_STAGE_DUPLICATE_RECONCILED", "DOCUMENT", `Reconciled equivalent ${message.stageId.toLowerCase()} stage delivery without another logical effect`, ingestionCase.id, normalizedCorrelationId(message.eventId));
+        return { ingestionCase, run: completedRun, disposition: "DUPLICATE" };
+      }
+
+      if (message.expectedRevision > ingestionCase.revision) {
+        if (!priorReceipt) ingestionCase.stageMessageReceipts.push({ eventId: message.eventId, executionKeyHash, messageFingerprint, expectedRevision: message.expectedRevision, state: "PENDING", recordedAt: at });
+        recordAuthorityTransition(database, state, workerActor, "INGESTION_STAGE_OUT_OF_ORDER_HELD", "DOCUMENT", `Held out-of-order ${message.stageId.toLowerCase()} stage delivery pending its aggregate revision`, ingestionCase.id, normalizedCorrelationId(message.eventId));
+        return { ingestionCase, run: null, disposition: "PENDING_ORDER" };
+      }
+      if (message.expectedRevision < ingestionCase.revision && !priorReceipt && !ingestionCase.stageRuns.some((run) => run.executionKeyHash === executionKeyHash)) {
+        ingestionCase.stageMessageReceipts.push({ eventId: message.eventId, executionKeyHash, messageFingerprint, expectedRevision: message.expectedRevision, state: "STALE_RECONCILED", recordedAt: at });
+        recordAuthorityTransition(database, state, workerActor, "INGESTION_STAGE_STALE_RECONCILED", "DOCUMENT", `Reconciled stale ${message.stageId.toLowerCase()} stage delivery without changing canonical state`, ingestionCase.id, normalizedCorrelationId(message.eventId));
+        return { ingestionCase, run: null, disposition: "STALE_RECONCILED" };
+      }
+
+      const running = ingestionCase.stageRuns.find((run) => run.executionKeyHash === executionKeyHash && run.state === "RUNNING");
+      if (running && new Date(running.leaseExpiresAt).getTime() > new Date(at).getTime() && running.leaseOwnerHash !== leaseOwnerHash) {
+        recordAuthorityTransition(database, state, workerActor, "INGESTION_STAGE_LEASE_HELD", "DOCUMENT", `Deferred ${message.stageId.toLowerCase()} stage delivery while its bounded lease remains active`, ingestionCase.id, running.correlationId);
+        return { ingestionCase, run: running, disposition: "LEASE_HELD" };
+      }
+      if (running && new Date(running.leaseExpiresAt).getTime() > new Date(at).getTime() && running.leaseOwnerHash === leaseOwnerHash) {
+        if (priorReceipt && !priorReceipt.runId) priorReceipt.runId = running.id;
+        return { ingestionCase, run: running, disposition: "APPLIED" };
+      }
+      const originalActor: WorkspaceActor = {
+        identityId: ingestionCase.actorId,
+        displayName: state.members.find((member) => member.identityId === ingestionCase.actorId)?.displayName ?? "Ingestion actor",
+      };
+      const authorization = this.recordAuthorizationDecision(database, state, originalActor, {
+        workspaceId, action: "document.create", resourceKind: "WORKSPACE", resourceId: workspaceId, phase: "EFFECT",
+      }, normalizedCorrelationId(message.eventId));
+      const fromState = ingestionCase.state;
+      const document = ingestionCase.documentId ? state.documents.find((candidate) => candidate.id === ingestionCase.documentId) : undefined;
+      if (running && running.attempt >= running.attemptLimit) {
+        running.state = "FAILED_TERMINAL";
+        running.reasonCode = "RETRY_BUDGET_EXHAUSTED";
+        running.completedAt = at;
+        ingestionCase.state = "FAILED_TERMINAL";
+        ingestionCase.mandatoryCheckpointState = "FAILED";
+        ingestionCase.revision += 1;
+        ingestionCase.updatedAt = at;
+        if (priorReceipt) {
+          priorReceipt.state = "APPLIED";
+          priorReceipt.runId = running.id;
+        } else {
+          ingestionCase.stageMessageReceipts.push({ eventId: message.eventId, executionKeyHash, messageFingerprint, expectedRevision: message.expectedRevision, state: "APPLIED", runId: running.id, recordedAt: at });
+        }
+        if (!ingestionCase.deadLetters.some((entry) => entry.executionKeyHash === executionKeyHash && entry.state === "OPEN")) {
+          ingestionCase.deadLetters.push({ id: randomUUID(), executionKeyHash, stageId: message.stageId, reasonCode: "RETRY_BUDGET_EXHAUSTED", attemptCount: running.attempt, state: "OPEN", correlationId: running.correlationId, createdAt: at });
+        }
+        appendIngestionStateEvent(database, state, workerActor, ingestionCase, fromState, running.reasonCode, "INTERNAL_STAGE_RUNTIME", message.eventId, running.correlationId, authorization, message.stageId);
+        recordAuthorityTransition(database, state, workerActor, "INGESTION_STAGE_RETRY_EXHAUSTED", "DOCUMENT", `Exhausted bounded ${message.stageId.toLowerCase()} stage budget after lease loss attempt ${running.attempt}`, ingestionCase.id, running.correlationId, { policyVersion: authorization.policyVersion, authorizationEpoch: authorization.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: authorization.reason });
+        return { ingestionCase, run: running, disposition: "APPLIED" };
+      }
+      if (running) {
+        running.state = "SUPERSEDED";
+        running.reasonCode = "LEASE_EXPIRED";
+        running.completedAt = at;
+      }
+
+      const attempt = ingestionCase.stageRuns.filter((run) => run.executionKeyHash === executionKeyHash).length + 1;
+      const run: IngestionStageRun = {
+        id: randomUUID(), stageId: message.stageId, executionKeyHash, eventId: message.eventId,
+        contractVersion: message.contractVersion, inputGeneration: message.inputGeneration,
+        configurationVersion: message.configurationVersion, replayGeneration: message.replayGeneration,
+        attemptPolicyVersion: INGESTION_STAGE_ATTEMPT_POLICY.version, attemptLimit: INGESTION_STAGE_ATTEMPT_POLICY.maxAttempts,
+        attempt, state: "RUNNING", leaseOwnerHash,
+        leaseExpiresAt: new Date(new Date(at).getTime() + message.leaseDurationSeconds * 1000).toISOString(),
+        correlationId: normalizedCorrelationId(message.eventId), reasonCode: "LEASE_ACQUIRED", startedAt: at,
+      };
+      ingestionCase.stageRuns.push(run);
+      if (priorReceipt) priorReceipt.runId = run.id;
+      else ingestionCase.stageMessageReceipts.push({ eventId: message.eventId, executionKeyHash, messageFingerprint, expectedRevision: message.expectedRevision, state: "PENDING", runId: run.id, recordedAt: at });
+      ingestionCase.revision += 1;
+      ingestionCase.updatedAt = at;
+      if (document?.status === "DELETED" || ["DELETION_BLOCKED", "PURGE_PENDING", "PURGED"].includes(fromState)) {
+        run.state = "BLOCKED";
+        run.reasonCode = "DELETION_FENCE_ACTIVE";
+        run.completedAt = at;
+        ingestionCase.state = "DELETION_BLOCKED";
+        ingestionCase.mandatoryCheckpointState = "BLOCKED";
+      } else if (document?.status === "POLICY_HOLD" || ["QUARANTINED", "POLICY_HOLD"].includes(fromState)) {
+        run.state = "BLOCKED";
+        run.reasonCode = "CONTENT_CONTAINED";
+        run.completedAt = at;
+        ingestionCase.mandatoryCheckpointState = "BLOCKED";
+      } else if (["CANCELLING", "CANCELLED"].includes(fromState)) {
+        run.state = "CANCELLED";
+        run.reasonCode = "CANCELLATION_FENCE_ACTIVE";
+        run.completedAt = at;
+        ingestionCase.state = "CANCELLED";
+        ingestionCase.mandatoryCheckpointState = "BLOCKED";
+      } else if (fromState === "FAILED_TERMINAL" && (message.replayGeneration < 1 || !ingestionCase.deadLetters.some((entry) => entry.stageId === message.stageId && entry.state === "OPEN"))) {
+        run.state = "BLOCKED";
+        run.reasonCode = "REPAIR_GENERATION_REQUIRED";
+        run.completedAt = at;
+        ingestionCase.mandatoryCheckpointState = "BLOCKED";
+      } else if (authorization.decision !== "ALLOW") {
+        run.state = "BLOCKED";
+        run.reasonCode = "CURRENT_AUTHORIZATION_DENIED";
+        run.completedAt = at;
+        ingestionCase.state = "FAILED_TERMINAL";
+        ingestionCase.mandatoryCheckpointState = "BLOCKED";
+        const recordedReceipt = ingestionCase.stageMessageReceipts.find((receipt) => receipt.eventId === message.eventId);
+        if (recordedReceipt) recordedReceipt.state = "APPLIED";
+        ingestionCase.deadLetters.push({ id: randomUUID(), executionKeyHash, stageId: message.stageId, reasonCode: "CURRENT_AUTHORIZATION_DENIED", attemptCount: run.attempt, state: "OPEN", correlationId: run.correlationId, createdAt: at });
+      } else {
+        ingestionCase.state = stageRunningState(message.stageId);
+      }
+      const receiptAfterClaim = ingestionCase.stageMessageReceipts.find((receipt) => receipt.eventId === message.eventId);
+      if (run.state !== "RUNNING" && receiptAfterClaim) receiptAfterClaim.state = "APPLIED";
+      appendIngestionStateEvent(database, state, workerActor, ingestionCase, fromState, run.reasonCode, "INTERNAL_STAGE_RUNTIME", message.eventId, run.correlationId, authorization, message.stageId);
+      recordAuthorityTransition(database, state, workerActor, run.state === "RUNNING" ? "INGESTION_STAGE_LEASE_ACQUIRED" : "INGESTION_STAGE_EXECUTION_BLOCKED", "DOCUMENT", run.state === "RUNNING" ? `Acquired bounded ${message.stageId.toLowerCase()} stage lease attempt ${attempt}` : `Blocked ${message.stageId.toLowerCase()} stage attempt using reason ${run.reasonCode}`, ingestionCase.id, run.correlationId);
+      return { ingestionCase, run, disposition: "APPLIED" };
+    });
+
+    if (claim.disposition !== "APPLIED" || !claim.run) return claim;
+    if (claim.run.state !== "RUNNING") return claim;
+    if (message.fault === "AFTER_LEASE_COMMIT") throw new Error("Synthetic fault after stage lease commit");
+
+    const effect = await this.mutate((database): SyntheticStageResult => {
+      const state = this.state(database, workspaceId);
+      const ingestionCase = state.ingestionCases.find((candidate) => candidate.id === message.ingestionCaseId);
+      if (!ingestionCase) throw new NotFoundException("Ingestion case not available");
+      ingestionCase.stageRuns ??= [];
+      ingestionCase.stageMessageReceipts ??= [];
+      ingestionCase.deadLetters ??= [];
+      const receipt = ingestionCase.stageMessageReceipts.find((candidate) => candidate.eventId === message.eventId);
+      if (receipt?.state === "APPLIED") return { ingestionCase, run: ingestionCase.stageRuns.find((run) => run.id === receipt.runId) ?? null, disposition: "DUPLICATE" };
+      const run = ingestionCase.stageRuns.find((candidate) => candidate.id === claim.run!.id);
+      if (!run || run.state !== "RUNNING") return { ingestionCase, run: run ?? null, disposition: "DUPLICATE" };
+      const document = ingestionCase.documentId ? state.documents.find((candidate) => candidate.id === ingestionCase.documentId) : undefined;
+      const originalActor: WorkspaceActor = {
+        identityId: ingestionCase.actorId,
+        displayName: state.members.find((member) => member.identityId === ingestionCase.actorId)?.displayName ?? "Ingestion actor",
+      };
+      const authorization = this.recordAuthorizationDecision(database, state, originalActor, {
+        workspaceId, action: "document.create", resourceKind: "WORKSPACE", resourceId: workspaceId, phase: "EFFECT",
+      }, run.correlationId);
+      const fromState = ingestionCase.state;
+      const finish = (runState: IngestionStageRun["state"], caseState: IngestionCase["state"], reasonCode: string, checkpoint: string): void => {
+        run.state = runState;
+        run.reasonCode = reasonCode;
+        run.completedAt = at;
+        ingestionCase.state = caseState;
+        ingestionCase.mandatoryCheckpointState = checkpoint;
+        ingestionCase.revision += 1;
+        ingestionCase.updatedAt = at;
+        if (receipt) receipt.state = "APPLIED";
+        appendIngestionStateEvent(database, state, workerActor, ingestionCase, fromState, reasonCode, "INTERNAL_STAGE_RUNTIME", message.eventId, run.correlationId, authorization, message.stageId);
+      };
+
+      if (document?.status === "DELETED" || ["DELETION_BLOCKED", "PURGE_PENDING", "PURGED"].includes(ingestionCase.state)) {
+        finish("BLOCKED", "DELETION_BLOCKED", "DELETION_FENCE_ACTIVE", "BLOCKED");
+      } else if (["QUARANTINED", "POLICY_HOLD"].includes(ingestionCase.state) || document?.status === "POLICY_HOLD") {
+        finish("BLOCKED", ingestionCase.state === "QUARANTINED" ? "QUARANTINED" : "POLICY_HOLD", "CONTENT_CONTAINED", "BLOCKED");
+      } else if (["CANCELLING", "CANCELLED"].includes(ingestionCase.state)) {
+        finish("CANCELLED", "CANCELLED", "CANCELLATION_FENCE_ACTIVE", "BLOCKED");
+      } else if (authorization.decision !== "ALLOW") {
+        finish("BLOCKED", "FAILED_TERMINAL", "CURRENT_AUTHORIZATION_DENIED", "BLOCKED");
+        ingestionCase.deadLetters.push({ id: randomUUID(), executionKeyHash, stageId: message.stageId, reasonCode: "CURRENT_AUTHORIZATION_DENIED", attemptCount: run.attempt, state: "OPEN", correlationId: run.correlationId, createdAt: at });
+      } else if (message.routeEligible === false) {
+        finish("BLOCKED", "FAILED_TERMINAL", "PROCESSING_ROUTE_INELIGIBLE", "BLOCKED");
+        ingestionCase.deadLetters.push({ id: randomUUID(), executionKeyHash, stageId: message.stageId, reasonCode: "PROCESSING_ROUTE_INELIGIBLE", attemptCount: run.attempt, state: "OPEN", correlationId: run.correlationId, createdAt: at });
+      } else if (message.costAllowed === false) {
+        finish("BLOCKED", "FAILED_TERMINAL", "COST_POLICY_BLOCKED", "BLOCKED");
+        ingestionCase.deadLetters.push({ id: randomUUID(), executionKeyHash, stageId: message.stageId, reasonCode: "COST_POLICY_BLOCKED", attemptCount: run.attempt, state: "OPEN", correlationId: run.correlationId, createdAt: at });
+      } else if (message.outcome === "FAILED_RETRYABLE") {
+        if (run.attempt >= run.attemptLimit) {
+          finish("FAILED_TERMINAL", "FAILED_TERMINAL", "RETRY_BUDGET_EXHAUSTED", "FAILED");
+          if (!ingestionCase.deadLetters.some((entry) => entry.executionKeyHash === executionKeyHash && entry.state === "OPEN")) {
+            ingestionCase.deadLetters.push({ id: randomUUID(), executionKeyHash, stageId: message.stageId, reasonCode: "RETRY_BUDGET_EXHAUSTED", attemptCount: run.attempt, state: "OPEN", correlationId: run.correlationId, createdAt: at });
+          }
+        } else {
+          finish("FAILED_RETRYABLE", "FAILED_RETRYABLE", message.reasonCode, "RETRY_PENDING");
+        }
+      } else if (message.outcome === "FAILED_TERMINAL") {
+        finish("FAILED_TERMINAL", "FAILED_TERMINAL", message.reasonCode, "FAILED");
+        if (!ingestionCase.deadLetters.some((entry) => entry.executionKeyHash === executionKeyHash && entry.state === "OPEN")) {
+          ingestionCase.deadLetters.push({ id: randomUUID(), executionKeyHash, stageId: message.stageId, reasonCode: message.reasonCode, attemptCount: run.attempt, state: "OPEN", correlationId: run.correlationId, createdAt: at });
+        }
+      } else {
+        const allowedStates: Record<IngestionStageId, IngestionCase["state"][]> = {
+          VALIDATION: ["RECEIVED", "VALIDATING", "FAILED_RETRYABLE"],
+          SAFETY: ["SAFETY_CHECKING", "FAILED_RETRYABLE"],
+          PROCESSING: ["PROCESSING", "FAILED_RETRYABLE"],
+          PUBLICATION: ["NEEDS_REVIEW", "PUBLISHING", "FAILED_RETRYABLE"],
+        };
+        const explicitRepair = ingestionCase.state === "FAILED_TERMINAL" && message.replayGeneration > 0 && ingestionCase.deadLetters.some((entry) => entry.stageId === message.stageId && entry.state === "OPEN");
+        if (!allowedStates[message.stageId].includes(ingestionCase.state) && !explicitRepair) {
+          finish("BLOCKED", "FAILED_TERMINAL", "STAGE_PREREQUISITE_UNAVAILABLE", "BLOCKED");
+        } else {
+          run.logicalEffectRef = stableId("stage-effect", executionKeyHash);
+          finish("SUCCEEDED", stageSuccessState(message.stageId), message.reasonCode, message.stageId === "PUBLICATION" ? "PASSED" : "PENDING");
+          for (const deadLetter of ingestionCase.deadLetters.filter((entry) => entry.stageId === message.stageId && entry.state === "OPEN" && entry.executionKeyHash !== executionKeyHash)) {
+            deadLetter.state = "REPAIRED";
+            deadLetter.repairedAt = at;
+          }
+        }
+      }
+      recordAuthorityTransition(database, state, workerActor, "INGESTION_STAGE_ATTEMPT_RECORDED", "DOCUMENT", `Recorded ${message.stageId.toLowerCase()} stage attempt as ${run.state.toLowerCase()} using reason ${run.reasonCode}`, ingestionCase.id, run.correlationId, { policyVersion: authorization.policyVersion, authorizationEpoch: authorization.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: authorization.reason });
+      return { ingestionCase, run, disposition: "APPLIED" };
+    });
+    if (message.fault === "AFTER_EFFECT_COMMIT") throw new Error("Synthetic fault after stage effect commit");
+    return effect;
   }
 
   async createCanonicalSubject(workspaceId: string, actor: WorkspaceActor, expectedWorkspaceRevision: number, idempotencyKey: string, input: { subject_kind: "PERSON"; authority_basis_ref: string | null }, fence: AuthorizationFence, correlationId: string): Promise<SubjectRecord> {

@@ -24,6 +24,8 @@ Use one stable `workItem` correlation key for the whole assigned run—normally 
 
 Use `pnpm agent:status`, `pnpm agent:tree`, and `pnpm agent:summary` for the local Agent Operations interface. Add `--online` to status for current GitHub context. Start the loopback-only read-only Delivery Control Centre with `pnpm agent:dashboard`; use `pnpm agent:snapshot`, `pnpm agent:trace <stable-id>`, and `pnpm agent:audit` for its machine-readable equivalents. `pnpm agent:project --online` verifies the persistent GitHub Project, required semantic fields, saved views and governed item coverage. `pnpm agent:project:reconcile` is dry-run by default; add `--apply` only in an authorised governed Project-maintenance run to align field options, view filters/columns and explicitly versioned current-item metadata. `pnpm agent:prune` physically removes events outside retention. `scripts/agent_ops.py emit` validates and appends metadata-only events to the Git-ignored local store.
 
+Use `pnpm backlog:project` to compare the approved Phase 1 outcome, metric, epic, feature and story inventory with the GitHub Product Backlog. `pnpm backlog:project:apply` idempotently creates only missing Project draft items and assigns governed hierarchy/status fields. Each story item contains its exact acceptance criteria and test/evaluation expectations; convert the selected draft story to an attributed Issue before implementation. Existing governed story Issues are reused and never duplicated.
+
 ## Specification validation
 
 Run from the repository root:
