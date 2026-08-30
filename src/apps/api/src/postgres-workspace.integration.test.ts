@@ -193,4 +193,28 @@ integration.sequential("PostgreSQL workspace authority integration", () => {
     const integrity = await pool.query<{ aggregate_type: string; event_envelope: Record<string, unknown> }>("SELECT aggregate_type, event_envelope FROM doculyra.authority_outbox WHERE event_type = 'EVT-P1-007'");
     expect(integrity.rows).toEqual([expect.objectContaining({ aggregate_type: "ArtifactRecord", event_envelope: expect.objectContaining({ event_type: "EVT-P1-007", payload: expect.objectContaining({ quarantine_state: "QUARANTINED", reason_code: "SYNTHETIC_MALWARE_SIGNATURE" }) }) })]);
   });
+
+  it("converges a committed stage effect after PostgreSQL restart and lost acknowledgement", async () => {
+    const store = new LocalStore(firstPersistence);
+    const workspace = await store.createWorkspace(actor, "Stage runtime PostgreSQL household", "FAMILY", "real-postgres-stage-workspace-0001");
+    let fence = await store.startAuthorization(actor, workspace.id, "document.create", "WORKSPACE", workspace.id, { correlationId: "corr-real-postgres-stage-create-auth" });
+    const created = await store.createIngestionCase(workspace.id, actor, "real-postgres-stage-create-0001", { capture_route: "BROWSER_UPLOAD", format_profile_ref: "format-profile-synthetic@0.1", source_descriptor_ref: null }, fence, "corr-real-postgres-stage-create");
+    fence = await store.startAuthorization(actor, workspace.id, "document.create", "WORKSPACE", workspace.id, { correlationId: "corr-real-postgres-stage-receipt-auth" });
+    await store.commitIngestionReceipt(workspace.id, actor, created.id, 1, "real-postgres-stage-receipt-0001", { transfer_ref: "transfer-stage-pg-001", byte_count: 32, content_digest_ref: "digest-stage-pg-001" }, fence, "corr-real-postgres-stage-receipt");
+    const stageMessage = {
+      eventId: "event-real-postgres-stage-0001", ingestionCaseId: created.id, expectedRevision: 2,
+      stageId: "VALIDATION" as const, contractVersion: "ingestion-stage@1.0", inputGeneration: "input-generation-001",
+      configurationVersion: "configuration.local.synthetic@0.1", replayGeneration: 0, leaseOwner: "postgres-worker-a",
+      leaseDurationSeconds: 30, outcome: "SUCCEEDED" as const, reasonCode: "STAGE_COMPLETED", fault: "AFTER_EFFECT_COMMIT" as const,
+    };
+    await expect(store.processIngestionStageMessage(workspace.id, { identityId: "workload_pg_stage", displayName: "PostgreSQL Stage Runner" }, stageMessage, "2026-08-30T01:00:00.000Z")).rejects.toThrow("after stage effect commit");
+
+    const restarted = new LocalStore(new PostgresWorkspacePersistence({ pool, migrationMode: "verify", migrationsDirectory }));
+    const { fault: _fault, ...replayMessage } = stageMessage;
+    const replay = await restarted.processIngestionStageMessage(workspace.id, { identityId: "workload_pg_stage", displayName: "PostgreSQL Stage Runner" }, replayMessage, "2026-08-30T01:00:01.000Z");
+    expect(replay).toMatchObject({ disposition: "DUPLICATE", ingestionCase: { state: "SAFETY_CHECKING", revision: 4 }, run: { state: "SUCCEEDED", attempt: 1, logicalEffectRef: expect.any(String) } });
+    expect(replay.ingestionCase.stageRuns?.filter((run) => run.logicalEffectRef)).toHaveLength(1);
+    const eventRows = await pool.query<{ count: number }>("SELECT COUNT(*)::int AS count FROM doculyra.authority_outbox WHERE event_type = 'EVT-P1-006' AND aggregate_id = $1 AND event_envelope->'payload'->>'stage_id' = 'VALIDATION'", [created.id]);
+    expect(eventRows.rows[0]?.count).toBe(2);
+  });
 });

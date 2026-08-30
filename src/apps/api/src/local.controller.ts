@@ -3,7 +3,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 import { createHash } from "node:crypto";
 import type { Response } from "express";
 import { askQuestionSchema, canonicalCommitIngestionReceiptSchema, canonicalCreateAccessGrantSchema, canonicalCreateIngestionCaseSchema, canonicalCreateSubjectSchema, canonicalCreateWorkspaceSchema, canonicalInviteMembershipSchema, canonicalReasonCommandSchema, canonicalUpdateMembershipSchema, canonicalUpdateSubjectSchema, configureWorkspaceSchema, createMemberSchema, createSubjectSchema, createTaskSchema, managePersonSchema, manualDocumentSchema, type AccessGrant, type IngestionCase, type Member, type SubjectRecord, type Workspace, type WorkspaceAction } from "@document-management/contracts";
-import { currentWorkspaceConfiguration, LocalStore, normalizedCorrelationId, type WorkspaceActor } from "./local.store.js";
+import { currentWorkspaceConfiguration, LocalStore, normalizedCorrelationId, type GenericIngestionJob, type WorkspaceActor } from "./local.store.js";
 import { IdentityStore } from "./identity.store.js";
 import { actorFor, requestIdentity, sessionToken, setSessionCredentials, type AuthenticatedRequest } from "./auth.controller.js";
 
@@ -86,6 +86,15 @@ export class LocalController {
       capture_route: ingestionCase.captureRoute, state: ingestionCase.state, artifact_id: ingestionCase.artifactId,
       document_id: ingestionCase.documentId, mandatory_checkpoint_state: ingestionCase.mandatoryCheckpointState,
       degradation_codes: ingestionCase.degradationCodes, revision: ingestionCase.revision, created_at: ingestionCase.createdAt,
+    };
+  }
+
+  private jobView(job: GenericIngestionJob) {
+    return {
+      job_id: job.jobId, workspace_id: job.workspaceId, job_kind: job.jobKind, state: job.state,
+      accepted_operation_id: job.acceptedOperationId, correlation_id: job.correlationId, created_at: job.createdAt,
+      revision: job.revision, result_ref: job.resultRef,
+      failure: job.failure ? { code: job.failure.code, retry_class: job.failure.retryClass, diagnostic_ref: job.failure.diagnosticRef } : null,
     };
   }
 
@@ -418,6 +427,31 @@ export class LocalController {
       const ingestionCase = await this.store.retryIngestionSafety(workspaceId, context.actor, ingestionCaseId, this.expectedRevision(request, response), this.idempotencyKey(request, response), parsed.data.reason_code, fence, correlationId);
       response.setHeader("ETag", `"${ingestionCase.revision}"`); response.setHeader("Location", `/api/v1/workspaces/${workspaceId}/ingestion-cases/${ingestionCase.id}`); response.setHeader("RateLimit-Policy", "ingestion-synthetic;w=60;q=3");
       return this.ingestionCaseView(ingestionCase);
+    } catch (error) { this.canonicalProblem(error, request, response); }
+  }
+
+  @Get("v1/workspaces/:workspaceId/jobs/:jobId")
+  async canonicalJob(@Param("workspaceId") workspaceId: string, @Param("jobId") jobId: string, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    try {
+      const context = this.workspaceContext(request, workspaceId); const correlationId = this.correlation(request, response);
+      const fence = await this.store.startAuthorization(context.actor, workspaceId, "document.read", "WORKSPACE", workspaceId, { correlationId });
+      const job = await this.store.getGenericIngestionJob(workspaceId, context.actor, jobId, fence, correlationId);
+      response.setHeader("ETag", `"${job.revision}"`); response.setHeader("RateLimit-Policy", "jobs-synthetic;w=60;q=60");
+      return this.jobView(job);
+    } catch (error) { this.canonicalProblem(error, request, response); }
+  }
+
+  @Post("v1/workspaces/:workspaceId/jobs/:jobId/cancellations")
+  @HttpCode(HttpStatus.ACCEPTED)
+  async canonicalCancelJob(@Param("workspaceId") workspaceId: string, @Param("jobId") jobId: string, @Body() body: unknown, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    const parsed = canonicalReasonCommandSchema.safeParse(body);
+    if (!parsed.success) this.problem(request, response, HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_REASON_COMMAND", "Reason command could not be validated", "DO_NOT_RETRY");
+    try {
+      const context = this.workspaceContext(request, workspaceId); const correlationId = this.correlation(request, response);
+      const fence = await this.store.startAuthorization(context.actor, workspaceId, "document.create", "WORKSPACE", workspaceId, { correlationId });
+      const job = await this.store.cancelGenericIngestionJob(workspaceId, context.actor, jobId, this.expectedRevision(request, response), this.idempotencyKey(request, response), parsed.data.reason_code, fence, correlationId);
+      response.setHeader("ETag", `"${job.revision}"`); response.setHeader("Location", `/api/v1/workspaces/${workspaceId}/jobs/${job.jobId}`); response.setHeader("RateLimit-Policy", "jobs-synthetic;w=60;q=20");
+      return this.jobView(job);
     } catch (error) { this.canonicalProblem(error, request, response); }
   }
 

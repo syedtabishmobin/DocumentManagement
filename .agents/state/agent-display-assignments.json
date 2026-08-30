@@ -208,7 +208,7 @@
       "roleId": "delivery-orchestrator",
       "parentDisplayAgentId": "ORCH-007",
       "workItem": "issue-55/story-p1-005",
-      "status": "ACTIVE"
+      "status": "COMPLETED"
     },
     {
       "displayAgentId": "QA-FUNC-014",

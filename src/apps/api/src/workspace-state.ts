@@ -51,7 +51,7 @@ export interface AuthorityCommandReceipt {
   id: string;
   workspaceId: string;
   actorId: string;
-  operationId: "API-P1-105" | "API-P1-107" | "API-P1-109" | "API-P1-111" | "API-P1-113" | "API-P1-115" | "API-P1-116" | "API-P1-117" | "API-P1-119" | "API-P1-120";
+  operationId: "API-P1-105" | "API-P1-107" | "API-P1-109" | "API-P1-111" | "API-P1-113" | "API-P1-115" | "API-P1-116" | "API-P1-117" | "API-P1-119" | "API-P1-120" | "API-P1-143";
   idempotencyKeyHash: string;
   requestFingerprint: string;
   resourceId: string;
@@ -110,6 +110,11 @@ export const WORKSPACE_PERSISTENCE = Symbol("WORKSPACE_PERSISTENCE");
 export function normalizeAuthorityLifecycle(state: WorkspaceState): WorkspaceState {
   state.authorityCommandReceipts ??= [];
   state.ingestionCases ??= [];
+  for (const ingestionCase of state.ingestionCases) {
+    ingestionCase.stageRuns ??= [];
+    ingestionCase.stageMessageReceipts ??= [];
+    ingestionCase.deadLetters ??= [];
+  }
   for (const subject of state.subjects ?? []) {
     subject.status ??= "ACTIVE";
     subject.validFrom ??= subject.createdAt;
