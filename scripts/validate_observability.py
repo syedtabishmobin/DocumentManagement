@@ -354,6 +354,7 @@ def validate_configuration() -> list[str]:
         ".agents/skills/delivery-control-centre/SKILL.md", ".agents/control-centre/web/index.html",
         ".agents/control-centre/web/styles.css", ".agents/control-centre/web/app.js",
         "scripts/control_centre.py", "scripts/control_centre_project.py", "scripts/control_centre_project_reconcile.py", "scripts/control_centre_test.py",
+        ".agents/bootstrap/2026-08-30-ai-native-delivery-control-centre-readiness-report.md",
         ".agents/bootstrap/discovery-observability-2026-08-29.json",
         ".agents/bootstrap/2026-08-29-observability-readiness-report.md",
     ]
@@ -448,6 +449,18 @@ def validate_configuration() -> list[str]:
         errors.append("control centre must define native GitHub Project auto-add automation for this repository")
     if len(project.get("insights", [])) < 1 or not project["insights"][0].get("url", "").endswith("/projects/1/insights"):
         errors.append("control centre must expose at least one useful persistent GitHub Project insight")
+    control_report = (ROOT / ".agents/bootstrap/2026-08-30-ai-native-delivery-control-centre-readiness-report.md").read_text(encoding="utf-8")
+    report_markers = [
+        "# AI-NATIVE DELIVERY CONTROL CENTRE READINESS REPORT",
+        *[f"## {index}." for index in range(1, 17)],
+        "## CONTROL CENTRE ACCESS LINKS",
+        "https://github.com/users/syedtabishmobin/projects/1/views/10",
+        "http://127.0.0.1:4178/historical-trends",
+        "https://github.com/syedtabishmobin/DocumentManagement/pull/62",
+    ]
+    for marker in report_markers:
+        if marker not in control_report:
+            errors.append(f"Control Centre readiness report is missing marker: {marker}")
     measures = control.get("progressMeasures", [])
     if len(measures) != 6 or len({item.get("id") for item in measures}) != 6 or any(not item.get("formula") or not item.get("completionBoundary") for item in measures):
         errors.append("control centre must define six non-conflated progress measures with completion boundaries")

@@ -26,6 +26,7 @@
     "githubProject": "https://github.com/users/syedtabishmobin/projects/1",
     "configuration": ".agents/project/control-centre.json",
     "operations": "docs/09-devops/09-agent-delivery-control-centre.md",
-    "queueCheckpoint": ".agents/state/control-centre-checkpoint.json"
+    "queueCheckpoint": ".agents/state/control-centre-checkpoint.json",
+    "readinessReport": ".agents/bootstrap/2026-08-30-ai-native-delivery-control-centre-readiness-report.md"
   }
 }
