@@ -13,12 +13,21 @@ import type {
 import { normalizeAuthorityLifecycle } from "./workspace-state.js";
 
 type SqlClient = Pick<PoolClient, "query" | "release">;
-type SqlPool = Pick<Pool, "connect" | "end">;
+interface SqlPool {
+  connect(): Promise<SqlClient>;
+  end(): Promise<void>;
+}
 
 export interface PersistenceOptions {
   pool: SqlPool;
   migrationMode: "apply" | "verify";
   migrationsDirectory?: string;
+  transactionRetry?: {
+    maxAttempts?: number;
+    baseDelayMs?: number;
+    maxDelayMs?: number;
+    sleep?: (delayMs: number) => Promise<void>;
+  };
 }
 
 interface MigrationFile {
@@ -57,7 +66,14 @@ interface OutboxRow extends QueryResultRow {
 
 const MIGRATION_LOCK_ID = 7_640_921;
 const MUTATION_LOCK_ID = 7_640_922;
+const DEFAULT_TRANSACTION_RETRY_MAX_ATTEMPTS = 6;
+const DEFAULT_TRANSACTION_RETRY_BASE_DELAY_MS = 10;
+const DEFAULT_TRANSACTION_RETRY_MAX_DELAY_MS = 80;
 const defaultMigrationsDirectory = fileURLToPath(new URL("../../../../migrations/canonical", import.meta.url));
+
+function sleep(delayMs: number): Promise<void> {
+  return new Promise((resolveDelay) => setTimeout(resolveDelay, delayMs));
+}
 
 function iso(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
@@ -271,6 +287,10 @@ export class PostgresWorkspacePersistence implements WorkspacePersistence {
   private readonly pool: SqlPool;
   private readonly migrationMode: "apply" | "verify";
   private readonly migrationsDirectory: string;
+  private readonly transactionRetryMaxAttempts: number;
+  private readonly transactionRetryBaseDelayMs: number;
+  private readonly transactionRetryMaxDelayMs: number;
+  private readonly transactionRetrySleep: (delayMs: number) => Promise<void>;
   private ready?: Promise<void>;
   private mutationChain: Promise<unknown> = Promise.resolve();
 
@@ -278,6 +298,13 @@ export class PostgresWorkspacePersistence implements WorkspacePersistence {
     this.pool = options.pool;
     this.migrationMode = options.migrationMode;
     this.migrationsDirectory = options.migrationsDirectory ?? defaultMigrationsDirectory;
+    this.transactionRetryMaxAttempts = options.transactionRetry?.maxAttempts ?? DEFAULT_TRANSACTION_RETRY_MAX_ATTEMPTS;
+    this.transactionRetryBaseDelayMs = options.transactionRetry?.baseDelayMs ?? DEFAULT_TRANSACTION_RETRY_BASE_DELAY_MS;
+    this.transactionRetryMaxDelayMs = options.transactionRetry?.maxDelayMs ?? DEFAULT_TRANSACTION_RETRY_MAX_DELAY_MS;
+    this.transactionRetrySleep = options.transactionRetry?.sleep ?? sleep;
+    if (!Number.isInteger(this.transactionRetryMaxAttempts) || this.transactionRetryMaxAttempts < 1 || this.transactionRetryMaxAttempts > 10) throw new Error("PostgreSQL transaction retry attempts must be bounded between one and ten");
+    if (!Number.isInteger(this.transactionRetryBaseDelayMs) || this.transactionRetryBaseDelayMs < 0 || this.transactionRetryBaseDelayMs > 1_000) throw new Error("PostgreSQL transaction retry base delay must be bounded between zero and 1000 milliseconds");
+    if (!Number.isInteger(this.transactionRetryMaxDelayMs) || this.transactionRetryMaxDelayMs < this.transactionRetryBaseDelayMs || this.transactionRetryMaxDelayMs > 5_000) throw new Error("PostgreSQL transaction retry maximum delay must be bounded between the base delay and 5000 milliseconds");
   }
 
   static fromEnvironment(modeOverride?: "apply" | "verify"): PostgresWorkspacePersistence {
@@ -402,8 +429,9 @@ export class PostgresWorkspacePersistence implements WorkspacePersistence {
 
   private async transact<T>(operation: (database: WorkspaceDatabase) => Promise<T> | T): Promise<T> {
     await this.ensureReady();
-    for (let attempt = 1; attempt <= 3; attempt += 1) {
+    for (let attempt = 1; attempt <= this.transactionRetryMaxAttempts; attempt += 1) {
       const client = await this.pool.connect();
+      let retryableConflict = false;
       try {
         await client.query("BEGIN ISOLATION LEVEL SERIALIZABLE");
         const snapshot = await this.snapshot(client);
@@ -414,10 +442,14 @@ export class PostgresWorkspacePersistence implements WorkspacePersistence {
       } catch (error) {
         await client.query("ROLLBACK");
         const code = (error as { code?: string }).code;
-        if (attempt < 3 && (code === "40001" || code === "40P01")) continue;
-        throw error;
+        retryableConflict = code === "40001" || code === "40P01";
+        if (!retryableConflict || attempt >= this.transactionRetryMaxAttempts) throw error;
       } finally {
         client.release();
+      }
+      if (retryableConflict) {
+        const delayMs = Math.min(this.transactionRetryMaxDelayMs, this.transactionRetryBaseDelayMs * (2 ** (attempt - 1)));
+        await this.transactionRetrySleep(delayMs);
       }
     }
     throw new Error("PostgreSQL authority transaction retry budget exhausted");
