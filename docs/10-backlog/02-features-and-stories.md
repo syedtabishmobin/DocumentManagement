@@ -120,7 +120,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `IN_IMPLEMENTATION — Issue #58`; Document Platform |
+| State / owner | `DEV_ACCEPTED — Issue #58 / PR #59`; Document Platform; independent `QA-FUNC-019` passed defect #60, both story ACs and P1-001–005 regression on exact candidate `552ad41`; protected PostgreSQL/API 63/63 plus Android/iOS passed before merge `6e306b0`. |
 | Product | `REQ-P1-ING-004`; `FEAT-P1-004`; `UC-P1-002`; `OUT-P1-001`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-003`, `005`; `UX-SCR-P1-011`; `A11Y-P1-002`, `017`, `021`–`028`, `046`, `051`–`054` |
 | API / events | `API-P1-118`–`120`, `142`, `143`; `EVT-P1-006`, `008`; `API-P1-027`–`040`, `047`–`050` |
@@ -139,7 +139,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `BASELINED — PLANNED_UNISSUED`; Document Platform + Security |
+| State / owner | `IN_IMPLEMENTATION — Issue #65`; Document Platform + Security |
 | Product | `REQ-P1-DOC-001`, `REQ-P1-DOC-002`, `REQ-P1-DOC-004`; `FEAT-P1-003`; `UC-P1-002`, `003`; `OUT-P1-001`, `OUT-P1-002` |
 | UX / accessibility | `UX-FLOW-P1-005`, `006`; `UX-SCR-P1-014`–`016`; `A11Y-P1-001`–`020`, `029`–`042`, `043`–`050` |
 | API / events | `API-P1-122`–`130`; `EVT-P1-007`, `009`; `API-P1-015`–`020`, `027`–`038`, `041`, `042`, `047`–`050` |

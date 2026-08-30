@@ -149,6 +149,21 @@ export const canonicalCommitIngestionReceiptSchema = z.object({
   content_digest_ref: z.string().min(1).max(200),
 }).strict();
 
+export const canonicalArtifactAccessGrantSchema = z.object({
+  operation: z.enum(["VIEW", "DOWNLOAD", "PREVIEW", "CITATION", "EXPORT_DOWNLOAD"]),
+  purpose_id: z.literal("PUR-P1-001"),
+  audience_ref: z.string().trim().min(1).max(200),
+}).strict();
+
+export const canonicalRedeemArtifactAccessGrantSchema = z.object({
+  requested_operation: z.enum(["VIEW", "DOWNLOAD", "PREVIEW", "CITATION", "EXPORT_DOWNLOAD"]),
+}).strict();
+
+export const canonicalDocumentLifecycleTransitionSchema = z.object({
+  transition: z.enum(["ARCHIVE", "TRASH", "RESTORE", "REQUEST_DELETION"]),
+  reason_code: z.string().trim().regex(/^[A-Z][A-Z0-9_]{1,79}$/),
+}).strict();
+
 export const selectWorkspaceSchema = z.object({
   workspaceId: z.string().trim().min(1).max(200),
 });
@@ -208,6 +223,9 @@ export type CanonicalCreateAccessGrantInput = z.infer<typeof canonicalCreateAcce
 export type CanonicalReasonCommandInput = z.infer<typeof canonicalReasonCommandSchema>;
 export type CanonicalCreateIngestionCaseInput = z.infer<typeof canonicalCreateIngestionCaseSchema>;
 export type CanonicalCommitIngestionReceiptInput = z.infer<typeof canonicalCommitIngestionReceiptSchema>;
+export type CanonicalArtifactAccessGrantInput = z.infer<typeof canonicalArtifactAccessGrantSchema>;
+export type CanonicalRedeemArtifactAccessGrantInput = z.infer<typeof canonicalRedeemArtifactAccessGrantSchema>;
+export type CanonicalDocumentLifecycleTransitionInput = z.infer<typeof canonicalDocumentLifecycleTransitionSchema>;
 export type SelectWorkspaceInput = z.infer<typeof selectWorkspaceSchema>;
 export type CreateSubjectInput = z.infer<typeof createSubjectSchema>;
 export type FilePermissions = z.infer<typeof filePermissionsSchema>;
@@ -308,6 +326,48 @@ export interface DocumentRecord {
   preDeleteStatus?: Exclude<DocumentStatus, "DELETED">;
   extractedText?: string;
   reviewReason?: string;
+  revision?: number;
+  deletionRequestedAt?: string;
+}
+
+export interface ArtifactRecord {
+  id: string;
+  workspaceId: string;
+  contentDigest: string;
+  byteCount: number;
+  mediaType: string;
+  integrityState: "VERIFIED" | "FAILED";
+  isolationState: "AVAILABLE" | "QUARANTINED" | "POLICY_HOLD" | "DELETION_FENCED";
+  createdAt: string;
+}
+
+export interface DocumentVersionRecord {
+  id: string;
+  workspaceId: string;
+  documentId: string;
+  artifactId: string;
+  versionRelation: string;
+  effectiveStatus: "PROPOSED" | "EFFECTIVE" | "SUPERSEDED" | "CANCELLED" | "EXPIRED" | "CONFLICTED" | "INDETERMINATE";
+  recordedAt: string;
+  revision: number;
+}
+
+export interface ArtifactAccessGrantRecord {
+  id: string;
+  workspaceId: string;
+  documentId: string;
+  documentVersionId: string;
+  artifactId: string;
+  operation: "VIEW" | "DOWNLOAD" | "PREVIEW" | "CITATION" | "EXPORT_DOWNLOAD";
+  purposeId: "PUR-P1-001";
+  audienceRef: string;
+  expiresAt: string;
+  status: "ISSUED" | "REDEEMED" | "EXPIRED" | "REVOKED" | "BLOCKED";
+  authorizationEpoch: number;
+  policyVersion: string;
+  revision: number;
+  createdAt: string;
+  redeemedAt?: string;
 }
 
 export interface DocumentDeletionResult {

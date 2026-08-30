@@ -5,17 +5,23 @@ import { dirname, join, resolve } from "node:path";
 import type {
   Answer,
   AccessGrant,
+  ArtifactAccessGrantRecord,
+  ArtifactRecord,
   AuditRecord,
   AuthorizationEpoch,
   ConnectorDescriptor,
   CanonicalCreateAccessGrantInput,
   CanonicalCreateIngestionCaseInput,
   CanonicalCommitIngestionReceiptInput,
+  CanonicalArtifactAccessGrantInput,
+  CanonicalDocumentLifecycleTransitionInput,
+  CanonicalRedeemArtifactAccessGrantInput,
   CreateSubjectInput,
   DashboardSnapshot,
   DependencyRecord,
   DocumentDetail,
   DocumentRecord,
+  DocumentVersionRecord,
   FactRecord,
   IngestionCase,
   IngestionStageId,
@@ -188,6 +194,9 @@ function initialState(actor: WorkspaceActor, name: string, type: Workspace["type
     },
     ownerBindings: [{ id: ownerBindingId, workspaceId, ownerIdentityId: actor.identityId, ownerMembershipId, authorityBasis: "WORKSPACE_CREATOR", state: "ACTIVE", validFrom: createdAt, recordedAt: createdAt, revision: 1 }],
     documents: [],
+    artifacts: [],
+    documentVersions: [],
+    artifactAccessGrants: [],
     facts: [],
     tasks: [
       {
@@ -354,8 +363,26 @@ function normalizeWorkspaceState(input: WorkspaceState): WorkspaceState {
     ...document,
     subjectIds: document.subjectIds?.length ? document.subjectIds : [state.subjects[0]!.id],
     captureRoute: document.captureRoute ?? "FILE",
+    revision: document.revision ?? 1,
     ...(document.status === "DELETED" && !document.deletedAt ? { deletedAt: document.updatedAt, purgeDueAt: trashDeadline(document.updatedAt), preDeleteStatus: "NEEDS_REVIEW" as const } : {}),
   }));
+  state.artifacts ??= [];
+  state.documentVersions ??= [];
+  state.artifactAccessGrants ??= [];
+  for (const document of state.documents) {
+    if (!state.documentVersions.some((version) => version.documentId === document.id)) {
+      state.artifacts.push({
+        id: document.id, workspaceId: state.workspace.id, contentDigest: document.sha256,
+        byteCount: document.size, mediaType: document.mediaType,
+        integrityState: "VERIFIED", isolationState: document.status === "POLICY_HOLD" ? "POLICY_HOLD" : document.status === "DELETED" ? "DELETION_FENCED" : "AVAILABLE",
+        createdAt: document.createdAt,
+      });
+      state.documentVersions.push({
+        id: document.id, workspaceId: state.workspace.id, documentId: document.id, artifactId: document.id,
+        versionRelation: "INITIAL", effectiveStatus: "PROPOSED", recordedAt: document.createdAt, revision: document.version ?? 1,
+      });
+    }
+  }
   state.facts = (state.facts ?? []).map((fact) => {
     const source = state.documents.find((document) => document.id === fact.documentId);
     return {
@@ -525,6 +552,36 @@ function appendArtifactIntegrityEvent(
     eventType: "EVT-P1-007", schemaVersion: 1, correlationId, actorId: actor.identityId, resourceType: "DOCUMENT", resourceId: ingestionCase.artifactId,
     policyVersion: authorization.policyVersion, authorizationEpoch: authorization.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: "EXPLICIT_GRANT",
     eventEnvelope: envelope, occurredAt,
+  });
+}
+
+function appendDocumentVersionEvent(
+  database: WorkspaceDatabase,
+  state: WorkspaceState,
+  actor: WorkspaceActor,
+  version: DocumentVersionRecord,
+  idempotencySeed: string,
+  correlationId: string,
+  authorization: { policyVersion: string; authorizationEpoch: number },
+): void {
+  const eventId = randomUUID();
+  const envelope = {
+    event_id: eventId, event_type: "EVT-P1-009", schema_version: "1.0.0", occurred_at: version.recordedAt, recorded_at: version.recordedAt,
+    scope_kind: "WORKSPACE", workspace_id: state.workspace.id, aggregate_type: "LogicalDocument", aggregate_id: version.documentId,
+    aggregate_revision: version.revision, aggregate_event_index: version.revision, attempt: 1,
+    producer: { producer_id: "doculyra-api", operation: "DOCUMENT_VERSION_ADDED" }, actor: { actor_id: actor.identityId, actor_class: "HUMAN" },
+    authorization: { decision_ref: stableId("auth", correlationId, version.id), decision: "ALLOW", policy_version: stableId("policy", authorization.policyVersion), authorization_epoch: `epoch:${authorization.authorizationEpoch}` },
+    correlation_id: correlationId, causation_id: stableId("cause", correlationId, "DOCUMENT_VERSION_ADDED"), idempotency_key: stableId("idem", actor.identityId, "DOCUMENT_VERSION_ADDED", idempotencySeed),
+    classification: { data_class: "P4-RESTRICTED", purpose_id: "PUR-P1-001", residency_policy_ref: state.workspace.residencyPolicyRef, retention_rule_ref: "retention.phase1.synthetic", deletion_lineage_ref: `workspace:${state.workspace.id}` },
+    deletion_fence: { state: "NOT_FENCED", generation: 0 },
+    payload: { document_version_id: version.id, artifact_id: version.artifactId, version_sequence: version.revision, link_decision_id: stableId("link", version.documentId, version.artifactId), link_state: "LINKED", active_analysis_generation_id: null },
+  };
+  database.authorityOutbox.push({
+    id: eventId, workspaceId: state.workspace.id, aggregateType: "LogicalDocument", aggregateId: version.documentId,
+    aggregateRevision: version.revision, eventType: "EVT-P1-009", schemaVersion: 1, correlationId, actorId: actor.identityId,
+    resourceType: "DOCUMENT", resourceId: version.documentId, policyVersion: authorization.policyVersion,
+    authorizationEpoch: authorization.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: "EXPLICIT_GRANT",
+    eventEnvelope: envelope, occurredAt: version.recordedAt,
   });
 }
 
@@ -984,14 +1041,14 @@ export class LocalStore {
           return documentSummary(document);
         }
       }
-      const duplicate = state.documents.find((item) => item.sha256 === digest && item.status !== "DELETED");
+      const artifactId = randomUUID();
       const recordIngestion = (document: DocumentRecord) => {
         if (!idempotencyKey) return;
         const recordedAt = now();
         const route = captureRoute === "CAMERA" ? "PWA_CAMERA_CAPTURE" : captureRoute === "MANUAL" ? "MANUAL_RECORD" : "BROWSER_UPLOAD";
         const ingestionCase: IngestionCase = {
           id: randomUUID(), workspaceId, acquisitionId: randomUUID(), actorId: actor.identityId, captureRoute: route,
-          formatProfileRef: "format-profile-synthetic@0.1", sourceDescriptorRef: null, state: "RECEIVED", artifactId: document.id, documentId: document.id,
+          formatProfileRef: "format-profile-synthetic@0.1", sourceDescriptorRef: null, state: "RECEIVED", artifactId, documentId: document.id,
           mandatoryCheckpointState: "PENDING", degradationCodes: [],
           attempts: [
             { id: randomUUID(), kind: "CREATE", outcome: "SUCCEEDED", correlationId, recordedAt },
@@ -1022,8 +1079,6 @@ export class LocalStore {
         appendArtifactIntegrityEvent(database, state, actor, ingestionCase, assessment, idempotencyKey, correlationId, fence);
         recordAuthorityTransition(database, state, actor, ingestionCase.state === "PROCESSING" ? "INGESTION_SAFETY_CLEARED" : "INGESTION_CONTENT_CONTAINED", "DOCUMENT", ingestionCase.state === "PROCESSING" ? "Recorded synthetic safety clearance before ordinary processing" : "Contained synthetic input without exposing classification detail or enabling an ordinary content route", ingestionCase.id, correlationId, { policyVersion: fence.policyVersion, authorizationEpoch: fence.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: "EXPLICIT_GRANT" });
       };
-      if (duplicate) { recordIngestion(duplicate); return documentSummary(duplicate); }
-
       const id = randomUUID();
       const textual = /^(text\/|application\/(json|xml))/.test(file.mimetype);
       const governedCapture = Boolean(idempotencyKey) && captureRoute !== "MANUAL";
@@ -1041,6 +1096,7 @@ export class LocalStore {
         status: initialStatus,
         category: classification.category,
         version: 1,
+        revision: 1,
         createdAt,
         updatedAt: createdAt,
         subjectIds,
@@ -1049,10 +1105,22 @@ export class LocalStore {
         ...(initialStatus !== "READY" ? { reviewReason: containment.reviewReason } : {}),
       };
 
-      const artifactPath = this.scopedArtifactPath(workspaceId, id);
+      const artifact: ArtifactRecord = {
+        id: artifactId, workspaceId, contentDigest: digest, byteCount: file.size,
+        mediaType: document.mediaType, integrityState: "VERIFIED",
+        isolationState: initialStatus === "POLICY_HOLD" ? "POLICY_HOLD" : "AVAILABLE", createdAt,
+      };
+      const documentVersion: DocumentVersionRecord = {
+        id: randomUUID(), workspaceId, documentId: id, artifactId, versionRelation: "INITIAL",
+        effectiveStatus: "PROPOSED", recordedAt: createdAt, revision: 1,
+      };
+      const artifactPath = this.scopedArtifactPath(workspaceId, artifactId);
       await mkdir(dirname(artifactPath), { recursive: true, mode: 0o700 });
       await writeFile(artifactPath, file.buffer, { mode: 0o600, flag: "wx" });
       state.documents.push(document);
+      state.artifacts.push(artifact);
+      state.documentVersions.push(documentVersion);
+      appendDocumentVersionEvent(database, state, actor, documentVersion, idempotencyKey ?? correlationId, correlationId, fence);
       recordIngestion(document);
       ensureDocumentIntelligence(state);
       state.notifications.unshift({
@@ -1116,7 +1184,153 @@ export class LocalStore {
     const ingestionCase = state.ingestionCases.find((item) => item.documentId === id && item.captureRoute !== "MANUAL_RECORD");
     if (ingestionCase && (!(["PROCESSING", "NEEDS_REVIEW", "PUBLISHING", "READY"] as IngestionCase["state"][]).includes(ingestionCase.state) || ingestionCase.mandatoryCheckpointState !== "PASSED")) throw new NotFoundException("Document artifact is not available");
     await this.startAuthorization(actor, workspaceId, "document.read", "DOCUMENT", id, { fieldRef: "document.content", expectedAuthorizationEpoch: fence.authorizationEpoch, phase: "OUTPUT", correlationId });
-    return { buffer: await this.readArtifact(workspaceId, id), mediaType: document.mediaType, name: document.name };
+    const version = state.documentVersions.find((item) => item.documentId === id && item.revision === document.version)
+      ?? state.documentVersions.find((item) => item.documentId === id);
+    if (!version) throw new NotFoundException("Resource not available");
+    return { buffer: await this.readArtifact(workspaceId, version.artifactId), mediaType: document.mediaType, name: document.name };
+  }
+
+  async logicalDocuments(workspaceId: string, actor: WorkspaceActor, fence: AuthorizationFence, correlationId: string): Promise<DocumentRecord[]> {
+    await this.reauthorize(fence, actor, "OUTPUT", correlationId);
+    const state = this.state(await this.readDatabase(), workspaceId);
+    const visible: DocumentRecord[] = [];
+    for (const document of state.documents) {
+      if (document.status === "POLICY_HOLD" || document.status === "DELETED") continue;
+      const decision = await this.checkAuthorization(actor, workspaceId, "document.read", "DOCUMENT", document.id, { expectedAuthorizationEpoch: fence.authorizationEpoch, phase: "OUTPUT", correlationId });
+      if (decision.decision === "ALLOW") visible.push(documentSummary(document));
+    }
+    return visible;
+  }
+
+  async logicalDocument(workspaceId: string, documentId: string, actor: WorkspaceActor, fence: AuthorizationFence, correlationId: string): Promise<DocumentRecord> {
+    await this.reauthorize(fence, actor, "OUTPUT", correlationId);
+    const state = this.state(await this.readDatabase(), workspaceId);
+    const document = state.documents.find((item) => item.id === documentId);
+    if (!document || document.status === "POLICY_HOLD" || document.status === "DELETED") throw new NotFoundException("Resource not available");
+    return documentSummary(document);
+  }
+
+  async documentVersions(workspaceId: string, documentId: string, actor: WorkspaceActor, fence: AuthorizationFence, correlationId: string): Promise<DocumentVersionRecord[]> {
+    await this.logicalDocument(workspaceId, documentId, actor, fence, correlationId);
+    const state = this.state(await this.readDatabase(), workspaceId);
+    return state.documentVersions.filter((version) => version.documentId === documentId).map((version) => ({ ...version }));
+  }
+
+  async documentVersion(workspaceId: string, documentId: string, documentVersionId: string, actor: WorkspaceActor, fence: AuthorizationFence, correlationId: string): Promise<DocumentVersionRecord> {
+    await this.logicalDocument(workspaceId, documentId, actor, fence, correlationId);
+    const state = this.state(await this.readDatabase(), workspaceId);
+    const version = state.documentVersions.find((item) => item.id === documentVersionId && item.documentId === documentId);
+    if (!version) throw new NotFoundException("Resource not available");
+    return { ...version };
+  }
+
+  async transitionDocumentLifecycle(workspaceId: string, documentId: string, actor: WorkspaceActor, expectedRevision: number, idempotencyKey: string, input: CanonicalDocumentLifecycleTransitionInput, fence: AuthorizationFence, correlationId: string): Promise<DocumentRecord> {
+    const result = await this.mutate((database): DocumentRecord | "NOT_AVAILABLE" | "STALE" | "INVALID" => {
+      const state = this.state(database, workspaceId);
+      const action: WorkspaceAction = input.transition === "TRASH" || input.transition === "REQUEST_DELETION" ? "document.delete" : "document.edit";
+      this.requireEffectAuthorization(database, state, actor, fence, { action, resourceKind: "DOCUMENT", resourceId: documentId }, correlationId);
+      const fingerprint = { documentId, ...input };
+      const prior = priorCommandReceipt(state, actor, "API-P1-124", idempotencyKey, fingerprint);
+      if (prior) return state.documents.find((item) => item.id === prior.resourceId) ?? "NOT_AVAILABLE";
+      const document = state.documents.find((item) => item.id === documentId);
+      if (!document || document.status === "POLICY_HOLD") return "NOT_AVAILABLE";
+      if ((document.revision ?? 1) !== expectedRevision) return "STALE";
+      const recordedAt = now();
+      if (input.transition === "ARCHIVE") {
+        if (document.status === "DELETED") return "INVALID";
+        document.status = "ARCHIVED";
+      } else if (input.transition === "TRASH" || input.transition === "REQUEST_DELETION") {
+        if (document.status !== "DELETED") document.preDeleteStatus = document.status;
+        document.status = "DELETED"; document.deletedAt = recordedAt; document.purgeDueAt = trashDeadline(recordedAt);
+        if (input.transition === "REQUEST_DELETION") document.deletionRequestedAt = recordedAt;
+        for (const version of state.documentVersions.filter((item) => item.documentId === document.id)) {
+          const artifact = state.artifacts.find((item) => item.id === version.artifactId); if (artifact) artifact.isolationState = "DELETION_FENCED";
+        }
+      } else {
+        if (document.status !== "DELETED" || !document.purgeDueAt || new Date(recordedAt).getTime() >= new Date(document.purgeDueAt).getTime()) return "INVALID";
+        document.status = document.preDeleteStatus ?? "NEEDS_REVIEW"; delete document.deletedAt; delete document.purgeDueAt; delete document.preDeleteStatus; delete document.deletionRequestedAt;
+        for (const version of state.documentVersions.filter((item) => item.documentId === document.id)) {
+          const artifact = state.artifacts.find((item) => item.id === version.artifactId); if (artifact) artifact.isolationState = "AVAILABLE";
+        }
+      }
+      document.revision = (document.revision ?? 1) + 1; document.updatedAt = recordedAt;
+      appendCommandReceipt(state, actor, "API-P1-124", idempotencyKey, fingerprint, document.id, document.revision);
+      recordAuthorityTransition(database, state, actor, `DOCUMENT_${input.transition}`, "DOCUMENT", `Applied document lifecycle transition using reason ${input.reason_code}`, document.id, correlationId, { policyVersion: fence.policyVersion, authorizationEpoch: state.authorizationEpoch.value, authorizationPhase: "EFFECT", decisionReason: "EXPLICIT_GRANT" });
+      return documentSummary(document);
+    });
+    if (result === "NOT_AVAILABLE") throw new NotFoundException("Resource not available");
+    if (result === "STALE") throw new PreconditionFailedException("Resource changed; refresh before retrying");
+    if (result === "INVALID") throw new UnprocessableEntityException("Document lifecycle transition is unavailable");
+    return result;
+  }
+
+  async issueArtifactAccessGrant(workspaceId: string, documentId: string, documentVersionId: string, actor: WorkspaceActor, input: CanonicalArtifactAccessGrantInput, idempotencyKey: string, fence: AuthorizationFence, correlationId: string): Promise<ArtifactAccessGrantRecord> {
+    const result = await this.mutate((database): ArtifactAccessGrantRecord | "DENIED" => {
+      const state = this.state(database, workspaceId);
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "document.read", resourceKind: "DOCUMENT", resourceId: documentId }, correlationId);
+      const fingerprint = { documentId, documentVersionId, ...input };
+      const prior = priorCommandReceipt(state, actor, "API-P1-127", idempotencyKey, fingerprint);
+      if (prior) {
+        const grant = state.artifactAccessGrants.find((item) => item.id === prior.resourceId);
+        if (!grant) throw new ConflictException("The prior command result is unavailable");
+        return { ...grant };
+      }
+      const document = state.documents.find((item) => item.id === documentId);
+      const version = state.documentVersions.find((item) => item.id === documentVersionId && item.documentId === documentId);
+      const artifact = version ? state.artifacts.find((item) => item.id === version.artifactId) : undefined;
+      if (!document || !version || !artifact || document.status === "DELETED" || document.status === "POLICY_HOLD" || artifact.integrityState !== "VERIFIED" || artifact.isolationState !== "AVAILABLE" || input.audience_ref !== actor.identityId) {
+        recordAuthorityDenial(database, state, actor, "ARTIFACT_ACCESS_GRANT_DENIED", "document.read", "Denied exact-version artifact grant without revealing resource existence", correlationId, { policyVersion: fence.policyVersion, authorizationEpoch: state.authorizationEpoch.value, authorizationPhase: "EFFECT", decisionReason: "RESOURCE_UNAVAILABLE" }, { resourceType: "DOCUMENT", resourceId: documentId });
+        return "DENIED";
+      }
+      const createdAt = now();
+      const expiresAt = new Date(new Date(createdAt).getTime() + 5 * 60_000).toISOString();
+      const grant: ArtifactAccessGrantRecord = {
+        id: randomUUID(), workspaceId, documentId, documentVersionId, artifactId: artifact.id,
+        operation: input.operation, purposeId: input.purpose_id, audienceRef: input.audience_ref,
+        expiresAt, status: "ISSUED", authorizationEpoch: state.authorizationEpoch.value,
+        policyVersion: fence.policyVersion, revision: 1, createdAt,
+      };
+      state.artifactAccessGrants.push(grant);
+      appendCommandReceipt(state, actor, "API-P1-127", idempotencyKey, fingerprint, grant.id, grant.revision);
+      recordAuthorityTransition(database, state, actor, "ARTIFACT_ACCESS_GRANT_ISSUED", "DOCUMENT", "Issued a short-lived exact document-version artifact grant", documentId, correlationId, { policyVersion: fence.policyVersion, authorizationEpoch: state.authorizationEpoch.value, authorizationPhase: "EFFECT", decisionReason: "EXPLICIT_GRANT" });
+      return { ...grant };
+    });
+    if (result === "DENIED") throw new NotFoundException("Resource not available");
+    return result;
+  }
+
+  async redeemArtifactAccessGrant(workspaceId: string, artifactAccessGrantId: string, actor: WorkspaceActor, input: CanonicalRedeemArtifactAccessGrantInput, idempotencyKey: string, fence: AuthorizationFence, correlationId: string, at = now()): Promise<{ grant: ArtifactAccessGrantRecord; redemptionId: string; transferRef: string; digest: string; expiresAt: string; buffer: Buffer; mediaType: string; name: string }> {
+    const result = await this.mutate(async (database): Promise<{ grant: ArtifactAccessGrantRecord; redemptionId: string; transferRef: string; digest: string; expiresAt: string; buffer: Buffer; mediaType: string; name: string } | "DENIED"> => {
+      const state = this.state(database, workspaceId);
+      this.requireEffectAuthorization(database, state, actor, fence, { action: "document.read", resourceKind: "WORKSPACE", resourceId: workspaceId }, correlationId);
+      const grant = state.artifactAccessGrants.find((item) => item.id === artifactAccessGrantId);
+      const deny = (reason: string): "DENIED" => {
+        if (grant && grant.status !== "REVOKED") { grant.status = reason === "GRANT_EXPIRED" ? "EXPIRED" : "BLOCKED"; grant.revision += 1; }
+        recordAuthorityDenial(database, state, actor, "ARTIFACT_ACCESS_REDEMPTION_DENIED", "document.read", "Denied artifact redemption without revealing resource existence", correlationId, { policyVersion: fence.policyVersion, authorizationEpoch: state.authorizationEpoch.value, authorizationPhase: "EFFECT", decisionReason: reason }, { resourceType: "DOCUMENT", ...(grant ? { resourceId: grant.documentId } : {}) });
+        return "DENIED";
+      };
+      if (!grant) return deny("GRANT_UNAVAILABLE");
+      const fingerprint = { artifactAccessGrantId, ...input };
+      const prior = priorCommandReceipt(state, actor, "API-P1-128", idempotencyKey, fingerprint);
+      const document = state.documents.find((item) => item.id === grant.documentId);
+      const version = state.documentVersions.find((item) => item.id === grant.documentVersionId && item.documentId === grant.documentId && item.artifactId === grant.artifactId);
+      const artifact = state.artifacts.find((item) => item.id === grant.artifactId);
+      if (!["ISSUED", "REDEEMED"].includes(grant.status) || grant.audienceRef !== actor.identityId || grant.purposeId !== fence.purposeId || grant.operation !== input.requested_operation || grant.authorizationEpoch !== state.authorizationEpoch.value || grant.policyVersion !== fence.policyVersion) return deny("STALE_OR_MISMATCHED_GRANT");
+      if (new Date(at).getTime() >= new Date(grant.expiresAt).getTime()) return deny("GRANT_EXPIRED");
+      if (!document || !version || !artifact || document.status === "DELETED" || document.status === "POLICY_HOLD" || artifact.integrityState !== "VERIFIED" || artifact.isolationState !== "AVAILABLE") return deny("RESOURCE_UNAVAILABLE");
+      const currentDecision = this.recordAuthorizationDecision(database, state, actor, { workspaceId, action: "document.read", resourceKind: "DOCUMENT", resourceId: document.id, fieldRef: "document.content", expectedAuthorizationEpoch: state.authorizationEpoch.value, phase: "EFFECT" }, correlationId);
+      if (currentDecision.decision !== "ALLOW") return deny("CURRENT_AUTHORIZATION_DENIED");
+      const buffer = await this.readArtifact(workspaceId, artifact.id);
+      const digest = createHash("sha256").update(buffer).digest("hex");
+      if (digest !== artifact.contentDigest || buffer.byteLength !== artifact.byteCount) { artifact.integrityState = "FAILED"; return deny("INTEGRITY_MISMATCH"); }
+      const redemptionId = prior?.resourceId ?? randomUUID();
+      if (!prior) appendCommandReceipt(state, actor, "API-P1-128", idempotencyKey, fingerprint, redemptionId, 1);
+      grant.status = "REDEEMED"; grant.redeemedAt = at; grant.revision += prior ? 0 : 1;
+      if (!prior) recordAuthorityTransition(database, state, actor, "ARTIFACT_ACCESS_GRANT_REDEEMED", "DOCUMENT", "Reauthorized and redeemed one exact-version artifact grant", document.id, correlationId, { policyVersion: fence.policyVersion, authorizationEpoch: state.authorizationEpoch.value, authorizationPhase: "EFFECT", decisionReason: "EXPLICIT_GRANT" });
+      return { grant: { ...grant }, redemptionId, transferRef: `protected-transfer:${redemptionId}`, digest, expiresAt: grant.expiresAt, buffer, mediaType: artifact.mediaType, name: document.name };
+    });
+    if (result === "DENIED") throw new NotFoundException("Resource not available");
+    return result;
   }
 
   async reviewFact(workspaceId: string, actor: WorkspaceActor, id: string, fence: AuthorizationFence, correlationId: string): Promise<FactRecord> {
@@ -2011,6 +2225,10 @@ export class LocalStore {
       document.deletedAt = deletedAt;
       document.purgeDueAt = trashDeadline(deletedAt);
       document.updatedAt = deletedAt;
+      for (const version of state.documentVersions.filter((item) => item.documentId === document.id)) {
+        const artifact = state.artifacts.find((item) => item.id === version.artifactId);
+        if (artifact) artifact.isolationState = "DELETION_FENCED";
+      }
       state.audit.push(auditRecord(state.workspace.id, actor, "DOCUMENT_TRASHED", "DOCUMENT", "Moved document into the restricted 30-day Trash state", id));
       return { documentId: document.id, state: "TRASHED" as const, deletedAt, purgeDueAt: document.purgeDueAt };
     });
@@ -2030,6 +2248,10 @@ export class LocalStore {
       delete document.deletedAt;
       delete document.purgeDueAt;
       delete document.preDeleteStatus;
+      for (const version of state.documentVersions.filter((item) => item.documentId === document.id)) {
+        const artifact = state.artifacts.find((item) => item.id === version.artifactId);
+        if (artifact) artifact.isolationState = document.status === "POLICY_HOLD" ? "POLICY_HOLD" : "AVAILABLE";
+      }
       state.audit.push(auditRecord(state.workspace.id, actor, "DOCUMENT_RESTORED", "DOCUMENT", "Restored document from Trash before its purge deadline", id));
       return documentSummary(document);
     });
@@ -2046,9 +2268,15 @@ export class LocalStore {
         state.dependencies = state.dependencies.filter((edge) => edge.evidenceDocumentId !== document.id);
         state.tasks = state.tasks.filter((task) => task.documentId !== document.id);
         state.audit.push(auditRecord(state.workspace.id, worker, "DOCUMENT_PURGED", "DOCUMENT", "Completed final local purge after the Trash period", document.id));
-        for (const artifactPath of [this.scopedArtifactPath(workspaceId, document.id), join(this.artifactRoot, document.id)]) {
-          try { await unlink(artifactPath); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+        const artifactIds = state.documentVersions.filter((version) => version.documentId === document.id).map((version) => version.artifactId);
+        for (const artifactId of artifactIds.length ? artifactIds : [document.id]) {
+          for (const artifactPath of [this.scopedArtifactPath(workspaceId, artifactId), join(this.artifactRoot, artifactId)]) {
+            try { await unlink(artifactPath); } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+          }
         }
+        state.artifacts = state.artifacts.filter((artifact) => !artifactIds.includes(artifact.id));
+        state.documentVersions = state.documentVersions.filter((version) => version.documentId !== document.id);
+        state.artifactAccessGrants = state.artifactAccessGrants.filter((grant) => grant.documentId !== document.id);
       }
       if (expired.length) {
         const expiredIds = new Set(expired.map((document) => document.id));
@@ -2076,6 +2304,9 @@ export class LocalStore {
       return {
         ...state,
         documents: state.documents.filter((document) => exportableDocumentIds.has(document.id)).map(({ extractedText: _content, ...document }) => document),
+        artifacts: state.artifacts.filter((artifact) => state.documentVersions.some((version) => version.artifactId === artifact.id && exportableDocumentIds.has(version.documentId))),
+        documentVersions: state.documentVersions.filter((version) => exportableDocumentIds.has(version.documentId)),
+        artifactAccessGrants: state.artifactAccessGrants.filter((grant) => exportableDocumentIds.has(grant.documentId)),
         facts: state.facts.filter((fact) => exportableDocumentIds.has(fact.documentId)),
         dependencies: state.dependencies.filter((edge) => exportableDocumentIds.has(edge.evidenceDocumentId)),
         tasks: state.tasks.filter((task) => !task.documentId || exportableDocumentIds.has(task.documentId)),

@@ -1,9 +1,12 @@
 import type {
   AccessGrant,
+  ArtifactAccessGrantRecord,
+  ArtifactRecord,
   AuditRecord,
   AuthorizationEpoch,
   DependencyRecord,
   DocumentRecord,
+  DocumentVersionRecord,
   FactRecord,
   IngestionCase,
   Member,
@@ -33,6 +36,9 @@ export interface WorkspaceState {
   workspace: Workspace;
   ownerBindings: WorkspaceOwnerBinding[];
   documents: DocumentRecord[];
+  artifacts: ArtifactRecord[];
+  documentVersions: DocumentVersionRecord[];
+  artifactAccessGrants: ArtifactAccessGrantRecord[];
   facts: FactRecord[];
   tasks: TaskRecord[];
   notifications: NotificationRecord[];
@@ -51,7 +57,7 @@ export interface AuthorityCommandReceipt {
   id: string;
   workspaceId: string;
   actorId: string;
-  operationId: "API-P1-105" | "API-P1-107" | "API-P1-109" | "API-P1-111" | "API-P1-113" | "API-P1-115" | "API-P1-116" | "API-P1-117" | "API-P1-119" | "API-P1-120" | "API-P1-143";
+  operationId: "API-P1-105" | "API-P1-107" | "API-P1-109" | "API-P1-111" | "API-P1-113" | "API-P1-115" | "API-P1-116" | "API-P1-117" | "API-P1-119" | "API-P1-120" | "API-P1-124" | "API-P1-127" | "API-P1-128" | "API-P1-143";
   idempotencyKeyHash: string;
   requestFingerprint: string;
   resourceId: string;
@@ -70,7 +76,7 @@ export interface WorkspaceCreationReceipt {
 export interface AuthorityOutboxEvent {
   id: string;
   workspaceId: string;
-  aggregateType: "WORKSPACE_AUTHORITY" | "IngestionCase" | "ArtifactRecord";
+  aggregateType: "WORKSPACE_AUTHORITY" | "IngestionCase" | "ArtifactRecord" | "LogicalDocument";
   aggregateId: string;
   aggregateRevision: number;
   eventType: string;
@@ -110,6 +116,9 @@ export const WORKSPACE_PERSISTENCE = Symbol("WORKSPACE_PERSISTENCE");
 export function normalizeAuthorityLifecycle(state: WorkspaceState): WorkspaceState {
   state.authorityCommandReceipts ??= [];
   state.ingestionCases ??= [];
+  state.artifacts ??= [];
+  state.documentVersions ??= [];
+  state.artifactAccessGrants ??= [];
   for (const ingestionCase of state.ingestionCases) {
     ingestionCase.stageRuns ??= [];
     ingestionCase.stageMessageReceipts ??= [];
