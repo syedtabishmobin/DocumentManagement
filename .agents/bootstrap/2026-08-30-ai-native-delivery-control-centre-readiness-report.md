@@ -49,11 +49,11 @@ The Executive and Trends views, default Burn up insight, separate completion for
 
 ## 7. Evidence & Audit
 
-`/traceability`, `/audit`, `GET /api/v1/trace/<stable-id>`, `GET /api/v1/audit`, `pnpm agent:trace`, and `pnpm agent:audit` provide forward/reverse references, QA/defect/release/decision/notification evidence and baseline/gate history where present in durable sources. Live verification resolves candidate `39a4325f083924dccfbb967805f1a31d04ccd82e`, closed defect #57 and merged PR #56 through commit, PR, Issue/defect, implementation identity, QA, `FIX_READY` and independent-retest evidence. Audit now fails closed when representative GitHub history, commit joins, or QA/fix/retest evidence are absent. Raw GitHub bodies and hidden metadata blocks are not serialized into dashboard output; references are repository path/line or durable GitHub URLs.
+`/traceability`, `/audit`, `GET /api/v1/trace/<stable-id>`, `GET /api/v1/audit`, `pnpm agent:trace`, and `pnpm agent:audit` provide forward and reconstructed reverse references, QA/defect/release/decision/notification evidence and baseline/gate history where present in durable sources. Live verification resolves the historical candidate `39a4325f083924dccfbb967805f1a31d04ccd82e`, closed defect #57 and merged PR #56 through commit, PR, Issue/defect, implementation identity, QA, `FIX_READY` and independent-retest evidence. It also reconstructs static Story, acceptance, test and decision IDs through incoming GitHub references instead of requiring the static record to know every later work item. Eighteen Audit controls fail closed when representative GitHub history, commit joins, QA/fix/retest evidence or required reverse joins are absent. Raw GitHub bodies and hidden metadata blocks are not serialized into dashboard output; references are repository path/line or durable GitHub URLs.
 
 ## 8. Shared IDs / drill-through
 
-The dashboard indexes governed product, outcome, metric, epic, feature, story, acceptance, requirement, API, event, test, decision, ADR, run and display-agent IDs. GitHub Issue/PR records use `issue-<number>` and `pr-<number>` and commit records use normalized 40-character SHAs. Live checks resolve `STORY-P1-006`, `AC-BL-P1-001`, `TEST-SEC-P1-015` and `DEC-036`; labeled `PR #<number>` references cannot be misclassified as Issues.
+The dashboard indexes governed product, outcome, metric, epic, feature, story, acceptance, requirement, API, event, test, decision, ADR, run and display-agent IDs. GitHub Issue/PR records use `issue-<number>` and `pr-<number>` and commit records use normalized 40-character SHAs. Live checks resolve `STORY-P1-006`, `AC-BL-P1-001`, `TEST-SEC-P1-015` and `DEC-036` to authoritative GitHub and measured independent-QA evidence; labeled `PR #<number>` references cannot be misclassified as Issues. Evidence kind is derived from governed attribution activity, so an implementer merely mentioning a pending independent retest cannot be counted as that retest.
 
 ## 9. Token/cost provenance
 
@@ -73,7 +73,7 @@ Usage and cost values retain the vocabulary `MEASURED`, `PROVIDER_REPORTED`, `AT
 - `pnpm verify`: PASS after defect remediation and live seven-item reconciliation.
 - Framework tests: 36/36 PASS.
 - Existing observability smoke tests: 36/36 PASS.
-- Control Centre tests: 15/15 PASS, including live-item mismatch negatives, representative reverse trace, false-positive Audit prevention, raw-body/metadata privacy negatives, attribution-activity evidence classification and Issue/PR shorthand separation.
+- Control Centre tests: 19/19 PASS, including live-item mismatch negatives, reconstructed Story/AC/Test/Decision reverse traces, disconnected-chain and false-positive Audit negatives, raw-body/metadata privacy negatives, attribution-activity evidence classification, governed retest outcomes, pending-retest wording classification and Issue/PR shorthand separation.
 - Dashboard routes: 16/16 HTTP 200; snapshot API 200; mutation probe 405 `READ_ONLY`.
 - Specification, API/event, reference-data, baseline and traceability validators: PASS.
 - TypeScript typecheck, API/web/domain/crypto tests and builds: PASS; 63 application tests passed and four PostgreSQL-only local tests were skipped as designed, with the real PostgreSQL job required in protected CI.
@@ -81,7 +81,7 @@ Usage and cost values retain the vocabulary `MEASURED`, `PROVIDER_REPORTED`, `AT
 
 ## 12. Independent QA results
 
-QA-FUNC-017 failed prior candidate `39a4325f083924dccfbb967805f1a31d04ccd82e` and opened defects #63 and #64. Both defects now have reviewed remediation and regression coverage, but remain open pending `FIX_READY`, protected CI and independent exact-candidate retest. A newly assigned independent QA identity that did not author the fixes must verify the replacement SHA, all seven live Project items, both defects, the full dashboard/specification regression and this report. The implementing agent is not the final approver.
+QA-FUNC-016 failed candidate `39a4325f083924dccfbb967805f1a31d04ccd82e` and opened defects #63 and #64. After the first remediation, protected CI passed candidate `e89c4aeab68597119c466a7ab44f15f559789b55`, but QA-FUNC-017 independently found that static Story/AC/Test/Decision results were still disconnected from their incoming GitHub/QA chains; that candidate therefore remained blocked and unmerged. The second remediation adds bidirectional graph reconstruction and fail-closed Audit controls with regression coverage. Both defects remain open pending protected CI and independent exact-candidate retest. An independent QA identity that did not author the fixes must verify the replacement SHA, all seven live Project items, both defects, the full dashboard/specification regression and this report. The implementing agent is not the final approver.
 
 ## 13. Performance/accessibility results
 
@@ -102,7 +102,7 @@ None expected after live Project reconciliation and independent QA. The Project 
 
 ## 16. Final readiness
 
-`PENDING_REPLACEMENT_CANDIDATE_INDEPENDENT_QA`. Live Project conformance and local verification pass. This section and the report state will be changed to ready only after the replacement SHA is pushed, protected CI passes on that exact SHA, attributed `FIX_READY` evidence is published, independent QA verifies/closes #63/#64, and governance permits merge.
+`PENDING_REPLACEMENT_CANDIDATE_INDEPENDENT_QA`. Live Project conformance, the 18-control Audit and focused local verification pass after the second defect loop. This section and the report state will be changed to ready only after the replacement SHA is pushed, protected CI passes on that exact SHA, attributed `FIX_READY` evidence is published, independent QA verifies/closes #63/#64, and governance permits merge.
 
 ## CONTROL CENTRE ACCESS LINKS
 

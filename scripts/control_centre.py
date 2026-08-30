@@ -251,10 +251,9 @@ def _evidence_record(text: str, url: str | None) -> dict[str, Any] | None:
     activity = metadata.get("activity", "").lower()
     if not metadata:
         return None
-    upper = text.upper()
     if "fix-ready" in activity:
         kind = "FIX_READY"
-    elif "retest" in activity or "INDEPENDENT RETEST" in upper:
+    elif "retest" in activity:
         kind = "INDEPENDENT_RETEST"
     elif metadata.get("display_agent_id", "").startswith(("QA-", "AI-EVAL-")) or "qa" in activity:
         kind = "QA_RESULT"
@@ -262,11 +261,16 @@ def _evidence_record(text: str, url: str | None) -> dict[str, Any] | None:
         kind = "DEFECT_EVIDENCE"
     else:
         kind = "ATTRIBUTED_RECORD"
-    outcome_match = re.search(r"\b(?:VERDICT|RESULT|STATUS)\s*:?\s*[*_` ]*(PASS|FAIL|FIX_READY)\b", upper)
+    outcome_match = re.search(
+        r"\b(?:VERDICT|RESULT|STATUS)[*_` ]*:?\s*[*_` ]*(PASS|FAIL|FIX_READY)\b",
+        text.upper(),
+    )
+    activity_outcome = re.search(r"(?:^|[-_])(pass|fail)(?:$|[-_])", activity)
+    outcome = outcome_match.group(1) if outcome_match else activity_outcome.group(1).upper() if activity_outcome else "UNAVAILABLE"
     return {
         "kind": kind,
         "url": url,
-        "outcome": outcome_match.group(1) if outcome_match else "UNAVAILABLE",
+        "outcome": outcome,
         "attribution": {
             "status": "MEASURED" if metadata.get("display_agent_id") and metadata.get("display_run_id") else "PARTIAL",
             "displayAgentId": metadata.get("display_agent_id"),
@@ -396,6 +400,65 @@ def github_trace_records(github: dict[str, Any], repository: str) -> tuple[dict[
     return dict(sorted(records.items())), dict(sorted(commits.items()))
 
 
+def trace_graph_walk(
+    records: dict[str, dict[str, Any]],
+    start_id: str,
+    *,
+    max_depth: int = 4,
+    max_records: int = 64,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Walk direct and reverse shared-ID edges, prioritising durable evidence nodes."""
+    reverse: dict[str, set[str]] = defaultdict(set)
+    for record in records.values():
+        for related_id in record.get("relatedIds", []):
+            if related_id in records:
+                reverse[related_id].add(record["id"])
+
+    def priority(stable_id: str) -> tuple[int, str]:
+        kind = records[stable_id].get("kind", "UNAVAILABLE")
+        if kind in {"GITHUB_ISSUE", "GITHUB_DEFECT", "GITHUB_PULL_REQUEST", "GIT_COMMIT"}:
+            return 0, stable_id
+        if kind in {"AGENT_ID", "DISPLAY_RUN"}:
+            return 1, stable_id
+        return 2, stable_id
+
+    visited: set[str] = set()
+    frontier = [(start_id, 0)] if start_id in records else []
+    chain: list[dict[str, Any]] = []
+    evidence: list[dict[str, Any]] = []
+    evidence_seen: set[tuple[Any, ...]] = set()
+    while frontier and len(chain) < max_records:
+        current_id, depth = frontier.pop(0)
+        if current_id in visited or current_id not in records:
+            continue
+        visited.add(current_id)
+        current = records[current_id]
+        chain.append({
+            "id": current["id"],
+            "kind": current.get("kind", "UNAVAILABLE"),
+            "state": current.get("state", "UNAVAILABLE"),
+            "url": current.get("url"),
+            "source": current.get("source"),
+            "depth": depth,
+        })
+        for item in current.get("evidence", []):
+            identity = (
+                item.get("kind"), item.get("url"), item.get("outcome"),
+                item.get("attribution", {}).get("displayAgentId"),
+                item.get("attribution", {}).get("displayRunId"),
+            )
+            if identity not in evidence_seen:
+                evidence_seen.add(identity)
+                evidence.append(item)
+        if depth < max_depth:
+            neighbours = (
+                {item for item in current.get("relatedIds", []) if item in records}
+                | reverse.get(current_id, set())
+            ) - visited
+            frontier.extend((item, depth + 1) for item in sorted(neighbours, key=priority))
+    return chain, evidence
+
+
 def historical_trends(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     buckets: dict[str, Counter[str]] = defaultdict(Counter)
     for event in events:
@@ -489,6 +552,18 @@ def build_audit(
     evidence = [entry for item in github_traces.values() for entry in item.get("evidence", [])]
     evidence_kinds = {item["kind"] for item in evidence}
     attributed_evidence = [item for item in evidence if item.get("attribution", {}).get("status") == "MEASURED"]
+    all_trace_records = {**traces, **github_traces, **commit_traces}
+
+    def reconstructed(stable_id: str, *, require_qa: bool) -> bool:
+        chain, chain_evidence = trace_graph_walk(all_trace_records, stable_id)
+        kinds = {item["kind"] for item in chain}
+        has_github = bool(kinds & {"GITHUB_ISSUE", "GITHUB_DEFECT", "GITHUB_PULL_REQUEST"})
+        has_qa = any(
+            item["kind"] in {"QA_RESULT", "INDEPENDENT_RETEST"}
+            and item.get("attribution", {}).get("status") == "MEASURED"
+            for item in chain_evidence
+        )
+        return has_github and (has_qa if require_qa else True)
 
     def complete_chain() -> bool:
         for commit in commit_traces.values():
@@ -552,6 +627,18 @@ def build_audit(
         "CC-AUD-016",
         complete_chain(),
         "Representative commit → pull request → Issue/defect → independent evidence chain resolves end to end",
+    )
+    check(
+        "CC-AUD-017",
+        reconstructed("STORY-P1-006", require_qa=True),
+        "Representative Story reverse trace reaches authoritative GitHub and independently attributed QA evidence",
+    )
+    check(
+        "CC-AUD-018",
+        reconstructed("AC-BL-P1-001", require_qa=False)
+        and reconstructed("TEST-SEC-P1-015", require_qa=True)
+        and reconstructed("DEC-036", require_qa=True),
+        "Representative acceptance, test and decision reverse traces reach applicable GitHub and assurance evidence",
     )
     return {
         "status": "PASS" if all(item["status"] == "PASS" for item in checks) else "FAIL",
@@ -689,27 +776,7 @@ def trace_lookup(snapshot: dict[str, Any], stable_id: str) -> dict[str, Any]:
     records.update({item["id"]: item for item in snapshot["traceability"]["githubRecords"]})
     records.update({item["id"]: item for item in snapshot["traceability"]["commitRecords"]})
     selected = records.get(normalized)
-    visited: set[str] = set()
-    frontier = [(normalized, 0)] if selected else []
-    chain: list[dict[str, Any]] = []
-    evidence: list[dict[str, Any]] = []
-    while frontier and len(chain) < 64:
-        current_id, depth = frontier.pop(0)
-        if current_id in visited or current_id not in records:
-            continue
-        visited.add(current_id)
-        current = records[current_id]
-        chain.append({
-            "id": current["id"],
-            "kind": current.get("kind", "UNAVAILABLE"),
-            "state": current.get("state", "UNAVAILABLE"),
-            "url": current.get("url"),
-            "source": current.get("source"),
-            "depth": depth,
-        })
-        evidence.extend(current.get("evidence", []))
-        if depth < 4:
-            frontier.extend((related_id, depth + 1) for related_id in current.get("relatedIds", []))
+    chain, evidence = trace_graph_walk(records, normalized)
     return {
         "id": normalized,
         "status": "FOUND" if selected else "NOT_FOUND",

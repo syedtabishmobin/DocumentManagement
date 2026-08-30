@@ -68,7 +68,7 @@ GITHUB_DELIVERY_FIXTURE = {
     "availability": "MEASURED",
     "issues": [
         {"number": 61, "title": "Control Centre", "url": "https://github.com/syedtabishmobin/DocumentManagement/issues/61", "state": "OPEN", "labels": ["type:work"], "body": "Tracked by https://github.com/syedtabishmobin/DocumentManagement/pull/62"},
-        {"number": 64, "title": "Reverse trace defect", "url": "https://github.com/syedtabishmobin/DocumentManagement/issues/64", "state": "OPEN", "labels": ["type:defect"], "body": "Issue #61 / PR https://github.com/syedtabishmobin/DocumentManagement/pull/62"},
+        {"number": 64, "title": "Reverse trace defect", "url": "https://github.com/syedtabishmobin/DocumentManagement/issues/64", "state": "OPEN", "labels": ["type:defect"], "body": attributed_record(display_agent_id="QA-FUNC-017", role="Independent Functional QA", activity="independent-defect-finding", run_id="RUN-20260830-0079", commit=CONTROL_CENTRE_SHA, body="Issue #61 / PR https://github.com/syedtabishmobin/DocumentManagement/pull/62; STORY-P1-006; AC-BL-P1-001; TEST-SEC-P1-015; DEC-036")},
         {"number": 55, "title": "Safety containment", "url": "https://github.com/syedtabishmobin/DocumentManagement/issues/55", "state": "CLOSED", "labels": ["type:work"], "body": "STORY-P1-005"},
         {"number": 57, "title": "Historical defect", "url": "https://github.com/syedtabishmobin/DocumentManagement/issues/57", "state": "CLOSED", "labels": ["type:defect"], "body": "STORY-P1-005; PR https://github.com/syedtabishmobin/DocumentManagement/pull/56"},
     ],
@@ -140,6 +140,25 @@ class ControlCentreTests(unittest.TestCase):
         self.assertEqual(pull["record"]["state"], "MERGED")
         self.assertIn(MERGED_SHA, pull["record"]["relatedIds"])
 
+    def test_static_story_acceptance_test_and_decision_reconstruct_github_assurance(self) -> None:
+        snapshot = self.snapshot()
+        expectations = {
+            "STORY-P1-006": {"issue-64", "pr-62"},
+            "AC-BL-P1-001": {"issue-64"},
+            "TEST-SEC-P1-015": {"issue-64"},
+            "DEC-036": {"issue-57", "pr-56"},
+        }
+        for stable_id, expected in expectations.items():
+            result = control_centre.trace_lookup(snapshot, stable_id)
+            self.assertEqual(result["status"], "FOUND")
+            self.assertTrue(expected.issubset({item["id"] for item in result["chain"]}), stable_id)
+        for stable_id in ("STORY-P1-006", "TEST-SEC-P1-015", "DEC-036"):
+            result = control_centre.trace_lookup(snapshot, stable_id)
+            self.assertTrue(
+                any(item["kind"] in {"QA_RESULT", "INDEPENDENT_RETEST"} for item in result["evidence"]),
+                stable_id,
+            )
+
     def test_evidence_kind_uses_attributed_activity_not_incidental_fix_ready_text(self) -> None:
         record = attributed_record(
             display_agent_id="ORCH-010",
@@ -152,6 +171,33 @@ class ControlCentreTests(unittest.TestCase):
         evidence = control_centre._evidence_record(record, "https://github.com/example/issues/61")
         self.assertIsNotNone(evidence)
         self.assertEqual(evidence["kind"], "ATTRIBUTED_RECORD")
+
+    def test_evidence_kind_does_not_treat_pending_retest_wording_as_retest(self) -> None:
+        record = attributed_record(
+            display_agent_id="ORCH-010",
+            role="Orchestrator",
+            activity="fix-coordination",
+            run_id="RUN-20260830-0078",
+            commit=CONTROL_CENTRE_SHA,
+            body="Independent retest remains pending.",
+        )
+        evidence = control_centre._evidence_record(record, "https://example.invalid/comment")
+        self.assertIsNotNone(evidence)
+        self.assertEqual(evidence["kind"], "ATTRIBUTED_RECORD")
+
+    def test_evidence_outcome_uses_governed_activity_when_body_has_no_verdict_field(self) -> None:
+        record = attributed_record(
+            display_agent_id="QA-FUNC-017",
+            role="Independent Functional QA",
+            activity="independent-retest-fail",
+            run_id="RUN-20260830-0079",
+            commit=CONTROL_CENTRE_SHA,
+            body="Independent replacement-candidate retest did not pass its gate.",
+        )
+        evidence = control_centre._evidence_record(record, "https://example.invalid/comment")
+        self.assertIsNotNone(evidence)
+        self.assertEqual(evidence["kind"], "INDEPENDENT_RETEST")
+        self.assertEqual(evidence["outcome"], "FAIL")
 
     def test_labeled_pr_shorthand_does_not_create_a_spurious_issue_join(self) -> None:
         related = control_centre._text_trace_ids(
@@ -171,7 +217,7 @@ class ControlCentreTests(unittest.TestCase):
         self.assertGreater(snapshot["traceability"]["stableIdCount"], 0)
         self.assertEqual(snapshot["audit"]["status"], "FAIL")
         failed = {item["id"] for item in snapshot["audit"]["checks"] if item["status"] == "FAIL"}
-        self.assertTrue({"CC-AUD-011", "CC-AUD-012", "CC-AUD-013", "CC-AUD-015", "CC-AUD-016"}.issubset(failed))
+        self.assertTrue({"CC-AUD-011", "CC-AUD-012", "CC-AUD-013", "CC-AUD-015", "CC-AUD-016", "CC-AUD-017", "CC-AUD-018"}.issubset(failed))
 
     def test_audit_fails_when_qa_fix_retest_join_is_missing(self) -> None:
         delivery = deepcopy(GITHUB_DELIVERY_FIXTURE)
@@ -179,7 +225,14 @@ class ControlCentreTests(unittest.TestCase):
         snapshot = self.snapshot(delivery)
         failed = {item["id"] for item in snapshot["audit"]["checks"] if item["status"] == "FAIL"}
         self.assertIn("CC-AUD-015", failed)
-        self.assertIn("CC-AUD-016", failed)
+
+    def test_audit_fails_when_required_static_classes_are_disconnected_from_github(self) -> None:
+        delivery = deepcopy(GITHUB_DELIVERY_FIXTURE)
+        issue = next(item for item in delivery["issues"] if item["number"] == 64)
+        issue["body"] = "Issue #61 / PR https://github.com/syedtabishmobin/DocumentManagement/pull/62"
+        snapshot = self.snapshot(delivery)
+        failed = {item["id"] for item in snapshot["audit"]["checks"] if item["status"] == "FAIL"}
+        self.assertTrue({"CC-AUD-017", "CC-AUD-018"}.issubset(failed))
 
     def test_unavailable_history_is_explicit_and_raw_artifact_content_is_not_exposed(self) -> None:
         unavailable = {
