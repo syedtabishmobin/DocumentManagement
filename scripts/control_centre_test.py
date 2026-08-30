@@ -87,6 +87,7 @@ class ControlCentreTests(unittest.TestCase):
     def test_project_reconcile_preserves_option_identity_when_renaming_defaults(self) -> None:
         config = control_centre.load_json(control_centre.CONFIG_PATH)
         live = {
+            "items": {"nodes": []},
             "fields": {"nodes": [
                 {"__typename": "ProjectV2SingleSelectField", "id": "status-id", "name": "Status", "options": [
                     {"id": "todo-id", "name": "Todo", "color": "GRAY", "description": "not started"},

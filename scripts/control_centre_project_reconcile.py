@@ -77,6 +77,12 @@ def query_project(config: dict[str, Any]) -> dict[str, Any]:
           views(first:50) {{ nodes {{ id number name layout filter }} }}
           items(first:200) {{ nodes {{
             id
+            workType: fieldValueByName(name:"Work Type") {{
+              ... on ProjectV2ItemFieldSingleSelectValue {{ name }}
+            }}
+            statusValue: fieldValueByName(name:"Status") {{
+              ... on ProjectV2ItemFieldSingleSelectValue {{ name }}
+            }}
             content {{
               __typename
               ... on Issue {{ number }}
@@ -105,6 +111,16 @@ def reconcile_options(config: dict[str, Any], live: dict[str, Any]) -> list[str]
         if not field or field["__typename"] != "ProjectV2SingleSelectField":
             raise RuntimeError(f"required single-select field unavailable: {field_name}")
         current = {item["name"]: item for item in field["options"]}
+        usage_key = {"Work Type": "workType", "Status": "statusValue"}.get(field_name)
+        used_names = {
+            item[usage_key]["name"]
+            for item in live["items"]["nodes"]
+            if usage_key and item.get(usage_key) and item[usage_key].get("name")
+        }
+        permitted_alias_sources = set(OPTION_ALIASES.get(field_name, {}).values())
+        removed_in_use = used_names - set(expected_names) - permitted_alias_sources
+        if removed_in_use:
+            raise RuntimeError(f"field {field_name} has in-use options without a governed migration: {sorted(removed_in_use)}")
         options = []
         for index, name in enumerate(expected_names):
             old_name = OPTION_ALIASES.get(field_name, {}).get(name, name)
