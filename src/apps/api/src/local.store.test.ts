@@ -213,8 +213,10 @@ describe("LocalStore", () => {
     await expect(detail(uploaded.id)).rejects.toThrow("not available");
     await expect(artifact(uploaded.id)).rejects.toThrow("not available");
     await expect(store.deleteDocument(workspaceId, actor, uploaded.id, await effect("document.delete", "DOCUMENT", uploaded.id), "corr-test-clinical-delete")).rejects.toThrow("not available");
-    const exported = await store.exportWorkspace(workspaceId, actor, await effect("export.create", "WORKSPACE"), "corr-test-clinical-export");
-    expect(JSON.stringify(exported)).not.toContain(uploaded.id);
+    const exported = await store.exportWorkspace(workspaceId, actor, await effect("export.create", "WORKSPACE"), "corr-test-workspace-export");
+    const exportBody = JSON.stringify(exported);
+    expect(exportBody).not.toContain(uploaded.id);
+    for (const forbidden of ["Document contained", "item is contained", "CONTENT_CONTAINED", "CONTAINED_CONTENT", "POLICY_HOLD", "Clinical note", "diagnosis", "pathology", "corr-test-clinical"]) expect(exportBody).not.toContain(forbidden);
     const authority = await store.dashboard(workspaceId);
     expect(authority.audit).toEqual(expect.arrayContaining([
       expect.objectContaining({ type: "CONTAINED_CONTENT_ACCESS_DENIED", outcome: "DENIED", decisionReason: "CONTENT_CONTAINED" }),

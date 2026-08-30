@@ -495,6 +495,7 @@ export interface TaskRecord {
 export interface NotificationRecord {
   id: string;
   workspaceId: string;
+  documentId?: string;
   title: string;
   detail: string;
   severity: Severity;

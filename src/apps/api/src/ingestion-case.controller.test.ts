@@ -71,9 +71,9 @@ describe("durable multi-route IngestionCase HTTP boundary", () => {
         expect((await fetch(`${base}/documents/${documentId}/artifact`, { headers: headers(`contained-artifact-000${index + 1}`) })).status).toBe(404);
         expect((await fetch(`${base}/documents/${documentId}`, { method: "DELETE", headers: headers(`contained-delete-000${index + 1}`) })).status).toBe(404);
       }
-      const workspaceExport = await fetch(`${base}/exports/current`, { headers: headers("contained-export-0001") }); expect(workspaceExport.status).toBe(200); const exportBody = JSON.stringify(await workspaceExport.json());
+      const workspaceExport = await fetch(`${base}/exports/current`, { headers: headers("workspace-export-0001") }); expect(workspaceExport.status).toBe(200); const exportBody = JSON.stringify(await workspaceExport.json());
       for (const documentId of [maliciousDocument.id, scannerDocument.id, clinicalDocument.id]) expect(exportBody).not.toContain(documentId);
-      expect(exportBody).not.toContain("Restricted document");
+      for (const forbidden of ["Restricted document", "Document contained", "item is contained", "CONTENT_CONTAINED", "CONTAINED_CONTENT", "INGESTION_SAFETY_RETRY", "POLICY_HOLD", "QUARANTINED", "legacy-malware", "legacy-scanner-indeterminate", "legacy-clinical", "scanner-retry", "clinical-retry"]) expect(exportBody).not.toContain(forbidden);
       const containedState = JSON.parse(await readFile(join(directory, "state.json"), "utf8")) as { workspaces: Array<{ workspace: { id: string }; ingestionCases: Array<{ id: string; documentId: string | null; state: string; revision: number }> }> };
       const cases = containedState.workspaces.find((item) => item.workspace.id === workspace.id)!.ingestionCases;
       expect(cases.find((item) => item.documentId === maliciousDocument.id)).toMatchObject({ state: "QUARANTINED", revision: 3 });
@@ -92,7 +92,7 @@ describe("durable multi-route IngestionCase HTTP boundary", () => {
       const manualReplay = await fetch(`${base}/documents/manual`, { method: "POST", headers: headers("legacy-manual-capture-0001"), body: JSON.stringify(manualBody) });
       expect(manualReplay.status).toBe(201); expect(await manualReplay.json()).toMatchObject({ id: manualDocument.id });
 
-      const persisted = JSON.parse(await readFile(join(directory, "state.json"), "utf8")) as { workspaces: Array<{ workspace: { id: string }; ingestionCases: Array<{ id: string; attempts: Array<Record<string, unknown>> }>; audit: Array<{ type: string; detail: string; correlationId?: string }> }>; authorityOutbox: Array<{ eventType: string; correlationId: string; eventEnvelope?: Record<string, unknown> }> };
+      const persisted = JSON.parse(await readFile(join(directory, "state.json"), "utf8")) as { workspaces: Array<{ workspace: { id: string }; ingestionCases: Array<{ id: string; attempts: Array<Record<string, unknown>> }>; notifications: Array<{ documentId?: string }>; audit: Array<{ type: string; detail: string; correlationId?: string }> }>; authorityOutbox: Array<{ eventType: string; correlationId: string; eventEnvelope?: Record<string, unknown> }> };
       const authority = persisted.workspaces.find((item) => item.workspace.id === workspace.id)!; const stored = authority.ingestionCases.find((item) => item.id === created.ingestion_case_id)!;
       expect(stored.attempts).toHaveLength(3);
       expect(authority.ingestionCases.filter((item) => item.id !== created.ingestion_case_id)).toHaveLength(6);
@@ -112,6 +112,7 @@ describe("durable multi-route IngestionCase HTTP boundary", () => {
       expect(authority.audit.filter((entry) => entry.type === "CONTAINED_CONTENT_ACCESS_DENIED")).toHaveLength(7);
       expect(authority.audit.filter((entry) => entry.type === "CONTAINED_CONTENT_DISPOSITION_DENIED")).toHaveLength(3);
       expect(authority.audit.filter((entry) => entry.type === "INGESTION_SAFETY_RETRY_DENIED")).toHaveLength(2);
+      expect(authority.notifications.filter((notification) => notification.documentId && [maliciousDocument.id, scannerDocument.id, clinicalDocument.id].includes(notification.documentId))).toHaveLength(3);
       expect(JSON.stringify(authority.audit)).not.toContain("source-synthetic-camera-001"); expect(JSON.stringify(authority.audit)).not.toContain("digest-ref-synthetic-001");
       expect(JSON.stringify(authority.audit)).not.toContain("EICAR-STANDARD"); expect(JSON.stringify(authority.audit)).not.toContain("Clinical note"); expect(JSON.stringify(persisted.authorityOutbox)).not.toContain("SYNTHETIC-SCANNER-UNAVAILABLE");
     } finally { await app.close(); }

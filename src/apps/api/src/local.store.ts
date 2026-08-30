@@ -511,9 +511,10 @@ function recordAuthorityDenial(
   detail: string,
   correlationId: string,
   authorization: Pick<AuditRecord, "policyVersion" | "authorizationEpoch" | "authorizationPhase" | "decisionReason">,
+  resource?: Pick<AuditRecord, "resourceType" | "resourceId">,
 ): void {
   const audit: AuditRecord = {
-    id: randomUUID(), workspaceId: state.workspace.id, type, resourceType: "WORKSPACE", resourceId: state.workspace.id,
+    id: randomUUID(), workspaceId: state.workspace.id, type, resourceType: resource?.resourceType ?? "WORKSPACE", resourceId: resource?.resourceId ?? state.workspace.id,
     actor: actor.displayName, actorId: actor.identityId, action, outcome: "DENIED", correlationId, detail, at: now(),
     ...authorization,
   };
@@ -539,7 +540,7 @@ export class LocalStore {
     else if (adapter !== "file") throw new Error(`Unsupported DM_AUTHORITY_STORE value: ${adapter}`);
   }
 
-  private async recordContainmentDenial(workspaceId: string, actor: WorkspaceActor, action: WorkspaceAction, correlationId: string, fence: AuthorizationFence, detail: string): Promise<void> {
+  private async recordContainmentDenial(workspaceId: string, actor: WorkspaceActor, documentId: string, action: WorkspaceAction, correlationId: string, fence: AuthorizationFence, detail: string): Promise<void> {
     await this.mutate((database) => {
       const state = this.state(database, workspaceId);
       recordAuthorityDenial(database, state, actor, "CONTAINED_CONTENT_ACCESS_DENIED", action, detail, correlationId, {
@@ -547,7 +548,7 @@ export class LocalStore {
         authorizationEpoch: fence.authorizationEpoch,
         authorizationPhase: "OUTPUT",
         decisionReason: "CONTENT_CONTAINED",
-      });
+      }, { resourceType: "DOCUMENT", resourceId: documentId });
     });
   }
 
@@ -947,13 +948,14 @@ export class LocalStore {
       state.notifications.unshift({
         id: randomUUID(),
         workspaceId: state.workspace.id,
+        documentId: document.id,
         title: containment.caseState === "PROCESSING" ? "Document safety checks passed" : "Document contained",
         detail: containment.caseState === "PROCESSING" ? "The synthetic item can continue to ordinary processing." : "The item is contained; action is unavailable under the current policy.",
         severity: containment.caseState === "PROCESSING" ? "INFO" : "IMPORTANT",
         read: false,
         createdAt,
       });
-      state.audit.push(auditRecord(state.workspace.id, actor, "DOCUMENT_INGESTED", "DOCUMENT", `Added a document using ${captureRoute.toLowerCase()} capture`, id));
+      state.audit.push(auditRecord(state.workspace.id, actor, "DOCUMENT_INGESTED", "DOCUMENT", `Added a document using ${captureRoute.toLowerCase()} capture`, id, correlationId));
       return documentSummary(document);
     });
   }
@@ -963,7 +965,7 @@ export class LocalStore {
     const document = state.documents.find((item) => item.id === id);
     if (!document || document.status === "DELETED") throw new NotFoundException("Document not found");
     if (document.status === "POLICY_HOLD") {
-      await this.recordContainmentDenial(workspaceId, actor, "document.read", correlationId, fence, "Denied ordinary document detail because content is contained by current policy");
+      await this.recordContainmentDenial(workspaceId, actor, document.id, "document.read", correlationId, fence, "Denied ordinary document detail because content is contained by current policy");
       throw new NotFoundException("Resource not available");
     }
     await this.reauthorize(fence, actor, "OUTPUT", correlationId);
@@ -997,7 +999,7 @@ export class LocalStore {
     const document = state.documents.find((item) => item.id === id);
     if (!document || document.status === "DELETED") throw new NotFoundException("Document not found");
     if (document.status === "POLICY_HOLD") {
-      await this.recordContainmentDenial(workspaceId, actor, "document.read", correlationId, fence, "Denied ordinary artifact access because content is contained by current policy");
+      await this.recordContainmentDenial(workspaceId, actor, document.id, "document.read", correlationId, fence, "Denied ordinary artifact access because content is contained by current policy");
       throw new NotFoundException("Resource not available");
     }
     await this.reauthorize(fence, actor, "OUTPUT", correlationId);
@@ -1366,13 +1368,13 @@ export class LocalStore {
       if (!ingestionCase?.artifactId || !ingestionCase.documentId) return "NOT_AVAILABLE";
       if (ingestionCase.revision !== expectedRevision) return "STALE";
       if (ingestionCase.state === "POLICY_HOLD") {
-        recordAuthorityDenial(database, state, actor, "INGESTION_SAFETY_RETRY_DENIED", "document.create", "Denied safety retry because disposition is unavailable under the current containment-only policy", correlationId, { policyVersion: decision.policyVersion, authorizationEpoch: decision.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: "CONTENT_CONTAINED" });
+        recordAuthorityDenial(database, state, actor, "INGESTION_SAFETY_RETRY_DENIED", "document.create", "Denied safety retry because disposition is unavailable under the current containment-only policy", correlationId, { policyVersion: decision.policyVersion, authorizationEpoch: decision.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: "CONTENT_CONTAINED" }, { resourceType: "DOCUMENT", resourceId: ingestionCase.documentId });
         return "POLICY_CONTAINED";
       }
       if (ingestionCase.state !== "QUARANTINED") return "RETRY_UNAVAILABLE";
       const safetyAttempts = ingestionCase.attempts.filter((attempt) => attempt.kind === "SAFETY_CHECK").length;
       if (safetyAttempts >= 3) {
-        recordAuthorityDenial(database, state, actor, "INGESTION_SAFETY_RETRY_DENIED", "document.create", "Denied safety retry because the bounded attempt budget is exhausted", correlationId, { policyVersion: decision.policyVersion, authorizationEpoch: decision.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: "RETRY_BUDGET_EXHAUSTED" });
+        recordAuthorityDenial(database, state, actor, "INGESTION_SAFETY_RETRY_DENIED", "document.create", "Denied safety retry because the bounded attempt budget is exhausted", correlationId, { policyVersion: decision.policyVersion, authorizationEpoch: decision.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: "RETRY_BUDGET_EXHAUSTED" }, { resourceType: "DOCUMENT", resourceId: ingestionCase.documentId });
         return "RETRY_UNAVAILABLE";
       }
       const document = state.documents.find((item) => item.id === ingestionCase.documentId);
@@ -1628,7 +1630,7 @@ export class LocalStore {
       const document = state.documents.find((item) => item.id === id);
       if (!document) throw new NotFoundException("Document not found");
       if (document.status === "POLICY_HOLD") {
-        recordAuthorityDenial(database, state, actor, "CONTAINED_CONTENT_DISPOSITION_DENIED", "document.delete", "Denied ordinary deletion because disposition is unavailable under the current containment-only policy", correlationId, { policyVersion: fence.policyVersion, authorizationEpoch: fence.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: "CONTENT_CONTAINED" });
+        recordAuthorityDenial(database, state, actor, "CONTAINED_CONTENT_DISPOSITION_DENIED", "document.delete", "Denied ordinary deletion because disposition is unavailable under the current containment-only policy", correlationId, { policyVersion: fence.policyVersion, authorizationEpoch: fence.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: "CONTENT_CONTAINED" }, { resourceType: "DOCUMENT", resourceId: document.id });
         return "POLICY_CONTAINED";
       }
       if (document.status === "DELETED" && document.deletedAt && document.purgeDueAt) {
@@ -1698,15 +1700,23 @@ export class LocalStore {
         ...containedDocumentIds,
         ...containedCases.flatMap((ingestionCase) => [ingestionCase.id, ingestionCase.documentId, ingestionCase.artifactId].filter((id): id is string => Boolean(id))),
       ]);
+      const containedCorrelationIds = new Set([
+        ...containedCases.flatMap((ingestionCase) => ingestionCase.attempts.map((attempt) => attempt.correlationId)),
+        ...state.audit.filter((entry) => entry.resourceId && containedEvidenceIds.has(entry.resourceId)).map((entry) => entry.correlationId).filter((id): id is string => Boolean(id)),
+      ]);
       return {
         ...state,
         documents: state.documents.filter((document) => exportableDocumentIds.has(document.id)).map(({ extractedText: _content, ...document }) => document),
         facts: state.facts.filter((fact) => exportableDocumentIds.has(fact.documentId)),
         dependencies: state.dependencies.filter((edge) => exportableDocumentIds.has(edge.evidenceDocumentId)),
         tasks: state.tasks.filter((task) => !task.documentId || exportableDocumentIds.has(task.documentId)),
+        notifications: state.notifications.filter((notification) => {
+          if (notification.documentId) return exportableDocumentIds.has(notification.documentId);
+          return !/contain|quarantin|policy hold|safety retry/i.test(`${notification.title} ${notification.detail}`);
+        }),
         ingestionCases: state.ingestionCases.filter((ingestionCase) => !containedEvidenceIds.has(ingestionCase.id)),
         authorityCommandReceipts: state.authorityCommandReceipts.filter((receipt) => !containedEvidenceIds.has(receipt.resourceId)),
-        audit: state.audit.filter((entry) => !entry.resourceId || !containedEvidenceIds.has(entry.resourceId)),
+        audit: state.audit.filter((entry) => (!entry.resourceId || !containedEvidenceIds.has(entry.resourceId)) && (!entry.correlationId || !containedCorrelationIds.has(entry.correlationId))),
       } as WorkspaceState;
     });
   }
