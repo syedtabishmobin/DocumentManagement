@@ -50,14 +50,26 @@ export interface WorkspaceState {
   audit: AuditRecord[];
   dependencies: DependencyRecord[];
   ingestionCases: IngestionCase[];
+  policyBlockedCases: PolicyBlockedCaseRecord[];
   authorityCommandReceipts: AuthorityCommandReceipt[];
+}
+
+export interface PolicyBlockedCaseRecord {
+  id: string;
+  workspaceId: string;
+  caseKind: "WORKSPACE_RECOVERY";
+  requestedScope: "ACCOUNT" | "WORKSPACE_OWNERSHIP";
+  state: "POLICY_BLOCKED";
+  decisionFence: "DEC-038";
+  createdAt: string;
+  revision: 1;
 }
 
 export interface AuthorityCommandReceipt {
   id: string;
   workspaceId: string;
   actorId: string;
-  operationId: "API-P1-105" | "API-P1-107" | "API-P1-109" | "API-P1-111" | "API-P1-113" | "API-P1-115" | "API-P1-116" | "API-P1-117" | "API-P1-119" | "API-P1-120" | "API-P1-124" | "API-P1-127" | "API-P1-128" | "API-P1-143";
+  operationId: "API-P1-105" | "API-P1-107" | "API-P1-109" | "API-P1-111" | "API-P1-113" | "API-P1-115" | "API-P1-116" | "API-P1-117" | "API-P1-119" | "API-P1-120" | "API-P1-124" | "API-P1-127" | "API-P1-128" | "API-P1-143" | "API-P1-181";
   idempotencyKeyHash: string;
   requestFingerprint: string;
   resourceId: string;
@@ -115,6 +127,7 @@ export const WORKSPACE_PERSISTENCE = Symbol("WORKSPACE_PERSISTENCE");
  */
 export function normalizeAuthorityLifecycle(state: WorkspaceState): WorkspaceState {
   state.authorityCommandReceipts ??= [];
+  state.policyBlockedCases ??= [];
   state.ingestionCases ??= [];
   state.artifacts ??= [];
   state.documentVersions ??= [];

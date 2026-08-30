@@ -15,6 +15,7 @@ import type {
   CanonicalCommitIngestionReceiptInput,
   CanonicalArtifactAccessGrantInput,
   CanonicalDocumentLifecycleTransitionInput,
+  CanonicalRequestRecoveryCaseInput,
   CanonicalRedeemArtifactAccessGrantInput,
   CreateSubjectInput,
   DashboardSnapshot,
@@ -46,6 +47,7 @@ import {
   WORKSPACE_PERSISTENCE,
   type AuthorityOutboxEvent,
   type AuthorityCommandReceipt,
+  type PolicyBlockedCaseRecord,
   type WorkspaceActor,
   type WorkspaceDatabase,
   type WorkspaceCreationContext,
@@ -257,6 +259,7 @@ function initialState(actor: WorkspaceActor, name: string, type: Workspace["type
     }],
     dependencies: [],
     ingestionCases: [],
+    policyBlockedCases: [],
     authorityCommandReceipts: [],
   };
 }
@@ -2321,14 +2324,23 @@ export class LocalStore {
     });
   }
 
-  async recordRecoveryBlocked(workspaceId: string, actor: WorkspaceActor, fence: AuthorizationFence, correlationId: string): Promise<{ caseId: string; workspaceId: string; caseKind: "WORKSPACE_RECOVERY"; state: "POLICY_BLOCKED"; decisionFence: "DEC-038"; createdAt: string; revision: 1 }> {
+  async recordRecoveryBlocked(workspaceId: string, actor: WorkspaceActor, input: CanonicalRequestRecoveryCaseInput, idempotencyKey: string, fence: AuthorizationFence, correlationId: string): Promise<PolicyBlockedCaseRecord> {
     return this.mutate((database) => {
       const state = this.state(database, workspaceId);
       this.requireEffectAuthorization(database, state, actor, fence, { action: "workspace.read", resourceKind: "WORKSPACE", resourceId: workspaceId }, correlationId);
+      const fingerprint = { requestedScope: input.requested_scope, evidenceSubmissionCount: input.evidence_submission_refs.length };
+      const prior = priorCommandReceipt(state, actor, "API-P1-181", idempotencyKey, fingerprint);
+      if (prior) {
+        const blockedCase = state.policyBlockedCases.find((candidate) => candidate.id === prior.resourceId);
+        if (!blockedCase) throw new ConflictException("The prior command result is unavailable");
+        return { ...blockedCase };
+      }
       const createdAt = now();
-      const caseId = randomUUID();
-      recordAuthorityTransition(database, state, actor, "RECOVERY_POLICY_BLOCKED", "WORKSPACE", "Recovery and ownership transfer remain unavailable under DEC-038", workspaceId);
-      return { caseId, workspaceId, caseKind: "WORKSPACE_RECOVERY", state: "POLICY_BLOCKED", decisionFence: "DEC-038", createdAt, revision: 1 };
+      const blockedCase: PolicyBlockedCaseRecord = { id: randomUUID(), workspaceId, caseKind: "WORKSPACE_RECOVERY", requestedScope: input.requested_scope, state: "POLICY_BLOCKED", decisionFence: "DEC-038", createdAt, revision: 1 };
+      state.policyBlockedCases.push(blockedCase);
+      appendCommandReceipt(state, actor, "API-P1-181", idempotencyKey, fingerprint, blockedCase.id, blockedCase.revision);
+      recordAuthorityTransition(database, state, actor, "RECOVERY_POLICY_BLOCKED", "WORKSPACE", "Recovery and ownership transfer remain unavailable under DEC-038", workspaceId, correlationId, { policyVersion: fence.policyVersion, authorizationEpoch: state.authorizationEpoch.value, authorizationPhase: "EFFECT", decisionReason: "DECISION_FENCE" });
+      return { ...blockedCase };
     });
   }
 }

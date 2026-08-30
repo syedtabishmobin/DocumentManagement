@@ -520,9 +520,12 @@ describe("LocalStore", () => {
   });
 
   it("records the approved recovery-unavailable policy boundary", async () => {
-    const recoveryCase = await store.recordRecoveryBlocked(workspaceId, actor, await effect("workspace.read", "WORKSPACE", workspaceId), "corr-test-recovery-blocked");
+    const input = { requested_scope: "WORKSPACE_OWNERSHIP" as const, evidence_submission_refs: [] };
+    const recoveryCase = await store.recordRecoveryBlocked(workspaceId, actor, input, "recovery-blocked-0001", await effect("workspace.read", "WORKSPACE", workspaceId), "corr-test-recovery-blocked");
     expect(recoveryCase).toMatchObject({ workspaceId, state: "POLICY_BLOCKED", decisionFence: "DEC-038" });
-    expect((await store.dashboard(workspaceId)).audit[0]).toMatchObject({ type: "RECOVERY_POLICY_BLOCKED", actorId: actor.identityId });
+    await expect(store.recordRecoveryBlocked(workspaceId, actor, input, "recovery-blocked-0001", await effect("workspace.read", "WORKSPACE", workspaceId), "corr-test-recovery-replay")).resolves.toEqual(recoveryCase);
+    await expect(store.recordRecoveryBlocked(workspaceId, actor, { ...input, requested_scope: "ACCOUNT" }, "recovery-blocked-0001", await effect("workspace.read", "WORKSPACE", workspaceId), "corr-test-recovery-conflict")).rejects.toThrow("different input");
+    expect((await store.dashboard(workspaceId)).audit).toContainEqual(expect.objectContaining({ type: "RECOVERY_POLICY_BLOCKED", actorId: actor.identityId }));
   });
 
   it("distinguishes prepared connector registrations from activated adapters without loading secrets", () => {

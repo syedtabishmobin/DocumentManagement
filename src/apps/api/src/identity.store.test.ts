@@ -35,13 +35,21 @@ describe("IdentityStore", () => {
     expect(persisted).not.toContain(registered.credentials.csrfToken);
     expect(persisted).not.toContain(current.csrfToken!);
 
+    const secondDevice = await store.login({ email: "owner@example.test", password: "synthetic-password" }, "second-device-before-privilege-change");
     const completed = await store.completeOnboarding(registered.identity.account.id, registered.credentials.token, "wrk_test");
     expect(completed.identity).toMatchObject({ onboardingComplete: true, activeWorkspaceId: "wrk_test" });
     await expect(store.requireSession(registered.credentials.token)).rejects.toThrow("Sign in required");
+    await expect(store.requireSession(secondDevice.credentials.token)).rejects.toThrow("Sign in required");
     await expect(store.requireSession(completed.credentials.token, completed.credentials.csrfToken, true)).resolves.toMatchObject({ activeWorkspaceId: "wrk_test" });
 
     await store.logout(completed.credentials.token);
     expect(await store.session(completed.credentials.token)).toEqual({});
+    const finalState = JSON.parse(await readFile(join(directory, "identity.json"), "utf8")) as { schemaVersion: number; securityEvents: Array<{ eventType: string; accountId: string; securityVersion: number }> };
+    expect(finalState.schemaVersion).toBe(3);
+    expect(finalState.securityEvents.map((event) => event.eventType)).toEqual(expect.arrayContaining(["SESSION_ISSUED", "SECURITY_STATE_ROTATED", "SESSION_LOGGED_OUT"]));
+    expect(finalState.securityEvents.every((event) => event.accountId === registered.identity.account.id && event.securityVersion >= 1)).toBe(true);
+    expect(JSON.stringify(finalState.securityEvents)).not.toContain("synthetic-password");
+    expect(JSON.stringify(finalState.securityEvents)).not.toContain(completed.credentials.token);
   });
 
   it("supports separate identities while rejecting duplicate email ownership", async () => {

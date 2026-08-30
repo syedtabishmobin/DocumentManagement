@@ -52,11 +52,21 @@ interface LoginAttemptRecord {
   lockUntil?: string;
 }
 
+interface IdentitySecurityEventRecord {
+  id: string;
+  accountId: string;
+  sessionId?: string;
+  eventType: "SESSION_ISSUED" | "SECURITY_STATE_ROTATED" | "SESSION_ROTATED" | "SESSION_REVOKED" | "SESSION_LOGGED_OUT";
+  securityVersion: number;
+  occurredAt: string;
+}
+
 interface IdentityState {
-  schemaVersion: 2;
+  schemaVersion: 3;
   accounts: AccountRecord[];
   sessions: SessionRecord[];
   loginAttempts: LoginAttemptRecord[];
+  securityEvents: IdentitySecurityEventRecord[];
 }
 
 interface PersistedIdentityInput {
@@ -64,6 +74,7 @@ interface PersistedIdentityInput {
   accounts?: Array<Partial<AccountRecord> & Pick<AccountRecord, "id" | "displayName" | "email" | "passwordHash" | "salt" | "onboardingComplete" | "createdAt">>;
   sessions?: Array<Partial<SessionRecord> & { tokenHash: string; accountId: string; expiresAt?: string }>;
   loginAttempts?: LoginAttemptRecord[];
+  securityEvents?: IdentitySecurityEventRecord[];
 }
 
 export interface SessionCredentials {
@@ -109,7 +120,7 @@ export class IdentityStore {
   private normalize(input: PersistedIdentityInput): IdentityState {
     const updatedAt = new Date().toISOString();
     return {
-      schemaVersion: 2,
+      schemaVersion: 3,
       accounts: (input.accounts ?? []).map((account) => ({
         id: account.id,
         displayName: account.displayName,
@@ -143,6 +154,7 @@ export class IdentityStore {
         }];
       }),
       loginAttempts: input.loginAttempts ?? [],
+      securityEvents: input.securityEvents ?? [],
     };
   }
 
@@ -151,7 +163,7 @@ export class IdentityStore {
       return this.normalize(JSON.parse(await readFile(this.path, "utf8")) as PersistedIdentityInput);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-      return { schemaVersion: 2, accounts: [], sessions: [], loginAttempts: [] };
+      return { schemaVersion: 3, accounts: [], sessions: [], loginAttempts: [], securityEvents: [] };
     }
   }
 
@@ -201,6 +213,7 @@ export class IdentityStore {
       ...(activeWorkspaceId ? { activeWorkspaceId } : {}),
     };
     state.sessions.push(session);
+    state.securityEvents.push({ id: randomUUID(), accountId: account.id, sessionId: session.id, eventType: "SESSION_ISSUED", securityVersion: account.securityVersion, occurredAt: createdAt });
     return { identity: this.publicIdentity(account, session), credentials: { token, csrfToken } };
   }
 
@@ -315,6 +328,7 @@ export class IdentityStore {
       account.securityVersion += 1;
       account.updatedAt = iso(at);
       state.sessions = state.sessions.filter((candidate) => candidate.accountId !== accountId);
+      state.securityEvents.push({ id: randomUUID(), accountId, eventType: "SECURITY_STATE_ROTATED", securityVersion: account.securityVersion, occurredAt: iso(at) });
       return this.issueSession(state, account, at, workspaceId);
     });
   }
@@ -328,6 +342,7 @@ export class IdentityStore {
       account.activeWorkspaceId = workspaceId;
       account.updatedAt = iso(at);
       state.sessions = state.sessions.filter((candidate) => candidate.id !== currentSession.id);
+      state.securityEvents.push({ id: randomUUID(), accountId, sessionId: currentSession.id, eventType: "SESSION_ROTATED", securityVersion: account.securityVersion, occurredAt: iso(at) });
       return this.issueSession(state, account, at, workspaceId);
     });
   }
@@ -343,16 +358,21 @@ export class IdentityStore {
 
   async revokeSession(accountId: string, sessionId: string): Promise<boolean> {
     return this.mutate((state) => {
-      const before = state.sessions.length;
+      const account = state.accounts.find((candidate) => candidate.id === accountId);
+      const revoked = state.sessions.find((session) => session.accountId === accountId && session.id === sessionId);
       state.sessions = state.sessions.filter((session) => session.accountId !== accountId || session.id !== sessionId);
-      return state.sessions.length !== before;
+      if (revoked && account) state.securityEvents.push({ id: randomUUID(), accountId, sessionId, eventType: "SESSION_REVOKED", securityVersion: account.securityVersion, occurredAt: new Date().toISOString() });
+      return Boolean(revoked);
     });
   }
 
   async logout(token?: string): Promise<void> {
     if (!token) return;
     await this.mutate((state) => {
+      const loggedOut = state.sessions.find((session) => session.tokenHash === hash(token));
       state.sessions = state.sessions.filter((session) => session.tokenHash !== hash(token));
+      const account = loggedOut ? state.accounts.find((candidate) => candidate.id === loggedOut.accountId) : undefined;
+      if (loggedOut && account) state.securityEvents.push({ id: randomUUID(), accountId: account.id, sessionId: loggedOut.id, eventType: "SESSION_LOGGED_OUT", securityVersion: account.securityVersion, occurredAt: new Date().toISOString() });
     });
   }
 }

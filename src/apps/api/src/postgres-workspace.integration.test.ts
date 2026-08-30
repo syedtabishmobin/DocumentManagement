@@ -178,6 +178,22 @@ integration.sequential("PostgreSQL workspace authority integration", () => {
     await expect(firstPersistence.verifyInvariants()).resolves.toEqual(expect.objectContaining({ workspaces: 1 }));
   });
 
+  it("persists one idempotent DEC-038 policy-blocked recovery case across PostgreSQL restart", async () => {
+    const store = new LocalStore(firstPersistence);
+    const workspace = await store.createWorkspace(actor, "Recovery boundary household", "FAMILY", "real-postgres-recovery-workspace-0001");
+    const input = { requested_scope: "WORKSPACE_OWNERSHIP" as const, evidence_submission_refs: [] };
+    const blocked = await store.recordRecoveryBlocked(workspace.id, actor, input, "real-postgres-recovery-0001", await store.startAuthorization(actor, workspace.id, "workspace.read", "WORKSPACE", workspace.id), "corr-real-postgres-recovery");
+
+    const restarted = new LocalStore(new PostgresWorkspacePersistence({ pool, migrationMode: "verify", migrationsDirectory }));
+    const replay = await restarted.recordRecoveryBlocked(workspace.id, actor, input, "real-postgres-recovery-0001", await restarted.startAuthorization(actor, workspace.id, "workspace.read", "WORKSPACE", workspace.id), "corr-real-postgres-recovery-replay");
+    expect(replay).toEqual(blocked);
+    const state = (await firstPersistence.read()).workspaces.find((candidate) => candidate.workspace.id === workspace.id)!;
+    expect(state.policyBlockedCases).toEqual([blocked]);
+    expect(state.authorityCommandReceipts.filter((receipt) => receipt.operationId === "API-P1-181")).toEqual([expect.objectContaining({ resourceId: blocked.id, resultRevision: 1 })]);
+    expect(state.audit.filter((record) => record.type === "RECOVERY_POLICY_BLOCKED")).toHaveLength(1);
+    await expect(firstPersistence.verifyInvariants()).resolves.toEqual(expect.objectContaining({ workspaces: 1 }));
+  });
+
   it("persists idempotent ingestion cases, attempts and outbox evidence across PostgreSQL restart", async () => {
     const store = new LocalStore(firstPersistence);
     const workspace = await store.createWorkspace(actor, "Ingestion evidence household", "FAMILY", "real-postgres-ingestion-workspace-0001");
