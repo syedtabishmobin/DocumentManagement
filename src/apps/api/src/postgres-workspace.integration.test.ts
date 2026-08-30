@@ -252,6 +252,11 @@ integration.sequential("PostgreSQL workspace authority integration", () => {
     const repaired = await store.processIngestionStageMessage(workspace.id, { identityId: "workload_pg_stage", displayName: "PostgreSQL Stage Runner" }, { ...withoutFault, eventId: "event-real-postgres-stage-lease-repair-0001", expectedRevision: exhausted.ingestionCase.revision, replayGeneration: 1 }, "2026-08-30T02:02:05.000Z");
     expect(repaired).toMatchObject({ ingestionCase: { state: "SAFETY_CHECKING", deadLetters: [expect.objectContaining({ state: "REPAIRED" })] }, run: { attempt: 1, replayGeneration: 1, state: "SUCCEEDED" } });
 
+    const oldGeneration = await store.processIngestionStageMessage(workspace.id, { identityId: "workload_pg_stage", displayName: "PostgreSQL Stage Runner" }, { ...withoutFault, eventId: "event-real-postgres-stage-lease-old-generation-0001", expectedRevision: repaired.ingestionCase.revision }, "2026-08-30T02:02:06.000Z");
+    expect(oldGeneration).toMatchObject({ disposition: "DUPLICATE", run: { attempt: 3, replayGeneration: 0, state: "FAILED_TERMINAL" } });
+    expect(oldGeneration.ingestionCase.stageRuns?.filter((run) => run.replayGeneration === 0)).toHaveLength(3);
+    expect(oldGeneration.ingestionCase.stageRuns?.filter((run) => run.replayGeneration === 1)).toHaveLength(1);
+
     store = new LocalStore(new PostgresWorkspacePersistence({ pool, migrationMode: "verify", migrationsDirectory }));
     const readFence = await store.startAuthorization(actor, workspace.id, "document.read", "WORKSPACE", workspace.id, { correlationId: "corr-real-postgres-stage-lease-read" });
     const persisted = await store.getIngestionCase(workspace.id, actor, created.id, readFence, "corr-real-postgres-stage-lease-read");
