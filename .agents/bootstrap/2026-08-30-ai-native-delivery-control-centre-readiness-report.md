@@ -1,6 +1,6 @@
 # AI-NATIVE DELIVERY CONTROL CENTRE READINESS REPORT
 
-Report state: `PENDING_FINAL_INDEPENDENT_QA`  
+Report state: `PENDING_REPLACEMENT_CANDIDATE_INDEPENDENT_QA`
 Governing work: [Issue #61](https://github.com/syedtabishmobin/DocumentManagement/issues/61) / [PR #62](https://github.com/syedtabishmobin/DocumentManagement/pull/62)  
 Control Centre ID: `DOCULYRA-CONTROL-CENTRE-V1`
 
@@ -28,7 +28,7 @@ No GitHub Pages site, production database, public dashboard or external dashboar
 - Governed select options: exact Work Type, Status and Priority sets from the specification.
 - Views: Executive, Delivery Board, Product Backlog, Active Work, QA & Defects, Human Decisions, Stage & UAT, Roadmap, Completed and Trends.
 - Automation: native auto-add is enabled for `syedtabishmobin/DocumentManagement` with `is:issue,pr`; GitHub's closed-Issue and merged-PR status workflows remain enabled. Automation is presentation-only and cannot bypass governed quality/release gates.
-- Included items: all repository Issues/PRs present at bootstrap plus newly auto-added governed records; live count and exact field/view/workflow conformance are verified by `pnpm agent:project --online`.
+- Included items: all repository Issues/PRs present at bootstrap plus newly auto-added governed records. Live read-back reports 64 records and exact conformance for all seven versioned current items: paused Issue #58 / PR #59 / defect #60, Control Centre Issue #61 / PR #62, and defects #63/#64.
 - Insights: authenticated GitHub Burn up chart filtered to Issues.
 
 ## 4. Delivery Dashboard
@@ -49,11 +49,11 @@ The Executive and Trends views, default Burn up insight, separate completion for
 
 ## 7. Evidence & Audit
 
-`/traceability`, `/audit`, `GET /api/v1/trace/<stable-id>`, `GET /api/v1/audit`, `pnpm agent:trace`, and `pnpm agent:audit` provide forward/reverse references, QA/defect/release/decision/notification evidence and baseline/gate history where present in durable sources. No source content is copied into the index; references are repository path/line or durable GitHub URLs.
+`/traceability`, `/audit`, `GET /api/v1/trace/<stable-id>`, `GET /api/v1/audit`, `pnpm agent:trace`, and `pnpm agent:audit` provide forward/reverse references, QA/defect/release/decision/notification evidence and baseline/gate history where present in durable sources. Live verification resolves candidate `39a4325f083924dccfbb967805f1a31d04ccd82e`, closed defect #57 and merged PR #56 through commit, PR, Issue/defect, implementation identity, QA, `FIX_READY` and independent-retest evidence. Audit now fails closed when representative GitHub history, commit joins, or QA/fix/retest evidence are absent. Raw GitHub bodies and hidden metadata blocks are not serialized into dashboard output; references are repository path/line or durable GitHub URLs.
 
 ## 8. Shared IDs / drill-through
 
-The dashboard indexes governed product, outcome, metric, epic, feature, story, acceptance, requirement, API, event, test, decision, ADR, run and display-agent IDs. GitHub Issue/PR records use `issue-<number>` and `pr-<number>`. `pnpm agent:trace STORY-P1-006` independently proves repository drill-through and related-ID discovery.
+The dashboard indexes governed product, outcome, metric, epic, feature, story, acceptance, requirement, API, event, test, decision, ADR, run and display-agent IDs. GitHub Issue/PR records use `issue-<number>` and `pr-<number>` and commit records use normalized 40-character SHAs. Live checks resolve `STORY-P1-006`, `AC-BL-P1-001`, `TEST-SEC-P1-015` and `DEC-036`; labeled `PR #<number>` references cannot be misclassified as Issues.
 
 ## 9. Token/cost provenance
 
@@ -70,22 +70,22 @@ Usage and cost values retain the vocabulary `MEASURED`, `PROVIDER_REPORTED`, `AT
 
 ## 11. Automated test results
 
-- `pnpm verify`: PASS on the implementation candidate before final evidence-only reconciliation.
+- `pnpm verify`: PASS after defect remediation and live seven-item reconciliation.
 - Framework tests: 36/36 PASS.
 - Existing observability smoke tests: 36/36 PASS.
-- Control Centre tests: 8/8 PASS, including fail-closed option-identity migration coverage.
+- Control Centre tests: 15/15 PASS, including live-item mismatch negatives, representative reverse trace, false-positive Audit prevention, raw-body/metadata privacy negatives, attribution-activity evidence classification and Issue/PR shorthand separation.
 - Dashboard routes: 16/16 HTTP 200; snapshot API 200; mutation probe 405 `READ_ONLY`.
 - Specification, API/event, reference-data, baseline and traceability validators: PASS.
-- TypeScript typecheck, API/web/domain/crypto tests and builds: PASS; PostgreSQL-only local skips remain covered by protected CI.
+- TypeScript typecheck, API/web/domain/crypto tests and builds: PASS; 63 application tests passed and four PostgreSQL-only local tests were skipped as designed, with the real PostgreSQL job required in protected CI.
 - Protected CI evidence is linked in the final exact-candidate update below.
 
 ## 12. Independent QA results
 
-`PENDING_FINAL_INDEPENDENT_QA`. QA-FUNC-017 must verify the immutable final candidate, live Project options/views/workflows/items, local read-only dashboard, stable-ID traceability, privacy, attribution, accessibility, performance, full regression and this report. The implementing agent is not the final approver.
+QA-FUNC-017 failed prior candidate `39a4325f083924dccfbb967805f1a31d04ccd82e` and opened defects #63 and #64. Both defects now have reviewed remediation and regression coverage, but remain open pending `FIX_READY`, protected CI and independent exact-candidate retest. A newly assigned independent QA identity that did not author the fixes must verify the replacement SHA, all seven live Project items, both defects, the full dashboard/specification regression and this report. The implementing agent is not the final approver.
 
 ## 13. Performance/accessibility results
 
-The dashboard caches source snapshots for 30 seconds, limits default trace rows, aggregates retained trends, avoids per-render GitHub calls and performs no high-frequency GitHub writes. Automated checks cover cache reuse and local-only assets. Browser verification covers semantic navigation/headings/tables, labelled controls, skip link, live status, reduced motion and a 390px responsive viewport with no console warnings/errors. Final independent assurance remains required.
+The dashboard caches source snapshots for 30 seconds, limits default trace rows to 250, aggregates retained trends, avoids per-render GitHub calls and performs no high-frequency GitHub writes. Automated checks cover cache reuse and local-only assets. Current browser verification covers populated Audit/Traceability routes, semantic headings/tables, labelled filtering, skip navigation, a 390px responsive viewport, page-level overflow prevention, a scrollable evidence table and no console errors. Final independent assurance remains required.
 
 ## 14. External/admin actions still required
 
@@ -102,7 +102,7 @@ None expected after live Project reconciliation and independent QA. The Project 
 
 ## 16. Final readiness
 
-`PENDING_FINAL_INDEPENDENT_QA`. This section and the report state will be updated only after live Project conformance, exact-candidate protected CI and independent QA all pass.
+`PENDING_REPLACEMENT_CANDIDATE_INDEPENDENT_QA`. Live Project conformance and local verification pass. This section and the report state will be changed to ready only after the replacement SHA is pushed, protected CI passes on that exact SHA, attributed `FIX_READY` evidence is published, independent QA verifies/closes #63/#64, and governance permits merge.
 
 ## CONTROL CENTRE ACCESS LINKS
 
@@ -158,7 +158,12 @@ Start once from the repository root with `pnpm agent:dashboard`, then open the l
 |---|---|---|---|---|
 | Control Centre Issue #61 | https://github.com/syedtabishmobin/DocumentManagement/issues/61 | Persistent | GitHub authentication for account-specific Project context | None |
 | Control Centre PR #62 | https://github.com/syedtabishmobin/DocumentManagement/pull/62 | Persistent | GitHub authentication for account-specific review context | None |
+| Defect #63 — live Project metadata | https://github.com/syedtabishmobin/DocumentManagement/issues/63 | Persistent | GitHub authentication for account-specific Project context | None |
+| Defect #64 — reverse trace and Audit | https://github.com/syedtabishmobin/DocumentManagement/issues/64 | Persistent | GitHub authentication for account-specific Project context | None |
+| PR #62 protected checks | https://github.com/syedtabishmobin/DocumentManagement/pull/62/checks | Persistent | GitHub authentication | None |
 | Initial protected candidate CI | https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33297595077 | Persistent | GitHub authentication | None |
 | Readiness report candidate | https://github.com/syedtabishmobin/DocumentManagement/blob/codex/61-ai-native-control-centre/.agents/bootstrap/2026-08-30-ai-native-delivery-control-centre-readiness-report.md | Persistent while branch/PR exists; final URL moves to `main` after merge | GitHub authentication | None |
 
 The governed product queue remains `PAUSED_BY_PRODUCT_AUTHORITY`. Its next deterministic action is the Backend/API fix for defect #60 on Issue #58 / PR #59, followed by a replacement exact candidate and independent retest. It must not resume automatically when this Control Centre is completed.
+
+AI_NATIVE_DELIVERY_CONTROL_CENTRE_PARTIAL

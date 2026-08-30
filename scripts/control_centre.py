@@ -7,6 +7,7 @@ import argparse
 import json
 import re
 import statistics
+import subprocess
 import threading
 import time
 from collections import Counter, defaultdict
@@ -30,8 +31,28 @@ ID_PATTERN = re.compile(
     r"DEC-[A-Z0-9-]+|ADR-[0-9]+|RUN-[0-9]{8}-[0-9]{4}|"
     r"(?:ORCH|BA|ARCH|SEC|OPS|DEV-(?:BE|WEB|MOB|AI)|QA-(?:FUNC|SEC|E2E)|AI-EVAL)-[0-9]{3})\b"
 )
-SAFE_TRACE_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:#/-]{1,127}$")
+SHA_PATTERN = re.compile(r"(?<![0-9a-f])([0-9a-f]{40})(?![0-9a-f])", re.I)
+ISSUE_URL_PATTERN = re.compile(r"https://github\.com/[^/\s]+/[^/\s]+/issues/([0-9]+)", re.I)
+PULL_URL_PATTERN = re.compile(r"https://github\.com/[^/\s]+/[^/\s]+/pull/([0-9]+)", re.I)
+WORK_ITEM_PATTERN = re.compile(r"\b(issue|pr)-([0-9]+)\b", re.I)
+LABELED_REFERENCE_PATTERN = re.compile(r"\b(issue|pr|pull request)\s*#\s*([0-9]+)\b", re.I)
+SHORTHAND_REFERENCE_PATTERN = re.compile(
+    r"(?<![A-Za-z0-9])(?<!Issue )(?<!PR )(?<!Pull Request )#([0-9]+)\b",
+    re.I,
+)
+ATTRIBUTION_BLOCK_PATTERN = re.compile(r"<!--\s*doculyra-agent-meta:v2\s*\n(?P<body>.*?)\n-->", re.S)
+SAFE_TRACE_ID = re.compile(
+    r"^(?:[0-9a-fA-F]{40}|issue-[0-9]+|pr-[0-9]+|[A-Za-z][A-Za-z0-9._:/-]{1,127})$",
+    re.I,
+)
 MUTATING_METHODS = {"POST", "PUT", "PATCH", "DELETE", "CONNECT", "TRACE"}
+GITHUB_RETENTION = "GitHub repository retention; deleted or inaccessible artifacts are unavailable."
+REPOSITORY_RETENTION = "Reachable local Git history and version-controlled evidence at the observed checkout."
+ATTRIBUTION_FIELDS = {
+    "display_agent_id", "display_role", "activity", "display_run_id", "runtime_agent_id",
+    "runtime_run_id", "parent_display_agent_id", "work_item", "capability_ids", "skill_ids",
+    "tool_ids", "commit", "environment",
+}
 
 
 def load_json(path: Path) -> Any:
@@ -63,7 +84,17 @@ def trace_index(config: dict[str, Any]) -> dict[str, dict[str, Any]]:
         for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
             ids = sorted(set(ID_PATTERN.findall(line)))
             for stable_id in ids:
-                record = records.setdefault(stable_id, {"id": stable_id, "references": [], "relatedIds": set()})
+                record = records.setdefault(stable_id, {
+                    "id": stable_id,
+                    "kind": stable_id_kind(stable_id),
+                    "state": "CURRENT",
+                    "source": {"id": "repository-trace-index", "status": "MEASURED", "freshnessClass": "CURRENT"},
+                    "retentionLimit": REPOSITORY_RETENTION,
+                    "references": [],
+                    "relatedIds": set(),
+                    "evidence": [],
+                    "unavailable": [],
+                })
                 reference = {"path": relative, "line": line_number}
                 if reference not in record["references"]:
                     record["references"].append(reference)
@@ -74,27 +105,295 @@ def trace_index(config: dict[str, Any]) -> dict[str, dict[str, Any]]:
     return dict(sorted(records.items()))
 
 
-def github_trace_records(github: dict[str, Any]) -> dict[str, dict[str, Any]]:
+def stable_id_kind(stable_id: str) -> str:
+    prefixes = {
+        "OUT-P1-": "GOAL", "MET-P1-": "SUCCESS_CRITERION", "EPIC-P1-": "EPIC",
+        "FEAT-P1-": "FEATURE", "STORY-P1-": "STORY", "AC-": "ACCEPTANCE_CRITERION",
+        "REQ-P1-": "REQUIREMENT", "API-P1-": "API_CONTRACT", "EVT-P1-": "EVENT_CONTRACT",
+        "TEST-": "TEST", "DIT-": "TEST", "DEC-": "DECISION", "ADR-": "ARCHITECTURE_DECISION",
+        "RUN-": "DISPLAY_RUN",
+    }
+    return next((kind for prefix, kind in prefixes.items() if stable_id.startswith(prefix)), "AGENT_ID")
+
+
+def _flatten_pages(payload: Any) -> list[dict[str, Any]] | None:
+    if not isinstance(payload, list):
+        return None
+    values = payload
+    if values and all(isinstance(item, list) for item in values):
+        values = [entry for page in values for entry in page]
+    return values if all(isinstance(item, dict) for item in values) else None
+
+
+def _github_collection(repository: str, endpoint: str, timeout: int) -> list[dict[str, Any]] | None:
+    try:
+        result = subprocess.run(
+            ["gh", "api", "--paginate", "--slurp", f"repos/{repository}/{endpoint}"],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=timeout,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode != 0:
+        return None
+    try:
+        return _flatten_pages(json.loads(result.stdout))
+    except json.JSONDecodeError:
+        return None
+
+
+def github_delivery_snapshot(config: dict[str, Any], online: bool) -> dict[str, Any]:
+    """Read durable GitHub metadata, minimizing bodies/comments before returning."""
+    if not online:
+        return {
+            "availability": "UNAVAILABLE",
+            "issues": [],
+            "pullRequests": [],
+            "comments": [],
+            "unavailable": ["Online GitHub history was not requested."],
+            "retentionLimit": GITHUB_RETENTION,
+        }
+    repository = config["repository"]
+    timeout = config["dashboard"]["githubTimeoutSeconds"]
+    raw_issues = _github_collection(repository, "issues?state=all&per_page=100", timeout)
+    raw_pulls = _github_collection(repository, "pulls?state=all&per_page=100", timeout)
+    raw_comments = _github_collection(repository, "issues/comments?per_page=100", timeout)
+    unavailable = [
+        label for label, value in (
+            ("GitHub Issue history is unavailable.", raw_issues),
+            ("GitHub pull-request history is unavailable.", raw_pulls),
+            ("GitHub durable comment evidence is unavailable.", raw_comments),
+        ) if value is None
+    ]
+
+    issues = []
+    for item in raw_issues or []:
+        if item.get("pull_request") or not isinstance(item.get("number"), int):
+            continue
+        issues.append({
+            "number": item["number"],
+            "title": str(item.get("title") or "")[:240],
+            "url": item.get("html_url"),
+            "state": str(item.get("state") or "UNKNOWN").upper(),
+            "labels": [str(label.get("name")) for label in item.get("labels", []) if isinstance(label, dict) and label.get("name")],
+            "body": item.get("body") if isinstance(item.get("body"), str) else "",
+        })
+    pulls = []
+    for item in raw_pulls or []:
+        if not isinstance(item.get("number"), int):
+            continue
+        pulls.append({
+            "number": item["number"],
+            "title": str(item.get("title") or "")[:240],
+            "url": item.get("html_url"),
+            "state": "MERGED" if item.get("merged_at") else str(item.get("state") or "UNKNOWN").upper(),
+            "branch": (item.get("head") or {}).get("ref"),
+            "headCommit": (item.get("head") or {}).get("sha"),
+            "mergeCommit": item.get("merge_commit_sha"),
+            "body": item.get("body") if isinstance(item.get("body"), str) else "",
+        })
+    comments = []
+    for item in raw_comments or []:
+        issue_url = str(item.get("issue_url") or "")
+        number_match = re.search(r"/issues/([0-9]+)$", issue_url)
+        if not number_match:
+            continue
+        comments.append({
+            "number": int(number_match.group(1)),
+            "url": item.get("html_url"),
+            "body": item.get("body") if isinstance(item.get("body"), str) else "",
+        })
+    measured = sum(value is not None for value in (raw_issues, raw_pulls, raw_comments))
+    return {
+        "availability": "MEASURED" if measured == 3 else "PARTIAL" if measured else "UNAVAILABLE",
+        "issues": issues,
+        "pullRequests": pulls,
+        "comments": comments,
+        "unavailable": unavailable,
+        "retentionLimit": GITHUB_RETENTION,
+    }
+
+
+def _metadata_values(text: str) -> dict[str, str]:
+    match = ATTRIBUTION_BLOCK_PATTERN.search(text)
+    if not match:
+        return {}
+    values: dict[str, str] = {}
+    for line in match.group("body").splitlines():
+        if "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        if key in ATTRIBUTION_FIELDS and re.fullmatch(r"[A-Za-z0-9._:/,# -]{1,512}", value):
+            values[key] = value
+    return values
+
+
+def _text_trace_ids(text: str, *, shorthand_kind: str | None = None) -> set[str]:
+    result = set(ID_PATTERN.findall(text))
+    result.update(match.lower() for match in SHA_PATTERN.findall(text))
+    result.update(f"issue-{number}" for number in ISSUE_URL_PATTERN.findall(text))
+    result.update(f"pr-{number}" for number in PULL_URL_PATTERN.findall(text))
+    result.update(f"{kind.lower()}-{number}" for kind, number in WORK_ITEM_PATTERN.findall(text))
+    result.update(
+        f"{'pr' if kind.lower() in {'pr', 'pull request'} else 'issue'}-{number}"
+        for kind, number in LABELED_REFERENCE_PATTERN.findall(text)
+    )
+    if shorthand_kind:
+        result.update(f"{shorthand_kind}-{number}" for number in SHORTHAND_REFERENCE_PATTERN.findall(text))
+    return result
+
+
+def _evidence_record(text: str, url: str | None) -> dict[str, Any] | None:
+    metadata = _metadata_values(text)
+    activity = metadata.get("activity", "").lower()
+    if not metadata:
+        return None
+    upper = text.upper()
+    if "fix-ready" in activity:
+        kind = "FIX_READY"
+    elif "retest" in activity or "INDEPENDENT RETEST" in upper:
+        kind = "INDEPENDENT_RETEST"
+    elif metadata.get("display_agent_id", "").startswith(("QA-", "AI-EVAL-")) or "qa" in activity:
+        kind = "QA_RESULT"
+    elif "defect" in activity:
+        kind = "DEFECT_EVIDENCE"
+    else:
+        kind = "ATTRIBUTED_RECORD"
+    outcome_match = re.search(r"\b(?:VERDICT|RESULT|STATUS)\s*:?\s*[*_` ]*(PASS|FAIL|FIX_READY)\b", upper)
+    return {
+        "kind": kind,
+        "url": url,
+        "outcome": outcome_match.group(1) if outcome_match else "UNAVAILABLE",
+        "attribution": {
+            "status": "MEASURED" if metadata.get("display_agent_id") and metadata.get("display_run_id") else "PARTIAL",
+            "displayAgentId": metadata.get("display_agent_id"),
+            "displayRole": metadata.get("display_role"),
+            "activity": metadata.get("activity"),
+            "displayRunId": metadata.get("display_run_id"),
+            "runtimeAgentId": metadata.get("runtime_agent_id"),
+            "runtimeRunId": metadata.get("runtime_run_id"),
+            "parentDisplayAgentId": metadata.get("parent_display_agent_id"),
+            "environment": metadata.get("environment"),
+        },
+        "relatedIds": sorted(_text_trace_ids(text)),
+    }
+
+
+def repository_commit_records(repository: str) -> dict[str, dict[str, Any]]:
+    try:
+        result = subprocess.run(
+            ["git", "log", "--all", "--format=%H%x00%s"], cwd=ROOT, text=True,
+            capture_output=True, check=False, timeout=20,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return {}
+    if result.returncode != 0:
+        return {}
     records: dict[str, dict[str, Any]] = {}
-    for item in github.get("openIssues") or []:
+    for line in result.stdout.splitlines():
+        if "\x00" not in line:
+            continue
+        sha, subject = line.split("\x00", 1)
+        if not SHA_PATTERN.fullmatch(sha):
+            continue
+        related = _text_trace_ids(subject)
+        related.update(f"pr-{number}" for number in re.findall(r"\(#([0-9]+)\)", subject))
+        records[sha.lower()] = {
+            "id": sha.lower(),
+            "kind": "GIT_COMMIT",
+            "state": "REPOSITORY_HISTORY",
+            "url": f"https://github.com/{repository}/commit/{sha.lower()}",
+            "source": {"id": "local-git-history", "status": "MEASURED", "freshnessClass": "CURRENT"},
+            "retentionLimit": REPOSITORY_RETENTION,
+            "relatedIds": sorted(related),
+            "evidence": [],
+            "unavailable": [],
+        }
+    return records
+
+
+def github_trace_records(github: dict[str, Any], repository: str) -> tuple[dict[str, dict[str, Any]], dict[str, dict[str, Any]]]:
+    records: dict[str, dict[str, Any]] = {}
+    commits = repository_commit_records(repository)
+    issue_numbers: set[int] = set()
+    pull_numbers: set[int] = set()
+
+    for item in github.get("issues") or []:
         stable_id = f"issue-{item['number']}"
+        issue_numbers.add(item["number"])
+        labels = item.get("labels", [])
+        text = f"{item.get('title', '')}\n{item.get('body', '')}"
+        evidence = _evidence_record(item.get("body", ""), item.get("url"))
         records[stable_id] = {
             "id": stable_id,
-            "kind": "GITHUB_ISSUE",
-            "title": item["title"],
-            "url": item["url"],
-            "labels": [label["name"] for label in item.get("labels", [])],
+            "kind": "GITHUB_DEFECT" if "type:defect" in labels else "GITHUB_ISSUE",
+            "state": item.get("state", "UNKNOWN"),
+            "title": item.get("title"),
+            "url": item.get("url"),
+            "labels": labels,
+            "source": {"id": "github-governed-history", "status": github["availability"], "freshnessClass": "CURRENT"},
+            "retentionLimit": github.get("retentionLimit", GITHUB_RETENTION),
+            "relatedIds": sorted(_text_trace_ids(text, shorthand_kind="issue") - {stable_id}),
+            "evidence": [evidence] if evidence else [],
+            "unavailable": list(github.get("unavailable") or []),
         }
-    for item in github.get("openPullRequests") or []:
+    for item in github.get("pullRequests") or []:
         stable_id = f"pr-{item['number']}"
+        pull_numbers.add(item["number"])
+        text = f"{item.get('title', '')}\n{item.get('body', '')}"
+        related = _text_trace_ids(text, shorthand_kind="issue") - {stable_id}
+        evidence = _evidence_record(item.get("body", ""), item.get("url"))
+        for field in ("headCommit", "mergeCommit"):
+            sha = item.get(field)
+            if isinstance(sha, str) and SHA_PATTERN.fullmatch(sha):
+                sha = sha.lower()
+                related.add(sha)
+                commit = commits.setdefault(sha, {
+                    "id": sha,
+                    "kind": "GIT_COMMIT",
+                    "state": "GITHUB_HISTORY",
+                    "url": f"https://github.com/{repository}/commit/{sha}",
+                    "source": {"id": "github-governed-history", "status": github["availability"], "freshnessClass": "CURRENT"},
+                    "retentionLimit": github.get("retentionLimit", GITHUB_RETENTION),
+                    "relatedIds": [],
+                    "evidence": [],
+                    "unavailable": list(github.get("unavailable") or []),
+                })
+                commit["relatedIds"] = sorted(set(commit.get("relatedIds", [])) | {stable_id})
         records[stable_id] = {
             "id": stable_id,
             "kind": "GITHUB_PULL_REQUEST",
-            "title": item["title"],
-            "url": item["url"],
-            "branch": item.get("headRefName"),
+            "state": item.get("state", "UNKNOWN"),
+            "title": item.get("title"),
+            "url": item.get("url"),
+            "branch": item.get("branch"),
+            "source": {"id": "github-governed-history", "status": github["availability"], "freshnessClass": "CURRENT"},
+            "retentionLimit": github.get("retentionLimit", GITHUB_RETENTION),
+            "relatedIds": sorted(related),
+            "evidence": [evidence] if evidence else [],
+            "unavailable": list(github.get("unavailable") or []),
         }
-    return records
+    for comment in github.get("comments") or []:
+        number = comment["number"]
+        target = f"pr-{number}" if number in pull_numbers else f"issue-{number}" if number in issue_numbers else None
+        if not target or target not in records:
+            continue
+        text = comment.get("body", "")
+        records[target]["relatedIds"] = sorted(set(records[target]["relatedIds"]) | (_text_trace_ids(text) - {target}))
+        evidence = _evidence_record(text, comment.get("url"))
+        if evidence:
+            records[target]["evidence"].append(evidence)
+
+    combined = {**records, **commits}
+    for record in list(combined.values()):
+        for related_id in list(record.get("relatedIds", [])):
+            if related_id in combined:
+                related = combined[related_id]
+                related["relatedIds"] = sorted(set(related.get("relatedIds", [])) | {record["id"]})
+    return dict(sorted(records.items())), dict(sorted(commits.items()))
 
 
 def historical_trends(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -164,6 +463,9 @@ def build_audit(
     config: dict[str, Any],
     status: dict[str, Any],
     traces: dict[str, dict[str, Any]],
+    github_delivery: dict[str, Any],
+    github_traces: dict[str, dict[str, Any]],
+    commit_traces: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
     checks: list[dict[str, Any]] = []
 
@@ -180,6 +482,33 @@ def build_audit(
     checkpoint = load_json(ROOT / ".agents/state/control-centre-checkpoint.json")
     assignments = load_json(ROOT / ".agents/state/agent-display-assignments.json")["assignments"]
     notification = status["notifications"]
+    static_kinds = {item["kind"] for item in traces.values()}
+    issue_states = {item["state"] for item in github_traces.values() if item["kind"] in {"GITHUB_ISSUE", "GITHUB_DEFECT"}}
+    defect_states = {item["state"] for item in github_traces.values() if item["kind"] == "GITHUB_DEFECT"}
+    pull_states = {item["state"] for item in github_traces.values() if item["kind"] == "GITHUB_PULL_REQUEST"}
+    evidence = [entry for item in github_traces.values() for entry in item.get("evidence", [])]
+    evidence_kinds = {item["kind"] for item in evidence}
+    attributed_evidence = [item for item in evidence if item.get("attribution", {}).get("status") == "MEASURED"]
+
+    def complete_chain() -> bool:
+        for commit in commit_traces.values():
+            for pr_id in commit.get("relatedIds", []):
+                pull = github_traces.get(pr_id)
+                if not pull or pull["kind"] != "GITHUB_PULL_REQUEST":
+                    continue
+                issue_ids = [item for item in pull.get("relatedIds", []) if item.startswith("issue-")]
+                chain_evidence = list(pull.get("evidence", []))
+                chain_evidence.extend(
+                    entry for issue_id in issue_ids for entry in github_traces.get(issue_id, {}).get("evidence", [])
+                )
+                if issue_ids and any(
+                    item["kind"] in {"QA_RESULT", "INDEPENDENT_RETEST"}
+                    and item.get("attribution", {}).get("status") == "MEASURED"
+                    for item in chain_evidence
+                ):
+                    return True
+        return False
+
     check("CC-AUD-001", project["title"] == "Doculyra Product Delivery" and len(project["fields"]) == 22, "Configured Project title and 22 governed fields")
     check("CC-AUD-002", len(project["views"]) == 10 and len({item["name"] for item in project["views"]}) == 10, "Ten distinct specified Project views")
     check("CC-AUD-003", actual_routes == expected_routes, "All sixteen dashboard routes configured")
@@ -187,9 +516,43 @@ def build_audit(
     check("CC-AUD-005", config["dashboard"]["bindHost"] == "127.0.0.1" and config["privacy"]["loopbackOnly"] is True, "Loopback-only server binding")
     check("CC-AUD-006", checkpoint["queueState"] == "PAUSED_BY_PRODUCT_AUTHORITY" and checkpoint["dispatchAllowed"] is False, "Durable paused-queue checkpoint")
     check("CC-AUD-007", any(item["displayAgentId"] == "ORCH-010" and item["workItem"] == "issue-61" for item in assignments), "Registered human-readable/runtime identity join")
-    check("CC-AUD-008", bool(traces), "Shared-ID repository trace index is non-empty")
+    check(
+        "CC-AUD-008",
+        {"GOAL", "FEATURE", "STORY", "ACCEPTANCE_CRITERION", "TEST", "DECISION"}.issubset(static_kinds),
+        "Representative goal, feature, story, acceptance, test and decision IDs resolve from repository sources",
+    )
     check("CC-AUD-009", notification["operational"] is True, "Product Authority notification adapter remains operational")
     check("CC-AUD-010", status["nativeTelemetry"]["tokenStatus"] in {"MEASURED", "PROVIDER_REPORTED", "ATTRIBUTED", "ESTIMATED", "UNAVAILABLE"}, "Token provenance is explicit")
+    check(
+        "CC-AUD-011",
+        github_delivery["availability"] == "MEASURED" and {"OPEN", "CLOSED"}.issubset(issue_states),
+        "Complete current/historical GitHub source with representative open and closed Issues",
+    )
+    check(
+        "CC-AUD-012",
+        {"OPEN", "CLOSED"}.issubset(defect_states),
+        "Representative open and closed governed defects resolve",
+    )
+    check(
+        "CC-AUD-013",
+        {"OPEN", "MERGED"}.issubset(pull_states),
+        "Representative open and merged pull requests resolve",
+    )
+    check(
+        "CC-AUD-014",
+        bool(commit_traces) and any(any(item.startswith("pr-") for item in record.get("relatedIds", [])) for record in commit_traces.values()),
+        "Commit history contains a reverse join to a governed pull request",
+    )
+    check(
+        "CC-AUD-015",
+        {"QA_RESULT", "FIX_READY", "INDEPENDENT_RETEST"}.issubset(evidence_kinds) and bool(attributed_evidence),
+        "Durable QA, FIX_READY and independent-retest evidence includes measured agent attribution",
+    )
+    check(
+        "CC-AUD-016",
+        complete_chain(),
+        "Representative commit → pull request → Issue/defect → independent evidence chain resolves end to end",
+    )
     return {
         "status": "PASS" if all(item["status"] == "PASS" for item in checks) else "FAIL",
         "checks": checks,
@@ -213,16 +576,19 @@ def build_snapshot(
     summary_7 = agent_ops.summary_snapshot(events, 7, now)
     summary_30 = agent_ops.summary_snapshot(events, 30, now)
     traces = trace_index(config)
-    github_traces = github_trace_records(status["github"])
+    github_delivery = github_delivery_snapshot(config, online)
+    github_traces, commit_traces = github_trace_records(github_delivery, config["repository"])
     baseline = load_json(ROOT / "docs/10-backlog/build-baseline.v1.json")
     metric_catalog = load_json(ROOT / ".agents/observability/metric-catalog.json")
-    audit = build_audit(config, status, traces)
+    audit = build_audit(config, status, traces, github_delivery, github_traces, commit_traces)
     github_status = status["github"]["availability"]
     sources = [
         source_record("agent-ops-local-store", "LIVE", "AVAILABLE", generated_at, f"{len(events)} validated retained events"),
         source_record("github-control-plane", "CURRENT", github_status, generated_at, "GitHub Issues and pull requests queried on refresh"),
         source_record("approved-build-baseline", "CURRENT", "AVAILABLE", generated_at, baseline["baselineId"]),
         source_record("repository-trace-index", "CURRENT", "AVAILABLE", generated_at, f"{len(traces)} stable IDs indexed"),
+        source_record("local-git-history", "CURRENT", "AVAILABLE" if commit_traces else "UNAVAILABLE", generated_at, REPOSITORY_RETENTION),
+        source_record("github-governed-history", "CURRENT", github_delivery["availability"], generated_at, github_delivery["retentionLimit"]),
         source_record("retained-event-trends", "HISTORICAL", "AVAILABLE" if events else "UNAVAILABLE", generated_at, "Bounded by local retention policy"),
     ]
     return {
@@ -291,8 +657,22 @@ def build_snapshot(
             "baselineId": baseline["baselineId"],
             "hierarchy": baseline["approvedHierarchy"],
             "stableIdCount": len(traces),
+            "governedRecordCount": len(github_traces),
+            "commitRecordCount": len(commit_traces),
             "records": list(traces.values()),
             "githubRecords": list(github_traces.values()),
+            "commitRecords": list(commit_traces.values()),
+            "sourceStatus": {
+                "repository": "MEASURED",
+                "github": github_delivery["availability"],
+                "runtimeEvents": "MEASURED" if events else "UNAVAILABLE",
+            },
+            "retentionLimits": {
+                "repository": REPOSITORY_RETENTION,
+                "github": github_delivery["retentionLimit"],
+                "runtimeEvents": f"{agent_ops.config()['runtimeStore']['retentionDays']} days; expired events are physically pruned.",
+            },
+            "unavailable": github_delivery["unavailable"],
         },
         "audit": audit,
         "historicalTrends": historical_trends(events),
@@ -304,12 +684,41 @@ def build_snapshot(
 def trace_lookup(snapshot: dict[str, Any], stable_id: str) -> dict[str, Any]:
     if not SAFE_TRACE_ID.fullmatch(stable_id):
         raise ValueError("trace ID must be a normalized stable identifier")
+    normalized = stable_id.lower() if SHA_PATTERN.fullmatch(stable_id) or stable_id.lower().startswith(("issue-", "pr-")) else stable_id.upper()
     records = {item["id"]: item for item in snapshot["traceability"]["records"]}
     records.update({item["id"]: item for item in snapshot["traceability"]["githubRecords"]})
+    records.update({item["id"]: item for item in snapshot["traceability"]["commitRecords"]})
+    selected = records.get(normalized)
+    visited: set[str] = set()
+    frontier = [(normalized, 0)] if selected else []
+    chain: list[dict[str, Any]] = []
+    evidence: list[dict[str, Any]] = []
+    while frontier and len(chain) < 64:
+        current_id, depth = frontier.pop(0)
+        if current_id in visited or current_id not in records:
+            continue
+        visited.add(current_id)
+        current = records[current_id]
+        chain.append({
+            "id": current["id"],
+            "kind": current.get("kind", "UNAVAILABLE"),
+            "state": current.get("state", "UNAVAILABLE"),
+            "url": current.get("url"),
+            "source": current.get("source"),
+            "depth": depth,
+        })
+        evidence.extend(current.get("evidence", []))
+        if depth < 4:
+            frontier.extend((related_id, depth + 1) for related_id in current.get("relatedIds", []))
     return {
-        "id": stable_id,
-        "status": "FOUND" if stable_id in records else "NOT_FOUND",
-        "record": records.get(stable_id),
+        "id": normalized,
+        "status": "FOUND" if selected else "NOT_FOUND",
+        "record": selected,
+        "chain": chain,
+        "evidence": evidence,
+        "sourceStatus": snapshot["traceability"]["sourceStatus"],
+        "retentionLimits": snapshot["traceability"]["retentionLimits"],
+        "unavailable": snapshot["traceability"]["unavailable"],
         "generatedAt": snapshot["generatedAt"],
     }
 

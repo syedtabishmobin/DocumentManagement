@@ -9,6 +9,7 @@ import threading
 import unittest
 import urllib.error
 import urllib.request
+from copy import deepcopy
 from pathlib import Path
 from unittest.mock import patch
 
@@ -30,6 +31,61 @@ GITHUB_FIXTURE = {
 }
 
 
+def attributed_record(
+    *,
+    display_agent_id: str,
+    role: str,
+    activity: str,
+    run_id: str,
+    commit: str,
+    body: str,
+) -> str:
+    return f"""**🤖 {role} · {display_agent_id}**
+`{activity}` · `{run_id}`
+
+{body}
+
+<!-- doculyra-agent-meta:v2
+display_agent_id={display_agent_id}
+display_role={role}
+activity={activity}
+display_run_id={run_id}
+runtime_agent_id=codex-00000000-0000-0000-0000-000000000001
+runtime_run_id=run-control-centre-test
+parent_display_agent_id=ORCH-010
+work_item=issue-61/pr-62
+capability_ids=independent-qa,telemetry-validation
+skill_ids=telemetry-validation
+tool_ids=git,github-issues
+commit={commit}
+environment=agent-local
+-->"""
+
+
+CONTROL_CENTRE_SHA = "39a4325f083924dccfbb967805f1a31d04ccd82e"
+MERGED_SHA = "65798b1f083924dccfbb967805f1a31d04ccd82e"
+GITHUB_DELIVERY_FIXTURE = {
+    "availability": "MEASURED",
+    "issues": [
+        {"number": 61, "title": "Control Centre", "url": "https://github.com/syedtabishmobin/DocumentManagement/issues/61", "state": "OPEN", "labels": ["type:work"], "body": "Tracked by https://github.com/syedtabishmobin/DocumentManagement/pull/62"},
+        {"number": 64, "title": "Reverse trace defect", "url": "https://github.com/syedtabishmobin/DocumentManagement/issues/64", "state": "OPEN", "labels": ["type:defect"], "body": "Issue #61 / PR https://github.com/syedtabishmobin/DocumentManagement/pull/62"},
+        {"number": 55, "title": "Safety containment", "url": "https://github.com/syedtabishmobin/DocumentManagement/issues/55", "state": "CLOSED", "labels": ["type:work"], "body": "STORY-P1-005"},
+        {"number": 57, "title": "Historical defect", "url": "https://github.com/syedtabishmobin/DocumentManagement/issues/57", "state": "CLOSED", "labels": ["type:defect"], "body": "STORY-P1-005; PR https://github.com/syedtabishmobin/DocumentManagement/pull/56"},
+    ],
+    "pullRequests": [
+        {"number": 62, "title": "Control Centre", "url": "https://github.com/syedtabishmobin/DocumentManagement/pull/62", "state": "OPEN", "branch": "codex/61-ai-native-control-centre", "headCommit": CONTROL_CENTRE_SHA, "mergeCommit": None, "body": "Closes #61"},
+        {"number": 56, "title": "Safety containment", "url": "https://github.com/syedtabishmobin/DocumentManagement/pull/56", "state": "MERGED", "branch": "codex/55-safety", "headCommit": None, "mergeCommit": MERGED_SHA, "body": "Closes #55; STORY-P1-005"},
+    ],
+    "comments": [
+        {"number": 62, "url": "https://github.com/example/pr/62#qa", "body": attributed_record(display_agent_id="QA-FUNC-017", role="Independent Functional QA", activity="independent-qa", run_id="RUN-20260830-0079", commit=CONTROL_CENTRE_SHA, body="Verdict: FAIL. Defect #64.")},
+        {"number": 57, "url": "https://github.com/example/issues/57#fix", "body": attributed_record(display_agent_id="ORCH-010", role="Delivery Orchestrator", activity="fix-ready", run_id="RUN-20260830-0078", commit=MERGED_SHA, body="FIX_READY for independent retest.")},
+        {"number": 57, "url": "https://github.com/example/issues/57#retest", "body": attributed_record(display_agent_id="QA-FUNC-017", role="Independent Functional QA", activity="independent-retest", run_id="RUN-20260830-0079", commit=MERGED_SHA, body="Verdict: PASS.")},
+    ],
+    "unavailable": [],
+    "retentionLimit": control_centre.GITHUB_RETENTION,
+}
+
+
 class ControlCentreTests(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
@@ -38,8 +94,11 @@ class ControlCentreTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp.cleanup()
 
-    def snapshot(self) -> dict:
-        with patch("agent_ops.github_snapshot", return_value=GITHUB_FIXTURE):
+    def snapshot(self, delivery: dict | None = None) -> dict:
+        with patch("agent_ops.github_snapshot", return_value=GITHUB_FIXTURE), patch(
+            "control_centre.github_delivery_snapshot",
+            return_value=deepcopy(delivery or GITHUB_DELIVERY_FIXTURE),
+        ):
             return control_centre.build_snapshot(online=True, event_store=self.store)
 
     def test_snapshot_covers_all_read_only_sections_and_truthful_nulls(self) -> None:
@@ -52,15 +111,89 @@ class ControlCentreTests(unittest.TestCase):
         self.assertEqual(snapshot["costTokens"]["usage"]["totalTokens"]["byProvenance"], {})
         self.assertEqual(snapshot["costTokens"]["reconciliation"]["aggregationScope"], "SELF_ONLY")
         self.assertEqual(snapshot["overview"]["openDefectCount"], 1)
+        self.assertEqual(snapshot["traceability"]["sourceStatus"]["github"], "MEASURED")
+        self.assertGreaterEqual(snapshot["traceability"]["governedRecordCount"], 6)
 
     def test_shared_id_drill_through_and_invalid_id(self) -> None:
         snapshot = self.snapshot()
         found = control_centre.trace_lookup(snapshot, "STORY-P1-006")
         self.assertEqual(found["status"], "FOUND")
         self.assertTrue(found["record"]["references"])
-        self.assertEqual(control_centre.trace_lookup(snapshot, "issue-60")["status"], "FOUND")
+        self.assertEqual(control_centre.trace_lookup(snapshot, "issue-64")["status"], "FOUND")
         with self.assertRaises(ValueError):
             control_centre.trace_lookup(snapshot, "../../secret")
+
+    def test_reverse_trace_covers_commit_closed_defect_merged_pr_and_attribution(self) -> None:
+        snapshot = self.snapshot()
+        commit = control_centre.trace_lookup(snapshot, CONTROL_CENTRE_SHA.upper())
+        self.assertEqual(commit["status"], "FOUND")
+        self.assertEqual(commit["id"], CONTROL_CENTRE_SHA)
+        self.assertTrue({"pr-62", "issue-61"}.issubset({item["id"] for item in commit["chain"]}))
+        self.assertTrue(any(item["kind"] == "QA_RESULT" and item["attribution"]["displayAgentId"] == "QA-FUNC-017" for item in commit["evidence"]))
+
+        defect = control_centre.trace_lookup(snapshot, "issue-57")
+        self.assertEqual(defect["record"]["kind"], "GITHUB_DEFECT")
+        self.assertEqual(defect["record"]["state"], "CLOSED")
+        self.assertTrue({"FIX_READY", "INDEPENDENT_RETEST"}.issubset({item["kind"] for item in defect["evidence"]}))
+
+        pull = control_centre.trace_lookup(snapshot, "pr-56")
+        self.assertEqual(pull["record"]["state"], "MERGED")
+        self.assertIn(MERGED_SHA, pull["record"]["relatedIds"])
+
+    def test_evidence_kind_uses_attributed_activity_not_incidental_fix_ready_text(self) -> None:
+        record = attributed_record(
+            display_agent_id="ORCH-010",
+            role="Framework Delivery Orchestrator",
+            activity="control-centre-start",
+            run_id="RUN-20260830-0078",
+            commit=CONTROL_CENTRE_SHA,
+            body="The next governed action will eventually require FIX_READY evidence.",
+        )
+        evidence = control_centre._evidence_record(record, "https://github.com/example/issues/61")
+        self.assertIsNotNone(evidence)
+        self.assertEqual(evidence["kind"], "ATTRIBUTED_RECORD")
+
+    def test_labeled_pr_shorthand_does_not_create_a_spurious_issue_join(self) -> None:
+        related = control_centre._text_trace_ids(
+            "PR #56 closes #55; Pull Request #62 fixes Issue #61.",
+            shorthand_kind="issue",
+        )
+        self.assertTrue({"pr-56", "issue-55", "pr-62", "issue-61"}.issubset(related))
+        self.assertNotIn("issue-56", related)
+        self.assertNotIn("issue-62", related)
+
+    def test_audit_fails_when_static_index_exists_but_governed_history_is_empty(self) -> None:
+        delivery = {
+            "availability": "MEASURED", "issues": [], "pullRequests": [], "comments": [],
+            "unavailable": [], "retentionLimit": control_centre.GITHUB_RETENTION,
+        }
+        snapshot = self.snapshot(delivery)
+        self.assertGreater(snapshot["traceability"]["stableIdCount"], 0)
+        self.assertEqual(snapshot["audit"]["status"], "FAIL")
+        failed = {item["id"] for item in snapshot["audit"]["checks"] if item["status"] == "FAIL"}
+        self.assertTrue({"CC-AUD-011", "CC-AUD-012", "CC-AUD-013", "CC-AUD-015", "CC-AUD-016"}.issubset(failed))
+
+    def test_audit_fails_when_qa_fix_retest_join_is_missing(self) -> None:
+        delivery = deepcopy(GITHUB_DELIVERY_FIXTURE)
+        delivery["comments"] = []
+        snapshot = self.snapshot(delivery)
+        failed = {item["id"] for item in snapshot["audit"]["checks"] if item["status"] == "FAIL"}
+        self.assertIn("CC-AUD-015", failed)
+        self.assertIn("CC-AUD-016", failed)
+
+    def test_unavailable_history_is_explicit_and_raw_artifact_content_is_not_exposed(self) -> None:
+        unavailable = {
+            "availability": "UNAVAILABLE", "issues": [], "pullRequests": [], "comments": [],
+            "unavailable": ["GitHub durable comment evidence is unavailable."],
+            "retentionLimit": control_centre.GITHUB_RETENTION,
+        }
+        snapshot = self.snapshot(unavailable)
+        self.assertEqual(snapshot["traceability"]["sourceStatus"]["github"], "UNAVAILABLE")
+        self.assertEqual(snapshot["audit"]["status"], "FAIL")
+        serialized = json.dumps(self.snapshot())
+        self.assertNotIn("doculyra-agent-meta", serialized)
+        self.assertNotIn("FIX_READY for independent retest", serialized)
+        self.assertNotIn("runtime_run_id=", serialized)
 
     def test_metric_catalog_has_complete_semantics(self) -> None:
         catalog = control_centre.load_json(control_centre.ROOT / ".agents/observability/metric-catalog.json")
@@ -82,7 +215,7 @@ class ControlCentreTests(unittest.TestCase):
         plan = control_centre_project_reconcile.build_plan(config)
         self.assertEqual(plan["autoAdd"]["managedByThisScript"], False)
         self.assertEqual(len(plan["views"]), 10)
-        self.assertEqual(len(plan["currentItems"]), 5)
+        self.assertEqual(len(plan["currentItems"]), 7)
 
     def test_project_reconcile_preserves_option_identity_when_renaming_defaults(self) -> None:
         config = control_centre.load_json(control_centre.CONFIG_PATH)
@@ -113,6 +246,29 @@ class ControlCentreTests(unittest.TestCase):
         self.assertEqual(next(item for item in status if item["name"] == "Backlog")["id"], "todo-id")
         self.assertEqual(next(item for item in status if item["name"] == "Development")["id"], "doing-id")
         self.assertEqual(next(item for item in work_type if item["name"] == "Bug")["id"], "defect-id")
+
+    def test_online_project_validation_fails_for_unpopulated_current_item(self) -> None:
+        config = control_centre.load_json(control_centre.CONFIG_PATH)
+        items = []
+        for expected in config["githubProject"]["currentItemMetadata"]:
+            item = {
+                "content": {"number": expected["number"], "type": expected["kind"]},
+                **{
+                    control_centre_project.project_item_json_key(name): value
+                    for name, value in expected.items()
+                    if name not in {"kind", "number"}
+                },
+            }
+            items.append(item)
+        passed, evidence = control_centre_project.current_item_metadata_check(config, items)
+        self.assertTrue(passed, evidence)
+        pr = next(item for item in items if item["content"] == {"number": 62, "type": "PullRequest"})
+        pr["status"] = "Backlog"
+        pr.pop("current Agent ID")
+        passed, evidence = control_centre_project.current_item_metadata_check(config, items)
+        self.assertFalse(passed)
+        self.assertIn("PullRequest #62 Status", evidence)
+        self.assertIn("PullRequest #62 Current Agent ID", evidence)
 
     def test_privacy_and_accessibility_assets_are_local(self) -> None:
         html = (control_centre.ASSET_ROOT / "index.html").read_text(encoding="utf-8")

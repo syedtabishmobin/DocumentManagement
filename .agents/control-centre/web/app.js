@@ -155,19 +155,34 @@ function environments() {
 }
 
 function traceability() {
-  const input = el("input", {class: "search", type: "search", placeholder: "Filter stable IDs, e.g. STORY-P1-006", "aria-label": "Filter traceability IDs"});
+  const input = el("input", {class: "search", type: "search", placeholder: "Filter ID, Issue, PR or commit SHA", "aria-label": "Filter traceability IDs"});
   const result = el("div");
   const render = () => {
     const query = input.value.trim().toUpperCase();
-    const rows = snapshot.traceability.records.filter(item => !query || item.id.includes(query)).slice(0, 250);
+    const rows = [
+      ...snapshot.traceability.records,
+      ...snapshot.traceability.githubRecords,
+      ...snapshot.traceability.commitRecords
+    ].filter(item => !query || item.id.toUpperCase().includes(query)).slice(0, 250);
     result.replaceChildren(table([
-      {label: "Stable ID", value: row => el("code", {text: row.id})},
-      {label: "Repository references", value: row => row.references.map(ref => `${ref.path}:${ref.line}`).join(" · ")},
-      {label: "Related IDs", value: row => row.relatedIds.slice(0, 12).join(", ") || "UNAVAILABLE"}
+      {label: "Identifier", value: row => row.url ? el("a", {href: row.url}, el("code", {text: row.id})) : el("code", {text: row.id})},
+      {label: "Class / state", value: row => `${row.kind || "UNAVAILABLE"} · ${row.state || "UNAVAILABLE"}`},
+      {label: "References", value: row => (row.references || []).map(ref => `${ref.path}:${ref.line}`).join(" · ") || "UNAVAILABLE"},
+      {label: "Related IDs", value: row => (row.relatedIds || []).slice(0, 12).join(", ") || "UNAVAILABLE"},
+      {label: "Evidence", value: row => (row.evidence || []).map(item => `${item.kind} · ${item.attribution?.displayAgentId || "UNAVAILABLE"}`).join(" · ") || "UNAVAILABLE"},
+      {label: "Source", value: row => `${row.source?.id || "UNAVAILABLE"} · ${row.source?.status || "UNAVAILABLE"}`}
     ], rows));
   };
   input.addEventListener("input", render); render();
-  return card(`Shared-ID traceability (${snapshot.traceability.stableIdCount})`, el("div", {}, input, result), "full");
+  return card(
+    `Traceability · ${snapshot.traceability.stableIdCount} stable IDs · ${snapshot.traceability.governedRecordCount} governed records · ${snapshot.traceability.commitRecordCount} commits`,
+    el("div", {},
+      el("p", {class: "subtle", text: `GitHub ${snapshot.traceability.sourceStatus.github}; ${snapshot.traceability.retentionLimits.github}`}),
+      input,
+      result
+    ),
+    "full"
+  );
 }
 
 function audit() {

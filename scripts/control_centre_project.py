@@ -78,6 +78,40 @@ def gh_json(*args: str) -> Any:
     return json.loads(result.stdout)
 
 
+def project_item_json_key(field_name: str) -> str:
+    """Match the stable field-key casing emitted by `gh project item-list`."""
+    return field_name[:1].lower() + field_name[1:]
+
+
+def current_item_metadata_check(config: dict[str, Any], items: list[dict[str, Any]]) -> tuple[bool, str]:
+    """Compare governed current-item values, not merely Project item presence."""
+    indexed: dict[tuple[str, int], dict[str, Any]] = {}
+    for item in items:
+        content = item.get("content") or {}
+        number = content.get("number")
+        kind = content.get("type")
+        if isinstance(number, int) and kind in {"Issue", "PullRequest"}:
+            indexed[(kind, number)] = item
+    differences = []
+    for expected in config["githubProject"]["currentItemMetadata"]:
+        identity = (expected["kind"], expected["number"])
+        actual = indexed.get(identity)
+        if actual is None:
+            differences.append(f"{identity[0]} #{identity[1]} missing")
+            continue
+        for field_name, expected_value in expected.items():
+            if field_name in {"kind", "number"}:
+                continue
+            actual_value = actual.get(project_item_json_key(field_name))
+            if actual_value != expected_value:
+                differences.append(
+                    f"{identity[0]} #{identity[1]} {field_name}: expected {expected_value!r}, observed {actual_value!r}"
+                )
+    if differences:
+        return False, "; ".join(differences)
+    return True, f"All {len(config['githubProject']['currentItemMetadata'])} governed current items match configured semantic metadata"
+
+
 def online_checks(config: dict[str, Any]) -> list[dict[str, str]]:
     project = config["githubProject"]
     query = f'''query {{
@@ -104,6 +138,10 @@ def online_checks(config: dict[str, Any]) -> list[dict[str, str]]:
       }}
     }}'''
     live = gh_json("api", "graphql", "-f", f"query={query}")["data"]["user"]["projectV2"]
+    project_items = gh_json(
+        "project", "item-list", str(project["number"]), "--owner", project["owner"],
+        "--format", "json", "--limit", "100",
+    )["items"]
     views = live["views"]["nodes"]
     workflows = live["workflows"]["nodes"]
     actual_fields = {item.get("name") for item in live["fields"]["nodes"] if item.get("name")}
@@ -120,6 +158,7 @@ def online_checks(config: dict[str, Any]) -> list[dict[str, str]]:
     expected_view_fields = {item["name"]: set(item["visibleFields"]) for item in project["views"] if item["layout"] != "ROADMAP_LAYOUT"}
     required_fields = set(project["fields"])
     workflow_state = {item["name"]: item["enabled"] for item in workflows}
+    current_items_pass, current_items_evidence = current_item_metadata_check(config, project_items)
     result = []
 
     def add(check_id: str, passed: bool, evidence: str) -> None:
@@ -131,6 +170,7 @@ def online_checks(config: dict[str, Any]) -> list[dict[str, str]]:
     add("CC-PROJ-ONLINE-003A", actual_view_filters == EXPECTED_VIEW_FILTERS, "Live saved-view filters match governed semantics")
     add("CC-PROJ-ONLINE-003B", all(expected.issubset(actual_view_fields.get(name, set())) for name, expected in expected_view_fields.items()), "Live views expose all configured management and delivery fields")
     add("CC-PROJ-ONLINE-004", live["items"]["totalCount"] >= 61, f"Live Project contains {live['items']['totalCount']} governed Issue/PR records")
+    add("CC-PROJ-ONLINE-004A", current_items_pass, current_items_evidence)
     add("CC-PROJ-ONLINE-005", all(actual_options.get(name) == options for name, options in project["fieldOptions"].items()), "Live Work Type, Status and Priority option contracts match")
     add("CC-PROJ-ONLINE-006", workflow_state.get("Auto-add to project") is True and workflow_state.get("Item closed") is True and workflow_state.get("Pull request merged") is True, "Native auto-add and closure workflows are enabled")
     return result
