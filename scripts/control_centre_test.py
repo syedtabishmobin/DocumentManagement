@@ -84,6 +84,35 @@ class ControlCentreTests(unittest.TestCase):
         self.assertEqual(len(plan["views"]), 10)
         self.assertEqual(len(plan["currentItems"]), 5)
 
+    def test_project_reconcile_preserves_option_identity_when_renaming_defaults(self) -> None:
+        config = control_centre.load_json(control_centre.CONFIG_PATH)
+        live = {
+            "fields": {"nodes": [
+                {"__typename": "ProjectV2SingleSelectField", "id": "status-id", "name": "Status", "options": [
+                    {"id": "todo-id", "name": "Todo", "color": "GRAY", "description": "not started"},
+                    {"id": "doing-id", "name": "In Progress", "color": "YELLOW", "description": "active"},
+                    {"id": "done-id", "name": "Done", "color": "GREEN", "description": "complete"},
+                ]},
+                {"__typename": "ProjectV2SingleSelectField", "id": "type-id", "name": "Work Type", "options": [
+                    {"id": "defect-id", "name": "Defect", "color": "RED", "description": ""},
+                ]},
+                {"__typename": "ProjectV2SingleSelectField", "id": "priority-id", "name": "Priority", "options": [
+                    {"id": f"priority-{name}", "name": name, "color": "GRAY", "description": ""}
+                    for name in ["P0", "P1", "P2", "P3"]
+                ]},
+            ]}
+        }
+        calls = []
+        with patch("control_centre_project_reconcile.graphql", side_effect=lambda query, variables=None: calls.append(variables) or {}):
+            applied = control_centre_project_reconcile.reconcile_options(config, live)
+        self.assertEqual(applied, ["field-options:Work Type", "field-options:Status"])
+        inputs = {call["input"]["fieldId"]: call["input"] for call in calls}
+        status = inputs["status-id"]["singleSelectOptions"]
+        work_type = inputs["type-id"]["singleSelectOptions"]
+        self.assertEqual(next(item for item in status if item["name"] == "Backlog")["id"], "todo-id")
+        self.assertEqual(next(item for item in status if item["name"] == "Development")["id"], "doing-id")
+        self.assertEqual(next(item for item in work_type if item["name"] == "Bug")["id"], "defect-id")
+
     def test_privacy_and_accessibility_assets_are_local(self) -> None:
         html = (control_centre.ASSET_ROOT / "index.html").read_text(encoding="utf-8")
         js = (control_centre.ASSET_ROOT / "app.js").read_text(encoding="utf-8")
