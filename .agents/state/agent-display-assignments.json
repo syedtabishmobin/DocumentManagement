@@ -275,6 +275,17 @@
       "parentDisplayAgentId": "ORCH-010",
       "workItem": "issue-61/pr-62",
       "status": "COMPLETED"
+    },
+    {
+      "displayAgentId": "BA-002",
+      "displayRole": "Product Business Analyst",
+      "displayRunId": "RUN-20260830-0080",
+      "runtimeAgentId": "codex-01a051b6-7efe-79e2-a09f-2ea895067927",
+      "runtimeRunId": "run-phase1-backlog-reconcile-20260830",
+      "roleId": "product-ba",
+      "parentDisplayAgentId": "ORCH-009",
+      "workItem": "issue-32",
+      "status": "ACTIVE"
     }
   ]
 }
