@@ -2086,7 +2086,7 @@
           "DEC-036"
         ],
         "x-decision-state": {
-          "DEC-036": "OPEN"
+          "DEC-036": "APPROVED_CONTAINMENT_ONLY"
         },
         "x-availability": "DISABLED_UNTIL_APPROVED"
       }
@@ -8906,7 +8906,7 @@
       },
       "ClinicalPolicyDecisionRequest": {
         "required": true,
-        "description": "Reserved DEC-036 disposition; disabled while OPEN.",
+        "description": "Reserved clinical disposition route; disabled because DEC-036 approves containment only and no release/disposition contract exists in Phase 1.",
         "content": {
           "application/json": {
             "schema": {
@@ -14025,7 +14025,7 @@
       },
       "ClinicalPolicyDecisionRequest": {
         "type": "object",
-        "description": "Reserved DEC-036 disposition; disabled while OPEN.",
+        "description": "Reserved clinical disposition; disabled because the approved Phase 1 policy provides containment only.",
         "additionalProperties": false,
         "required": [
           "requested_disposition",
@@ -14042,14 +14042,14 @@
           },
           "policy_version": {
             "type": "string",
-            "description": "Exact approved policy; unavailable while OPEN.",
+            "description": "Exact approved disposition policy; unavailable in the Phase 1 containment-only profile.",
             "minLength": 1
           }
         },
         "examples": [
           {
             "requested_disposition": "QUARANTINE_FOR_USER_DECISION",
-            "policy_version": "policy-unapproved-dec-036"
+            "policy_version": "policy-unavailable-clinical-disposition"
           }
         ]
       },

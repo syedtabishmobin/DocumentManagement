@@ -9,6 +9,37 @@ const clinicalSignals = [
   "patient record",
 ];
 
+export type SyntheticSafetyVerdict = "CLEAN" | "MALICIOUS" | "INDETERMINATE" | "SUSPECTED_CLINICAL";
+
+export interface SyntheticSafetyAssessment {
+  verdict: SyntheticSafetyVerdict;
+  integrityState: "VERIFIED" | "INDETERMINATE";
+  reasonCode: "SYNTHETIC_SAFETY_CLEARED" | "SYNTHETIC_MALWARE_SIGNATURE" | "SCANNER_INDETERMINATE" | "POLICY_PENDING_CONTENT";
+}
+
+function hasExpectedSignature(mediaType: string, bytes: Uint8Array): boolean {
+  if (mediaType.startsWith("text/") || mediaType === "application/json" || mediaType === "application/xml") return bytes.length > 0 && !bytes.includes(0);
+  if (mediaType === "application/pdf") return bytes.length >= 5 && [0x25, 0x50, 0x44, 0x46, 0x2d].every((value, index) => bytes[index] === value);
+  if (mediaType === "image/png") return bytes.length >= 8 && [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a].every((value, index) => bytes[index] === value);
+  if (mediaType === "image/jpeg") return bytes.length >= 4 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  return false;
+}
+
+export function assessSyntheticSafety(name: string, mediaType: string, bytes: Uint8Array): SyntheticSafetyAssessment {
+  const sample = new TextDecoder("utf-8", { fatal: false }).decode(bytes.subarray(0, Math.min(bytes.length, 500_000))).toLowerCase();
+  const label = `${name} ${sample}`.toLowerCase();
+  if (sample.includes("eicar-standard-antivirus-test-file") || sample.includes("synthetic-malware-signature") || (sample.includes("%pdf-") && sample.includes("<script"))) {
+    return { verdict: "MALICIOUS", integrityState: "VERIFIED", reasonCode: "SYNTHETIC_MALWARE_SIGNATURE" };
+  }
+  if (clinicalSignals.some((signal) => label.includes(signal))) {
+    return { verdict: "SUSPECTED_CLINICAL", integrityState: "VERIFIED", reasonCode: "POLICY_PENDING_CONTENT" };
+  }
+  if (sample.includes("synthetic-scanner-unavailable") || /\.(zip|7z|rar|tar|gz)$/i.test(name) || !hasExpectedSignature(mediaType, bytes)) {
+    return { verdict: "INDETERMINATE", integrityState: "INDETERMINATE", reasonCode: "SCANNER_INDETERMINATE" };
+  }
+  return { verdict: "CLEAN", integrityState: "VERIFIED", reasonCode: "SYNTHETIC_SAFETY_CLEARED" };
+}
+
 export function classifyDocument(name: string, extractedText: string): { category: string; policyHold: boolean } {
   const haystack = `${name} ${extractedText}`.toLowerCase();
   const policyHold = clinicalSignals.some((signal) => haystack.includes(signal));

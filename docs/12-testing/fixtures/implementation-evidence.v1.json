@@ -108,8 +108,8 @@
       "source_state": "GOVERNED_DEVELOPER_EVIDENCE_PENDING_INDEPENDENT_QA",
       "test_refs": ["TEST-UNIT-P1-002", "TEST-UNIT-P1-004", "TEST-UNIT-P1-012", "TEST-SEC-P1-001", "TEST-SEC-P1-002", "TEST-SEC-P1-003", "TEST-SEC-P1-006", "TEST-E2E-P1-001", "TEST-E2E-P1-012", "TEST-E2E-P1-013", "TEST-E2E-P1-015", "TEST-PERF-P1-006"],
       "framework_acceptance_refs": [],
-      "story_refs": ["STORY-P1-001", "STORY-P1-002", "STORY-P1-003", "STORY-P1-004", "STORY-P1-011", "STORY-P1-045"],
-      "acceptance_refs": ["AC-STORY-P1-001-01", "AC-STORY-P1-002-01", "AC-STORY-P1-002-02", "AC-STORY-P1-003-01", "AC-STORY-P1-003-02", "AC-STORY-P1-004-01", "AC-STORY-P1-011-01", "AC-STORY-P1-045-01"],
+      "story_refs": ["STORY-P1-001", "STORY-P1-002", "STORY-P1-003", "STORY-P1-004", "STORY-P1-005", "STORY-P1-011", "STORY-P1-045"],
+      "acceptance_refs": ["AC-STORY-P1-001-01", "AC-STORY-P1-002-01", "AC-STORY-P1-002-02", "AC-STORY-P1-003-01", "AC-STORY-P1-003-02", "AC-STORY-P1-004-01", "AC-STORY-P1-005-01", "AC-STORY-P1-005-02", "AC-STORY-P1-011-01", "AC-STORY-P1-045-01"],
       "historical_work": [{"issue_number": 2, "pr_number": 4, "evidence_state": "BOUNDED_QA_PASS"}],
       "product_completion_claim": "NONE"
     },
@@ -154,11 +154,11 @@
       "scope": "PRODUCT_BOUNDED",
       "evidence_type": "DEVELOPER_INTEGRATION",
       "source_state": "GOVERNED_DEVELOPER_EVIDENCE_PENDING_INDEPENDENT_QA",
-      "test_refs": ["TEST-UNIT-P1-003", "TEST-UNIT-P1-004", "TEST-CON-P1-002", "TEST-CON-P1-006", "TEST-SEC-P1-009", "TEST-SEC-P1-010", "TEST-SEC-P1-015", "TEST-E2E-P1-002", "TEST-DR-P1-001", "TEST-DR-P1-002"],
+      "test_refs": ["TEST-UNIT-P1-003", "TEST-UNIT-P1-004", "TEST-CON-P1-002", "TEST-CON-P1-006", "TEST-SEC-P1-009", "TEST-SEC-P1-010", "TEST-SEC-P1-012", "TEST-SEC-P1-015", "TEST-E2E-P1-002", "TEST-DR-P1-001", "TEST-DR-P1-002", "TEST-DR-P1-008"],
       "framework_acceptance_refs": [],
-      "story_refs": ["STORY-P1-004"],
-      "acceptance_refs": ["AC-STORY-P1-004-01", "AC-STORY-P1-004-02"],
-      "historical_work": [],
+      "story_refs": ["STORY-P1-004", "STORY-P1-005"],
+      "acceptance_refs": ["AC-STORY-P1-004-01", "AC-STORY-P1-004-02", "AC-STORY-P1-005-01", "AC-STORY-P1-005-02"],
+      "historical_work": [{"issue_number": 50, "pr_number": 51, "evidence_state": "BOUNDED_QA_PASS"}],
       "product_completion_claim": "NONE"
     },
     {
@@ -180,8 +180,8 @@
       "source_state": "GOVERNED_DEVELOPER_EVIDENCE_PENDING_INDEPENDENT_QA",
       "test_refs": ["TEST-UNIT-P1-002", "TEST-CON-P1-001", "TEST-CON-P1-002", "TEST-DR-P1-001", "TEST-DR-P1-002"],
       "framework_acceptance_refs": [],
-      "story_refs": ["STORY-P1-001", "STORY-P1-002", "STORY-P1-003", "STORY-P1-004", "STORY-P1-039", "STORY-P1-040"],
-      "acceptance_refs": ["AC-STORY-P1-001-01", "AC-STORY-P1-002-02", "AC-STORY-P1-003-02", "AC-STORY-P1-004-01", "AC-STORY-P1-039-02", "AC-STORY-P1-040-01"],
+      "story_refs": ["STORY-P1-001", "STORY-P1-002", "STORY-P1-003", "STORY-P1-004", "STORY-P1-005", "STORY-P1-039", "STORY-P1-040"],
+      "acceptance_refs": ["AC-STORY-P1-001-01", "AC-STORY-P1-002-02", "AC-STORY-P1-003-02", "AC-STORY-P1-004-01", "AC-STORY-P1-005-01", "AC-STORY-P1-039-02", "AC-STORY-P1-040-01"],
       "historical_work": [{"issue_number": 2, "pr_number": 4, "evidence_state": "BOUNDED_QA_PASS"}],
       "product_completion_claim": "NONE"
     },
@@ -222,6 +222,18 @@
       "product_completion_claim": "NONE"
     },
     {
+      "path": "src/apps/mobile/test/models_test.dart",
+      "scope": "PRODUCT_BOUNDED",
+      "evidence_type": "DEVELOPER_UNIT",
+      "source_state": "GOVERNED_DEVELOPER_EVIDENCE_PENDING_INDEPENDENT_QA",
+      "test_refs": ["TEST-SEC-P1-009", "TEST-SEC-P1-010", "TEST-E2E-P1-002"],
+      "framework_acceptance_refs": [],
+      "story_refs": ["STORY-P1-005"],
+      "acceptance_refs": ["AC-STORY-P1-005-01", "AC-STORY-P1-005-02"],
+      "historical_work": [],
+      "product_completion_claim": "NONE"
+    },
+    {
       "path": "src/apps/mobile/test/widget_test.dart",
       "scope": "PRODUCT_BOUNDED",
       "evidence_type": "DEVELOPER_INTEGRATION",
@@ -230,6 +242,18 @@
       "framework_acceptance_refs": [],
       "story_refs": ["STORY-P1-001", "STORY-P1-008"],
       "acceptance_refs": ["AC-STORY-P1-001-02", "AC-STORY-P1-008-02"],
+      "historical_work": [],
+      "product_completion_claim": "NONE"
+    },
+    {
+      "path": "src/apps/web/src/App.test.ts",
+      "scope": "PRODUCT_BOUNDED",
+      "evidence_type": "DEVELOPER_UNIT",
+      "source_state": "GOVERNED_DEVELOPER_EVIDENCE_PENDING_INDEPENDENT_QA",
+      "test_refs": ["TEST-SEC-P1-009", "TEST-SEC-P1-010", "TEST-E2E-P1-002"],
+      "framework_acceptance_refs": [],
+      "story_refs": ["STORY-P1-005"],
+      "acceptance_refs": ["AC-STORY-P1-005-01", "AC-STORY-P1-005-02"],
       "historical_work": [],
       "product_completion_claim": "NONE"
     },

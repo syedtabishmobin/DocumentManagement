@@ -407,6 +407,20 @@ export class LocalController {
     } catch (error) { this.canonicalProblem(error, request, response); }
   }
 
+  @Post("v1/workspaces/:workspaceId/ingestion-cases/:ingestionCaseId/retries")
+  @HttpCode(HttpStatus.ACCEPTED)
+  async canonicalRetryIngestionSafety(@Param("workspaceId") workspaceId: string, @Param("ingestionCaseId") ingestionCaseId: string, @Body() body: unknown, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    const parsed = canonicalReasonCommandSchema.safeParse(body);
+    if (!parsed.success) this.problem(request, response, HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_REASON_COMMAND", "Reason command could not be validated", "DO_NOT_RETRY");
+    try {
+      const context = this.workspaceContext(request, workspaceId); const correlationId = this.correlation(request, response);
+      const fence = await this.store.startAuthorization(context.actor, workspaceId, "document.create", "WORKSPACE", workspaceId, { correlationId });
+      const ingestionCase = await this.store.retryIngestionSafety(workspaceId, context.actor, ingestionCaseId, this.expectedRevision(request, response), this.idempotencyKey(request, response), parsed.data.reason_code, fence, correlationId);
+      response.setHeader("ETag", `"${ingestionCase.revision}"`); response.setHeader("Location", `/api/v1/workspaces/${workspaceId}/ingestion-cases/${ingestionCase.id}`); response.setHeader("RateLimit-Policy", "ingestion-synthetic;w=60;q=3");
+      return this.ingestionCaseView(ingestionCase);
+    } catch (error) { this.canonicalProblem(error, request, response); }
+  }
+
   @Get("v1/workspaces/:workspaceId/access-grants")
   async canonicalAccessGrants(@Param("workspaceId") workspaceId: string, @Query("page_size") pageSize: string | undefined, @Query("page_after") pageAfter: string | undefined, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
     try {

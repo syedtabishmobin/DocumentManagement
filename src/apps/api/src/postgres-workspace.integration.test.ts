@@ -180,5 +180,17 @@ integration.sequential("PostgreSQL workspace authority integration", () => {
       expect.objectContaining({ aggregateType: "IngestionCase", aggregateId: created.id, revision: 1, envelope: expect.objectContaining({ event_type: "EVT-P1-006", aggregate_id: created.id, aggregate_revision: 1, payload: expect.objectContaining({ from_state: null, to_state: "CREATED" }) }) }),
       expect.objectContaining({ aggregateType: "IngestionCase", aggregateId: created.id, revision: 2, envelope: expect.objectContaining({ event_type: "EVT-P1-006", aggregate_id: created.id, aggregate_revision: 2, payload: expect.objectContaining({ from_state: "CREATED", to_state: "RECEIVED" }) }) }),
     ]);
+
+    const ownerSubjectId = (await firstPersistence.read()).workspaces.find((state) => state.workspace.id === workspace.id)!.subjects.find((subject) => subject.kind === "OWNER")!.id;
+    fence = await store.startAuthorization(actor, workspace.id, "document.create", "WORKSPACE", workspace.id, { correlationId: "corr-real-postgres-safety-auth" });
+    const contained = await store.addDocument(workspace.id, actor, { originalname: "synthetic-malware.txt", mimetype: "text/plain", size: 34, buffer: Buffer.from("EICAR-STANDARD-ANTIVIRUS-TEST-FILE") } as Express.Multer.File, [ownerSubjectId], "FILE", fence, "corr-real-postgres-safety", "real-postgres-safety-0001");
+    expect(contained).toMatchObject({ status: "POLICY_HOLD", name: "Restricted document", size: 0 });
+    const containedCase = (await firstPersistence.read()).workspaces.find((state) => state.workspace.id === workspace.id)!.ingestionCases.find((item) => item.documentId === contained.id)!;
+    expect(containedCase).toMatchObject({ state: "QUARANTINED", mandatoryCheckpointState: "BLOCKED", revision: 3, safetyAssessments: [expect.objectContaining({ verdict: "MALICIOUS", adapterRef: "synthetic-safety-adapter@0.1" })] });
+    const restartedContained = new LocalStore(new PostgresWorkspacePersistence({ pool, migrationMode: "verify", migrationsDirectory }));
+    const containedFence = await restartedContained.startAuthorization(actor, workspace.id, "document.read", "WORKSPACE", workspace.id, { correlationId: "corr-real-postgres-contained-read-auth" });
+    expect(await restartedContained.getIngestionCase(workspace.id, actor, containedCase.id, containedFence, "corr-real-postgres-contained-read")).toMatchObject({ state: "QUARANTINED", revision: 3 });
+    const integrity = await pool.query<{ aggregate_type: string; event_envelope: Record<string, unknown> }>("SELECT aggregate_type, event_envelope FROM doculyra.authority_outbox WHERE event_type = 'EVT-P1-007'");
+    expect(integrity.rows).toEqual([expect.objectContaining({ aggregate_type: "ArtifactRecord", event_envelope: expect.objectContaining({ event_type: "EVT-P1-007", payload: expect.objectContaining({ quarantine_state: "QUARANTINED", reason_code: "SYNTHETIC_MALWARE_SIGNATURE" }) }) })]);
   });
 });

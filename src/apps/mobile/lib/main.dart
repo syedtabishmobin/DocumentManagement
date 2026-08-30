@@ -943,7 +943,7 @@ class _DocumentsPageState extends State<DocumentsPage> {
                   subtitle: Text(
                     trash
                         ? 'Final purge ${_date(document.purgeDueAt)}'
-                        : document.category,
+                        : document.libraryDescription,
                   ),
                   trailing: IconButton(
                     tooltip: trash ? 'Restore' : 'Move to Trash',

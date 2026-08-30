@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classifyDocument, extractProfileFacts, normalizeQuestion } from "./index.js";
+import { assessSyntheticSafety, classifyDocument, extractProfileFacts, normalizeQuestion } from "./index.js";
 
 describe("document policies", () => {
   it("quarantines suspected clinical records", () => {
@@ -11,6 +11,15 @@ describe("document policies", () => {
       category: "Insurance",
       policyHold: false,
     });
+  });
+
+  it("contains synthetic malware, scanner uncertainty and suspected clinical bytes before ordinary processing", () => {
+    expect(assessSyntheticSafety("clean.txt", "text/plain", Buffer.from("Synthetic household record"))).toMatchObject({ verdict: "CLEAN", integrityState: "VERIFIED" });
+    expect(assessSyntheticSafety("malicious.txt", "text/plain", Buffer.from("EICAR-STANDARD-ANTIVIRUS-TEST-FILE"))).toMatchObject({ verdict: "MALICIOUS", reasonCode: "SYNTHETIC_MALWARE_SIGNATURE" });
+    expect(assessSyntheticSafety("scan.txt", "text/plain", Buffer.from("SYNTHETIC-SCANNER-UNAVAILABLE"))).toMatchObject({ verdict: "INDETERMINATE", integrityState: "INDETERMINATE" });
+    expect(assessSyntheticSafety("record.txt", "text/plain", Buffer.from("Clinical note: synthetic diagnosis"))).toMatchObject({ verdict: "SUSPECTED_CLINICAL", reasonCode: "POLICY_PENDING_CONTENT" });
+    expect(assessSyntheticSafety("polyglot.pdf", "application/pdf", Buffer.from("%PDF-1.7 <script>synthetic</script>"))).toMatchObject({ verdict: "MALICIOUS" });
+    expect(assessSyntheticSafety("archive.zip", "application/zip", Buffer.from("synthetic archive"))).toMatchObject({ verdict: "INDETERMINATE" });
   });
 
   it("normalizes retrieval tokens deterministically", () => {
