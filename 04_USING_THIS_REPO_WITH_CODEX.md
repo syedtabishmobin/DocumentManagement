@@ -205,7 +205,14 @@ pnpm agent:audit
 # Repository-configured Project contract; add --online for live GitHub conformance
 pnpm agent:project
 pnpm agent:project --online
+
+# Dry-run an idempotent Project reconciliation; --apply is restricted to an
+# authorised governed Project-maintenance run
+pnpm agent:project:reconcile
+pnpm agent:project:reconcile --apply
 ```
+
+Project field options, saved-view filters/visible fields and the current governed-item metadata are versioned in `.agents/project/control-centre.json`. The reconcile command preserves existing select-option IDs when renaming the initial GitHub defaults, so current item history remains attached. It does not configure the native auto-add workflow, credentials, QA approval, merging, deployment or release gates. GitHub Project Insights are available at `https://github.com/users/syedtabishmobin/projects/1/insights`.
 
 The local HTTP API is intentionally read-only: `GET /api/v1/snapshot`, `GET /api/v1/audit`, and `GET /api/v1/trace/<stable-id>`. Only `GET`, `HEAD`, and `OPTIONS` are accepted; mutation methods return `405 READ_ONLY`. No GitHub Pages deployment or external dashboard vendor is used.
 

@@ -24,6 +24,18 @@ EXPECTED_VIEWS = {
     "Completed": "TABLE_LAYOUT",
     "Trends": "TABLE_LAYOUT",
 }
+EXPECTED_VIEW_FILTERS = {
+    "Executive": None,
+    "Delivery Board": None,
+    "Product Backlog": "status:Backlog,Ready",
+    "Active Work": 'status:Analysis,Development,QA,"Fix Required"',
+    "QA & Defects": '"Work Type":Story,Bug "QA State":REQUIRED,PENDING,FAIL,BLOCKED',
+    "Human Decisions": '"Human Decision Required":Yes',
+    "Stage & UAT": 'status:Stage,"BA Acceptance","Ready for UAT",UAT',
+    "Roadmap": None,
+    "Completed": "status:Done",
+    "Trends": None,
+}
 
 
 def load_json(path: Path) -> Any:
@@ -44,10 +56,12 @@ def configured_checks(config: dict[str, Any]) -> list[dict[str, str]]:
     add("CC-PROJ-002", len(fields) == 22 and len(set(fields)) == 22, "Twenty-two unique required semantic fields")
     add("CC-PROJ-003", project.get("fieldAliases") == {"Type": "Work Type"}, "Reserved Type compatibility mapping is explicit")
     add("CC-PROJ-004", {item["name"]: item["layout"] for item in views} == EXPECTED_VIEWS, "All ten saved views and layouts")
+    add("CC-PROJ-004A", {item["name"]: item.get("filter") for item in views} == EXPECTED_VIEW_FILTERS, "Saved-view filters use governed Status, Work Type, QA and UAT semantics")
+    add("CC-PROJ-004B", all(item.get("visibleFields") and set(item["visibleFields"]).issubset(set(fields)) for item in views), "Every saved view declares relevant governed visible fields")
     add("CC-PROJ-005", len({item["url"] for item in views}) == 10 and all("/projects/1/views/" in item["url"] for item in views), "Distinct persistent saved-view URLs")
     add("CC-PROJ-006", project["url"] == "https://github.com/users/syedtabishmobin/projects/1", "Persistent Project access URL")
     automation = project.get("automation", {})
-    add("CC-PROJ-007", automation.get("provider") == "GITHUB_PROJECTS_BUILT_IN" and automation.get("autoAdd", {}).get("repository") == config["repository"], "Native auto-add automation contract")
+    add("CC-PROJ-007", automation.get("provider") == "GITHUB_PROJECTS_BUILT_IN" and automation.get("autoAdd", {}).get("repository") == config["repository"] and automation.get("autoAdd", {}).get("status") == "ENABLED", "Native auto-add automation contract")
     measures = config.get("progressMeasures", [])
     add("CC-PROJ-008", len(measures) == 6 and len({item["id"] for item in measures}) == 6 and all(item.get("formula") and item.get("completionBoundary") for item in measures), "Six non-conflated progress measures")
     return checks
@@ -73,7 +87,14 @@ def online_checks(config: dict[str, Any]) -> list[dict[str, str]]:
             ... on ProjectV2SingleSelectField {{ name options {{ name }} }}
             ... on ProjectV2IterationField {{ name }}
           }} }}
-          views(first:50) {{ nodes {{ number name layout filter }} }}
+          views(first:50) {{ nodes {{
+            number name layout filter
+            fields(first:100) {{ nodes {{
+              ... on ProjectV2Field {{ name }}
+              ... on ProjectV2SingleSelectField {{ name }}
+              ... on ProjectV2IterationField {{ name }}
+            }} }}
+          }} }}
           workflows(first:50) {{ nodes {{ number name enabled }} }}
         }}
       }}
@@ -87,6 +108,12 @@ def online_checks(config: dict[str, Any]) -> list[dict[str, str]]:
         for item in live["fields"]["nodes"] if item.get("options") is not None
     }
     actual_views = {item["name"]: item["layout"] for item in views}
+    actual_view_filters = {item["name"]: item.get("filter") for item in views}
+    actual_view_fields = {
+        item["name"]: {field.get("name") for field in item["fields"]["nodes"] if field.get("name")}
+        for item in views
+    }
+    expected_view_fields = {item["name"]: set(item["visibleFields"]) for item in project["views"]}
     required_fields = set(project["fields"])
     workflow_state = {item["name"]: item["enabled"] for item in workflows}
     result = []
@@ -97,6 +124,8 @@ def online_checks(config: dict[str, Any]) -> list[dict[str, str]]:
     add("CC-PROJ-ONLINE-001", live["id"] == project["id"] and live["url"] == project["url"] and live["title"] == project["title"], "Live Project identity matches repository configuration")
     add("CC-PROJ-ONLINE-002", required_fields.issubset(actual_fields), f"Live fields include all {len(required_fields)} configured semantic fields")
     add("CC-PROJ-ONLINE-003", actual_views == EXPECTED_VIEWS, "Live saved view names and layouts match configuration")
+    add("CC-PROJ-ONLINE-003A", actual_view_filters == EXPECTED_VIEW_FILTERS, "Live saved-view filters match governed semantics")
+    add("CC-PROJ-ONLINE-003B", all(expected.issubset(actual_view_fields.get(name, set())) for name, expected in expected_view_fields.items()), "Live views expose all configured management and delivery fields")
     add("CC-PROJ-ONLINE-004", live["items"]["totalCount"] >= 61, f"Live Project contains {live['items']['totalCount']} governed Issue/PR records")
     add("CC-PROJ-ONLINE-005", all(actual_options.get(name) == options for name, options in project["fieldOptions"].items()), "Live Work Type, Status and Priority option contracts match")
     add("CC-PROJ-ONLINE-006", workflow_state.get("Auto-add to project") is True and workflow_state.get("Item closed") is True and workflow_state.get("Pull request merged") is True, "Native auto-add and closure workflows are enabled")

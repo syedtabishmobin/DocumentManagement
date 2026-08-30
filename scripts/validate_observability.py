@@ -353,7 +353,7 @@ def validate_configuration() -> list[str]:
         ".agents/project/control-centre.json", ".agents/state/control-centre-checkpoint.json",
         ".agents/skills/delivery-control-centre/SKILL.md", ".agents/control-centre/web/index.html",
         ".agents/control-centre/web/styles.css", ".agents/control-centre/web/app.js",
-        "scripts/control_centre.py", "scripts/control_centre_project.py", "scripts/control_centre_test.py",
+        "scripts/control_centre.py", "scripts/control_centre_project.py", "scripts/control_centre_project_reconcile.py", "scripts/control_centre_test.py",
         ".agents/bootstrap/discovery-observability-2026-08-29.json",
         ".agents/bootstrap/2026-08-29-observability-readiness-report.md",
     ]
@@ -437,12 +437,14 @@ def validate_configuration() -> list[str]:
     project = control.get("githubProject", {})
     if project.get("title") != "Doculyra Product Delivery" or len(project.get("fields", [])) != 22 or len(project.get("views", [])) != 10:
         errors.append("control centre GitHub Project must define the required title, 22 semantic fields and ten views")
+    if any(not view.get("visibleFields") or not set(view["visibleFields"]).issubset(set(project.get("fields", []))) for view in project.get("views", [])):
+        errors.append("each control centre Project view must declare relevant governed visible fields")
     if project.get("fieldAliases") != {"Type": "Work Type"}:
         errors.append("control centre must document GitHub's reserved Type field compatibility mapping")
     if set(project.get("fieldOptions", {})) != {"Work Type", "Status", "Priority"}:
         errors.append("control centre must version the required Work Type, Status and Priority options")
     automation = project.get("automation", {})
-    if automation.get("provider") != "GITHUB_PROJECTS_BUILT_IN" or automation.get("autoAdd", {}).get("repository") != control.get("repository"):
+    if automation.get("provider") != "GITHUB_PROJECTS_BUILT_IN" or automation.get("autoAdd", {}).get("repository") != control.get("repository") or automation.get("autoAdd", {}).get("status") != "ENABLED":
         errors.append("control centre must define native GitHub Project auto-add automation for this repository")
     if len(project.get("insights", [])) < 1 or not project["insights"][0].get("url", "").endswith("/projects/1/insights"):
         errors.append("control centre must expose at least one useful persistent GitHub Project insight")

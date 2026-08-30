@@ -24,16 +24,16 @@
       "Priority": ["P0", "P1", "P2", "P3"]
     },
     "views": [
-      {"name":"Executive","number":1,"url":"https://github.com/users/syedtabishmobin/projects/1/views/1","layout":"TABLE_LAYOUT","filter":null},
-      {"name":"Completed","number":2,"url":"https://github.com/users/syedtabishmobin/projects/1/views/2","layout":"TABLE_LAYOUT","filter":"status:Done"},
-      {"name":"Stage & UAT","number":4,"url":"https://github.com/users/syedtabishmobin/projects/1/views/4","layout":"TABLE_LAYOUT","filter":"environment:STAGE,UAT"},
-      {"name":"Human Decisions","number":5,"url":"https://github.com/users/syedtabishmobin/projects/1/views/5","layout":"TABLE_LAYOUT","filter":"\"Human Decision Required\":Yes"},
-      {"name":"QA & Defects","number":6,"url":"https://github.com/users/syedtabishmobin/projects/1/views/6","layout":"TABLE_LAYOUT","filter":"\"Work Type\":Defect \"QA State\":REQUIRED,PENDING,FAIL,BLOCKED"},
-      {"name":"Active Work","number":7,"url":"https://github.com/users/syedtabishmobin/projects/1/views/7","layout":"BOARD_LAYOUT","filter":"status:\"In Progress\""},
-      {"name":"Product Backlog","number":8,"url":"https://github.com/users/syedtabishmobin/projects/1/views/8","layout":"TABLE_LAYOUT","filter":"status:Todo"},
-      {"name":"Roadmap","number":9,"url":"https://github.com/users/syedtabishmobin/projects/1/views/9","layout":"ROADMAP_LAYOUT","filter":null},
-      {"name":"Delivery Board","number":10,"url":"https://github.com/users/syedtabishmobin/projects/1/views/10","layout":"BOARD_LAYOUT","filter":null},
-      {"name":"Trends","number":11,"url":"https://github.com/users/syedtabishmobin/projects/1/views/11","layout":"TABLE_LAYOUT","filter":null}
+      {"name":"Executive","number":1,"url":"https://github.com/users/syedtabishmobin/projects/1/views/1","layout":"TABLE_LAYOUT","filter":null,"visibleFields":["Work Type","Status","Priority","Phase","Goal","Feature","Risk","Severity","QA State","Environment","UAT State","Human Decision Required","Baseline","Release Candidate","Last Agent Update"]},
+      {"name":"Completed","number":2,"url":"https://github.com/users/syedtabishmobin/projects/1/views/2","layout":"TABLE_LAYOUT","filter":"status:Done","visibleFields":["Work Type","Status","Goal","Feature","Baseline","Release Candidate","UAT State","Last Agent Update"]},
+      {"name":"Stage & UAT","number":4,"url":"https://github.com/users/syedtabishmobin/projects/1/views/4","layout":"TABLE_LAYOUT","filter":"status:Stage,\"BA Acceptance\",\"Ready for UAT\",UAT","visibleFields":["Release Candidate","Work Type","Status","Goal","Feature","Environment","QA State","UAT State","Severity","Risk","Baseline"]},
+      {"name":"Human Decisions","number":5,"url":"https://github.com/users/syedtabishmobin/projects/1/views/5","layout":"TABLE_LAYOUT","filter":"\"Human Decision Required\":Yes","visibleFields":["Work Type","Status","Goal","Feature","Priority","Human Decision Required","Blocked By","Risk","Last Agent Update"]},
+      {"name":"QA & Defects","number":6,"url":"https://github.com/users/syedtabishmobin/projects/1/views/6","layout":"TABLE_LAYOUT","filter":"\"Work Type\":Story,Bug \"QA State\":REQUIRED,PENDING,FAIL,BLOCKED","visibleFields":["Work Type","Status","Goal","Feature","QA State","Severity","Risk","Current Agent ID","Agent Role","Blocked By","Last Agent Update"]},
+      {"name":"Active Work","number":7,"url":"https://github.com/users/syedtabishmobin/projects/1/views/7","layout":"BOARD_LAYOUT","filter":"status:Analysis,Development,QA,\"Fix Required\"","visibleFields":["Work Type","Status","Goal","Feature","Priority","Agent Role","Current Agent ID","QA State","Risk","Blocked By","Last Agent Update"]},
+      {"name":"Product Backlog","number":8,"url":"https://github.com/users/syedtabishmobin/projects/1/views/8","layout":"TABLE_LAYOUT","filter":"status:Backlog,Ready","visibleFields":["Work Type","Status","Parent","Goal","Feature","Priority","Phase","QA State","Agent Role","Risk","Target Date"]},
+      {"name":"Roadmap","number":9,"url":"https://github.com/users/syedtabishmobin/projects/1/views/9","layout":"ROADMAP_LAYOUT","filter":null,"visibleFields":["Work Type","Status","Goal","Feature","Phase","Iteration","Target Date","Release Candidate"]},
+      {"name":"Delivery Board","number":10,"url":"https://github.com/users/syedtabishmobin/projects/1/views/10","layout":"BOARD_LAYOUT","filter":null,"visibleFields":["Work Type","Status","Goal","Feature","Priority","Agent Role","Current Agent ID","Risk","Blocked By","Last Agent Update"]},
+      {"name":"Trends","number":11,"url":"https://github.com/users/syedtabishmobin/projects/1/views/11","layout":"TABLE_LAYOUT","filter":null,"visibleFields":["Work Type","Status","Agent Role","Capability","Risk","Severity","QA State","Last Agent Update"]}
     ],
     "platformAccommodations": [
       "GitHub reserves the exact custom field name Type while personal-account repositories expose no native Issue Types. The required semantics are implemented as Work Type and mapped explicitly through fieldAliases."
@@ -43,7 +43,7 @@
       "autoAdd": {
         "repository": "syedtabishmobin/DocumentManagement",
         "filter": "is:issue,pr",
-        "status": "PENDING_ONLINE_CONFORMANCE"
+        "status": "ENABLED"
       },
       "closedIssueStatus": {
         "target": "Done",
@@ -62,6 +62,13 @@
         "type": "GITHUB_DEFAULT",
         "filter": "is:issue"
       }
+    ],
+    "currentItemMetadata": [
+      {"kind":"Issue","number":58,"Work Type":"Story","Status":"Fix Required","Priority":"P0","Phase":"Phase 1","Goal":"OUT-P1-001","Feature":"FEAT-P1-004","Baseline":"DOCULYRA-BUILD-P1-2026.08.30.1","Agent Role":"Backend/API","Current Agent ID":"ORCH-009","Capability":"ingestion-stage-runtime","Environment":"DEV","Risk":"High","Blocked By":"Issue #60","Human Decision Required":"No","QA State":"FAIL","UAT State":"NOT_READY"},
+      {"kind":"PullRequest","number":59,"Work Type":"Story","Status":"Fix Required","Priority":"P0","Phase":"Phase 1","Goal":"OUT-P1-001","Feature":"FEAT-P1-004","Baseline":"DOCULYRA-BUILD-P1-2026.08.30.1","Agent Role":"Backend/API","Current Agent ID":"ORCH-009","Capability":"ingestion-stage-runtime","Environment":"DEV","Risk":"High","Blocked By":"Issue #60","Human Decision Required":"No","QA State":"FAIL","UAT State":"NOT_READY"},
+      {"kind":"Issue","number":60,"Work Type":"Bug","Status":"Fix Required","Priority":"P1","Phase":"Phase 1","Goal":"OUT-P1-001","Feature":"FEAT-P1-004","Parent":"Issue #58 / PR #59","Baseline":"DOCULYRA-BUILD-P1-2026.08.30.1","Agent Role":"Backend/API","Current Agent ID":"ORCH-009","Capability":"ingestion-stage-runtime","Environment":"DEV","Risk":"High","Severity":"P1","Blocked By":"Backend/API FIX_READY","Human Decision Required":"No","QA State":"FAIL","UAT State":"NOT_READY"},
+      {"kind":"Issue","number":61,"Work Type":"Task","Status":"Development","Priority":"P0","Phase":"Phase 1","Baseline":"DOCULYRA-BUILD-P1-2026.08.30.1","Agent Role":"Delivery Orchestrator","Current Agent ID":"ORCH-010","Capability":"delivery-control-centre","Environment":"agent-local","Risk":"Medium","Human Decision Required":"No","QA State":"PENDING","UAT State":"NOT_APPLICABLE"},
+      {"kind":"PullRequest","number":62,"Work Type":"Task","Status":"Development","Priority":"P0","Phase":"Phase 1","Parent":"Issue #61","Baseline":"DOCULYRA-BUILD-P1-2026.08.30.1","Agent Role":"Delivery Orchestrator","Current Agent ID":"ORCH-010","Capability":"delivery-control-centre","Environment":"agent-local","Risk":"Medium","Human Decision Required":"No","QA State":"PENDING","UAT State":"NOT_APPLICABLE"}
     ]
   },
   "dashboard": {

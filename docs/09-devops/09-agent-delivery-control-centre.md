@@ -71,6 +71,8 @@ The Project has the required Status plus semantic fields for Type, priority, pha
 
 The ten saved views are Executive, Delivery Board, Product Backlog, Active Work, QA & Defects, Human Decisions, Stage & UAT, Roadmap, Completed and Trends. Persistent view numbers/URLs, layouts and filters are versioned in `.agents/project/control-centre.json` and checked with `pnpm agent:project --online`.
 
+The required `Work Type`, `Status` and `Priority` option sets, each view's relevant visible fields, and the metadata for the currently paused/active governed items are also versioned there. `pnpm agent:project:reconcile` is a dry run; an authorised maintainer may add `--apply` to align that contract idempotently while preserving select-option identities. The default authenticated Burn up insight is available at `https://github.com/users/syedtabishmobin/projects/1/insights`.
+
 The Project uses GitHub's built-in automation rather than a repository PAT or third-party service. Auto-add targets `syedtabishmobin/DocumentManagement` for Issues and pull requests; GitHub's default closed-Issue and merged-PR workflows set Project `Status` to `Done`. These are presentation automations only and cannot establish story, feature, goal, QA, release, BA, or UAT completion.
 
 ## Operations

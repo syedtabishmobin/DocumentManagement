@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 import control_centre
 import control_centre_project
+import control_centre_project_reconcile
 
 
 GITHUB_FIXTURE = {
@@ -78,6 +79,10 @@ class ControlCentreTests(unittest.TestCase):
         self.assertEqual(config["githubProject"]["automation"]["provider"], "GITHUB_PROJECTS_BUILT_IN")
         self.assertEqual(config["githubProject"]["automation"]["autoAdd"]["repository"], config["repository"])
         self.assertEqual(len(config["progressMeasures"]), 6)
+        plan = control_centre_project_reconcile.build_plan(config)
+        self.assertEqual(plan["autoAdd"]["managedByThisScript"], False)
+        self.assertEqual(len(plan["views"]), 10)
+        self.assertEqual(len(plan["currentItems"]), 5)
 
     def test_privacy_and_accessibility_assets_are_local(self) -> None:
         html = (control_centre.ASSET_ROOT / "index.html").read_text(encoding="utf-8")
