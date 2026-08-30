@@ -227,14 +227,41 @@ describe("LocalStore", () => {
     const restricted = await store.createAccessGrant(workspaceId, actor, "grant-create-restricted-0001", {
       grantee_ref: restrictedActor.identityId, purpose_id: "PUR-P1-001",
       scope: { resource_refs: [uploaded.id], field_refs: [], edge_refs: [], actions: ["document.read"], allow_export: false, allow_onward_delegation: false },
-      valid_from: new Date(Date.now() - 60_000).toISOString(), valid_to: null, policy_version: "policy.local-explicit-grant@0.2",
+      valid_from: new Date(Date.now() - 60_000).toISOString(), valid_to: null, policy_version: "policy.local-explicit-grant@0.2" as const,
     }, ownerFence, "corr-grant-restricted");
+
+    ownerFence = await store.startAuthorization(actor, workspaceId, "grant.create", "WORKSPACE", workspaceId);
+    const workspaceGrant = await store.createAccessGrant(workspaceId, actor, "grant-create-workspace-member-0001", {
+      grantee_ref: restrictedActor.identityId, purpose_id: "PUR-P1-001",
+      scope: { resource_refs: [workspaceId], field_refs: [], edge_refs: [], actions: ["workspace.read", "grant.create"], allow_export: false, allow_onward_delegation: false },
+      valid_from: new Date(Date.now() - 60_000).toISOString(), valid_to: null, policy_version: "policy.local-explicit-grant@0.2",
+    }, ownerFence, "corr-grant-workspace-member");
+    const dashboardFence = await store.startAuthorization(restrictedActor, workspaceId, "workspace.read", "WORKSPACE", workspaceId);
+    const restrictedDashboard = await store.authorizedDashboard(workspaceId, restrictedActor, dashboardFence, "corr-restricted-dashboard");
+    expect(restrictedDashboard.workspace.id).toBe(workspaceId);
+    expect(restrictedDashboard).toMatchObject({ members: [], subjects: [], audit: [], accessGrants: [] });
+
+    const delegatedCreateFence = await store.startAuthorization(restrictedActor, workspaceId, "grant.create", "WORKSPACE", workspaceId);
+    const delegatedInput = {
+      grantee_ref: actor.identityId, purpose_id: "PUR-P1-001" as const,
+      scope: { resource_refs: [workspaceId], field_refs: [] as string[], edge_refs: [] as string[], actions: ["workspace.read" as const], allow_export: false, allow_onward_delegation: false as const },
+      valid_from: new Date(Date.now() - 60_000).toISOString(), valid_to: null, policy_version: "policy.local-explicit-grant@0.2" as const,
+    };
+    await expect(store.createAccessGrant(workspaceId, restrictedActor, "grant-create-onward-denied-0001", delegatedInput, delegatedCreateFence, "corr-grant-onward-denied")).rejects.toThrow("not available");
+    await expect(store.createAccessGrant(workspaceId, restrictedActor, "grant-create-onward-denied-0001", delegatedInput, delegatedCreateFence, "corr-grant-onward-denied-replay")).rejects.toThrow("not available");
+    expect((await store.dashboard(workspaceId)).accessGrants.some((grant) => grant.grantorIdentityId === restrictedActor.identityId)).toBe(false);
+
+    let revokeFence = await store.startAuthorization(actor, workspaceId, "grant.revoke", "WORKSPACE", workspaceId);
+    await store.revokeAccessGrant(workspaceId, actor, workspaceGrant.id, workspaceGrant.revision, "grant-revoke-workspace-member-0001", "USER_REQUEST", revokeFence, "corr-grant-workspace-member-revoke");
+    await expect(store.createAccessGrant(workspaceId, restrictedActor, "grant-create-after-parent-revoke-0001", delegatedInput, delegatedCreateFence, "corr-grant-after-parent-revoke")).rejects.toThrow("not available");
+    await expect(store.authorizedDashboard(workspaceId, restrictedActor, dashboardFence, "corr-restricted-dashboard-stale")).rejects.toThrow("not available");
+
     const restrictedFence = await store.startAuthorization(restrictedActor, workspaceId, "document.read", "DOCUMENT", uploaded.id);
     const restrictedDetail = await store.documentDetail(workspaceId, uploaded.id, restrictedActor, restrictedFence, "corr-restricted-detail");
     expect(restrictedDetail).toMatchObject({ preview: { kind: "UNAVAILABLE" }, facts: [], dependencies: [] });
     await expect(store.documentArtifact(workspaceId, uploaded.id, restrictedActor, restrictedFence, "corr-restricted-artifact")).rejects.toThrow("not available");
 
-    let revokeFence = await store.startAuthorization(actor, workspaceId, "grant.revoke", "WORKSPACE", workspaceId);
+    revokeFence = await store.startAuthorization(actor, workspaceId, "grant.revoke", "WORKSPACE", workspaceId);
     await store.revokeAccessGrant(workspaceId, actor, restricted.id, restricted.revision, "grant-revoke-restricted-0001", "SCOPE_REPLACED", revokeFence, "corr-grant-revoke-restricted");
     ownerFence = await store.startAuthorization(actor, workspaceId, "grant.create", "WORKSPACE", workspaceId);
     const broad = await store.createAccessGrant(workspaceId, actor, "grant-create-broad-0001", {

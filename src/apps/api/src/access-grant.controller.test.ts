@@ -1,4 +1,4 @@
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { AddressInfo } from "node:net";
@@ -83,6 +83,91 @@ describe("bounded current AccessGrant HTTP boundary", () => {
       expect(staleRevoke.status).toBe(412);
       const staleCursor = await fetch(`${grantsUrl}?page_size=1&page_after=${encodeURIComponent(pageOne.page.next_page_after)}`, { headers: headers("grant-list-stale-cursor") });
       expect(staleCursor.status).toBe(400); expect(await staleCursor.json()).toMatchObject({ code: "INVALID_PAGE_CURSOR" });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it("keeps a restricted workspace dashboard usable while denying onward delegation and stale output", async () => {
+    const app = await NestFactory.create(AppModule, { logger: false });
+    app.setGlobalPrefix("api");
+    await app.listen(0, "127.0.0.1");
+    try {
+      const port = (app.getHttpServer().address() as AddressInfo).port;
+      const base = `http://127.0.0.1:${port}/api`;
+      const origin = "http://localhost:4173";
+      const register = async (displayName: string, email: string) => {
+        const response = await fetch(`${base}/auth/register`, {
+          method: "POST", headers: { "Content-Type": "application/json", Origin: origin },
+          body: JSON.stringify({ displayName, email, password: "synthetic-password" }),
+        });
+        return { response, body: await response.json() as { account: { id: string } } };
+      };
+      const ownerRegistration = await register("Dashboard Synthetic Owner", "dashboard-owner@example.test");
+      const delegateRegistration = await register("Dashboard Synthetic Delegate", "dashboard-delegate@example.test");
+      const ownerCookie = ownerRegistration.response.headers.get("set-cookie")!.split(";")[0]!;
+      const ownerCsrf = ownerRegistration.response.headers.get("x-csrf-token")!;
+      const workspaceResponse = await fetch(`${base}/workspace`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Origin: origin, Cookie: ownerCookie, "X-CSRF-Token": ownerCsrf, "X-Purpose-Id": "PUR-P1-001", "X-Correlation-Id": "corr-dashboard-workspace", "Idempotency-Key": "dashboard-workspace-create-0001" },
+        body: JSON.stringify({ name: "Dashboard synthetic household", type: "FAMILY" }),
+      });
+      const workspace = await workspaceResponse.json() as { id: string };
+      const currentOwnerCookie = workspaceResponse.headers.get("set-cookie")!.split(";")[0]!;
+      const currentOwnerCsrf = workspaceResponse.headers.get("x-csrf-token")!;
+      const statePath = join(directory, "state.json");
+      const state = JSON.parse(await readFile(statePath, "utf8")) as { workspaces: Array<{ workspace: { id: string }; members: Array<Record<string, unknown>>; accessGrants: Array<{ grantorIdentityId: string }> }> };
+      const authority = state.workspaces.find((candidate) => candidate.workspace.id === workspace.id)!;
+      const at = new Date().toISOString();
+      authority.members.push({
+        id: "member_dashboard_delegate", workspaceId: workspace.id, identityId: delegateRegistration.body.account.id,
+        displayName: "Dashboard Synthetic Delegate", role: "ADULT_MEMBER", state: "ACTIVE", invitationState: "ACTIVE",
+        permissions: { view: true, add: false, edit: false, delete: false }, validFrom: at, recordedAt: at, createdAt: at, revision: 1, history: [],
+      });
+      await writeFile(statePath, JSON.stringify(state));
+      const ownerHeaders = (key: string, revision?: number): Record<string, string> => ({
+        "Content-Type": "application/json", Origin: origin, Cookie: currentOwnerCookie, "X-CSRF-Token": currentOwnerCsrf,
+        "X-Workspace-Id": workspace.id, "X-Purpose-Id": "PUR-P1-001", "X-Correlation-Id": `corr-${key}`, "Idempotency-Key": key,
+        ...(revision ? { "If-Match": `"${revision}"` } : {}),
+      });
+      const grantsUrl = `${base}/v1/workspaces/${workspace.id}/access-grants`;
+      const parentBody = {
+        grantee_ref: delegateRegistration.body.account.id, purpose_id: "PUR-P1-001",
+        scope: { resource_refs: [workspace.id], field_refs: [], edge_refs: [], actions: ["workspace.read", "grant.create"], allow_export: false, allow_onward_delegation: false },
+        valid_from: "2026-08-30T00:00:00.000Z", valid_to: null, policy_version: "policy.local-explicit-grant@0.2",
+      };
+      const parentResponse = await fetch(grantsUrl, { method: "POST", headers: ownerHeaders("dashboard-parent-grant-0001"), body: JSON.stringify(parentBody) });
+      expect(parentResponse.status).toBe(201);
+      const parent = await parentResponse.json() as { grant_id: string; revision: number };
+
+      const delegateLogin = await fetch(`${base}/auth/login`, {
+        method: "POST", headers: { "Content-Type": "application/json", Origin: origin },
+        body: JSON.stringify({ email: "dashboard-delegate@example.test", password: "synthetic-password" }),
+      });
+      expect(delegateLogin.status).toBe(201);
+      const delegateCookie = delegateLogin.headers.get("set-cookie")!.split(";")[0]!;
+      const delegateCsrf = delegateLogin.headers.get("x-csrf-token")!;
+      const delegateHeaders = (key: string): Record<string, string> => ({
+        "Content-Type": "application/json", Origin: origin, Cookie: delegateCookie, "X-CSRF-Token": delegateCsrf,
+        "X-Workspace-Id": workspace.id, "X-Purpose-Id": "PUR-P1-001", "X-Correlation-Id": `corr-${key}`, "Idempotency-Key": key,
+      });
+      const dashboardResponse = await fetch(`${base}/dashboard`, { headers: delegateHeaders("dashboard-restricted-read") });
+      expect(dashboardResponse.status).toBe(200);
+      expect(await dashboardResponse.json()).toMatchObject({ workspace: { id: workspace.id }, members: [], subjects: [], audit: [], accessGrants: [] });
+
+      const childBody = { ...parentBody, grantee_ref: ownerRegistration.body.account.id, scope: { ...parentBody.scope, actions: ["workspace.read"] } };
+      const childAttempt = await fetch(grantsUrl, { method: "POST", headers: delegateHeaders("dashboard-child-grant-0001"), body: JSON.stringify(childBody) });
+      expect(childAttempt.status).toBe(404);
+      expect(await childAttempt.json()).toMatchObject({ code: "RESOURCE_NOT_AVAILABLE" });
+      const childReplay = await fetch(grantsUrl, { method: "POST", headers: delegateHeaders("dashboard-child-grant-0001"), body: JSON.stringify(childBody) });
+      expect(childReplay.status).toBe(404);
+
+      const persisted = JSON.parse(await readFile(statePath, "utf8")) as { workspaces: Array<{ workspace: { id: string }; accessGrants: Array<{ grantorIdentityId: string }> }> };
+      expect(persisted.workspaces.find((candidate) => candidate.workspace.id === workspace.id)!.accessGrants.some((grant) => grant.grantorIdentityId === delegateRegistration.body.account.id)).toBe(false);
+      const revoked = await fetch(`${grantsUrl}/${parent.grant_id}/revocations`, { method: "POST", headers: ownerHeaders("dashboard-parent-revoke-0001", parent.revision), body: JSON.stringify({ reason_code: "USER_REQUEST" }) });
+      expect(revoked.status).toBe(200);
+      const staleDashboard = await fetch(`${base}/dashboard`, { headers: delegateHeaders("dashboard-revoked-read") });
+      expect(staleDashboard.status).toBe(404);
     } finally {
       await app.close();
     }

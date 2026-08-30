@@ -660,10 +660,10 @@ export class LocalStore {
     };
   }
 
-  async authorizedDashboard(workspaceId: string, actor: WorkspaceActor, fences: AuthorizationFence[], correlationId: string): Promise<DashboardSnapshot> {
-    const epoch = fences[0]?.authorizationEpoch;
-    if (epoch === undefined || fences.some((fence) => fence.workspaceId !== workspaceId || fence.authorizationEpoch !== epoch)) throw new NotFoundException("Resource not available");
-    await this.reauthorizeBatch(fences, actor, "OUTPUT", correlationId);
+  async authorizedDashboard(workspaceId: string, actor: WorkspaceActor, containerFence: AuthorizationFence, correlationId: string): Promise<DashboardSnapshot> {
+    if (containerFence.workspaceId !== workspaceId || containerFence.action !== "workspace.read" || containerFence.resourceKind !== "WORKSPACE" || containerFence.resourceId !== workspaceId) throw new NotFoundException("Resource not available");
+    await this.reauthorize(containerFence, actor, "OUTPUT", correlationId);
+    const epoch = containerFence.authorizationEpoch;
     const snapshot = await this.dashboard(workspaceId);
     const request = (action: WorkspaceAction, resourceKind: "WORKSPACE" | "DOCUMENT" | "SUBJECT" | "TASK", resourceId: string, fieldRef?: string, edgeRef?: string) => ({ workspaceId, action, resourceKind, resourceId, ...(fieldRef ? { fieldRef } : {}), ...(edgeRef ? { edgeRef } : {}), expectedAuthorizationEpoch: epoch, phase: "OUTPUT" as const });
     const key = (context: ReturnType<typeof request>) => JSON.stringify([context.action, context.resourceKind, context.resourceId, context.fieldRef ?? "", context.edgeRef ?? ""]);
@@ -967,11 +967,19 @@ export class LocalStore {
   async createAccessGrant(workspaceId: string, actor: WorkspaceActor, idempotencyKey: string, input: CanonicalCreateAccessGrantInput, fence: AuthorizationFence, correlationId: string): Promise<AccessGrant> {
     const result = await this.mutate((database): AccessGrant | "NOT_AVAILABLE" => {
       const state = this.state(database, workspaceId);
-      const receipt = priorCommandReceipt(state, actor, "API-P1-113", idempotencyKey, input);
-      if (receipt) return state.accessGrants.find((grant) => grant.id === receipt.resourceId) ?? (() => { throw new ConflictException("The prior command result is unavailable"); })();
       if (fence.identityId !== actor.identityId || fence.workspaceId !== workspaceId || fence.action !== "grant.create" || fence.resourceKind !== "WORKSPACE") return "NOT_AVAILABLE";
       const effectDecision = this.recordAuthorizationDecision(database, state, actor, this.effectContext(fence), correlationId);
       if (effectDecision.decision !== "ALLOW") return "NOT_AVAILABLE";
+      const ownerBinding = state.ownerBindings.find((binding) => binding.state === "ACTIVE" && binding.ownerIdentityId === actor.identityId);
+      const authorizingGrant = state.accessGrants.find((grant) => grant.id === fence.grantId && grant.revision === fence.grantRevision && grant.state === "ACTIVE" && grant.policyVersion === fence.policyVersion);
+      const ownerAuthoritySource = ownerBinding
+        && authorizingGrant?.grantorIdentityId === actor.identityId
+        && authorizingGrant.granteeIdentityId === actor.identityId
+        && authorizingGrant.resourceKind === "WORKSPACE"
+        && authorizingGrant.resourceIds.includes(workspaceId);
+      if (!ownerAuthoritySource) return "NOT_AVAILABLE";
+      const receipt = priorCommandReceipt(state, actor, "API-P1-113", idempotencyKey, input);
+      if (receipt) return state.accessGrants.find((grant) => grant.id === receipt.resourceId) ?? (() => { throw new ConflictException("The prior command result is unavailable"); })();
       const recipient = state.members.find((member) => member.identityId === input.grantee_ref && member.state === "ACTIVE" && member.invitationState === "ACTIVE");
       const resourceKind = this.resourceKindForRefs(state, input.scope.resource_refs);
       if (!recipient || !resourceKind) throw new UnprocessableEntityException("Grant scope or recipient is unavailable");

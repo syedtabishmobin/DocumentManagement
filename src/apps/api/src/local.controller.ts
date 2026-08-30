@@ -157,11 +157,8 @@ export class LocalController {
   async dashboard(@Req() request: AuthenticatedRequest) {
     const { workspaceId, actor } = this.workspaceContext(request);
     const correlationId = this.requestCorrelation(request);
-    const fences = [];
-    for (const action of ["workspace.read", "workspace.admin", "subject.read", "document.read", "task.read", "audit.read", "grant.read"] as const) {
-      fences.push(await this.store.startAuthorization(actor, workspaceId, action, "WORKSPACE", workspaceId, { correlationId }));
-    }
-    return this.store.authorizedDashboard(workspaceId, actor, fences, correlationId);
+    const containerFence = await this.store.startAuthorization(actor, workspaceId, "workspace.read", "WORKSPACE", workspaceId, { correlationId });
+    return this.store.authorizedDashboard(workspaceId, actor, containerFence, correlationId);
   }
 
   @Patch("workspace")
