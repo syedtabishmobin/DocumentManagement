@@ -17,7 +17,9 @@
     {"id": "github-operations-context", "status": "AVAILABLE_ON_DEMAND", "purpose": "authoritative issues, decisions, defects, PRs and CI evidence"},
     {"id": "codex-agents-native", "status": "AVAILABLE_INTERACTIVE", "purpose": "native local Codex session view"},
     {"id": "codex-otel", "status": "SUPPORTED_CONFIGURED_DISABLED", "purpose": "provider-reported runtime logs, metrics, traces and token counts", "reason": "OTel routing is user-level and no privacy-filtered destination has passed conformance"},
-    {"id": "azure-monitor-agent-operations", "status": "EXISTING_INFRASTRUCTURE_NOT_BOUND", "purpose": "future durable agent-operations backend", "reason": "Log Analytics and Application Insights exist for product/dev telemetry; agent export route and source filtering are not configured"}
+    {"id": "azure-monitor-agent-operations", "status": "EXISTING_INFRASTRUCTURE_NOT_BOUND", "purpose": "future durable agent-operations backend", "reason": "Log Analytics and Application Insights exist for product/dev telemetry; agent export route and source filtering are not configured"},
+    {"id": "agent-ops-dashboard", "status": "AVAILABLE_LOCAL", "purpose": "loopback-only read-only live/current/historical operations and evidence views"},
+    {"id": "github-projects", "status": "AVAILABLE_CONFIGURED", "purpose": "persistent Delivery and Management views"}
   ],
   "nativeTelemetry": {
     "codexCliVersionObserved": "0.150.0-alpha.8",

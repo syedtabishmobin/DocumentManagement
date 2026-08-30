@@ -252,7 +252,29 @@
       "roleId": "qa-release-lead",
       "parentDisplayAgentId": "ORCH-009",
       "workItem": "issue-58/pr-59",
+      "status": "COMPLETED"
+    },
+    {
+      "displayAgentId": "ORCH-010",
+      "displayRole": "Framework Delivery Orchestrator",
+      "displayRunId": "RUN-20260830-0078",
+      "runtimeAgentId": "codex-01a04b98-20f5-7831-8b62-3fe5bd5f4add",
+      "runtimeRunId": "run-ai-native-control-centre-20260830",
+      "roleId": "delivery-orchestrator",
+      "parentDisplayAgentId": "ORCH-009",
+      "workItem": "issue-61",
       "status": "ACTIVE"
+    },
+    {
+      "displayAgentId": "QA-FUNC-017",
+      "displayRole": "Independent Functional QA",
+      "displayRunId": "RUN-20260830-0079",
+      "runtimeAgentId": "codex-01a04f09-806d-7832-915a-21d31c5a0fde",
+      "runtimeRunId": "run-qa-control-centre-20260830",
+      "roleId": "qa-release-lead",
+      "parentDisplayAgentId": "ORCH-010",
+      "workItem": "issue-61/pr-62",
+      "status": "COMPLETED"
     }
   ]
 }

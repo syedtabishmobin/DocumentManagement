@@ -3,12 +3,12 @@
   "projectId": "doculyra",
   "productAuthorityContactId": "doculyra-product-authority",
   "persistentRoles": [
-    {"id": "delivery-orchestrator", "contract": ".agents/roles/persistent.md", "capabilities": ["repository-discovery", "critical-decision", "handoff", "agent-operations-observability", "github-issue-control-plane", "acceptance-test-mapping", "telemetry-validation", "defect-evidence"]},
+    {"id": "delivery-orchestrator", "contract": ".agents/roles/persistent.md", "capabilities": ["repository-discovery", "critical-decision", "handoff", "agent-operations-observability", "delivery-control-centre", "github-issue-control-plane", "acceptance-test-mapping", "telemetry-validation", "defect-evidence"]},
     {"id": "product-ba", "contract": ".agents/roles/persistent.md", "capabilities": ["work-item-shaping", "acceptance-test-mapping", "business-acceptance", "repository-discovery", "github-issue-control-plane"]},
     {"id": "architecture-guardian", "contract": ".agents/roles/persistent.md", "capabilities": ["architecture-impact", "contract-review", "repository-discovery", "critical-decision", "github-issue-control-plane"]},
     {"id": "qa-release-lead", "contract": ".agents/roles/persistent.md", "capabilities": ["independent-qa", "release-readiness", "repository-discovery", "acceptance-test-mapping", "defect-evidence", "github-issue-control-plane", "telemetry-validation"]},
     {"id": "repository-steward", "contract": ".agents/roles/persistent.md", "capabilities": ["repository-controls", "framework-validation", "telemetry-validation", "repository-discovery", "github-issue-control-plane", "defect-evidence"]},
-    {"id": "agent-operations-lead", "contract": ".agents/roles/persistent.md", "capabilities": ["agent-operations-observability", "agent-cost-performance-analysis", "repository-discovery", "github-issue-control-plane", "acceptance-test-mapping", "telemetry-validation", "defect-evidence"]}
+    {"id": "agent-operations-lead", "contract": ".agents/roles/persistent.md", "capabilities": ["agent-operations-observability", "delivery-control-centre", "agent-cost-performance-analysis", "repository-discovery", "github-issue-control-plane", "acceptance-test-mapping", "telemetry-validation", "defect-evidence"]}
   ],
   "specialists": ["security-privacy", "data-domain", "ux-accessibility", "ai-quality-safety", "reliability-operations", "legal-compliance-adviser"],
   "separationOfDuties": {

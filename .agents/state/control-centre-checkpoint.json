@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0.0",
+  "recordedAt": "2026-08-30T05:54:00Z",
+  "queueState": "PAUSED_BY_PRODUCT_AUTHORITY",
+  "dispatchAllowed": false,
+  "newProductWorkStartedAfterPause": false,
+  "stableBase": {
+    "branch": "main",
+    "commit": "65798b1322ef9a836ee2e97f18cfc9cda6f2e420",
+    "status": "CLEAN_MERGED_CHECKPOINT"
+  },
+  "isolatedInFlightWork": {
+    "issue": "https://github.com/syedtabishmobin/DocumentManagement/issues/58",
+    "pullRequest": "https://github.com/syedtabishmobin/DocumentManagement/pull/59",
+    "branch": "codex/58-story-p1-006",
+    "candidateCommit": "1c84f44ace589c51018047daebfbd32e968dfbde",
+    "protectedCi": "https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33295376113",
+    "qaState": "FAILED",
+    "blockingDefect": "https://github.com/syedtabishmobin/DocumentManagement/issues/60",
+    "mergeAllowed": false,
+    "nextAction": "Backend/API fixes bounded exhaustion across expired-lease takeovers, returns a replacement exact FIX_READY candidate, then independent QA retests defect #60 and Story P1-006 with P1-001 through P1-005 regression."
+  },
+  "controlCentreWork": {
+    "issue": "https://github.com/syedtabishmobin/DocumentManagement/issues/61",
+    "branch": "codex/61-ai-native-control-centre",
+    "baseCommit": "65798b1322ef9a836ee2e97f18cfc9cda6f2e420"
+  },
+  "resumePolicy": "EXPLICIT_PRODUCT_AUTHORITY_OR_EXISTING_APPROVED_RULE_ONLY"
+}
