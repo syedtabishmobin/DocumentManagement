@@ -2,6 +2,8 @@
 
 These migrations implement the PostgreSQL persistence adapter selected by `ADR-ARCH-007`. Apply them with `pnpm --filter @document-management/api persistence:migrate` using a migration identity; the API runtime verifies applied versions and does not receive schema-owner permissions.
 
+Migration `0005_document_version_event.sql` adds the closed `LogicalDocument` / `EVT-P1-009` outbox envelope pair without weakening the earlier workspace-authority, ingestion-case, or artifact-integrity constraints.
+
 Rules:
 
 - Files are immutable after merge. Corrections use a new forward migration.
