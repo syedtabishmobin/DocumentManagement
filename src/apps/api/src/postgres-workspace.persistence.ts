@@ -161,6 +161,7 @@ function validateWorkspaceState(state: WorkspaceState): void {
     [state.audit, "audit record"],
     [state.dependencies, "dependency"],
     [state.ingestionCases, "ingestion case"],
+    [state.policyBlockedCases, "policy-blocked case"],
     [state.authorityCommandReceipts, "authority command receipt"],
   ];
   for (const [items, kind] of scopedCollections) {
@@ -231,6 +232,7 @@ function validateDatabase(database: WorkspaceDatabase): void {
     ["access grant", (state) => state.accessGrants],
     ["audit record", (state) => state.audit],
     ["dependency", (state) => state.dependencies],
+    ["policy-blocked case", (state) => state.policyBlockedCases],
   ];
   for (const [kind, records] of globallyUniqueCollections) {
     const all = database.workspaces.flatMap(records);

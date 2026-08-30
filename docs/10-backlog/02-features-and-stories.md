@@ -158,7 +158,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `BASELINED — PLANNED_UNISSUED`; Security + Platform |
+| State / owner | `IN_IMPLEMENTATION — Issue #69`; Security + Platform |
 | Product | `REQ-P1-TRUST-001`; `FEAT-P1-006`; `UC-P1-001`, `013`; `OUT-P1-001`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-001`; `UX-SCR-P1-001`, `030`, `031`; `A11Y-P1-001`–`035`, `043`–`050`, especially `047` |
 | API / events | Authentication prerequisite for `API-P1-101`–`183`; `EVT-P1-003`, `005`, `029`; `API-P1-007`–`014`, `047`–`052` |

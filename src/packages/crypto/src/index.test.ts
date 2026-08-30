@@ -61,4 +61,20 @@ describe("customer-controlled document envelope", () => {
     expect(new TextDecoder().decode(await decryptDocumentWithWrappedKey(envelope, recipientEnvelope, context, recipientKey))).toBe("Synthetic shared household policy");
     await expect(decryptDocumentWithWrappedKey(envelope, recipientEnvelope, context, ownerKey)).rejects.toThrow("authentication failed");
   });
+
+  it("rotates a device wrapping envelope without exposing or changing document bytes", async () => {
+    const oldDeviceKey = await importWrappingKey(fixedWrappingKey);
+    const newDeviceRawKey = Uint8Array.from({ length: 32 }, (_, index) => (index + 137) % 256);
+    const newDeviceKey = await importWrappingKey(newDeviceRawKey);
+    const plaintext = new TextEncoder().encode("Synthetic rotation-only document");
+    const envelope = await encryptDocument(plaintext, context, oldDeviceKey, "device-old-001");
+    const originalCiphertext = envelope.ciphertext;
+    const rotatedKey = await rewrapDocumentKey(envelope, context, oldDeviceKey, newDeviceKey, "device-new-002");
+
+    expect(rotatedKey.wrappingKeyId).toBe("device-new-002");
+    expect(envelope.ciphertext).toBe(originalCiphertext);
+    expect(JSON.stringify(rotatedKey)).not.toContain(Buffer.from(newDeviceRawKey).toString("base64"));
+    expect(new TextDecoder().decode(await decryptDocumentWithWrappedKey(envelope, rotatedKey, context, newDeviceKey))).toBe("Synthetic rotation-only document");
+    await expect(decryptDocumentWithWrappedKey(envelope, rotatedKey, context, oldDeviceKey)).rejects.toThrow("authentication failed");
+  });
 });

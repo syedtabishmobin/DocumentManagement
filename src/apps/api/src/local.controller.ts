@@ -2,7 +2,7 @@ import { BadRequestException, Body, ConflictException, Controller, Delete, Get, 
 import { FileInterceptor } from "@nestjs/platform-express";
 import { createHash } from "node:crypto";
 import type { Response } from "express";
-import { askQuestionSchema, canonicalArtifactAccessGrantSchema, canonicalCommitIngestionReceiptSchema, canonicalCreateAccessGrantSchema, canonicalCreateIngestionCaseSchema, canonicalCreateSubjectSchema, canonicalCreateWorkspaceSchema, canonicalDocumentLifecycleTransitionSchema, canonicalInviteMembershipSchema, canonicalReasonCommandSchema, canonicalRedeemArtifactAccessGrantSchema, canonicalUpdateMembershipSchema, canonicalUpdateSubjectSchema, configureWorkspaceSchema, createMemberSchema, createSubjectSchema, createTaskSchema, managePersonSchema, manualDocumentSchema, type AccessGrant, type ArtifactAccessGrantRecord, type DocumentRecord, type DocumentVersionRecord, type IngestionCase, type Member, type SubjectRecord, type Workspace, type WorkspaceAction } from "@document-management/contracts";
+import { askQuestionSchema, canonicalArtifactAccessGrantSchema, canonicalCommitIngestionReceiptSchema, canonicalCreateAccessGrantSchema, canonicalCreateIngestionCaseSchema, canonicalCreateSubjectSchema, canonicalCreateWorkspaceSchema, canonicalDocumentLifecycleTransitionSchema, canonicalInviteMembershipSchema, canonicalReasonCommandSchema, canonicalRedeemArtifactAccessGrantSchema, canonicalRequestRecoveryCaseSchema, canonicalUpdateMembershipSchema, canonicalUpdateSubjectSchema, configureWorkspaceSchema, createMemberSchema, createSubjectSchema, createTaskSchema, managePersonSchema, manualDocumentSchema, type AccessGrant, type ArtifactAccessGrantRecord, type DocumentRecord, type DocumentVersionRecord, type IngestionCase, type Member, type SubjectRecord, type Workspace, type WorkspaceAction } from "@document-management/contracts";
 import { currentWorkspaceConfiguration, LocalStore, normalizedCorrelationId, type GenericIngestionJob, type WorkspaceActor } from "./local.store.js";
 import { IdentityStore } from "./identity.store.js";
 import { actorFor, requestIdentity, sessionToken, setSessionCredentials, type AuthenticatedRequest } from "./auth.controller.js";
@@ -711,11 +711,19 @@ export class LocalController {
     return this.store.exportWorkspace(context.workspaceId, context.actor, context.fence, this.requestCorrelation(request));
   }
 
-  @Post("workspaces/:workspaceId/recovery-cases")
-  async recoveryUnavailable(@Param("workspaceId") expectedWorkspaceId: string, @Req() request: AuthenticatedRequest) {
+  @Post("v1/workspaces/:workspaceId/recovery-cases")
+  @HttpCode(HttpStatus.ACCEPTED)
+  async recoveryUnavailable(@Param("workspaceId") expectedWorkspaceId: string, @Body() body: unknown, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    const parsed = canonicalRequestRecoveryCaseSchema.safeParse(body);
+    if (!parsed.success) this.problem(request, response, HttpStatus.UNPROCESSABLE_ENTITY, "RECOVERY_UNAVAILABLE", "Recovery and evidence submission are unavailable", "DO_NOT_RETRY");
     const context = this.workspaceContext(request, expectedWorkspaceId);
-    const fence = await this.store.startAuthorization(context.actor, context.workspaceId, "workspace.read", "WORKSPACE", context.workspaceId, { correlationId: this.requestCorrelation(request) });
+    const correlationId = this.correlation(request, response);
+    const fence = await this.store.startAuthorization(context.actor, context.workspaceId, "workspace.read", "WORKSPACE", context.workspaceId, { correlationId });
     await this.store.requireAuthorization(context.actor, context.workspaceId, "workspace.admin", "WORKSPACE", context.workspaceId);
-    return this.store.recordRecoveryBlocked(context.workspaceId, context.actor, fence, this.requestCorrelation(request));
+    const blockedCase = await this.store.recordRecoveryBlocked(context.workspaceId, context.actor, parsed.data, this.idempotencyKey(request, response), fence, correlationId);
+    response.setHeader("ETag", `"${blockedCase.revision}"`);
+    response.setHeader("RateLimit-Policy", "recovery-policy-blocked-synthetic;w=60;q=5");
+    response.setHeader("Location", `/v1/workspaces/${context.workspaceId}/recovery-cases/${blockedCase.id}`);
+    return { case_id: blockedCase.id, workspace_id: blockedCase.workspaceId, case_kind: blockedCase.caseKind, state: blockedCase.state, decision_fence: blockedCase.decisionFence, created_at: blockedCase.createdAt, revision: blockedCase.revision };
   }
 }

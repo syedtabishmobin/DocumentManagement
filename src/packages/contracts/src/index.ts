@@ -164,6 +164,11 @@ export const canonicalDocumentLifecycleTransitionSchema = z.object({
   reason_code: z.string().trim().regex(/^[A-Z][A-Z0-9_]{1,79}$/),
 }).strict();
 
+export const canonicalRequestRecoveryCaseSchema = z.object({
+  requested_scope: z.enum(["ACCOUNT", "WORKSPACE_OWNERSHIP"]),
+  evidence_submission_refs: z.array(z.string().trim().min(1)).max(0),
+}).strict();
+
 export const selectWorkspaceSchema = z.object({
   workspaceId: z.string().trim().min(1).max(200),
 });
@@ -226,6 +231,7 @@ export type CanonicalCommitIngestionReceiptInput = z.infer<typeof canonicalCommi
 export type CanonicalArtifactAccessGrantInput = z.infer<typeof canonicalArtifactAccessGrantSchema>;
 export type CanonicalRedeemArtifactAccessGrantInput = z.infer<typeof canonicalRedeemArtifactAccessGrantSchema>;
 export type CanonicalDocumentLifecycleTransitionInput = z.infer<typeof canonicalDocumentLifecycleTransitionSchema>;
+export type CanonicalRequestRecoveryCaseInput = z.infer<typeof canonicalRequestRecoveryCaseSchema>;
 export type SelectWorkspaceInput = z.infer<typeof selectWorkspaceSchema>;
 export type CreateSubjectInput = z.infer<typeof createSubjectSchema>;
 export type FilePermissions = z.infer<typeof filePermissionsSchema>;
