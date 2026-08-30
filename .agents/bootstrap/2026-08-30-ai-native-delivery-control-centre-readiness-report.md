@@ -77,11 +77,11 @@ Usage and cost values retain the vocabulary `MEASURED`, `PROVIDER_REPORTED`, `AT
 - Dashboard routes: 16/16 HTTP 200; snapshot API 200; mutation probe 405 `READ_ONLY`.
 - Specification, API/event, reference-data, baseline and traceability validators: PASS.
 - TypeScript typecheck, API/web/domain/crypto tests and builds: PASS; 63 application tests passed and four PostgreSQL-only local tests were skipped as designed, with the real PostgreSQL job required in protected CI.
-- Protected CI evidence is linked in the final exact-candidate update below.
+- Protected CI run `33302923127` passed candidate `edc06301bda16ccde12adf624f7a991a5644fe2d`: specifications/TypeScript/real PostgreSQL, Android and iOS simulator all passed. Exact run and job links are included in the access table below.
 
 ## 12. Independent QA results
 
-QA-FUNC-016 failed candidate `39a4325f083924dccfbb967805f1a31d04ccd82e` and opened defects #63 and #64. After the first remediation, protected CI passed candidate `e89c4aeab68597119c466a7ab44f15f559789b55`, but QA-FUNC-017 independently found that static Story/AC/Test/Decision results were still disconnected from their incoming GitHub/QA chains; that candidate therefore remained blocked and unmerged. The second remediation adds bidirectional graph reconstruction and fail-closed Audit controls with regression coverage. Both defects remain open pending protected CI and independent exact-candidate retest. An independent QA identity that did not author the fixes must verify the replacement SHA, all seven live Project items, both defects, the full dashboard/specification regression and this report. The implementing agent is not the final approver.
+QA-FUNC-016 failed candidate `39a4325f083924dccfbb967805f1a31d04ccd82e` and opened defects #63 and #64. After the first remediation, protected CI passed candidate `e89c4aeab68597119c466a7ab44f15f559789b55`, but QA-FUNC-017 independently found that static Story/AC/Test/Decision results were still disconnected from their incoming GitHub/QA chains; that candidate therefore remained blocked and unmerged. The second remediation at `edc06301bda16ccde12adf624f7a991a5644fe2d` passed all technical, live Project, Audit, protected-CI and browser gates, but QA-FUNC-017 correctly rejected its first four `FIX_READY` comments because they omitted mandatory Level 2 execution details. Those malformed comments are superseded by the validated three-level records linked below. Both defects remain open pending independent validation of the corrected evidence and this report-bearing candidate. An independent QA identity that did not author the fixes must verify the replacement SHA, all seven live Project items, both defects, the full dashboard/specification regression and this report. The implementing agent is not the final approver.
 
 ## 13. Performance/accessibility results
 
@@ -162,6 +162,15 @@ Start once from the repository root with `pnpm agent:dashboard`, then open the l
 | Defect #64 — reverse trace and Audit | https://github.com/syedtabishmobin/DocumentManagement/issues/64 | Persistent | GitHub authentication for account-specific Project context | None |
 | PR #62 protected checks | https://github.com/syedtabishmobin/DocumentManagement/pull/62/checks | Persistent | GitHub authentication | None |
 | Initial protected candidate CI | https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33297595077 | Persistent | GitHub authentication | None |
+| Reverse-trace replacement CI | https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33302923127 | Persistent | GitHub authentication | None |
+| Replacement specifications/TypeScript/real PostgreSQL | https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33302923127/job/99234269923 | Persistent | GitHub authentication | None |
+| Replacement Android | https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33302923127/job/99234269800 | Persistent | GitHub authentication | None |
+| Replacement iOS simulator | https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33302923127/job/99234269890 | Persistent | GitHub authentication | None |
+| Validated FIX_READY — defect #63 | https://github.com/syedtabishmobin/DocumentManagement/issues/63#issuecomment-5467852745 | Persistent | GitHub authentication | None |
+| Validated FIX_READY — defect #64 | https://github.com/syedtabishmobin/DocumentManagement/issues/64#issuecomment-5467852619 | Persistent | GitHub authentication | None |
+| Validated FIX_READY — Issue #61 | https://github.com/syedtabishmobin/DocumentManagement/issues/61#issuecomment-5467852641 | Persistent | GitHub authentication | None |
+| Validated FIX_READY — PR #62 | https://github.com/syedtabishmobin/DocumentManagement/pull/62#issuecomment-5467852649 | Persistent | GitHub authentication | None |
+| Independent QA governance failure on `edc06301` | https://github.com/syedtabishmobin/DocumentManagement/issues/64#issuecomment-5467842840 | Persistent | GitHub authentication | None |
 | Readiness report candidate | https://github.com/syedtabishmobin/DocumentManagement/blob/codex/61-ai-native-control-centre/.agents/bootstrap/2026-08-30-ai-native-delivery-control-centre-readiness-report.md | Persistent while branch/PR exists; final URL moves to `main` after merge | GitHub authentication | None |
 
 The governed product queue remains `PAUSED_BY_PRODUCT_AUTHORITY`. Its next deterministic action is the Backend/API fix for defect #60 on Issue #58 / PR #59, followed by a replacement exact candidate and independent retest. It must not resume automatically when this Control Centre is completed.
