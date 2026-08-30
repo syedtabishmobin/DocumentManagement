@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+"""Validate Doculyra's persistent GitHub Project control-centre layer."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+from pathlib import Path
+from typing import Any
+
+
+ROOT = Path(__file__).resolve().parents[1]
+CONFIG_PATH = ROOT / ".agents/project/control-centre.json"
+EXPECTED_VIEWS = {
+    "Executive": "TABLE_LAYOUT",
+    "Delivery Board": "BOARD_LAYOUT",
+    "Product Backlog": "TABLE_LAYOUT",
+    "Active Work": "BOARD_LAYOUT",
+    "QA & Defects": "TABLE_LAYOUT",
+    "Human Decisions": "TABLE_LAYOUT",
+    "Stage & UAT": "TABLE_LAYOUT",
+    "Roadmap": "ROADMAP_LAYOUT",
+    "Completed": "TABLE_LAYOUT",
+    "Trends": "TABLE_LAYOUT",
+}
+
+
+def load_json(path: Path) -> Any:
+    with path.open(encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def configured_checks(config: dict[str, Any]) -> list[dict[str, str]]:
+    project = config["githubProject"]
+    fields = project["fields"]
+    views = project["views"]
+    checks = []
+
+    def add(check_id: str, passed: bool, evidence: str) -> None:
+        checks.append({"id": check_id, "status": "PASS" if passed else "FAIL", "evidence": evidence})
+
+    add("CC-PROJ-001", project["title"] == "Doculyra Product Delivery" and project["number"] == 1, "Stable Project title and number")
+    add("CC-PROJ-002", len(fields) == 22 and len(set(fields)) == 22, "Twenty-two unique required semantic fields")
+    add("CC-PROJ-003", project.get("fieldAliases") == {"Type": "Work Type"}, "Reserved Type compatibility mapping is explicit")
+    add("CC-PROJ-004", {item["name"]: item["layout"] for item in views} == EXPECTED_VIEWS, "All ten saved views and layouts")
+    add("CC-PROJ-005", len({item["url"] for item in views}) == 10 and all("/projects/1/views/" in item["url"] for item in views), "Distinct persistent saved-view URLs")
+    add("CC-PROJ-006", project["url"] == "https://github.com/users/syedtabishmobin/projects/1", "Persistent Project access URL")
+    automation = project.get("automation", {})
+    add("CC-PROJ-007", automation.get("provider") == "GITHUB_PROJECTS_BUILT_IN" and automation.get("autoAdd", {}).get("repository") == config["repository"], "Native auto-add automation contract")
+    measures = config.get("progressMeasures", [])
+    add("CC-PROJ-008", len(measures) == 6 and len({item["id"] for item in measures}) == 6 and all(item.get("formula") and item.get("completionBoundary") for item in measures), "Six non-conflated progress measures")
+    return checks
+
+
+def gh_json(*args: str) -> Any:
+    result = subprocess.run(["gh", *args], cwd=ROOT, text=True, capture_output=True, check=False, timeout=30)
+    if result.returncode != 0:
+        raise ValueError(result.stderr.strip() or "GitHub Project query failed")
+    return json.loads(result.stdout)
+
+
+def online_checks(config: dict[str, Any]) -> list[dict[str, str]]:
+    project = config["githubProject"]
+    query = f'''query {{
+      user(login:"{project["owner"]}") {{
+        projectV2(number:{project["number"]}) {{
+          id title url
+          items(first:1) {{ totalCount }}
+          fields(first:100) {{ nodes {{
+            __typename
+            ... on ProjectV2Field {{ name }}
+            ... on ProjectV2SingleSelectField {{ name options {{ name }} }}
+            ... on ProjectV2IterationField {{ name }}
+          }} }}
+          views(first:50) {{ nodes {{ number name layout filter }} }}
+          workflows(first:50) {{ nodes {{ number name enabled }} }}
+        }}
+      }}
+    }}'''
+    live = gh_json("api", "graphql", "-f", f"query={query}")["data"]["user"]["projectV2"]
+    views = live["views"]["nodes"]
+    workflows = live["workflows"]["nodes"]
+    actual_fields = {item.get("name") for item in live["fields"]["nodes"] if item.get("name")}
+    actual_options = {
+        item["name"]: [option["name"] for option in item.get("options", [])]
+        for item in live["fields"]["nodes"] if item.get("options") is not None
+    }
+    actual_views = {item["name"]: item["layout"] for item in views}
+    required_fields = set(project["fields"])
+    workflow_state = {item["name"]: item["enabled"] for item in workflows}
+    result = []
+
+    def add(check_id: str, passed: bool, evidence: str) -> None:
+        result.append({"id": check_id, "status": "PASS" if passed else "FAIL", "evidence": evidence})
+
+    add("CC-PROJ-ONLINE-001", live["id"] == project["id"] and live["url"] == project["url"] and live["title"] == project["title"], "Live Project identity matches repository configuration")
+    add("CC-PROJ-ONLINE-002", required_fields.issubset(actual_fields), f"Live fields include all {len(required_fields)} configured semantic fields")
+    add("CC-PROJ-ONLINE-003", actual_views == EXPECTED_VIEWS, "Live saved view names and layouts match configuration")
+    add("CC-PROJ-ONLINE-004", live["items"]["totalCount"] >= 61, f"Live Project contains {live['items']['totalCount']} governed Issue/PR records")
+    add("CC-PROJ-ONLINE-005", all(actual_options.get(name) == options for name, options in project["fieldOptions"].items()), "Live Work Type, Status and Priority option contracts match")
+    add("CC-PROJ-ONLINE-006", workflow_state.get("Auto-add to project") is True and workflow_state.get("Item closed") is True and workflow_state.get("Pull request merged") is True, "Native auto-add and closure workflows are enabled")
+    return result
+
+
+def report(online: bool) -> dict[str, Any]:
+    config = load_json(CONFIG_PATH)
+    checks = configured_checks(config)
+    online_status = "NOT_QUERIED"
+    online_error = None
+    if online:
+        try:
+            checks.extend(online_checks(config))
+            online_status = "MEASURED"
+        except (OSError, ValueError, json.JSONDecodeError, subprocess.TimeoutExpired) as exc:
+            online_status = "UNAVAILABLE"
+            online_error = str(exc)
+            checks.append({"id": "CC-PROJ-ONLINE", "status": "FAIL", "evidence": online_error})
+    project = config["githubProject"]
+    return {
+        "status": "PASS" if all(item["status"] == "PASS" for item in checks) else "FAIL",
+        "onlineStatus": online_status,
+        "onlineError": online_error,
+        "checks": checks,
+        "projectUrl": project["url"],
+        "viewUrls": {item["name"]: item["url"] for item in project["views"]},
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--online", action="store_true")
+    args = parser.parse_args()
+    result = report(args.online)
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0 if result["status"] == "PASS" else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

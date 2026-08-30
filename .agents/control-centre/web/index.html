@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Doculyra Control Centre</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to dashboard content</a>
+  <div class="shell">
+    <aside class="sidebar" aria-label="Control Centre navigation">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">D</span>
+        <span><strong>Doculyra</strong><small>Delivery Control Centre</small></span>
+      </div>
+      <nav id="navigation"></nav>
+      <div class="privacy-note"><span class="status-dot"></span> Local · private · read-only</div>
+    </aside>
+    <main id="main" tabindex="-1">
+      <header class="topbar">
+        <div><p class="eyebrow">AI-native delivery operations</p><h1 id="page-title">Overview</h1></div>
+        <div class="top-actions">
+          <span id="freshness" class="freshness">Loading…</span>
+          <button id="refresh" type="button">Refresh snapshot</button>
+        </div>
+      </header>
+      <div id="notice" role="status" aria-live="polite"></div>
+      <section id="content" aria-busy="true"></section>
+    </main>
+  </div>
+  <script src="/app.js" defer></script>
+</body>
+</html>

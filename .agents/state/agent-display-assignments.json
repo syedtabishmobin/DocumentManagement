@@ -231,6 +231,17 @@
       "parentDisplayAgentId": "ORCH-008",
       "workItem": "issue-57/pr-56",
       "status": "ACTIVE"
+    },
+    {
+      "displayAgentId": "ORCH-010",
+      "displayRole": "Framework Delivery Orchestrator",
+      "displayRunId": "RUN-20260830-0078",
+      "runtimeAgentId": "codex-01a04b98-20f5-7831-8b62-3fe5bd5f4add",
+      "runtimeRunId": "run-ai-native-control-centre-20260830",
+      "roleId": "delivery-orchestrator",
+      "parentDisplayAgentId": "ORCH-008",
+      "workItem": "issue-61",
+      "status": "ACTIVE"
     }
   ]
 }

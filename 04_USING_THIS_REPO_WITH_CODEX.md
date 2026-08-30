@@ -53,6 +53,7 @@ GitHub Issues is the work-management/control plane. Use:
 | `.agents/skills/` | Small task procedures used by capabilities |
 | `.agents/tools/` | Least-privilege tool registry and operational status |
 | `.agents/observability/` | Reusable event/metric contracts, query catalogue, privacy, retention and native-adapter boundaries |
+| `.agents/control-centre/` | Local/private read-only Delivery Control Centre web assets |
 | `.agents/protocols/` | Machine-readable record schemas |
 | `.agents/templates/` | Human-readable record templates |
 | `.agents/state/` | Durable non-secret framework state, including notification deduplication |
@@ -155,6 +156,58 @@ pnpm agent:prune
 # Native interactive local Codex session view, where supported by the installed CLI
 codex agents
 ```
+
+### Delivery Control Centre
+
+The persistent management layer is the authenticated private GitHub Project [Doculyra Product Delivery](https://github.com/users/syedtabishmobin/projects/1). It contains all current repository Issues and pull requests, 22 required semantic fields, and saved views for Executive, Delivery Board, Product Backlog, Active Work, QA & Defects, Human Decisions, Stage & UAT, Roadmap, Completed and Trends. GitHub reserves the exact custom name `Type` and personal repositories expose no native Issue Types, so the required Type semantics use the explicit `Work Type` field mapped in `.agents/project/control-centre.json`.
+
+Start the private local dashboard from the repository root:
+
+```bash
+pnpm agent:dashboard
+```
+
+It binds only to `127.0.0.1:4178` and exposes no state-changing controls. The base URL is `http://127.0.0.1:4178`; direct routes are:
+
+```text
+/overview
+/agents
+/agent-tree
+/workstreams
+/capabilities
+/skills
+/tools
+/quality
+/cost-tokens
+/performance
+/failures-retries
+/decisions
+/environments
+/traceability
+/audit
+/historical-trends
+```
+
+The dashboard reads the validated local event store, current GitHub Issues/PRs, approved baseline, environments, notification state, traceability manifests and registered attribution. It caches source snapshots for 30 seconds rather than querying GitHub on every render. Every source reports an observation timestamp and `LIVE`, `CURRENT` or `HISTORICAL` freshness. Missing usage/cost/context values remain `UNAVAILABLE`; inclusive parent usage is excluded from totals.
+
+Use the CLI equivalents when a browser is unnecessary:
+
+```bash
+# Normalized local/current/historical JSON snapshot
+pnpm agent:snapshot
+
+# Shared-ID evidence drill-through, for example STORY-P1-006
+pnpm agent:trace STORY-P1-006
+
+# Read-only/privacy/freshness/attribution/notification/pause audit
+pnpm agent:audit
+
+# Repository-configured Project contract; add --online for live GitHub conformance
+pnpm agent:project
+pnpm agent:project --online
+```
+
+The local HTTP API is intentionally read-only: `GET /api/v1/snapshot`, `GET /api/v1/audit`, and `GET /api/v1/trace/<stable-id>`. Only `GET`, `HEAD`, and `OPTIONS` are accepted; mutation methods return `405 READ_ONLY`. No GitHub Pages deployment or external dashboard vendor is used.
 
 Start a material run after selecting its Issue. Use stable IDs for the session; never put the user prompt or tool output into the event:
 

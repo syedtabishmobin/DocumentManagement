@@ -15,6 +15,12 @@ The reusable model is `project/work item → agent/role → capability → skill
 - Optimisation MUST minimize cost at the required quality, security, privacy, accessibility and reliability level. A cheaper failed or reworked execution is not an improvement.
 - Volatile events MUST live outside version control. The repository contains schemas, configuration, queries and durable readiness evidence only.
 
+## Delivery control centre
+
+Projects MAY bind the reusable model to a layered control centre: the work-management system for persistent delivery/management views, a local/private read-only dashboard for live operations, and durable Issue/PR/repository evidence for audit and traceability. The layers MUST share stable IDs and expose source, observation time and `LIVE`, `CURRENT`, or `HISTORICAL` freshness. Work completion and product-success achievement remain distinct. Missing data is not zero, a closed work item is not proof of outcome success, and a dashboard is not an authority that replaces the configured control plane.
+
+The first version MUST be read-only. It MUST NOT expose controls to dispatch, stop, approve, merge, close, edit, deploy, notify, or mutate environments. Local HTTP MUST bind to loopback, use no external assets, reject mutating methods and retain the framework privacy boundary. Public static hosting or another public operations surface is not a default deployment target.
+
 ## Privacy and security
 
 Producers MUST validate against a closed allow-list before emission. Raw prompts, customer or document content, credentials, secrets, arbitrary tool input/output, provider payloads and sensitive environment values are prohibited. Prefer normalized IDs, codes, counts and durable evidence links. Telemetry routing, retention and access MUST be explicit and project-approved.

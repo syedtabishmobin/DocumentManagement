@@ -22,7 +22,7 @@ Register the display/runtime run pairing in `.agents/state/agent-display-assignm
 
 Use one stable `workItem` correlation key for the whole assigned run—normally the governing Issue such as `issue-32`. Artifact-specific Level 2 text belongs in `workItemLabel`, so the Issue can display `Issue #32` and its PR can display `Issue #32 / PR #34` without changing the machine join. Completed assignments remain immutable valid history; `status` indicates lifecycle, not permission to rewrite or invalidate earlier evidence.
 
-Use `pnpm agent:status`, `pnpm agent:tree`, and `pnpm agent:summary` for the local Agent Operations interface. Add `--online` to status for current GitHub context. `pnpm agent:prune` physically removes events outside retention. `scripts/agent_ops.py emit` validates and appends metadata-only events to the Git-ignored local store.
+Use `pnpm agent:status`, `pnpm agent:tree`, and `pnpm agent:summary` for the local Agent Operations interface. Add `--online` to status for current GitHub context. Start the loopback-only read-only Delivery Control Centre with `pnpm agent:dashboard`; use `pnpm agent:snapshot`, `pnpm agent:trace <stable-id>`, and `pnpm agent:audit` for its machine-readable equivalents. `pnpm agent:project --online` verifies the persistent GitHub Project, required semantic fields, saved views and governed item coverage. `pnpm agent:prune` physically removes events outside retention. `scripts/agent_ops.py emit` validates and appends metadata-only events to the Git-ignored local store.
 
 ## Specification validation
 

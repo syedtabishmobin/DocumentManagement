@@ -27,6 +27,7 @@ The source-of-truth hierarchy in `CODEX.md` applies. Approved decisions and acce
 | 6 | [`06-backup-and-disaster-recovery.md`](06-backup-and-disaster-recovery.md) | `OPS-DR-P1-001`–`OPS-DR-P1-032` | Backup classes, recovery objectives, restore gates, deletion/residency safety, and exercises |
 | 7 | [`07-observability.md`](07-observability.md) | `OPS-OBS-P1-001`–`OPS-OBS-P1-032` | Content-free telemetry, SLIs, alerts, runbooks, incidents, control evidence, and cost |
 | 8 | [`08-external-provider-setup.md`](08-external-provider-setup.md) | `OPS-PROVIDER-001` | Microsoft, Google, Dropbox, Box, ACS Email, callbacks, scopes, secret references, verification, and activation gates |
+| 9 | [`09-agent-delivery-control-centre.md`](09-agent-delivery-control-centre.md) | `OPS-CC-001` | Persistent delivery Project, local read-only agent operations, shared-ID trace/audit views, freshness, provenance, and privacy |
 
 Stable rule IDs are never recycled. Wording may evolve additively; retired rules retain their IDs and point to replacements.
 

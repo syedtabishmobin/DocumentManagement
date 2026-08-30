@@ -1,0 +1,149 @@
+{
+  "schemaVersion": "1.0.0",
+  "controlCentreId": "DOCULYRA-CONTROL-CENTRE-V1",
+  "mode": "LOCAL_PRIVATE_READ_ONLY",
+  "repository": "syedtabishmobin/DocumentManagement",
+  "githubProject": {
+    "owner": "syedtabishmobin",
+    "title": "Doculyra Product Delivery",
+    "id": "PVT_kwHODKaLXs4Bh4jw",
+    "url": "https://github.com/users/syedtabishmobin/projects/1",
+    "number": 1,
+    "visibility": "PRIVATE_TO_AUTHENTICATED_OWNER",
+    "fieldAliases": {"Type": "Work Type"},
+    "fields": [
+      "Work Type", "Status", "Priority", "Phase", "Goal", "Feature", "Parent",
+      "Baseline", "Release Candidate", "Agent Role", "Current Agent ID",
+      "Capability", "Environment", "Risk", "Severity", "Iteration",
+      "Target Date", "Blocked By", "Human Decision Required",
+      "Last Agent Update", "QA State", "UAT State"
+    ],
+    "fieldOptions": {
+      "Work Type": ["Goal", "Outcome / Success Criterion", "Epic", "Feature", "Story", "Task", "Bug", "Decision", "Release"],
+      "Status": ["Backlog", "Ready", "Analysis", "Development", "QA", "Fix Required", "Ready for Stage", "Stage", "BA Acceptance", "Ready for UAT", "UAT", "Done", "Blocked"],
+      "Priority": ["P0", "P1", "P2", "P3"]
+    },
+    "views": [
+      {"name":"Executive","number":1,"url":"https://github.com/users/syedtabishmobin/projects/1/views/1","layout":"TABLE_LAYOUT","filter":null},
+      {"name":"Completed","number":2,"url":"https://github.com/users/syedtabishmobin/projects/1/views/2","layout":"TABLE_LAYOUT","filter":"status:Done"},
+      {"name":"Stage & UAT","number":4,"url":"https://github.com/users/syedtabishmobin/projects/1/views/4","layout":"TABLE_LAYOUT","filter":"environment:STAGE,UAT"},
+      {"name":"Human Decisions","number":5,"url":"https://github.com/users/syedtabishmobin/projects/1/views/5","layout":"TABLE_LAYOUT","filter":"\"Human Decision Required\":Yes"},
+      {"name":"QA & Defects","number":6,"url":"https://github.com/users/syedtabishmobin/projects/1/views/6","layout":"TABLE_LAYOUT","filter":"\"Work Type\":Defect \"QA State\":REQUIRED,PENDING,FAIL,BLOCKED"},
+      {"name":"Active Work","number":7,"url":"https://github.com/users/syedtabishmobin/projects/1/views/7","layout":"BOARD_LAYOUT","filter":"status:\"In Progress\""},
+      {"name":"Product Backlog","number":8,"url":"https://github.com/users/syedtabishmobin/projects/1/views/8","layout":"TABLE_LAYOUT","filter":"status:Todo"},
+      {"name":"Roadmap","number":9,"url":"https://github.com/users/syedtabishmobin/projects/1/views/9","layout":"ROADMAP_LAYOUT","filter":null},
+      {"name":"Delivery Board","number":10,"url":"https://github.com/users/syedtabishmobin/projects/1/views/10","layout":"BOARD_LAYOUT","filter":null},
+      {"name":"Trends","number":11,"url":"https://github.com/users/syedtabishmobin/projects/1/views/11","layout":"TABLE_LAYOUT","filter":null}
+    ],
+    "platformAccommodations": [
+      "GitHub reserves the exact custom field name Type while personal-account repositories expose no native Issue Types. The required semantics are implemented as Work Type and mapped explicitly through fieldAliases."
+    ],
+    "automation": {
+      "provider": "GITHUB_PROJECTS_BUILT_IN",
+      "autoAdd": {
+        "repository": "syedtabishmobin/DocumentManagement",
+        "filter": "is:issue,pr",
+        "status": "PENDING_ONLINE_CONFORMANCE"
+      },
+      "closedIssueStatus": {
+        "target": "Done",
+        "status": "ENABLED_BY_GITHUB_DEFAULT"
+      },
+      "mergedPullRequestStatus": {
+        "target": "Done",
+        "status": "ENABLED_BY_GITHUB_DEFAULT"
+      },
+      "qualityGateBoundary": "Project automation may summarize governed state but never approve, merge, close a defect, promote an environment, or bypass framework quality gates."
+    },
+    "insights": [
+      {
+        "name": "Burn up",
+        "url": "https://github.com/users/syedtabishmobin/projects/1/insights",
+        "type": "GITHUB_DEFAULT",
+        "filter": "is:issue"
+      }
+    ]
+  },
+  "dashboard": {
+    "command": "pnpm agent:dashboard",
+    "bindHost": "127.0.0.1",
+    "defaultPort": 4178,
+    "baseUrl": "http://127.0.0.1:4178",
+    "routes": [
+      {"id": "overview", "path": "/overview", "label": "Overview"},
+      {"id": "agents", "path": "/agents", "label": "Agents"},
+      {"id": "agent-tree", "path": "/agent-tree", "label": "Agent Tree"},
+      {"id": "workstreams", "path": "/workstreams", "label": "Workstreams"},
+      {"id": "capabilities", "path": "/capabilities", "label": "Capabilities"},
+      {"id": "skills", "path": "/skills", "label": "Skills"},
+      {"id": "tools", "path": "/tools", "label": "Tools"},
+      {"id": "quality", "path": "/quality", "label": "Quality"},
+      {"id": "cost-tokens", "path": "/cost-tokens", "label": "Cost & Tokens"},
+      {"id": "performance", "path": "/performance", "label": "Performance"},
+      {"id": "failures-retries", "path": "/failures-retries", "label": "Failures & Retries"},
+      {"id": "decisions", "path": "/decisions", "label": "Decisions"},
+      {"id": "environments", "path": "/environments", "label": "Environments"},
+      {"id": "traceability", "path": "/traceability", "label": "Traceability"},
+      {"id": "audit", "path": "/audit", "label": "Audit"},
+      {"id": "historical-trends", "path": "/historical-trends", "label": "Historical Trends"}
+    ],
+    "apiPrefix": "/api/v1",
+    "refreshSeconds": 30,
+    "githubTimeoutSeconds": 20,
+    "readOnly": true,
+    "allowedMethods": ["GET", "HEAD", "OPTIONS"]
+  },
+  "freshnessClasses": {
+    "LIVE": "Local lifecycle events and active runtime state refreshed from the validated JSONL store.",
+    "CURRENT": "GitHub, repository, environment and notification snapshots captured at the displayed time.",
+    "HISTORICAL": "Retained events, closed evidence and time-bucketed trends within configured retention."
+  },
+  "progressMeasures": [
+    {
+      "id": "story-work-completion",
+      "formula": "governed stories in Done / all governed stories in the selected scope",
+      "completionBoundary": "A closed task or pull request is not sufficient."
+    },
+    {
+      "id": "acceptance-criteria-completion",
+      "formula": "acceptance criteria with current passing independent evidence / all acceptance criteria in the selected scope",
+      "completionBoundary": "Unresolved, skipped, stale, or developer-only evidence does not count as passed."
+    },
+    {
+      "id": "feature-work-completion",
+      "formula": "governed feature stories in Done / all governed feature stories",
+      "completionBoundary": "Separate from feature success-criterion achievement."
+    },
+    {
+      "id": "feature-success-criteria-achievement",
+      "formula": "feature success criteria with current measured passing evidence / all feature success criteria",
+      "completionBoundary": "No inference from child closure alone."
+    },
+    {
+      "id": "goal-work-completion",
+      "formula": "governed goal features in Done / all governed goal features",
+      "completionBoundary": "Separate from measurable outcome achievement."
+    },
+    {
+      "id": "goal-success-criteria-achievement",
+      "formula": "goal success criteria with current measured passing evidence / all goal success criteria",
+      "completionBoundary": "Unavailable or unmeasured outcomes remain unresolved, never zero or complete."
+    }
+  ],
+  "sharedIdSources": [
+    "docs/10-backlog/build-baseline.v1.json",
+    "docs/10-backlog/04-traceability-matrix.md",
+    "docs/12-testing/fixtures/test-scenarios.v1.json",
+    "docs/12-testing/fixtures/implementation-evidence.v1.json",
+    ".agents/state/agent-display-assignments.json",
+    ".agents/state/control-centre-checkpoint.json"
+  ],
+  "privacy": {
+    "rawPrompts": "PROHIBITED",
+    "credentials": "PROHIBITED",
+    "productOrCustomerContent": "PROHIBITED",
+    "arbitraryToolPayloads": "PROHIBITED",
+    "externalAssets": "PROHIBITED",
+    "loopbackOnly": true
+  }
+}

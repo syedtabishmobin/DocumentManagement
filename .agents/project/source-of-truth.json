@@ -21,5 +21,11 @@
   "operations": "docs/09-devops/",
   "tests": "docs/12-testing/",
   "preservedReference": "docs/00-context/Document_Management_Product_Chat_Handover.md",
-  "controlPlane": "https://github.com/syedtabishmobin/DocumentManagement/issues"
+  "controlPlane": "https://github.com/syedtabishmobin/DocumentManagement/issues",
+  "controlCentre": {
+    "githubProject": "https://github.com/users/syedtabishmobin/projects/1",
+    "configuration": ".agents/project/control-centre.json",
+    "operations": "docs/09-devops/09-agent-delivery-control-centre.md",
+    "queueCheckpoint": ".agents/state/control-centre-checkpoint.json"
+  }
 }

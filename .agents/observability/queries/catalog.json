@@ -1,11 +1,15 @@
 {
-  "schemaVersion": "1.0.0",
+  "schemaVersion": "2.0.0",
   "queries": [
-    {"id": "active-agents", "command": "pnpm agent:status", "answers": ["active agents", "current work", "role", "capability", "skills", "tools", "source-control context", "blockers"]},
-    {"id": "agent-tree", "command": "pnpm agent:tree", "answers": ["parent-child delegation", "state", "duration", "handoffs"]},
-    {"id": "operations-summary", "command": "pnpm agent:summary", "answers": ["failures", "retries", "quality", "usage", "cost provenance", "context efficiency"]},
-    {"id": "github-and-environments", "command": "pnpm agent:status --online", "answers": ["pending decisions", "open defects by severity", "pull requests", "DEV/STAGE/UAT", "notification state"]},
-    {"id": "retention-prune", "command": "pnpm agent:prune", "answers": ["physical removal of local events outside configured retention"]},
-    {"id": "native-codex-sessions", "command": "codex agents", "answers": ["native local Codex sessions when the installed CLI exposes them"]}
+    {"id":"active-agents","command":"pnpm agent:status","freshness":"LIVE","answers":["active agents","current work","role","capability","skills","tools","source-control context","blockers"]},
+    {"id":"agent-tree","command":"pnpm agent:tree","freshness":"LIVE","answers":["parent-child delegation","state","duration","handoffs"]},
+    {"id":"operations-summary","command":"pnpm agent:summary","freshness":"HISTORICAL","answers":["failures","retries","quality","usage","cost provenance","context efficiency"]},
+    {"id":"github-and-environments","command":"pnpm agent:status --online","freshness":"CURRENT","answers":["pending decisions","open defects by severity","pull requests","DEV/STAGE/UAT","notification state"]},
+    {"id":"control-centre-dashboard","command":"pnpm agent:dashboard","freshness":"LIVE_CURRENT_HISTORICAL","answers":["overview","agents","delegation","workstreams","capabilities","skills","tools","quality","cost","performance","failures","decisions","environments","traceability","audit","trends"]},
+    {"id":"traceability-drill-through","command":"pnpm agent:trace <stable-id>","freshness":"CURRENT","answers":["shared stable ID","repository evidence references","related IDs","GitHub record URL"]},
+    {"id":"control-centre-audit","command":"pnpm agent:audit","freshness":"CURRENT","answers":["Project configuration","route coverage","read-only boundary","privacy","pause checkpoint","notification and attribution state"]},
+    {"id":"github-project-conformance","command":"pnpm agent:project --online","freshness":"CURRENT","answers":["Project identity","required fields","saved views","governed item coverage","persistent URLs"]},
+    {"id":"retention-prune","command":"pnpm agent:prune","freshness":"LIVE","answers":["physical removal of local events outside configured retention"]},
+    {"id":"native-codex-sessions","command":"codex agents","freshness":"LIVE","answers":["native local Codex sessions when the installed CLI exposes them"]}
   ]
 }

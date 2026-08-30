@@ -85,8 +85,8 @@ def validate_framework() -> list[str]:
         return errors
 
     manifest = load_json(ROOT / ".agents/framework-manifest.json")
-    if manifest.get("framework", {}).get("version") != "1.3.0":
-        errors.append("framework manifest must bind reusable framework version 1.3.0")
+    if manifest.get("framework", {}).get("version") != "1.4.0":
+        errors.append("framework manifest must bind reusable framework version 1.4.0")
     if manifest.get("project", {}).get("id") != "doculyra":
         errors.append("framework manifest must bind the Doculyra profile")
 
