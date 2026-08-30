@@ -44,7 +44,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `IN_IMPLEMENTATION — Issue #42`; Product + Identity/Workspace |
+| State / owner | `DEV_ACCEPTED — Issue #42 / PR #43`; Product + Identity/Workspace |
 | Product | `REQ-P1-WS-003`; `FEAT-P1-001`; `UC-P1-001`; `OUT-P1-001`, `OUT-P1-005` |
 | UX / accessibility | `UX-FLOW-P1-002`; `UX-SCR-P1-004`–`006`; `UX-IA-P1-007`–`012`; `A11Y-P1-001`–`017`, `024`–`035`, `043`–`050` |
 | API / events | `API-P1-104`–`111`; `EVT-P1-002`, `003`; `API-P1-007`–`020`, `027`–`038`, `047`–`050` |
@@ -63,7 +63,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `BASELINED — PLANNED_UNISSUED`; Security + Authorization |
+| State / owner | `IN_IMPLEMENTATION — Issue #46`; Security + Authorization |
 | Product | `REQ-P1-WS-004`, `REQ-P1-WS-005`, `REQ-P1-TRUST-002`; `FEAT-P1-002`; `UC-P1-001`, `013`; `OUT-P1-005`, `OUT-P1-007` |
 | UX / accessibility | All `UX-FLOW-P1-*`/`UX-SCR-P1-*` discovery and action surfaces; `UX-IA-P1-013`–`032`; `A11Y-P1-003`, `004`, `007`–`025`, `051`–`056` |
 | API / events | `API-P1-112`–`115`; `EVT-P1-004`, `005`; cross-cutting `API-P1-007`–`014`, `024`–`032`, `037`–`052` |

@@ -49,7 +49,7 @@ export interface AuthorityCommandReceipt {
   id: string;
   workspaceId: string;
   actorId: string;
-  operationId: "API-P1-105" | "API-P1-107" | "API-P1-109" | "API-P1-111";
+  operationId: "API-P1-105" | "API-P1-107" | "API-P1-109" | "API-P1-111" | "API-P1-113" | "API-P1-115";
   idempotencyKeyHash: string;
   requestFingerprint: string;
   resourceId: string;
@@ -77,6 +77,10 @@ export interface AuthorityOutboxEvent {
   actorId: string;
   resourceType: AuditRecord["resourceType"];
   resourceId?: string;
+  policyVersion?: string;
+  authorizationEpoch?: number;
+  authorizationPhase?: AuditRecord["authorizationPhase"];
+  decisionReason?: string;
   occurredAt: string;
 }
 
@@ -114,6 +118,13 @@ export function normalizeAuthorityLifecycle(state: WorkspaceState): WorkspaceSta
     member.recordedAt ??= member.createdAt;
     member.history ??= [];
     member.revision ??= 1;
+  }
+  const ownerIdentityId = state.ownerBindings?.find((binding) => binding.state === "ACTIVE")?.ownerIdentityId;
+  for (const grant of state.accessGrants ?? []) {
+    const provenOwnerGrant = grant.grantorIdentityId === ownerIdentityId && grant.granteeIdentityId === ownerIdentityId;
+    grant.fieldRefs ??= provenOwnerGrant ? ["*"] : [];
+    grant.edgeRefs ??= provenOwnerGrant ? ["*"] : [];
+    grant.effect ??= "ALLOW";
   }
   return state;
 }

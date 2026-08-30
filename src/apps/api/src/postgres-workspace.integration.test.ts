@@ -51,17 +51,22 @@ integration.sequential("PostgreSQL workspace authority integration", () => {
     const foreign = await secondStore.createWorkspace(foreignActor, "Foreign durable household", "PERSONAL", "real-postgres-key-0002");
     await expect(secondStore.requireAuthorization(actor, foreign.id, "workspace.read", "WORKSPACE", foreign.id)).rejects.toThrow("not available");
 
+    const createFence = await firstStore.startAuthorization(actor, first.id, "subject.create", "WORKSPACE");
     const person = await firstStore.createPerson(first.id, actor, {
       displayName: "Synthetic Concurrent Person", kind: "ADULT", relationship: "Family member", loginEnabled: false,
       role: "ADULT_MEMBER", permissions: { view: true, add: false, edit: false, delete: false },
-    });
+    }, createFence, "corr-real-postgres-person-create");
     const update = (displayName: string) => ({
       displayName, kind: "ADULT" as const, relationship: "Family member", loginEnabled: false,
       role: "ADULT_MEMBER" as const, permissions: { view: true, add: false, edit: false, delete: false },
     });
+    const [firstUpdateFence, secondUpdateFence] = await Promise.all([
+      firstStore.startAuthorization(actor, first.id, "subject.edit", "WORKSPACE"),
+      secondStore.startAuthorization(actor, first.id, "subject.edit", "WORKSPACE"),
+    ]);
     const outcomes = await Promise.allSettled([
-      firstStore.updatePerson(first.id, actor, person.id, person.revision, update("Synthetic Concurrent Person A")),
-      secondStore.updatePerson(first.id, actor, person.id, person.revision, update("Synthetic Concurrent Person B")),
+      firstStore.updatePerson(first.id, actor, person.id, person.revision, update("Synthetic Concurrent Person A"), firstUpdateFence, "corr-real-postgres-person-update-a"),
+      secondStore.updatePerson(first.id, actor, person.id, person.revision, update("Synthetic Concurrent Person B"), secondUpdateFence, "corr-real-postgres-person-update-b"),
     ]);
     expect(outcomes.filter((outcome) => outcome.status === "fulfilled")).toHaveLength(1);
     expect(outcomes.filter((outcome) => outcome.status === "rejected")).toHaveLength(1);
@@ -71,8 +76,10 @@ integration.sequential("PostgreSQL workspace authority integration", () => {
     expect(authority.audit.filter((record) => record.type === "PERSON_UPDATED")).toHaveLength(1);
     expect(authority.audit.filter((record) => record.type === "PERSON_CHANGE_REJECTED")).toHaveLength(1);
 
-    const canonicalSubject = await firstStore.createCanonicalSubject(first.id, actor, authority.workspace.revision, "real-postgres-subject-command-0001", { subject_kind: "PERSON", authority_basis_ref: "authority-basis-synthetic-001" }, "corr-real-postgres-subject");
-    const replayedCanonicalSubject = await secondStore.createCanonicalSubject(first.id, actor, authority.workspace.revision, "real-postgres-subject-command-0001", { subject_kind: "PERSON", authority_basis_ref: "authority-basis-synthetic-001" }, "corr-real-postgres-replay");
+    const canonicalFence = await firstStore.startAuthorization(actor, first.id, "subject.create", "WORKSPACE");
+    const canonicalSubject = await firstStore.createCanonicalSubject(first.id, actor, authority.workspace.revision, "real-postgres-subject-command-0001", { subject_kind: "PERSON", authority_basis_ref: "authority-basis-synthetic-001" }, canonicalFence, "corr-real-postgres-subject");
+    const replayFence = await secondStore.startAuthorization(actor, first.id, "subject.create", "WORKSPACE");
+    const replayedCanonicalSubject = await secondStore.createCanonicalSubject(first.id, actor, authority.workspace.revision, "real-postgres-subject-command-0001", { subject_kind: "PERSON", authority_basis_ref: "authority-basis-synthetic-001" }, replayFence, "corr-real-postgres-replay");
     expect(replayedCanonicalSubject.id).toBe(canonicalSubject.id);
     const afterCommandReplay = await firstPersistence.read();
     expect(afterCommandReplay.workspaces.find((state) => state.workspace.id === first.id)!.authorityCommandReceipts).toEqual([
@@ -118,5 +125,28 @@ integration.sequential("PostgreSQL workspace authority integration", () => {
     await expect(target.importSynthetic(source, "d".repeat(64))).rejects.toThrow("requires repair");
     const run = await pool.query<{ status: string }>("SELECT status FROM doculyra.authority_migration_run WHERE migration_run_id = $1", [first.migrationRunId]);
     expect(run.rows[0]?.status).toBe("REPAIR_REQUIRED");
+  });
+
+  it("persists policy epoch and effect evidence for bounded grant revocation on real PostgreSQL", async () => {
+    const store = new LocalStore(firstPersistence);
+    const workspace = await store.createWorkspace(actor, "Authorization evidence household", "FAMILY", "real-postgres-authorization-0001");
+    const createFence = await store.startAuthorization(actor, workspace.id, "grant.create", "WORKSPACE", workspace.id, { correlationId: "corr-real-postgres-grant-create-auth" });
+    const grant = await store.createAccessGrant(workspace.id, actor, "real-postgres-grant-create-0001", {
+      grantee_ref: actor.identityId, purpose_id: "PUR-P1-001",
+      scope: { resource_refs: [workspace.id], field_refs: [], edge_refs: [], actions: ["workspace.read"], allow_export: false, allow_onward_delegation: false },
+      valid_from: new Date(Date.now() - 60_000).toISOString(), valid_to: null, policy_version: "policy.local-explicit-grant@0.2",
+    }, createFence, "corr-real-postgres-grant-create");
+    const queuedFence = await store.startAuthorization(actor, workspace.id, "workspace.read", "WORKSPACE", workspace.id, { correlationId: "corr-real-postgres-queued" });
+    const revokeFence = await store.startAuthorization(actor, workspace.id, "grant.revoke", "WORKSPACE", workspace.id, { correlationId: "corr-real-postgres-grant-revoke-auth" });
+    await store.revokeAccessGrant(workspace.id, actor, grant.id, 1, "real-postgres-grant-revoke-0001", "USER_REQUEST", revokeFence, "corr-real-postgres-grant-revoke");
+    await expect(store.reauthorize(queuedFence, actor, "OUTPUT", "corr-real-postgres-stale-output")).rejects.toThrow("not available");
+
+    const restarted = new LocalStore(new PostgresWorkspacePersistence({ pool, migrationMode: "verify", migrationsDirectory }));
+    await expect(restarted.requireAuthorization(actor, workspace.id, "workspace.read", "WORKSPACE", workspace.id)).resolves.toBeUndefined();
+    const outbox = await pool.query<{ policy_version: string; authorization_epoch: string; authorization_phase: string; decision_reason: string }>(
+      "SELECT policy_version, authorization_epoch, authorization_phase, decision_reason FROM doculyra.authority_outbox WHERE event_type = 'ACCESS_GRANT_REVOKED'",
+    );
+    expect(outbox.rows).toEqual([expect.objectContaining({ policy_version: "policy.local-explicit-grant@0.2", authorization_phase: "EFFECT", decision_reason: "EXPLICIT_GRANT" })]);
+    expect(Number(outbox.rows[0]!.authorization_epoch)).toBeGreaterThan(createFence.authorizationEpoch);
   });
 });

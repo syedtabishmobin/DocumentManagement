@@ -24,6 +24,9 @@ export const workspaceActionSchema = z.enum([
   "task.create",
   "task.edit",
   "connector.read",
+  "grant.read",
+  "grant.create",
+  "grant.revoke",
   "export.create",
   "audit.read",
 ]);
@@ -107,6 +110,33 @@ export const canonicalUpdateMembershipSchema = z.object({
   reason_code: z.string().trim().min(1).max(80),
 }).strict();
 
+export const canonicalCreateAccessGrantSchema = z.object({
+  grantee_ref: z.string().trim().min(1).max(200),
+  purpose_id: z.literal("PUR-P1-001"),
+  scope: z.object({
+    resource_refs: z.array(z.string().trim().min(1).max(200)).min(1).max(100),
+    field_refs: z.array(z.string().trim().min(1).max(200)).max(100),
+    edge_refs: z.array(z.string().trim().min(1).max(200)).max(100),
+    actions: z.array(workspaceActionSchema).min(1).max(50),
+    allow_export: z.boolean(),
+    allow_onward_delegation: z.literal(false),
+  }).strict(),
+  valid_from: z.string().datetime(),
+  valid_to: z.string().datetime().nullable(),
+  policy_version: z.literal("policy.local-explicit-grant@0.2"),
+}).strict().superRefine((value, context) => {
+  if (value.valid_to && new Date(value.valid_to).getTime() <= new Date(value.valid_from).getTime()) {
+    context.addIssue({ code: "custom", path: ["valid_to"], message: "valid_to must be later than valid_from" });
+  }
+  if (value.scope.allow_export && !value.scope.actions.includes("export.create")) {
+    context.addIssue({ code: "custom", path: ["scope", "actions"], message: "export.create is required when export is allowed" });
+  }
+});
+
+export const canonicalReasonCommandSchema = z.object({
+  reason_code: z.string().trim().regex(/^[A-Z][A-Z0-9_]{1,79}$/),
+}).strict();
+
 export const selectWorkspaceSchema = z.object({
   workspaceId: z.string().trim().min(1).max(200),
 });
@@ -162,6 +192,8 @@ export type CanonicalCreateSubjectInput = z.infer<typeof canonicalCreateSubjectS
 export type CanonicalUpdateSubjectInput = z.infer<typeof canonicalUpdateSubjectSchema>;
 export type CanonicalInviteMembershipInput = z.infer<typeof canonicalInviteMembershipSchema>;
 export type CanonicalUpdateMembershipInput = z.infer<typeof canonicalUpdateMembershipSchema>;
+export type CanonicalCreateAccessGrantInput = z.infer<typeof canonicalCreateAccessGrantSchema>;
+export type CanonicalReasonCommandInput = z.infer<typeof canonicalReasonCommandSchema>;
 export type SelectWorkspaceInput = z.infer<typeof selectWorkspaceSchema>;
 export type CreateSubjectInput = z.infer<typeof createSubjectSchema>;
 export type FilePermissions = z.infer<typeof filePermissionsSchema>;
@@ -324,12 +356,15 @@ export interface AccessGrant {
   purposeId: "PUR-P1-001";
   resourceKind: "WORKSPACE" | "DOCUMENT" | "SUBJECT" | "TASK";
   resourceIds: string[];
+  fieldRefs: string[];
+  edgeRefs: string[];
   actions: WorkspaceAction[];
   startsAt: string;
   expiresAt?: string;
   state: "ACTIVE" | "REVOKED" | "EXPIRED";
-  policyVersion: "policy.local-explicit-grant@0.1";
-  onwardDelegation: false;
+  policyVersion: "policy.local-explicit-grant@0.1" | "policy.local-explicit-grant@0.2";
+  effect: "ALLOW" | "DENY";
+  onwardDelegation: boolean;
   exportAllowed: boolean;
   createdAt: string;
   revokedAt?: string;
@@ -354,6 +389,9 @@ export interface AuditRecord {
   action?: string;
   outcome?: "SUCCEEDED" | "DENIED" | "FAILED";
   policyVersion?: string;
+  authorizationEpoch?: number;
+  authorizationPhase?: "INPUT" | "CANDIDATE" | "OUTPUT" | "EFFECT";
+  decisionReason?: string;
   correlationId?: string;
   detail: string;
   at: string;

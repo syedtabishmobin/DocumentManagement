@@ -38,10 +38,13 @@ const grant: AccessGrant = {
   purposeId: "PUR-P1-001",
   resourceKind: "WORKSPACE",
   resourceIds: [workspace.id],
+  fieldRefs: ["*"],
+  edgeRefs: ["*"],
   actions: ["workspace.read", "document.read", "document.create"],
   startsAt: workspace.createdAt,
   state: "ACTIVE",
   policyVersion: "policy.local-explicit-grant@0.1",
+  effect: "ALLOW",
   onwardDelegation: false,
   exportAllowed: false,
   createdAt: workspace.createdAt,
@@ -81,5 +84,31 @@ describe("evaluateAuthorization", () => {
       resourceId: workspace.id,
       at: "2026-08-29T00:01:00.000Z",
     })).toMatchObject({ decision: "DENY", reason: "MEMBERSHIP_UNAVAILABLE" });
+  });
+
+  it("authorizes resource, sensitive field, edge, and action scopes independently", () => {
+    const bounded: WorkspaceAuthority = {
+      ...authority,
+      accessGrants: [{ ...grant, resourceKind: "DOCUMENT", resourceIds: ["doc_a"], fieldRefs: ["document.metadata"], edgeRefs: ["dependency.DOCUMENT_CATEGORY"], actions: ["document.read"] }],
+    };
+    expect(evaluateAuthorization(bounded, { identityId: "id_a", workspaceId: workspace.id, purposeId: "PUR-P1-001", action: "document.read", resourceKind: "DOCUMENT", resourceId: "doc_a" })).toMatchObject({ decision: "ALLOW" });
+    expect(evaluateAuthorization(bounded, { identityId: "id_a", workspaceId: workspace.id, purposeId: "PUR-P1-001", action: "document.read", resourceKind: "DOCUMENT", resourceId: "doc_a", fieldRef: "document.content" })).toMatchObject({ decision: "DENY", reason: "FIELD_SCOPE_UNAVAILABLE" });
+    expect(evaluateAuthorization(bounded, { identityId: "id_a", workspaceId: workspace.id, purposeId: "PUR-P1-001", action: "document.read", resourceKind: "DOCUMENT", resourceId: "doc_a", edgeRef: "dependency.DOCUMENT_SUBJECT" })).toMatchObject({ decision: "DENY", reason: "EDGE_SCOPE_UNAVAILABLE" });
+    expect(evaluateAuthorization(bounded, { identityId: "id_a", workspaceId: workspace.id, purposeId: "PUR-P1-001", action: "document.delete", resourceKind: "DOCUMENT", resourceId: "doc_a" })).toMatchObject({ decision: "DENY", reason: "NO_CURRENT_GRANT" });
+  });
+
+  it("applies explicit deny precedence and fails closed across epoch or participation changes", () => {
+    const deny: AccessGrant = { ...grant, id: "grt_deny", effect: "DENY", resourceKind: "DOCUMENT", resourceIds: ["doc_a"], actions: ["document.read"] };
+    expect(evaluateAuthorization({ ...authority, accessGrants: [grant, deny] }, { identityId: "id_a", workspaceId: workspace.id, purposeId: "PUR-P1-001", action: "document.read", resourceKind: "DOCUMENT", resourceId: "doc_a" })).toMatchObject({ decision: "DENY", reason: "EXPLICIT_DENY" });
+    expect(evaluateAuthorization(authority, { identityId: "id_a", workspaceId: workspace.id, purposeId: "PUR-P1-001", action: "document.read", resourceKind: "DOCUMENT", resourceId: "doc_a", expectedAuthorizationEpoch: 0, phase: "OUTPUT" })).toMatchObject({ decision: "DENY", reason: "STALE_AUTHORIZATION_EPOCH", phase: "OUTPUT" });
+    expect(evaluateAuthorization(authority, { identityId: "id_a", workspaceId: workspace.id, purposeId: "PUR-P1-001", action: "document.read", resourceKind: "DOCUMENT", resourceId: "doc_a", expectedAuthorizationEpoch: 1, expectedGrantId: grant.id, expectedGrantRevision: 99, expectedPolicyVersion: grant.policyVersion, phase: "OUTPUT" })).toMatchObject({ decision: "DENY", reason: "STALE_GRANT_OR_POLICY", phase: "OUTPUT" });
+    const boundedFenceGrant: AccessGrant = { ...grant, id: "grt_bounded", resourceKind: "DOCUMENT", resourceIds: ["doc_a"], fieldRefs: ["document.metadata"] };
+    const broadAlternate: AccessGrant = { ...grant, id: "grt_broad", resourceKind: "DOCUMENT", resourceIds: ["doc_a"] };
+    expect(evaluateAuthorization({ ...authority, accessGrants: [boundedFenceGrant, broadAlternate] }, {
+      identityId: "id_a", workspaceId: workspace.id, purposeId: "PUR-P1-001", action: "document.read", resourceKind: "DOCUMENT", resourceId: "doc_a",
+      fieldRef: "document.content", expectedAuthorizationEpoch: 1, expectedGrantId: boundedFenceGrant.id,
+      expectedGrantRevision: boundedFenceGrant.revision, expectedPolicyVersion: boundedFenceGrant.policyVersion, phase: "OUTPUT",
+    })).toMatchObject({ decision: "DENY", reason: "FIELD_SCOPE_UNAVAILABLE", phase: "OUTPUT" });
+    expect(evaluateAuthorization({ ...authority, members: [{ ...member, invitationState: "PENDING" }] }, { identityId: "id_a", workspaceId: workspace.id, purposeId: "PUR-P1-001", action: "document.read", resourceKind: "DOCUMENT", resourceId: "doc_a" })).toMatchObject({ decision: "DENY", reason: "MEMBERSHIP_UNAVAILABLE" });
   });
 });

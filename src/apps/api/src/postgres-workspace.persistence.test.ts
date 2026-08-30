@@ -114,12 +114,14 @@ describe("PostgresWorkspacePersistence", () => {
     const repeated = await targetHarness.persistence.importSynthetic(source, "a".repeat(64));
     expect(first).toMatchObject({ reused: false, status: "VERIFIED" });
     expect(repeated).toEqual({ migrationRunId: first.migrationRunId, reused: true, status: "ALREADY_APPLIED_AND_VERIFIED" });
-    await targetHarness.store.createPerson(source.workspaces[0]!.workspace.id, actor, {
+    const workspaceId = source.workspaces[0]!.workspace.id;
+    const fence = await targetHarness.store.startAuthorization(actor, workspaceId, "subject.create", "WORKSPACE");
+    await targetHarness.store.createPerson(workspaceId, actor, {
       displayName: "Synthetic evolved person", kind: "ADULT", relationship: "Family member", loginEnabled: false,
       role: "ADULT_MEMBER", permissions: { view: true, add: false, edit: false, delete: false },
-    });
+    }, fence, "corr-pgmem-person-create");
     await expect(targetHarness.persistence.importSynthetic(source, "a".repeat(64))).resolves.toMatchObject({ reused: true, status: "ALREADY_APPLIED_AND_VERIFIED" });
-    await expect(targetHarness.persistence.verifyInvariants()).resolves.toEqual({ workspaces: 1, receipts: 1, outbox: 2 });
+    await expect(targetHarness.persistence.verifyInvariants()).resolves.toEqual({ workspaces: 1, receipts: 1, outbox: 4 });
   });
 
   it("rejects cross-workspace and dangling authority records before commit", async () => {
