@@ -1,6 +1,6 @@
 # AI-NATIVE DELIVERY CONTROL CENTRE READINESS REPORT
 
-Report state: `PENDING_REPLACEMENT_CANDIDATE_INDEPENDENT_QA`
+Report state: `READY_FOR_PROTECTED_MERGE`
 Governing work: [Issue #61](https://github.com/syedtabishmobin/DocumentManagement/issues/61) / [PR #62](https://github.com/syedtabishmobin/DocumentManagement/pull/62)  
 Control Centre ID: `DOCULYRA-CONTROL-CENTRE-V1`
 
@@ -81,7 +81,7 @@ Usage and cost values retain the vocabulary `MEASURED`, `PROVIDER_REPORTED`, `AT
 
 ## 12. Independent QA results
 
-QA-FUNC-016 failed candidate `39a4325f083924dccfbb967805f1a31d04ccd82e` and opened defects #63 and #64. After the first remediation, protected CI passed candidate `e89c4aeab68597119c466a7ab44f15f559789b55`, but QA-FUNC-017 independently found that static Story/AC/Test/Decision results were still disconnected from their incoming GitHub/QA chains; that candidate therefore remained blocked and unmerged. The second remediation at `edc06301bda16ccde12adf624f7a991a5644fe2d` passed all technical, live Project, Audit, protected-CI and browser gates, but QA-FUNC-017 correctly rejected its first four `FIX_READY` comments because they omitted mandatory Level 2 execution details. Those malformed comments are superseded by the validated three-level records linked below. Both defects remain open pending independent validation of the corrected evidence and this report-bearing candidate. An independent QA identity that did not author the fixes must verify the replacement SHA, all seven live Project items, both defects, the full dashboard/specification regression and this report. The implementing agent is not the final approver.
+QA-FUNC-016 failed candidate `39a4325f083924dccfbb967805f1a31d04ccd82e` and opened defects #63 and #64. After the first remediation, protected CI passed candidate `e89c4aeab68597119c466a7ab44f15f559789b55`, but QA-FUNC-017 independently found that static Story/AC/Test/Decision results were still disconnected from their incoming GitHub/QA chains; that candidate therefore remained blocked and unmerged. The second remediation at `edc06301bda16ccde12adf624f7a991a5644fe2d` passed all technical, live Project, Audit, protected-CI and browser gates, but QA-FUNC-017 correctly rejected its first four `FIX_READY` comments because they omitted mandatory Level 2 execution details. Valid three-level evidence and the final report-bearing candidate `3b802978d5431907992a7dfc19587184fc3d591f` were then independently validated. QA-FUNC-017 issued PASS on all four governing records, closed #63/#64, removed `qa:failed`, and confirmed #58/#59/#60 remained untouched. The PASS evidence is linked below; the implementing agent was not the final approver.
 
 ## 13. Performance/accessibility results
 
@@ -102,7 +102,7 @@ None expected after live Project reconciliation and independent QA. The Project 
 
 ## 16. Final readiness
 
-`PENDING_REPLACEMENT_CANDIDATE_INDEPENDENT_QA`. Live Project conformance, the 18-control Audit and focused local verification pass after the second defect loop. This section and the report state will be changed to ready only after the replacement SHA is pushed, protected CI passes on that exact SHA, attributed `FIX_READY` evidence is published, independent QA verifies/closes #63/#64, and governance permits merge.
+`READY_FOR_PROTECTED_MERGE`. Live seven-item Project conformance, the 18-control Audit, full local verification, protected CI, validated three-level evidence and independent QA all pass. Defects #63/#64 are closed, PR #62 is clean/mergeable, and the only remaining action is the protected merge of PR #62. Product delivery remains paused and is explicitly outside this merge.
 
 ## CONTROL CENTRE ACCESS LINKS
 
@@ -171,8 +171,15 @@ Start once from the repository root with `pnpm agent:dashboard`, then open the l
 | Validated FIX_READY — Issue #61 | https://github.com/syedtabishmobin/DocumentManagement/issues/61#issuecomment-5467852641 | Persistent | GitHub authentication | None |
 | Validated FIX_READY — PR #62 | https://github.com/syedtabishmobin/DocumentManagement/pull/62#issuecomment-5467852649 | Persistent | GitHub authentication | None |
 | Independent QA governance failure on `edc06301` | https://github.com/syedtabishmobin/DocumentManagement/issues/64#issuecomment-5467842840 | Persistent | GitHub authentication | None |
+| Final report-bearing candidate CI | https://github.com/syedtabishmobin/DocumentManagement/actions/runs/33303853493 | Persistent | GitHub authentication | None |
+| Final exact FIX_READY — defect #63 | https://github.com/syedtabishmobin/DocumentManagement/issues/63#issuecomment-5467882764 | Persistent | GitHub authentication | None |
+| Final exact FIX_READY — defect #64 | https://github.com/syedtabishmobin/DocumentManagement/issues/64#issuecomment-5467883076 | Persistent | GitHub authentication | None |
+| Independent QA PASS — defect #63 | https://github.com/syedtabishmobin/DocumentManagement/issues/63#issuecomment-5467899758 | Persistent | GitHub authentication | None |
+| Independent QA PASS — defect #64 | https://github.com/syedtabishmobin/DocumentManagement/issues/64#issuecomment-5467899658 | Persistent | GitHub authentication | None |
+| Independent QA PASS — Issue #61 | https://github.com/syedtabishmobin/DocumentManagement/issues/61#issuecomment-5467899786 | Persistent | GitHub authentication | None |
+| Independent QA PASS — PR #62 | https://github.com/syedtabishmobin/DocumentManagement/pull/62#issuecomment-5467899820 | Persistent | GitHub authentication | None |
 | Readiness report candidate | https://github.com/syedtabishmobin/DocumentManagement/blob/codex/61-ai-native-control-centre/.agents/bootstrap/2026-08-30-ai-native-delivery-control-centre-readiness-report.md | Persistent while branch/PR exists; final URL moves to `main` after merge | GitHub authentication | None |
 
 The governed product queue remains `PAUSED_BY_PRODUCT_AUTHORITY`. Its next deterministic action is the Backend/API fix for defect #60 on Issue #58 / PR #59, followed by a replacement exact candidate and independent retest. It must not resume automatically when this Control Centre is completed.
 
-AI_NATIVE_DELIVERY_CONTROL_CENTRE_PARTIAL
+AI_NATIVE_DELIVERY_CONTROL_CENTRE_READY
