@@ -159,6 +159,11 @@ export const canonicalRedeemArtifactAccessGrantSchema = z.object({
   requested_operation: z.enum(["VIEW", "DOWNLOAD", "PREVIEW", "CITATION", "EXPORT_DOWNLOAD"]),
 }).strict();
 
+export const canonicalDocumentLifecycleTransitionSchema = z.object({
+  transition: z.enum(["ARCHIVE", "TRASH", "RESTORE", "REQUEST_DELETION"]),
+  reason_code: z.string().trim().regex(/^[A-Z][A-Z0-9_]{1,79}$/),
+}).strict();
+
 export const selectWorkspaceSchema = z.object({
   workspaceId: z.string().trim().min(1).max(200),
 });
@@ -220,6 +225,7 @@ export type CanonicalCreateIngestionCaseInput = z.infer<typeof canonicalCreateIn
 export type CanonicalCommitIngestionReceiptInput = z.infer<typeof canonicalCommitIngestionReceiptSchema>;
 export type CanonicalArtifactAccessGrantInput = z.infer<typeof canonicalArtifactAccessGrantSchema>;
 export type CanonicalRedeemArtifactAccessGrantInput = z.infer<typeof canonicalRedeemArtifactAccessGrantSchema>;
+export type CanonicalDocumentLifecycleTransitionInput = z.infer<typeof canonicalDocumentLifecycleTransitionSchema>;
 export type SelectWorkspaceInput = z.infer<typeof selectWorkspaceSchema>;
 export type CreateSubjectInput = z.infer<typeof createSubjectSchema>;
 export type FilePermissions = z.infer<typeof filePermissionsSchema>;
@@ -320,6 +326,8 @@ export interface DocumentRecord {
   preDeleteStatus?: Exclude<DocumentStatus, "DELETED">;
   extractedText?: string;
   reviewReason?: string;
+  revision?: number;
+  deletionRequestedAt?: string;
 }
 
 export interface ArtifactRecord {

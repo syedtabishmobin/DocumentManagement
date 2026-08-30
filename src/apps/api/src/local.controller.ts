@@ -2,7 +2,7 @@ import { BadRequestException, Body, ConflictException, Controller, Delete, Get, 
 import { FileInterceptor } from "@nestjs/platform-express";
 import { createHash } from "node:crypto";
 import type { Response } from "express";
-import { askQuestionSchema, canonicalArtifactAccessGrantSchema, canonicalCommitIngestionReceiptSchema, canonicalCreateAccessGrantSchema, canonicalCreateIngestionCaseSchema, canonicalCreateSubjectSchema, canonicalCreateWorkspaceSchema, canonicalInviteMembershipSchema, canonicalReasonCommandSchema, canonicalRedeemArtifactAccessGrantSchema, canonicalUpdateMembershipSchema, canonicalUpdateSubjectSchema, configureWorkspaceSchema, createMemberSchema, createSubjectSchema, createTaskSchema, managePersonSchema, manualDocumentSchema, type AccessGrant, type ArtifactAccessGrantRecord, type DocumentRecord, type DocumentVersionRecord, type IngestionCase, type Member, type SubjectRecord, type Workspace, type WorkspaceAction } from "@document-management/contracts";
+import { askQuestionSchema, canonicalArtifactAccessGrantSchema, canonicalCommitIngestionReceiptSchema, canonicalCreateAccessGrantSchema, canonicalCreateIngestionCaseSchema, canonicalCreateSubjectSchema, canonicalCreateWorkspaceSchema, canonicalDocumentLifecycleTransitionSchema, canonicalInviteMembershipSchema, canonicalReasonCommandSchema, canonicalRedeemArtifactAccessGrantSchema, canonicalUpdateMembershipSchema, canonicalUpdateSubjectSchema, configureWorkspaceSchema, createMemberSchema, createSubjectSchema, createTaskSchema, managePersonSchema, manualDocumentSchema, type AccessGrant, type ArtifactAccessGrantRecord, type DocumentRecord, type DocumentVersionRecord, type IngestionCase, type Member, type SubjectRecord, type Workspace, type WorkspaceAction } from "@document-management/contracts";
 import { currentWorkspaceConfiguration, LocalStore, normalizedCorrelationId, type GenericIngestionJob, type WorkspaceActor } from "./local.store.js";
 import { IdentityStore } from "./identity.store.js";
 import { actorFor, requestIdentity, sessionToken, setSessionCredentials, type AuthenticatedRequest } from "./auth.controller.js";
@@ -90,8 +90,8 @@ export class LocalController {
   }
 
   private documentView(document: DocumentRecord, currentVersionId: string | null) {
-    const availability = document.status === "ARCHIVED" ? "Archived" : document.status === "DELETED" ? "Trashed" : document.status === "POLICY_HOLD" ? "Fenced" : "Active";
-    return { document_id: document.id, workspace_id: document.workspaceId, document_type_profile_ref: document.category || null, availability_state: availability, effective_status: "PROPOSED", current_version_id: currentVersionId, revision: document.version };
+    const availability = document.deletionRequestedAt ? "DeletionRequested" : document.status === "ARCHIVED" ? "Archived" : document.status === "DELETED" ? "Trashed" : document.status === "POLICY_HOLD" ? "Fenced" : "Active";
+    return { document_id: document.id, workspace_id: document.workspaceId, document_type_profile_ref: document.category || null, availability_state: availability, effective_status: "PROPOSED", current_version_id: currentVersionId, revision: document.revision ?? 1 };
   }
 
   private documentVersionView(version: DocumentVersionRecord) {
@@ -284,6 +284,7 @@ export class LocalController {
         return this.documentView(document, versions.at(-1)?.id ?? null);
       }));
       response.setHeader("ETag", `"documents-${items.map((item) => item.revision).join("-")}"`);
+      response.setHeader("RateLimit-Policy", "documents-synthetic;w=60;q=60");
       return { items, page: { next_page_after: null, has_more: false, snapshot_ref: `documents:${items.length}` }, coverage: { state: "COMPLETE_AUTHORIZED_VIEW", projection_generation: "document-version-v1", source_watermark: `documents:${items.length}`, policy_epoch: `epoch:${fence.authorizationEpoch}`, deletion_fence_watermark: "current", limitations: [] } };
     } catch (error) { this.canonicalProblem(error, request, response); }
   }
@@ -295,7 +296,23 @@ export class LocalController {
       const fence = await this.store.startAuthorization(context.actor, workspaceId, "document.read", "DOCUMENT", documentId, { correlationId });
       const document = await this.store.logicalDocument(workspaceId, documentId, context.actor, fence, correlationId);
       const versions = await this.store.documentVersions(workspaceId, documentId, context.actor, fence, correlationId);
-      response.setHeader("ETag", `"${document.version}"`); return this.documentView(document, versions.at(-1)?.id ?? null);
+      response.setHeader("ETag", `"${document.revision ?? 1}"`); response.setHeader("RateLimit-Policy", "documents-synthetic;w=60;q=60"); return this.documentView(document, versions.at(-1)?.id ?? null);
+    } catch (error) { this.canonicalProblem(error, request, response); }
+  }
+
+  @Post("v1/workspaces/:workspaceId/documents/:documentId/lifecycle-transitions")
+  @HttpCode(HttpStatus.OK)
+  async canonicalDocumentLifecycle(@Param("workspaceId") workspaceId: string, @Param("documentId") documentId: string, @Body() body: unknown, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    const parsed = canonicalDocumentLifecycleTransitionSchema.safeParse(body);
+    if (!parsed.success) this.problem(request, response, HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_DOCUMENT_LIFECYCLE_REQUEST", "Document lifecycle request could not be validated", "DO_NOT_RETRY");
+    try {
+      const context = this.workspaceContext(request, workspaceId); const correlationId = this.correlation(request, response);
+      const action: WorkspaceAction = parsed.data.transition === "TRASH" || parsed.data.transition === "REQUEST_DELETION" ? "document.delete" : "document.edit";
+      let versions = parsed.data.transition === "RESTORE" ? [] : await this.store.documentVersions(workspaceId, documentId, context.actor, await this.store.startAuthorization(context.actor, workspaceId, "document.read", "DOCUMENT", documentId, { correlationId }), correlationId);
+      const fence = await this.store.startAuthorization(context.actor, workspaceId, action, "DOCUMENT", documentId, { correlationId });
+      const document = await this.store.transitionDocumentLifecycle(workspaceId, documentId, context.actor, this.expectedRevision(request, response), this.idempotencyKey(request, response), parsed.data, fence, correlationId);
+      if (parsed.data.transition === "RESTORE") versions = await this.store.documentVersions(workspaceId, documentId, context.actor, await this.store.startAuthorization(context.actor, workspaceId, "document.read", "DOCUMENT", documentId, { correlationId }), correlationId);
+      response.setHeader("ETag", `"${document.revision ?? 1}"`); response.setHeader("RateLimit-Policy", "document-lifecycle-synthetic;w=60;q=20"); return this.documentView(document, versions.at(-1)?.id ?? null);
     } catch (error) { this.canonicalProblem(error, request, response); }
   }
 
@@ -306,6 +323,7 @@ export class LocalController {
       const fence = await this.store.startAuthorization(context.actor, workspaceId, "document.read", "DOCUMENT", documentId, { correlationId });
       const versions = await this.store.documentVersions(workspaceId, documentId, context.actor, fence, correlationId);
       const items = versions.map((version) => this.documentVersionView(version));
+      response.setHeader("ETag", `"versions-${items.map((item) => item.revision).join("-")}"`); response.setHeader("RateLimit-Policy", "document-versions-synthetic;w=60;q=60");
       return { items, page: { next_page_after: null, has_more: false, snapshot_ref: `versions:${documentId}:${items.length}` }, coverage: { state: "COMPLETE_AUTHORIZED_VIEW", projection_generation: "document-version-v1", source_watermark: `versions:${items.length}`, policy_epoch: `epoch:${fence.authorizationEpoch}`, deletion_fence_watermark: "current", limitations: [] } };
     } catch (error) { this.canonicalProblem(error, request, response); }
   }
@@ -316,7 +334,7 @@ export class LocalController {
       const context = this.workspaceContext(request, workspaceId); const correlationId = this.correlation(request, response);
       const fence = await this.store.startAuthorization(context.actor, workspaceId, "document.read", "DOCUMENT", documentId, { correlationId });
       const version = await this.store.documentVersion(workspaceId, documentId, documentVersionId, context.actor, fence, correlationId);
-      response.setHeader("ETag", `"${version.revision}"`); return this.documentVersionView(version);
+      response.setHeader("ETag", `"${version.revision}"`); response.setHeader("RateLimit-Policy", "document-versions-synthetic;w=60;q=60"); return this.documentVersionView(version);
     } catch (error) { this.canonicalProblem(error, request, response); }
   }
 
@@ -328,11 +346,12 @@ export class LocalController {
       const context = this.workspaceContext(request, workspaceId); const correlationId = this.correlation(request, response);
       const fence = await this.store.startAuthorization(context.actor, workspaceId, "document.read", "DOCUMENT", documentId, { fieldRef: "document.content", correlationId });
       const grant = await this.store.issueArtifactAccessGrant(workspaceId, documentId, documentVersionId, context.actor, parsed.data, this.idempotencyKey(request, response), fence, correlationId);
-      response.setHeader("ETag", `"${grant.revision}"`); return this.artifactGrantView(grant);
+      response.setHeader("ETag", `"${grant.revision}"`); response.setHeader("RateLimit-Policy", "artifact-grants-synthetic;w=60;q=20"); return this.artifactGrantView(grant);
     } catch (error) { this.canonicalProblem(error, request, response); }
   }
 
   @Post("v1/workspaces/:workspaceId/artifact-access-grants/:artifactAccessGrantId/redemptions")
+  @HttpCode(HttpStatus.OK)
   async canonicalRedeemArtifactGrant(@Param("workspaceId") workspaceId: string, @Param("artifactAccessGrantId") artifactAccessGrantId: string, @Body() body: unknown, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
     const parsed = canonicalRedeemArtifactAccessGrantSchema.safeParse(body);
     if (!parsed.success) this.problem(request, response, HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_ARTIFACT_REDEMPTION_REQUEST", "Artifact redemption request could not be validated", "DO_NOT_RETRY");
@@ -341,6 +360,7 @@ export class LocalController {
       const fence = await this.store.startAuthorization(context.actor, workspaceId, "document.read", "WORKSPACE", workspaceId, { correlationId });
       const redemption = await this.store.redeemArtifactAccessGrant(workspaceId, artifactAccessGrantId, context.actor, parsed.data, this.idempotencyKey(request, response), fence, correlationId);
       response.setHeader("Cache-Control", "private, no-store");
+      response.setHeader("ETag", `"${redemption.grant.revision}"`); response.setHeader("RateLimit-Policy", "artifact-redemptions-synthetic;w=60;q=60");
       return { artifact_access_grant_id: redemption.grant.id, redemption_id: redemption.redemptionId, transfer_ref: redemption.transferRef, integrity_digest_ref: `sha256:${redemption.digest}`, expires_at: redemption.expiresAt };
     } catch (error) { this.canonicalProblem(error, request, response); }
   }

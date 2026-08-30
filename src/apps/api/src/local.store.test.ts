@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -254,6 +254,68 @@ describe("LocalStore", () => {
     const finalState = JSON.parse(await readFile(join(directory, "state.json"), "utf8")) as { workspaces: Array<{ audit: unknown[] }>; authorityOutbox: unknown[] };
     expect(JSON.stringify({ audit: finalState.workspaces[0]!.audit, authorityOutbox: finalState.authorityOutbox })).not.toContain(bytes);
     expect(JSON.stringify(finalState)).toContain("ARTIFACT_ACCESS_REDEMPTION_DENIED");
+  });
+
+  it("fails closed for wrong artifact scope, quarantine, integrity, stale policy and revocation", async () => {
+    const document = await store.addDocument(workspaceId, actor, textFile("Synthetic negative matrix", "matrix.txt"), [ownerSubjectId], "FILE", await effect("document.create", "WORKSPACE"), "corr-story-007-matrix");
+    const versionFence = await effect("document.read", "DOCUMENT", document.id);
+    const version = (await store.documentVersions(workspaceId, document.id, actor, versionFence, "corr-story-007-matrix-version"))[0]!;
+    await expect(store.issueArtifactAccessGrant(workspaceId, document.id, version.id, actor, { operation: "VIEW", purpose_id: "PUR-P1-001", audience_ref: "identity-wrong-audience" }, "story-007-wrong-audience-0001", await store.startAuthorization(actor, workspaceId, "document.read", "DOCUMENT", document.id, { fieldRef: "document.content" }), "corr-story-007-wrong-audience")).rejects.toThrow("not available");
+    await expect(store.issueArtifactAccessGrant(workspaceId, document.id, "version-wrong-synthetic", actor, { operation: "VIEW", purpose_id: "PUR-P1-001", audience_ref: actor.identityId }, "story-007-wrong-version-0001", await store.startAuthorization(actor, workspaceId, "document.read", "DOCUMENT", document.id, { fieldRef: "document.content" }), "corr-story-007-wrong-version")).rejects.toThrow("not available");
+
+    const contained = await store.addDocument(workspaceId, actor, textFile("Clinical note: synthetic diagnosis", "contained.txt"), [ownerSubjectId], "FILE", await effect("document.create", "WORKSPACE"), "corr-story-007-contained");
+    const stateAfterContainment = JSON.parse(await readFile(join(directory, "state.json"), "utf8")) as { workspaces: Array<{ documentVersions: Array<{ id: string; documentId: string }> }> };
+    const containedVersion = stateAfterContainment.workspaces[0]!.documentVersions.find((candidate) => candidate.documentId === contained.id)!;
+    await expect(store.issueArtifactAccessGrant(workspaceId, contained.id, containedVersion.id, actor, { operation: "VIEW", purpose_id: "PUR-P1-001", audience_ref: actor.identityId }, "story-007-contained-grant-0001", await store.startAuthorization(actor, workspaceId, "document.read", "DOCUMENT", contained.id, { fieldRef: "document.content" }), "corr-story-007-contained-grant")).rejects.toThrow("not available");
+
+    const integrityGrant = await store.issueArtifactAccessGrant(workspaceId, document.id, version.id, actor, { operation: "DOWNLOAD", purpose_id: "PUR-P1-001", audience_ref: actor.identityId }, "story-007-integrity-grant-0001", await store.startAuthorization(actor, workspaceId, "document.read", "DOCUMENT", document.id, { fieldRef: "document.content" }), "corr-story-007-integrity-grant");
+    await writeFile(join(directory, "artifacts", workspaceId, version.artifactId), "tampered synthetic bytes");
+    await expect(store.redeemArtifactAccessGrant(workspaceId, integrityGrant.id, actor, { requested_operation: "DOWNLOAD" }, "story-007-integrity-redemption-0001", await effect("document.read", "WORKSPACE", workspaceId), "corr-story-007-integrity-redemption")).rejects.toThrow("not available");
+    const afterIntegrity = JSON.parse(await readFile(join(directory, "state.json"), "utf8")) as { workspaces: Array<{ artifacts: Array<{ id: string; integrityState: string }>; audit: Array<{ type: string; decisionReason?: string; detail: string }> }> };
+    expect(afterIntegrity.workspaces[0]!.artifacts.find((artifact) => artifact.id === version.artifactId)?.integrityState).toBe("FAILED");
+    expect(afterIntegrity.workspaces[0]!.audit).toEqual(expect.arrayContaining([expect.objectContaining({ type: "ARTIFACT_ACCESS_REDEMPTION_DENIED", decisionReason: "INTEGRITY_MISMATCH" })]));
+    expect(JSON.stringify(afterIntegrity.workspaces[0]!.audit)).not.toContain("tampered synthetic bytes");
+
+    const staleDocument = await store.addDocument(workspaceId, actor, textFile("Synthetic stale policy bytes", "stale.txt"), [ownerSubjectId], "FILE", await effect("document.create", "WORKSPACE"), "corr-story-007-stale");
+    const staleVersion = (await store.documentVersions(workspaceId, staleDocument.id, actor, await effect("document.read", "DOCUMENT", staleDocument.id), "corr-story-007-stale-version"))[0]!;
+    const staleGrant = await store.issueArtifactAccessGrant(workspaceId, staleDocument.id, staleVersion.id, actor, { operation: "VIEW", purpose_id: "PUR-P1-001", audience_ref: actor.identityId }, "story-007-stale-grant-0001", await store.startAuthorization(actor, workspaceId, "document.read", "DOCUMENT", staleDocument.id, { fieldRef: "document.content" }), "corr-story-007-stale-grant");
+    await store.addMember(workspaceId, actor, "Synthetic pending member", "ADULT_MEMBER", await effect("workspace.admin", "WORKSPACE"), "corr-story-007-epoch-change");
+    await expect(store.redeemArtifactAccessGrant(workspaceId, staleGrant.id, actor, { requested_operation: "VIEW" }, "story-007-stale-redemption-0001", await effect("document.read", "WORKSPACE", workspaceId), "corr-story-007-stale-redemption")).rejects.toThrow("not available");
+
+    const otherActor = { identityId: "identity-story-007-other", displayName: "Other Synthetic Owner" };
+    const otherWorkspace = await store.createWorkspace(otherActor, "Other artifact household", "PERSONAL", "story-007-other-workspace-0001");
+    const otherFence = await store.startAuthorization(otherActor, otherWorkspace.id, "document.read", "WORKSPACE", otherWorkspace.id);
+    await expect(store.redeemArtifactAccessGrant(workspaceId, staleGrant.id, otherActor, { requested_operation: "VIEW" }, "story-007-wrong-workspace-0001", otherFence, "corr-story-007-wrong-workspace")).rejects.toThrow("not available");
+
+    const ownerGrant = (await store.dashboard(workspaceId)).accessGrants.find((grant) => grant.granteeIdentityId === actor.identityId && grant.resourceKind === "WORKSPACE")!;
+    await store.revokeAccessGrant(workspaceId, actor, ownerGrant.id, ownerGrant.revision, "story-007-owner-revoke-0001", "SECURITY_RESPONSE", await effect("grant.revoke", "WORKSPACE", workspaceId), "corr-story-007-owner-revoke");
+    await expect(store.startAuthorization(actor, workspaceId, "document.read", "WORKSPACE", workspaceId)).rejects.toThrow("not available");
+  });
+
+  it("restores immutable artifact bytes and exact lineage from a sampled local backup", async () => {
+    const bytes = "Synthetic backup restore artifact bytes";
+    const document = await store.addDocument(workspaceId, actor, textFile(bytes, "backup.txt"), [ownerSubjectId], "FILE", await effect("document.create", "WORKSPACE"), "corr-story-007-backup", "story-007-backup-upload-0001");
+    const version = (await store.documentVersions(workspaceId, document.id, actor, await effect("document.read", "DOCUMENT", document.id), "corr-story-007-backup-version"))[0]!;
+    const grant = await store.issueArtifactAccessGrant(workspaceId, document.id, version.id, actor, { operation: "VIEW", purpose_id: "PUR-P1-001", audience_ref: actor.identityId }, "story-007-backup-grant-0001", await store.startAuthorization(actor, workspaceId, "document.read", "DOCUMENT", document.id, { fieldRef: "document.content" }), "corr-story-007-backup-grant");
+    const backupDirectory = await mkdtemp(join(tmpdir(), "document-management-backup-"));
+    const restoredDirectory = await mkdtemp(join(tmpdir(), "document-management-restore-"));
+    try {
+      await mkdir(join(backupDirectory, "artifacts"), { recursive: true });
+      await cp(join(directory, "state.json"), join(backupDirectory, "state.json"));
+      await cp(join(directory, "artifacts"), join(backupDirectory, "artifacts"), { recursive: true, force: false });
+      await cp(join(backupDirectory, "state.json"), join(restoredDirectory, "state.json"));
+      await cp(join(backupDirectory, "artifacts"), join(restoredDirectory, "artifacts"), { recursive: true, force: false });
+      process.env.DM_DATA_DIR = restoredDirectory;
+      const restored = new LocalStore();
+      const restoredVersion = (await restored.documentVersions(workspaceId, document.id, actor, await restored.startAuthorization(actor, workspaceId, "document.read", "DOCUMENT", document.id), "corr-story-007-restored-version"))[0]!;
+      expect(restoredVersion).toEqual(version);
+      const redemption = await restored.redeemArtifactAccessGrant(workspaceId, grant.id, actor, { requested_operation: "VIEW" }, "story-007-backup-redemption-0001", await restored.startAuthorization(actor, workspaceId, "document.read", "WORKSPACE", workspaceId), "corr-story-007-backup-redemption");
+      expect(redemption.buffer.toString("utf8")).toBe(bytes);
+      expect(redemption.digest).toBe(createHash("sha256").update(bytes).digest("hex"));
+    } finally {
+      process.env.DM_DATA_DIR = directory;
+      await rm(backupDirectory, { recursive: true }); await rm(restoredDirectory, { recursive: true });
+    }
   });
 
   it("isolates suspected clinical content", async () => {

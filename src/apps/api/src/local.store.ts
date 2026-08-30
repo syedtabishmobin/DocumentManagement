@@ -14,6 +14,7 @@ import type {
   CanonicalCreateIngestionCaseInput,
   CanonicalCommitIngestionReceiptInput,
   CanonicalArtifactAccessGrantInput,
+  CanonicalDocumentLifecycleTransitionInput,
   CanonicalRedeemArtifactAccessGrantInput,
   CreateSubjectInput,
   DashboardSnapshot,
@@ -362,6 +363,7 @@ function normalizeWorkspaceState(input: WorkspaceState): WorkspaceState {
     ...document,
     subjectIds: document.subjectIds?.length ? document.subjectIds : [state.subjects[0]!.id],
     captureRoute: document.captureRoute ?? "FILE",
+    revision: document.revision ?? 1,
     ...(document.status === "DELETED" && !document.deletedAt ? { deletedAt: document.updatedAt, purgeDueAt: trashDeadline(document.updatedAt), preDeleteStatus: "NEEDS_REVIEW" as const } : {}),
   }));
   state.artifacts ??= [];
@@ -1094,6 +1096,7 @@ export class LocalStore {
         status: initialStatus,
         category: classification.category,
         version: 1,
+        revision: 1,
         createdAt,
         updatedAt: createdAt,
         subjectIds,
@@ -1219,6 +1222,46 @@ export class LocalStore {
     const version = state.documentVersions.find((item) => item.id === documentVersionId && item.documentId === documentId);
     if (!version) throw new NotFoundException("Resource not available");
     return { ...version };
+  }
+
+  async transitionDocumentLifecycle(workspaceId: string, documentId: string, actor: WorkspaceActor, expectedRevision: number, idempotencyKey: string, input: CanonicalDocumentLifecycleTransitionInput, fence: AuthorizationFence, correlationId: string): Promise<DocumentRecord> {
+    const result = await this.mutate((database): DocumentRecord | "NOT_AVAILABLE" | "STALE" | "INVALID" => {
+      const state = this.state(database, workspaceId);
+      const action: WorkspaceAction = input.transition === "TRASH" || input.transition === "REQUEST_DELETION" ? "document.delete" : "document.edit";
+      this.requireEffectAuthorization(database, state, actor, fence, { action, resourceKind: "DOCUMENT", resourceId: documentId }, correlationId);
+      const fingerprint = { documentId, ...input };
+      const prior = priorCommandReceipt(state, actor, "API-P1-124", idempotencyKey, fingerprint);
+      if (prior) return state.documents.find((item) => item.id === prior.resourceId) ?? "NOT_AVAILABLE";
+      const document = state.documents.find((item) => item.id === documentId);
+      if (!document || document.status === "POLICY_HOLD") return "NOT_AVAILABLE";
+      if ((document.revision ?? 1) !== expectedRevision) return "STALE";
+      const recordedAt = now();
+      if (input.transition === "ARCHIVE") {
+        if (document.status === "DELETED") return "INVALID";
+        document.status = "ARCHIVED";
+      } else if (input.transition === "TRASH" || input.transition === "REQUEST_DELETION") {
+        if (document.status !== "DELETED") document.preDeleteStatus = document.status;
+        document.status = "DELETED"; document.deletedAt = recordedAt; document.purgeDueAt = trashDeadline(recordedAt);
+        if (input.transition === "REQUEST_DELETION") document.deletionRequestedAt = recordedAt;
+        for (const version of state.documentVersions.filter((item) => item.documentId === document.id)) {
+          const artifact = state.artifacts.find((item) => item.id === version.artifactId); if (artifact) artifact.isolationState = "DELETION_FENCED";
+        }
+      } else {
+        if (document.status !== "DELETED" || !document.purgeDueAt || new Date(recordedAt).getTime() >= new Date(document.purgeDueAt).getTime()) return "INVALID";
+        document.status = document.preDeleteStatus ?? "NEEDS_REVIEW"; delete document.deletedAt; delete document.purgeDueAt; delete document.preDeleteStatus; delete document.deletionRequestedAt;
+        for (const version of state.documentVersions.filter((item) => item.documentId === document.id)) {
+          const artifact = state.artifacts.find((item) => item.id === version.artifactId); if (artifact) artifact.isolationState = "AVAILABLE";
+        }
+      }
+      document.revision = (document.revision ?? 1) + 1; document.updatedAt = recordedAt;
+      appendCommandReceipt(state, actor, "API-P1-124", idempotencyKey, fingerprint, document.id, document.revision);
+      recordAuthorityTransition(database, state, actor, `DOCUMENT_${input.transition}`, "DOCUMENT", `Applied document lifecycle transition using reason ${input.reason_code}`, document.id, correlationId, { policyVersion: fence.policyVersion, authorizationEpoch: state.authorizationEpoch.value, authorizationPhase: "EFFECT", decisionReason: "EXPLICIT_GRANT" });
+      return documentSummary(document);
+    });
+    if (result === "NOT_AVAILABLE") throw new NotFoundException("Resource not available");
+    if (result === "STALE") throw new PreconditionFailedException("Resource changed; refresh before retrying");
+    if (result === "INVALID") throw new UnprocessableEntityException("Document lifecycle transition is unavailable");
+    return result;
   }
 
   async issueArtifactAccessGrant(workspaceId: string, documentId: string, documentVersionId: string, actor: WorkspaceActor, input: CanonicalArtifactAccessGrantInput, idempotencyKey: string, fence: AuthorizationFence, correlationId: string): Promise<ArtifactAccessGrantRecord> {
