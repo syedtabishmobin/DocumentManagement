@@ -97,7 +97,9 @@ integration.sequential("PostgreSQL workspace authority integration", () => {
 
     const restarted = new LocalStore(new PostgresWorkspacePersistence({ pool, migrationMode: "verify", migrationsDirectory }));
     expect(await restarted.listWorkspaces(actor.identityId)).toEqual([expect.objectContaining({ id: first.id })]);
-    await expect(firstPersistence.verifyInvariants()).resolves.toEqual({ workspaces: 2, receipts: 2, outbox: 6 });
+    // Every input/effect authorization decision is now durable evidence in
+    // addition to the authority transitions exercised by this scenario.
+    await expect(firstPersistence.verifyInvariants()).resolves.toEqual({ workspaces: 2, receipts: 2, outbox: 16 });
 
     const row = await pool.query<{ state: { members: Array<{ workspaceId: string }> } }>("SELECT state FROM doculyra.workspace_state WHERE workspace_id = $1", [first.id]);
     row.rows[0]!.state.members[0]!.workspaceId = foreign.id;
