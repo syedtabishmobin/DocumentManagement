@@ -368,10 +368,10 @@ def graphql(query: str, variables: dict[str, Any]) -> dict[str, Any]:
 
 def create_draft(project_id: str, title: str, body: str) -> str:
     query = """mutation($input:AddProjectV2DraftIssueInput!) {
-      addProjectV2DraftIssue(input:$input) { projectV2Item { id } }
+      addProjectV2DraftIssue(input:$input) { projectItem { id } }
     }"""
     data = graphql(query, {"input": {"projectId": project_id, "title": title, "body": body}})
-    return data["addProjectV2DraftIssue"]["projectV2Item"]["id"]
+    return data["addProjectV2DraftIssue"]["projectItem"]["id"]
 
 
 def update_fields(project_id: str, item_id: str, values: dict[str, str], catalog: dict[str, Any]) -> None:
