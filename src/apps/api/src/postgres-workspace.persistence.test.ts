@@ -17,12 +17,64 @@ function harness() {
   return { pool, persistence, store: new LocalStore(persistence) };
 }
 
+function serializationFailure(message: string): Error & { code: string } {
+  return Object.assign(new Error(message), { code: "40001" });
+}
+
+function retryHarness(failures: number, retry: { maxAttempts: number; baseDelayMs: number; maxDelayMs: number }) {
+  const memory = newDb({ autoCreateForeignKeyIndices: true, noAstCoverageCheck: true });
+  memory.public.registerFunction({ name: "pg_advisory_xact_lock", args: [DataType.integer], returns: DataType.integer, implementation: () => 1 });
+  const adapter = memory.adapters.createPg();
+  const pool = new adapter.Pool();
+  let remainingFailures = failures;
+  const retryPool = {
+    async connect() {
+      const client = await pool.connect();
+      return {
+        query: async (...args: Parameters<typeof client.query>) => {
+          if (remainingFailures > 0 && typeof args[0] === "string" && args[0].includes("INSERT INTO doculyra.workspace_state")) {
+            remainingFailures -= 1;
+            throw serializationFailure("synthetic serialization conflict");
+          }
+          return client.query(...args);
+        },
+        release: () => client.release(),
+      };
+    },
+    end: () => pool.end(),
+  };
+  const delays: number[] = [];
+  const persistence = new PostgresWorkspacePersistence({
+    pool: retryPool,
+    migrationMode: "apply",
+    migrationsDirectory,
+    transactionRetry: { ...retry, sleep: async (delayMs) => { delays.push(delayMs); } },
+  });
+  return { pool: retryPool, persistence, store: new LocalStore(persistence), delays, remainingFailures: () => remainingFailures };
+}
+
 const openPools: Array<{ end(): Promise<void> }> = [];
 afterEach(async () => {
   await Promise.all(openPools.splice(0).map((pool) => pool.end()));
 });
 
 describe("PostgresWorkspacePersistence", () => {
+  it("delays retryable serialization conflicts, converges, and exhausts the exact bounded budget", async () => {
+    const converging = retryHarness(3, { maxAttempts: 5, baseDelayMs: 10, maxDelayMs: 25 });
+    openPools.push(converging.pool);
+    await expect(converging.store.createWorkspace(actor, "Synthetic retry household", "FAMILY", "postgres-retry-0001")).resolves.toMatchObject({ name: "Synthetic retry household" });
+    expect(converging.delays).toEqual([10, 20, 25]);
+    expect(converging.remainingFailures()).toBe(0);
+    await expect(converging.persistence.verifyInvariants()).resolves.toEqual({ workspaces: 1, receipts: 1, outbox: 1 });
+
+    const exhausted = retryHarness(4, { maxAttempts: 3, baseDelayMs: 7, maxDelayMs: 10 });
+    openPools.push(exhausted.pool);
+    await expect(exhausted.store.createWorkspace(actor, "Synthetic exhausted household", "FAMILY", "postgres-retry-0002")).rejects.toMatchObject({ code: "40001" });
+    expect(exhausted.delays).toEqual([7, 10]);
+    expect(exhausted.remainingFailures()).toBe(1);
+    await expect(exhausted.persistence.verifyInvariants()).resolves.toEqual({ workspaces: 0, receipts: 0, outbox: 0 });
+  });
+
   it("commits workspace authority, receipt, audit and outbox atomically and survives a store restart", async () => {
     const { pool, persistence, store } = harness();
     openPools.push(pool);
