@@ -51,7 +51,7 @@ export interface AuthorityCommandReceipt {
   id: string;
   workspaceId: string;
   actorId: string;
-  operationId: "API-P1-105" | "API-P1-107" | "API-P1-109" | "API-P1-111" | "API-P1-113" | "API-P1-115" | "API-P1-116" | "API-P1-117" | "API-P1-119";
+  operationId: "API-P1-105" | "API-P1-107" | "API-P1-109" | "API-P1-111" | "API-P1-113" | "API-P1-115" | "API-P1-116" | "API-P1-117" | "API-P1-119" | "API-P1-120";
   idempotencyKeyHash: string;
   requestFingerprint: string;
   resourceId: string;
@@ -70,7 +70,7 @@ export interface WorkspaceCreationReceipt {
 export interface AuthorityOutboxEvent {
   id: string;
   workspaceId: string;
-  aggregateType: "WORKSPACE_AUTHORITY" | "IngestionCase";
+  aggregateType: "WORKSPACE_AUTHORITY" | "IngestionCase" | "ArtifactRecord";
   aggregateId: string;
   aggregateRevision: number;
   eventType: string;

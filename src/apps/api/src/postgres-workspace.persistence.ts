@@ -238,6 +238,7 @@ function validateDatabase(database: WorkspaceDatabase): void {
     if (!workspaceIds.has(event.workspaceId) || event.aggregateRevision < 1) throw new Error("Authority outbox event scope mismatch");
     if (event.aggregateType === "WORKSPACE_AUTHORITY" && event.aggregateId !== event.workspaceId) throw new Error("Authority outbox aggregate mismatch");
     if (event.aggregateType === "IngestionCase" && (event.eventType !== "EVT-P1-006" || event.eventEnvelope?.event_type !== "EVT-P1-006" || event.eventEnvelope.aggregate_id !== event.aggregateId)) throw new Error("Ingestion outbox envelope mismatch");
+    if (event.aggregateType === "ArtifactRecord" && (event.eventType !== "EVT-P1-007" || event.eventEnvelope?.event_type !== "EVT-P1-007" || event.eventEnvelope.aggregate_id !== event.aggregateId)) throw new Error("Artifact integrity outbox envelope mismatch");
   }
 }
 

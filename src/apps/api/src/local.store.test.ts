@@ -208,9 +208,18 @@ describe("LocalStore", () => {
     const text = "Clinical note: diagnosis and pathology result.";
     const uploaded = await store.addDocument(workspaceId, actor, textFile(text, "record.txt"), [ownerSubjectId], "FILE", await effect("document.create", "WORKSPACE"), "corr-test-clinical-create");
     expect(uploaded.status).toBe("POLICY_HOLD");
+    expect(uploaded).toMatchObject({ name: "Restricted document", category: "Policy hold", mediaType: "application/octet-stream", size: 0, subjectIds: [], reviewReason: "This item is isolated and unavailable to ordinary preview, extraction, search and connections." });
     expect((await ask("What is the diagnosis?")).citations).toEqual([]);
-    await expect(detail(uploaded.id)).rejects.toThrow("isolated");
-    await expect(artifact(uploaded.id)).rejects.toThrow("isolated");
+    await expect(detail(uploaded.id)).rejects.toThrow("not available");
+    await expect(artifact(uploaded.id)).rejects.toThrow("not available");
+    await expect(store.deleteDocument(workspaceId, actor, uploaded.id, await effect("document.delete", "DOCUMENT", uploaded.id), "corr-test-clinical-delete")).rejects.toThrow("not available");
+    const exported = await store.exportWorkspace(workspaceId, actor, await effect("export.create", "WORKSPACE"), "corr-test-clinical-export");
+    expect(JSON.stringify(exported)).not.toContain(uploaded.id);
+    const authority = await store.dashboard(workspaceId);
+    expect(authority.audit).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: "CONTAINED_CONTENT_ACCESS_DENIED", outcome: "DENIED", decisionReason: "CONTENT_CONTAINED" }),
+      expect.objectContaining({ type: "CONTAINED_CONTENT_DISPOSITION_DENIED", outcome: "DENIED", decisionReason: "CONTENT_CONTAINED" }),
+    ]));
   });
 
   it("keeps container access usable while sensitive fields and edges fail closed, then invalidates queued output on revoke", async () => {

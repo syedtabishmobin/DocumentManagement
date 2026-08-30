@@ -66,6 +66,10 @@ class VaultDocument {
   final DateTime? purgeDueAt;
 
   bool get isDeleted => status == 'DELETED';
+  bool get isContained => status == 'POLICY_HOLD';
+  String get libraryDescription => isContained
+      ? 'Contained; action unavailable under current policy.'
+      : category;
   factory VaultDocument.fromJson(Map<String, dynamic> value) => VaultDocument(
     id: value['id'].toString(),
     name: value['name'].toString(),

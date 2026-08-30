@@ -405,7 +405,8 @@ export interface IngestionCase {
   documentId: string | null;
   mandatoryCheckpointState: string;
   degradationCodes: string[];
-  attempts: Array<{ id: string; kind: "CREATE" | "RECEIPT_COMMIT" | "CANCEL"; outcome: "SUCCEEDED"; correlationId: string; recordedAt: string; byteCount?: number; transferRefHash?: string; digestRefHash?: string }>;
+  attempts: Array<{ id: string; kind: "CREATE" | "RECEIPT_COMMIT" | "SAFETY_CHECK" | "CANCEL"; outcome: "SUCCEEDED"; correlationId: string; recordedAt: string; byteCount?: number; transferRefHash?: string; digestRefHash?: string }>;
+  safetyAssessments?: Array<{ id: string; adapterRef: "synthetic-safety-adapter@0.1"; verdict: "CLEAN" | "MALICIOUS" | "INDETERMINATE" | "SUSPECTED_CLINICAL"; integrityState: "VERIFIED" | "INDETERMINATE"; reasonCode: string; digestRefHash: string; recordedAt: string }>;
   revision: number;
   createdAt: string;
   updatedAt: string;
