@@ -75,7 +75,7 @@ def query_project(config: dict[str, Any]) -> dict[str, Any]:
             ... on ProjectV2IterationField {{ id name dataType }}
           }} }}
           views(first:50) {{ nodes {{ id number name layout filter }} }}
-          items(first:200) {{ nodes {{
+          items(first:100) {{ nodes {{
             id
             workType: fieldValueByName(name:"Work Type") {{
               ... on ProjectV2ItemFieldSingleSelectValue {{ name }}
@@ -150,17 +150,18 @@ def reconcile_views(config: dict[str, Any], live: dict[str, Any]) -> list[str]:
         view = views.get(expected["name"])
         if not view:
             raise RuntimeError(f"required Project view unavailable: {expected['name']}")
-        visible_ids = []
-        for field_name in expected["visibleFields"]:
-            field = fields.get(field_name)
-            if not field:
-                raise RuntimeError(f"view {expected['name']} references unavailable field {field_name}")
-            visible_ids.append(field["id"])
         update_input: dict[str, Any] = {
             "viewId": view["id"],
             "layout": expected["layout"],
-            "configuration": {"visibleFieldIds": visible_ids},
         }
+        if expected["layout"] != "ROADMAP_LAYOUT":
+            visible_ids = []
+            for field_name in expected["visibleFields"]:
+                field = fields.get(field_name)
+                if not field:
+                    raise RuntimeError(f"view {expected['name']} references unavailable field {field_name}")
+                visible_ids.append(field["id"])
+            update_input["configuration"] = {"visibleFieldIds": visible_ids}
         if expected["filter"] is not None:
             update_input["filter"] = expected["filter"]
         graphql(mutation, {"input": update_input})
@@ -213,6 +214,8 @@ def reconcile_items(config: dict[str, Any], live: dict[str, Any]) -> list[str]:
                 field_value = {"singleSelectOptionId": option["id"]}
             elif field.get("dataType") == "TEXT":
                 field_value = {"text": str(value)}
+            elif field.get("dataType") == "DATE" and field_name == "Last Agent Update":
+                field_value = {"date": observed_at[:10]}
             else:
                 raise RuntimeError(f"unsupported current metadata field type: {field_name} ({field.get('dataType')})")
             updates.append({"fieldId": field["id"], "value": field_value})

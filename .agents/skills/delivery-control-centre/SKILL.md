@@ -15,4 +15,5 @@ Use this skill to build or query Doculyra's read-only delivery control centre wi
 6. Return `UNAVAILABLE` for missing data; never coerce it to zero or infer it from chat text.
 7. Expose no mutation controls. Bind local HTTP only to loopback and reject unsafe methods.
 8. Do not persist raw prompts, secrets, customer/document content, or arbitrary tool payloads.
-9. Validate routes, privacy, read-only behavior, caching/freshness, traceability and current-state joins before handoff.
+9. Keep authorised GitHub Project maintenance outside the dashboard: dry-run `pnpm agent:project:reconcile`, apply only in a governed maintenance run, and never let Project automation establish QA, merge, release, BA, or UAT completion.
+10. Validate routes, privacy, read-only behavior, caching/freshness, traceability and current-state joins before handoff.

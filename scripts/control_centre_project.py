@@ -57,7 +57,11 @@ def configured_checks(config: dict[str, Any]) -> list[dict[str, str]]:
     add("CC-PROJ-003", project.get("fieldAliases") == {"Type": "Work Type"}, "Reserved Type compatibility mapping is explicit")
     add("CC-PROJ-004", {item["name"]: item["layout"] for item in views} == EXPECTED_VIEWS, "All ten saved views and layouts")
     add("CC-PROJ-004A", {item["name"]: item.get("filter") for item in views} == EXPECTED_VIEW_FILTERS, "Saved-view filters use governed Status, Work Type, QA and UAT semantics")
-    add("CC-PROJ-004B", all(item.get("visibleFields") and set(item["visibleFields"]).issubset(set(fields)) for item in views), "Every saved view declares relevant governed visible fields")
+    add("CC-PROJ-004B", all(
+        (item["layout"] == "ROADMAP_LAYOUT" and not item.get("visibleFields") and item.get("itemMetadataFields"))
+        or (item.get("visibleFields") and set(item["visibleFields"]).issubset(set(fields)))
+        for item in views
+    ), "Every saved view declares supported governed visible or drill-through fields")
     add("CC-PROJ-005", len({item["url"] for item in views}) == 10 and all("/projects/1/views/" in item["url"] for item in views), "Distinct persistent saved-view URLs")
     add("CC-PROJ-006", project["url"] == "https://github.com/users/syedtabishmobin/projects/1", "Persistent Project access URL")
     automation = project.get("automation", {})
@@ -113,7 +117,7 @@ def online_checks(config: dict[str, Any]) -> list[dict[str, str]]:
         item["name"]: {field.get("name") for field in item["fields"]["nodes"] if field.get("name")}
         for item in views
     }
-    expected_view_fields = {item["name"]: set(item["visibleFields"]) for item in project["views"]}
+    expected_view_fields = {item["name"]: set(item["visibleFields"]) for item in project["views"] if item["layout"] != "ROADMAP_LAYOUT"}
     required_fields = set(project["fields"])
     workflow_state = {item["name"]: item["enabled"] for item in workflows}
     result = []

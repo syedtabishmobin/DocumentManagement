@@ -73,6 +73,8 @@ The ten saved views are Executive, Delivery Board, Product Backlog, Active Work,
 
 The required `Work Type`, `Status` and `Priority` option sets, each view's relevant visible fields, and the metadata for the currently paused/active governed items are also versioned there. `pnpm agent:project:reconcile` is a dry run; an authorised maintainer may add `--apply` to align that contract idempotently while preserving select-option identities. The default authenticated Burn up insight is available at `https://github.com/users/syedtabishmobin/projects/1/insights`.
 
+GitHub Roadmap layouts do not support configurable visible fields. The Roadmap therefore uses item-level Goal, Feature, Phase, Iteration, Target Date and Release Candidate metadata through item drill-through; the same fields remain directly visible in the Executive and Product Backlog tables.
+
 The Project uses GitHub's built-in automation rather than a repository PAT or third-party service. Auto-add targets `syedtabishmobin/DocumentManagement` for Issues and pull requests; GitHub's default closed-Issue and merged-PR workflows set Project `Status` to `Done`. These are presentation automations only and cannot establish story, feature, goal, QA, release, BA, or UAT completion.
 
 ## Operations

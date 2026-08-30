@@ -73,7 +73,7 @@ Usage and cost values retain the vocabulary `MEASURED`, `PROVIDER_REPORTED`, `AT
 - `pnpm verify`: PASS on the implementation candidate before final evidence-only reconciliation.
 - Framework tests: 36/36 PASS.
 - Existing observability smoke tests: 36/36 PASS.
-- Control Centre tests: 7/7 PASS.
+- Control Centre tests: 8/8 PASS, including fail-closed option-identity migration coverage.
 - Dashboard routes: 16/16 HTTP 200; snapshot API 200; mutation probe 405 `READ_ONLY`.
 - Specification, API/event, reference-data, baseline and traceability validators: PASS.
 - TypeScript typecheck, API/web/domain/crypto tests and builds: PASS; PostgreSQL-only local skips remain covered by protected CI.
@@ -96,6 +96,7 @@ None expected after live Project reconciliation and independent QA. The Project 
 - Native provider token/cost telemetry remains `UNAVAILABLE`; the UI reports this truthfully.
 - Historical charts are bounded by existing telemetry retention and GitHub's retained Project history.
 - The exact custom field name `Type` is reserved by GitHub and personal repositories expose no native Issue Types; the visible `Work Type` field is the explicit semantic alias.
+- GitHub Roadmap layouts do not support configurable visible fields; governed roadmap metadata remains on the items and is directly visible in Executive/Product Backlog tables plus Roadmap item drill-through.
 - The local dashboard exists only while `pnpm agent:dashboard` is running and is intentionally read-only.
 - Product delivery remains paused; Control Centre completion does not resume Issue #58 / PR #59 automatically.
 

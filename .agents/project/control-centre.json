@@ -31,12 +31,13 @@
       {"name":"QA & Defects","number":6,"url":"https://github.com/users/syedtabishmobin/projects/1/views/6","layout":"TABLE_LAYOUT","filter":"\"Work Type\":Story,Bug \"QA State\":REQUIRED,PENDING,FAIL,BLOCKED","visibleFields":["Work Type","Status","Goal","Feature","QA State","Severity","Risk","Current Agent ID","Agent Role","Blocked By","Last Agent Update"]},
       {"name":"Active Work","number":7,"url":"https://github.com/users/syedtabishmobin/projects/1/views/7","layout":"BOARD_LAYOUT","filter":"status:Analysis,Development,QA,\"Fix Required\"","visibleFields":["Work Type","Status","Goal","Feature","Priority","Agent Role","Current Agent ID","QA State","Risk","Blocked By","Last Agent Update"]},
       {"name":"Product Backlog","number":8,"url":"https://github.com/users/syedtabishmobin/projects/1/views/8","layout":"TABLE_LAYOUT","filter":"status:Backlog,Ready","visibleFields":["Work Type","Status","Parent","Goal","Feature","Priority","Phase","QA State","Agent Role","Risk","Target Date"]},
-      {"name":"Roadmap","number":9,"url":"https://github.com/users/syedtabishmobin/projects/1/views/9","layout":"ROADMAP_LAYOUT","filter":null,"visibleFields":["Work Type","Status","Goal","Feature","Phase","Iteration","Target Date","Release Candidate"]},
+      {"name":"Roadmap","number":9,"url":"https://github.com/users/syedtabishmobin/projects/1/views/9","layout":"ROADMAP_LAYOUT","filter":null,"visibleFields":[],"itemMetadataFields":["Work Type","Status","Goal","Feature","Phase","Iteration","Target Date","Release Candidate"]},
       {"name":"Delivery Board","number":10,"url":"https://github.com/users/syedtabishmobin/projects/1/views/10","layout":"BOARD_LAYOUT","filter":null,"visibleFields":["Work Type","Status","Goal","Feature","Priority","Agent Role","Current Agent ID","Risk","Blocked By","Last Agent Update"]},
       {"name":"Trends","number":11,"url":"https://github.com/users/syedtabishmobin/projects/1/views/11","layout":"TABLE_LAYOUT","filter":null,"visibleFields":["Work Type","Status","Agent Role","Capability","Risk","Severity","QA State","Last Agent Update"]}
     ],
     "platformAccommodations": [
-      "GitHub reserves the exact custom field name Type while personal-account repositories expose no native Issue Types. The required semantics are implemented as Work Type and mapped explicitly through fieldAliases."
+      "GitHub reserves the exact custom field name Type while personal-account repositories expose no native Issue Types. The required semantics are implemented as Work Type and mapped explicitly through fieldAliases.",
+      "GitHub Roadmap views do not support visible-field configuration. Goal, feature, phase, iteration, target-date and release metadata remain on each Project item and in the Executive/Product Backlog views, with Roadmap item drill-through preserving access."
     ],
     "automation": {
       "provider": "GITHUB_PROJECTS_BUILT_IN",

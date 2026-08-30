@@ -438,7 +438,13 @@ def validate_configuration() -> list[str]:
     project = control.get("githubProject", {})
     if project.get("title") != "Doculyra Product Delivery" or len(project.get("fields", [])) != 22 or len(project.get("views", [])) != 10:
         errors.append("control centre GitHub Project must define the required title, 22 semantic fields and ten views")
-    if any(not view.get("visibleFields") or not set(view["visibleFields"]).issubset(set(project.get("fields", []))) for view in project.get("views", [])):
+    if any(
+        not (
+            (view.get("layout") == "ROADMAP_LAYOUT" and not view.get("visibleFields") and view.get("itemMetadataFields"))
+            or (view.get("visibleFields") and set(view["visibleFields"]).issubset(set(project.get("fields", []))))
+        )
+        for view in project.get("views", [])
+    ):
         errors.append("each control centre Project view must declare relevant governed visible fields")
     if project.get("fieldAliases") != {"Type": "Work Type"}:
         errors.append("control centre must document GitHub's reserved Type field compatibility mapping")
