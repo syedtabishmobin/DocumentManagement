@@ -153,6 +153,17 @@
       "roleId": "qa-release-lead",
       "parentDisplayAgentId": "ORCH-006",
       "workItem": "issues-48-49/pr-47",
+      "status": "COMPLETED"
+    },
+    {
+      "displayAgentId": "QA-FUNC-011",
+      "displayRole": "Independent Functional QA",
+      "displayRunId": "RUN-20260830-0069",
+      "runtimeAgentId": "codex-01a04f09-806d-7832-915a-21d31c5a0fde",
+      "runtimeRunId": "run-qa-audit-retest-story-p1-003-20260830",
+      "roleId": "qa-release-lead",
+      "parentDisplayAgentId": "ORCH-006",
+      "workItem": "issue-49/pr-47",
       "status": "ACTIVE"
     }
   ]

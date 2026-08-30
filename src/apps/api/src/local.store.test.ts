@@ -250,6 +250,17 @@ describe("LocalStore", () => {
     await expect(store.createAccessGrant(workspaceId, restrictedActor, "grant-create-onward-denied-0001", delegatedInput, delegatedCreateFence, "corr-grant-onward-denied")).rejects.toThrow("not available");
     await expect(store.createAccessGrant(workspaceId, restrictedActor, "grant-create-onward-denied-0001", delegatedInput, delegatedCreateFence, "corr-grant-onward-denied-replay")).rejects.toThrow("not available");
     expect((await store.dashboard(workspaceId)).accessGrants.some((grant) => grant.grantorIdentityId === restrictedActor.identityId)).toBe(false);
+    const deniedEvidence = JSON.parse(await readFile(path, "utf8")) as { workspaces: Array<{ workspace: { id: string }; audit: Array<{ type: string; outcome?: string; correlationId?: string; decisionReason?: string; authorizationPhase?: string; detail: string }> }>; authorityOutbox: Array<{ eventType: string; correlationId: string; decisionReason?: string; authorizationPhase?: string }> };
+    const deniedAudit = deniedEvidence.workspaces.find((state) => state.workspace.id === workspaceId)!.audit.filter((entry) => entry.type === "ACCESS_GRANT_CREATION_DENIED");
+    expect(deniedAudit).toEqual(expect.arrayContaining([
+      expect.objectContaining({ outcome: "DENIED", correlationId: "corr-grant-onward-denied", decisionReason: "ONWARD_DELEGATION_NOT_PERMITTED", authorizationPhase: "EFFECT" }),
+      expect.objectContaining({ outcome: "DENIED", correlationId: "corr-grant-onward-denied-replay", decisionReason: "ONWARD_DELEGATION_NOT_PERMITTED", authorizationPhase: "EFFECT" }),
+    ]));
+    expect(deniedAudit.every((entry) => !entry.detail.includes(actor.identityId) && !entry.detail.includes(restrictedActor.identityId))).toBe(true);
+    expect(deniedEvidence.authorityOutbox).toEqual(expect.arrayContaining([
+      expect.objectContaining({ eventType: "ACCESS_GRANT_CREATION_DENIED", correlationId: "corr-grant-onward-denied", decisionReason: "ONWARD_DELEGATION_NOT_PERMITTED", authorizationPhase: "EFFECT" }),
+      expect.objectContaining({ eventType: "ACCESS_GRANT_CREATION_DENIED", correlationId: "corr-grant-onward-denied-replay", decisionReason: "ONWARD_DELEGATION_NOT_PERMITTED", authorizationPhase: "EFFECT" }),
+    ]));
 
     let revokeFence = await store.startAuthorization(actor, workspaceId, "grant.revoke", "WORKSPACE", workspaceId);
     await store.revokeAccessGrant(workspaceId, actor, workspaceGrant.id, workspaceGrant.revision, "grant-revoke-workspace-member-0001", "USER_REQUEST", revokeFence, "corr-grant-workspace-member-revoke");

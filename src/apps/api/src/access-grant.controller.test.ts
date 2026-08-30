@@ -162,8 +162,14 @@ describe("bounded current AccessGrant HTTP boundary", () => {
       const childReplay = await fetch(grantsUrl, { method: "POST", headers: delegateHeaders("dashboard-child-grant-0001"), body: JSON.stringify(childBody) });
       expect(childReplay.status).toBe(404);
 
-      const persisted = JSON.parse(await readFile(statePath, "utf8")) as { workspaces: Array<{ workspace: { id: string }; accessGrants: Array<{ grantorIdentityId: string }> }> };
-      expect(persisted.workspaces.find((candidate) => candidate.workspace.id === workspace.id)!.accessGrants.some((grant) => grant.grantorIdentityId === delegateRegistration.body.account.id)).toBe(false);
+      const persisted = JSON.parse(await readFile(statePath, "utf8")) as { workspaces: Array<{ workspace: { id: string }; accessGrants: Array<{ grantorIdentityId: string }>; audit: Array<{ type: string; outcome?: string; correlationId?: string; decisionReason?: string; authorizationPhase?: string; detail: string }> }>; authorityOutbox: Array<{ eventType: string; correlationId: string; decisionReason?: string; authorizationPhase?: string }> };
+      const persistedAuthority = persisted.workspaces.find((candidate) => candidate.workspace.id === workspace.id)!;
+      expect(persistedAuthority.accessGrants.some((grant) => grant.grantorIdentityId === delegateRegistration.body.account.id)).toBe(false);
+      const childDenials = persistedAuthority.audit.filter((entry) => entry.type === "ACCESS_GRANT_CREATION_DENIED" && entry.correlationId === "corr-dashboard-child-grant-0001");
+      expect(childDenials).toHaveLength(2);
+      expect(childDenials.every((entry) => entry.outcome === "DENIED" && entry.decisionReason === "ONWARD_DELEGATION_NOT_PERMITTED" && entry.authorizationPhase === "EFFECT")).toBe(true);
+      expect(childDenials.every((entry) => !entry.detail.includes(delegateRegistration.body.account.id) && !entry.detail.includes(ownerRegistration.body.account.id))).toBe(true);
+      expect(persisted.authorityOutbox.filter((entry) => entry.eventType === "ACCESS_GRANT_CREATION_DENIED" && entry.correlationId === "corr-dashboard-child-grant-0001")).toHaveLength(2);
       const revoked = await fetch(`${grantsUrl}/${parent.grant_id}/revocations`, { method: "POST", headers: ownerHeaders("dashboard-parent-revoke-0001", parent.revision), body: JSON.stringify({ reason_code: "USER_REQUEST" }) });
       expect(revoked.status).toBe(200);
       const staleDashboard = await fetch(`${base}/dashboard`, { headers: delegateHeaders("dashboard-revoked-read") });

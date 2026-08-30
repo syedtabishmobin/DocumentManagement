@@ -381,6 +381,25 @@ function recordAuthorityTransition(
   appendAuthorityOutbox(database, state, audit);
 }
 
+function recordAuthorityDenial(
+  database: WorkspaceDatabase,
+  state: WorkspaceState,
+  actor: WorkspaceActor,
+  type: string,
+  action: WorkspaceAction,
+  detail: string,
+  correlationId: string,
+  authorization: Pick<AuditRecord, "policyVersion" | "authorizationEpoch" | "authorizationPhase" | "decisionReason">,
+): void {
+  const audit: AuditRecord = {
+    id: randomUUID(), workspaceId: state.workspace.id, type, resourceType: "WORKSPACE", resourceId: state.workspace.id,
+    actor: actor.displayName, actorId: actor.identityId, action, outcome: "DENIED", correlationId, detail, at: now(),
+    ...authorization,
+  };
+  state.audit.push(audit);
+  appendAuthorityOutbox(database, state, audit);
+}
+
 @Injectable()
 export class LocalStore {
   private readonly root = resolve(process.env.DM_DATA_DIR ?? "./local-data");
@@ -977,7 +996,24 @@ export class LocalStore {
         && authorizingGrant.granteeIdentityId === actor.identityId
         && authorizingGrant.resourceKind === "WORKSPACE"
         && authorizingGrant.resourceIds.includes(workspaceId);
-      if (!ownerAuthoritySource) return "NOT_AVAILABLE";
+      if (!ownerAuthoritySource) {
+        recordAuthorityDenial(
+          database,
+          state,
+          actor,
+          "ACCESS_GRANT_CREATION_DENIED",
+          "grant.create",
+          "Denied grant creation because the current Phase 1 authority source does not permit onward delegation",
+          correlationId,
+          {
+            policyVersion: effectDecision.policyVersion,
+            authorizationEpoch: effectDecision.authorizationEpoch,
+            authorizationPhase: "EFFECT",
+            decisionReason: "ONWARD_DELEGATION_NOT_PERMITTED",
+          },
+        );
+        return "NOT_AVAILABLE";
+      }
       const receipt = priorCommandReceipt(state, actor, "API-P1-113", idempotencyKey, input);
       if (receipt) return state.accessGrants.find((grant) => grant.id === receipt.resourceId) ?? (() => { throw new ConflictException("The prior command result is unavailable"); })();
       const recipient = state.members.find((member) => member.identityId === input.grantee_ref && member.state === "ACTIVE" && member.invitationState === "ACTIVE");
