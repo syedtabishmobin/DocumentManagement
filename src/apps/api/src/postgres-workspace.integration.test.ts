@@ -151,4 +151,34 @@ integration.sequential("PostgreSQL workspace authority integration", () => {
     expect(outbox.rows).toEqual([expect.objectContaining({ policy_version: "policy.local-explicit-grant@0.2", authorization_phase: "EFFECT", decision_reason: "EXPLICIT_GRANT" })]);
     expect(Number(outbox.rows[0]!.authorization_epoch)).toBeGreaterThan(createFence.authorizationEpoch);
   });
+
+  it("persists idempotent ingestion cases, attempts and outbox evidence across PostgreSQL restart", async () => {
+    const store = new LocalStore(firstPersistence);
+    const workspace = await store.createWorkspace(actor, "Ingestion evidence household", "FAMILY", "real-postgres-ingestion-workspace-0001");
+    let fence = await store.startAuthorization(actor, workspace.id, "document.create", "WORKSPACE", workspace.id, { correlationId: "corr-real-postgres-ingestion-create-auth" });
+    const input = { capture_route: "BROWSER_UPLOAD" as const, format_profile_ref: "format-profile-synthetic@0.1" as const, source_descriptor_ref: "source-synthetic-pg-001" };
+    const created = await store.createIngestionCase(workspace.id, actor, "real-postgres-ingestion-create-0001", input, fence, "corr-real-postgres-ingestion-create");
+    fence = await store.startAuthorization(actor, workspace.id, "document.create", "WORKSPACE", workspace.id, { correlationId: "corr-real-postgres-ingestion-replay-auth" });
+    expect((await store.createIngestionCase(workspace.id, actor, "real-postgres-ingestion-create-0001", input, fence, "corr-real-postgres-ingestion-replay")).id).toBe(created.id);
+    fence = await store.startAuthorization(actor, workspace.id, "document.create", "WORKSPACE", workspace.id, { correlationId: "corr-real-postgres-ingestion-receipt-auth" });
+    const received = await store.commitIngestionReceipt(workspace.id, actor, created.id, 1, "real-postgres-ingestion-receipt-0001", { transfer_ref: "transfer-synthetic-pg-001", byte_count: 64, content_digest_ref: "digest-synthetic-pg-001" }, fence, "corr-real-postgres-ingestion-receipt");
+    expect(received).toMatchObject({ state: "RECEIVED", revision: 2 });
+
+    const restarted = new LocalStore(new PostgresWorkspacePersistence({ pool, migrationMode: "verify", migrationsDirectory }));
+    const readFence = await restarted.startAuthorization(actor, workspace.id, "document.read", "WORKSPACE", workspace.id, { correlationId: "corr-real-postgres-ingestion-read-auth" });
+    const persisted = await restarted.getIngestionCase(workspace.id, actor, created.id, readFence, "corr-real-postgres-ingestion-read");
+    expect(persisted).toMatchObject({ state: "RECEIVED", revision: 2, attempts: [expect.objectContaining({ kind: "CREATE" }), expect.objectContaining({ kind: "RECEIPT_COMMIT", byteCount: 64 })] });
+    expect(JSON.stringify(persisted)).not.toContain("transfer-synthetic-pg-001");
+    const outbox = await pool.query<{ event_type: string; correlation_id: string }>("SELECT event_type, correlation_id FROM doculyra.authority_outbox WHERE event_type LIKE 'INGESTION_%' ORDER BY occurred_at");
+    expect(outbox.rows).toEqual([
+      { event_type: "INGESTION_CASE_CREATED", correlation_id: "corr-real-postgres-ingestion-create" },
+      { event_type: "INGESTION_RECEIPT_COMMITTED", correlation_id: "corr-real-postgres-ingestion-receipt" },
+    ]);
+    const domainEvents = await pool.query<{ aggregate_type: string; aggregate_id: string; aggregate_revision: string; event_envelope: Record<string, unknown> }>("SELECT aggregate_type, aggregate_id, aggregate_revision, event_envelope FROM doculyra.authority_outbox WHERE event_type = 'EVT-P1-006' ORDER BY aggregate_revision");
+    expect(domainEvents.rows).toHaveLength(2);
+    expect(domainEvents.rows.map((row) => ({ aggregateType: row.aggregate_type, aggregateId: row.aggregate_id, revision: Number(row.aggregate_revision), envelope: row.event_envelope }))).toEqual([
+      expect.objectContaining({ aggregateType: "IngestionCase", aggregateId: created.id, revision: 1, envelope: expect.objectContaining({ event_type: "EVT-P1-006", aggregate_id: created.id, aggregate_revision: 1, payload: expect.objectContaining({ from_state: null, to_state: "CREATED" }) }) }),
+      expect.objectContaining({ aggregateType: "IngestionCase", aggregateId: created.id, revision: 2, envelope: expect.objectContaining({ event_type: "EVT-P1-006", aggregate_id: created.id, aggregate_revision: 2, payload: expect.objectContaining({ from_state: "CREATED", to_state: "RECEIVED" }) }) }),
+    ]);
+  });
 });

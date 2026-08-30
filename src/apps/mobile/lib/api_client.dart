@@ -37,6 +37,8 @@ class DoculyraApi {
     return base64Url.encode(bytes);
   }
 
+  String newOperationKey() => _requestKey();
+
   Map<String, String> _headers({
     bool json = false,
     String method = 'GET',
@@ -185,9 +187,12 @@ class DoculyraApi {
     List<String> subjectIds,
     String captureRoute,
     bool syntheticConfirmed,
+    String idempotencyKey,
   ) async {
     final request = http.MultipartRequest('POST', _uri('/documents'))
-      ..headers.addAll(_headers(method: 'POST'))
+      ..headers.addAll(
+        _headers(method: 'POST', idempotencyKey: idempotencyKey),
+      )
       ..fields['subjectIds'] = subjectIds.join(',')
       ..fields['captureRoute'] = captureRoute
       ..fields['syntheticConfirmed'] = syntheticConfirmed.toString()

@@ -2,7 +2,7 @@ import { BadRequestException, Body, ConflictException, Controller, Delete, Get, 
 import { FileInterceptor } from "@nestjs/platform-express";
 import { createHash } from "node:crypto";
 import type { Response } from "express";
-import { askQuestionSchema, canonicalCreateAccessGrantSchema, canonicalCreateSubjectSchema, canonicalCreateWorkspaceSchema, canonicalInviteMembershipSchema, canonicalReasonCommandSchema, canonicalUpdateMembershipSchema, canonicalUpdateSubjectSchema, configureWorkspaceSchema, createMemberSchema, createSubjectSchema, createTaskSchema, managePersonSchema, manualDocumentSchema, type AccessGrant, type Member, type SubjectRecord, type Workspace, type WorkspaceAction } from "@document-management/contracts";
+import { askQuestionSchema, canonicalCommitIngestionReceiptSchema, canonicalCreateAccessGrantSchema, canonicalCreateIngestionCaseSchema, canonicalCreateSubjectSchema, canonicalCreateWorkspaceSchema, canonicalInviteMembershipSchema, canonicalReasonCommandSchema, canonicalUpdateMembershipSchema, canonicalUpdateSubjectSchema, configureWorkspaceSchema, createMemberSchema, createSubjectSchema, createTaskSchema, managePersonSchema, manualDocumentSchema, type AccessGrant, type IngestionCase, type Member, type SubjectRecord, type Workspace, type WorkspaceAction } from "@document-management/contracts";
 import { currentWorkspaceConfiguration, LocalStore, normalizedCorrelationId, type WorkspaceActor } from "./local.store.js";
 import { IdentityStore } from "./identity.store.js";
 import { actorFor, requestIdentity, sessionToken, setSessionCredentials, type AuthenticatedRequest } from "./auth.controller.js";
@@ -77,6 +77,15 @@ export class LocalController {
       purpose_id: grant.purposeId,
       scope: { resource_refs: grant.resourceIds, field_refs: grant.fieldRefs, edge_refs: grant.edgeRefs, actions: grant.actions, allow_export: grant.exportAllowed, allow_onward_delegation: grant.onwardDelegation },
       valid_from: grant.startsAt, valid_to: grant.expiresAt ?? null, status: grant.state, policy_version: grant.policyVersion, revision: grant.revision,
+    };
+  }
+
+  private ingestionCaseView(ingestionCase: IngestionCase) {
+    return {
+      ingestion_case_id: ingestionCase.id, workspace_id: ingestionCase.workspaceId, acquisition_id: ingestionCase.acquisitionId,
+      capture_route: ingestionCase.captureRoute, state: ingestionCase.state, artifact_id: ingestionCase.artifactId,
+      document_id: ingestionCase.documentId, mandatory_checkpoint_state: ingestionCase.mandatoryCheckpointState,
+      degradation_codes: ingestionCase.degradationCodes, revision: ingestionCase.revision, created_at: ingestionCase.createdAt,
     };
   }
 
@@ -206,7 +215,7 @@ export class LocalController {
 
   @Post("documents")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: 25 * 1024 * 1024, files: 1 } }))
-  async upload(@UploadedFile() file: Express.Multer.File | undefined, @Body() body: { subjectIds?: string; captureRoute?: string; syntheticConfirmed?: string }, @Req() request: AuthenticatedRequest) {
+  async upload(@UploadedFile() file: Express.Multer.File | undefined, @Body() body: { subjectIds?: string; captureRoute?: string; syntheticConfirmed?: string }, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
     const { workspaceId, actor, fence } = await this.authorize(request, "document.create", "WORKSPACE");
     if (!file) throw new BadRequestException("Choose a file to add");
     if ((process.env.DM_CUSTOMER_DATA_POLICY ?? "synthetic-only") === "synthetic-only" && body.syntheticConfirmed !== "true") {
@@ -214,16 +223,16 @@ export class LocalController {
     }
     const subjectIds = body.subjectIds ? body.subjectIds.split(",").filter(Boolean) : [];
     const captureRoute = ["FILE", "CAMERA", "BULK"].includes(body.captureRoute ?? "") ? body.captureRoute as "FILE" | "CAMERA" | "BULK" : "FILE";
-    return this.store.addDocument(workspaceId, actor, file, subjectIds, captureRoute, fence, this.requestCorrelation(request));
+    return this.store.addDocument(workspaceId, actor, file, subjectIds, captureRoute, fence, this.correlation(request, response), this.idempotencyKey(request, response));
   }
 
   @Post("documents/manual")
-  async manualDocument(@Body() body: unknown, @Req() request: AuthenticatedRequest) {
+  async manualDocument(@Body() body: unknown, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
     const { workspaceId, actor, fence } = await this.authorize(request, "document.create", "WORKSPACE");
     if ((process.env.DM_CUSTOMER_DATA_POLICY ?? "synthetic-only") === "synthetic-only" && (body as { syntheticConfirmed?: boolean } | null)?.syntheticConfirmed !== true) {
       throw new BadRequestException("This environment accepts synthetic test records only. Confirm the record is synthetic before adding it.");
     }
-    return this.store.addManualDocument(workspaceId, actor, manualDocumentSchema.parse(body), fence, this.requestCorrelation(request));
+    return this.store.addManualDocument(workspaceId, actor, manualDocumentSchema.parse(body), fence, this.correlation(request, response), this.idempotencyKey(request, response));
   }
 
   @Get("documents/:id")
@@ -343,6 +352,58 @@ export class LocalController {
       const fence = await this.store.startAuthorization(context.actor, workspaceId, "workspace.admin", "WORKSPACE", undefined, { correlationId: this.requestCorrelation(request) });
       const membership = await this.store.transitionCanonicalMembership(workspaceId, context.actor, membershipId, this.expectedRevision(request, response), this.idempotencyKey(request, response), parsed.data, fence, this.correlation(request, response));
       response.setHeader("ETag", `\"${membership.revision}\"`); return this.membershipView(membership);
+    } catch (error) { this.canonicalProblem(error, request, response); }
+  }
+
+  @Post("v1/workspaces/:workspaceId/ingestion-cases")
+  @HttpCode(HttpStatus.ACCEPTED)
+  async canonicalCreateIngestionCase(@Param("workspaceId") workspaceId: string, @Body() body: unknown, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    const parsed = canonicalCreateIngestionCaseSchema.safeParse(body);
+    if (!parsed.success) this.problem(request, response, HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_INGESTION_REQUEST", "Ingestion request could not be validated", "DO_NOT_RETRY");
+    try {
+      const context = this.workspaceContext(request, workspaceId); const correlationId = this.correlation(request, response);
+      const fence = await this.store.startAuthorization(context.actor, workspaceId, "document.create", "WORKSPACE", workspaceId, { correlationId });
+      const ingestionCase = await this.store.createIngestionCase(workspaceId, context.actor, this.idempotencyKey(request, response), parsed.data, fence, correlationId);
+      response.setHeader("ETag", `"${ingestionCase.revision}"`); response.setHeader("Location", `/api/v1/workspaces/${workspaceId}/ingestion-cases/${ingestionCase.id}`); response.setHeader("RateLimit-Policy", "ingestion-synthetic;w=60;q=20");
+      return this.ingestionCaseView(ingestionCase);
+    } catch (error) { this.canonicalProblem(error, request, response); }
+  }
+
+  @Post("v1/workspaces/:workspaceId/ingestion-cases/:ingestionCaseId/receipt-commits")
+  @HttpCode(HttpStatus.ACCEPTED)
+  async canonicalCommitIngestionReceipt(@Param("workspaceId") workspaceId: string, @Param("ingestionCaseId") ingestionCaseId: string, @Body() body: unknown, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    const parsed = canonicalCommitIngestionReceiptSchema.safeParse(body);
+    if (!parsed.success) this.problem(request, response, HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_INGESTION_RECEIPT", "Ingestion receipt could not be validated", "DO_NOT_RETRY");
+    try {
+      const context = this.workspaceContext(request, workspaceId); const correlationId = this.correlation(request, response);
+      const fence = await this.store.startAuthorization(context.actor, workspaceId, "document.create", "WORKSPACE", workspaceId, { correlationId });
+      const ingestionCase = await this.store.commitIngestionReceipt(workspaceId, context.actor, ingestionCaseId, this.expectedRevision(request, response), this.idempotencyKey(request, response), parsed.data, fence, correlationId);
+      response.setHeader("ETag", `"${ingestionCase.revision}"`); response.setHeader("Location", `/api/v1/workspaces/${workspaceId}/ingestion-cases/${ingestionCase.id}`); response.setHeader("RateLimit-Policy", "ingestion-synthetic;w=60;q=20");
+      return this.ingestionCaseView(ingestionCase);
+    } catch (error) { this.canonicalProblem(error, request, response); }
+  }
+
+  @Get("v1/workspaces/:workspaceId/ingestion-cases/:ingestionCaseId")
+  async canonicalIngestionCase(@Param("workspaceId") workspaceId: string, @Param("ingestionCaseId") ingestionCaseId: string, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    try {
+      const context = this.workspaceContext(request, workspaceId); const correlationId = this.correlation(request, response);
+      const fence = await this.store.startAuthorization(context.actor, workspaceId, "document.read", "WORKSPACE", workspaceId, { correlationId });
+      const ingestionCase = await this.store.getIngestionCase(workspaceId, context.actor, ingestionCaseId, fence, correlationId);
+      response.setHeader("ETag", `"${ingestionCase.revision}"`); response.setHeader("RateLimit-Policy", "ingestion-synthetic;w=60;q=20"); return this.ingestionCaseView(ingestionCase);
+    } catch (error) { this.canonicalProblem(error, request, response); }
+  }
+
+  @Post("v1/workspaces/:workspaceId/ingestion-cases/:ingestionCaseId/cancellations")
+  @HttpCode(HttpStatus.ACCEPTED)
+  async canonicalCancelIngestionCase(@Param("workspaceId") workspaceId: string, @Param("ingestionCaseId") ingestionCaseId: string, @Body() body: unknown, @Req() request: AuthenticatedRequest, @Res({ passthrough: true }) response: Response) {
+    const parsed = canonicalReasonCommandSchema.safeParse(body);
+    if (!parsed.success) this.problem(request, response, HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_REASON_COMMAND", "Reason command could not be validated", "DO_NOT_RETRY");
+    try {
+      const context = this.workspaceContext(request, workspaceId); const correlationId = this.correlation(request, response);
+      const fence = await this.store.startAuthorization(context.actor, workspaceId, "document.create", "WORKSPACE", workspaceId, { correlationId });
+      const ingestionCase = await this.store.cancelIngestionCase(workspaceId, context.actor, ingestionCaseId, this.expectedRevision(request, response), this.idempotencyKey(request, response), parsed.data.reason_code, fence, correlationId);
+      response.setHeader("ETag", `"${ingestionCase.revision}"`); response.setHeader("Location", `/api/v1/workspaces/${workspaceId}/ingestion-cases/${ingestionCase.id}`); response.setHeader("RateLimit-Policy", "ingestion-synthetic;w=60;q=20");
+      return this.ingestionCaseView(ingestionCase);
     } catch (error) { this.canonicalProblem(error, request, response); }
   }
 

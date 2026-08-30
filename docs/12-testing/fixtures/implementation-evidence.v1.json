@@ -150,6 +150,18 @@
       "product_completion_claim": "NONE"
     },
     {
+      "path": "src/apps/api/src/ingestion-case.controller.test.ts",
+      "scope": "PRODUCT_BOUNDED",
+      "evidence_type": "DEVELOPER_INTEGRATION",
+      "source_state": "GOVERNED_DEVELOPER_EVIDENCE_PENDING_INDEPENDENT_QA",
+      "test_refs": ["TEST-UNIT-P1-003", "TEST-UNIT-P1-004", "TEST-CON-P1-002", "TEST-CON-P1-006", "TEST-SEC-P1-009", "TEST-SEC-P1-010", "TEST-SEC-P1-015", "TEST-E2E-P1-002", "TEST-DR-P1-001", "TEST-DR-P1-002"],
+      "framework_acceptance_refs": [],
+      "story_refs": ["STORY-P1-004"],
+      "acceptance_refs": ["AC-STORY-P1-004-01", "AC-STORY-P1-004-02"],
+      "historical_work": [],
+      "product_completion_claim": "NONE"
+    },
+    {
       "path": "src/apps/api/src/notification-email.transport.test.ts",
       "scope": "FRAMEWORK_ONLY",
       "evidence_type": "FRAMEWORK_CONFORMANCE",
@@ -166,10 +178,10 @@
       "scope": "PRODUCT_BOUNDED",
       "evidence_type": "DEVELOPER_INTEGRATION",
       "source_state": "GOVERNED_DEVELOPER_EVIDENCE_PENDING_INDEPENDENT_QA",
-      "test_refs": ["TEST-UNIT-P1-002", "TEST-CON-P1-001", "TEST-DR-P1-002"],
+      "test_refs": ["TEST-UNIT-P1-002", "TEST-CON-P1-001", "TEST-CON-P1-002", "TEST-DR-P1-001", "TEST-DR-P1-002"],
       "framework_acceptance_refs": [],
-      "story_refs": ["STORY-P1-001", "STORY-P1-002", "STORY-P1-003", "STORY-P1-039", "STORY-P1-040"],
-      "acceptance_refs": ["AC-STORY-P1-001-01", "AC-STORY-P1-002-02", "AC-STORY-P1-003-02", "AC-STORY-P1-039-02", "AC-STORY-P1-040-01"],
+      "story_refs": ["STORY-P1-001", "STORY-P1-002", "STORY-P1-003", "STORY-P1-004", "STORY-P1-039", "STORY-P1-040"],
+      "acceptance_refs": ["AC-STORY-P1-001-01", "AC-STORY-P1-002-02", "AC-STORY-P1-003-02", "AC-STORY-P1-004-01", "AC-STORY-P1-039-02", "AC-STORY-P1-040-01"],
       "historical_work": [{"issue_number": 2, "pr_number": 4, "evidence_state": "BOUNDED_QA_PASS"}],
       "product_completion_claim": "NONE"
     },
@@ -230,6 +242,18 @@
       "framework_acceptance_refs": [],
       "story_refs": ["STORY-P1-049"],
       "acceptance_refs": ["AC-STORY-P1-049-01", "AC-STORY-P1-049-02", "AC-P1-PUB-001"],
+      "historical_work": [],
+      "product_completion_claim": "NONE"
+    },
+    {
+      "path": "src/apps/web/src/CaptureModal.test.tsx",
+      "scope": "PRODUCT_BOUNDED",
+      "evidence_type": "DEVELOPER_INTEGRATION",
+      "source_state": "GOVERNED_DEVELOPER_EVIDENCE_PENDING_INDEPENDENT_QA",
+      "test_refs": ["TEST-E2E-P1-002", "TEST-E2E-P1-021", "TEST-E2E-P1-022"],
+      "framework_acceptance_refs": [],
+      "story_refs": ["STORY-P1-004"],
+      "acceptance_refs": ["AC-STORY-P1-004-02"],
       "historical_work": [],
       "product_completion_claim": "NONE"
     },
