@@ -350,6 +350,11 @@ def validate_configuration() -> list[str]:
         ".agents/observability/retention-policy.md", ".agents/observability/adapters/codex-otel.md",
         ".agents/project/observability.json", ".agents/skills/observability-status/SKILL.md",
         ".agents/skills/telemetry-validation/SKILL.md", ".agents/skills/cost-performance-analysis/SKILL.md",
+        ".agents/project/control-centre.json", ".agents/state/control-centre-checkpoint.json",
+        ".agents/skills/delivery-control-centre/SKILL.md", ".agents/control-centre/web/index.html",
+        ".agents/control-centre/web/styles.css", ".agents/control-centre/web/app.js",
+        "scripts/control_centre.py", "scripts/control_centre_project.py", "scripts/control_centre_project_reconcile.py", "scripts/control_centre_test.py",
+        ".agents/bootstrap/2026-08-30-ai-native-delivery-control-centre-readiness-report.md",
         ".agents/bootstrap/discovery-observability-2026-08-29.json",
         ".agents/bootstrap/2026-08-29-observability-readiness-report.md",
     ]
@@ -368,7 +373,7 @@ def validate_configuration() -> list[str]:
     if "/.agent-ops/" not in gitignore:
         errors.append(".gitignore must exclude the runtime telemetry store")
     adapters = {item.get("id"): item for item in config.get("adapters", [])}
-    for adapter in ("agent-ops-local-store", "github-operations-context", "codex-agents-native", "codex-otel", "azure-monitor-agent-operations"):
+    for adapter in ("agent-ops-local-store", "github-operations-context", "codex-agents-native", "codex-otel", "azure-monitor-agent-operations", "agent-ops-dashboard", "github-projects"):
         if adapter not in adapters:
             errors.append(f"observability config is missing adapter {adapter}")
     native = config.get("nativeTelemetry", {})
@@ -412,6 +417,62 @@ def validate_configuration() -> list[str]:
         errors.append("metric catalog must document no-double-count aggregation")
     if "currency" not in metric_catalog.get("currencyRule", "").lower():
         errors.append("metric catalog must prohibit mixed-currency aggregation")
+    if "never represented as zero" not in metric_catalog.get("nullRule", ""):
+        errors.append("metric catalog must preserve missing measurements as unavailable rather than zero")
+    metric_fields = {"id", "unit", "definition", "source", "calculation", "freshness", "provenance", "nullHandling", "qualityLink"}
+    for metric in metric_catalog.get("metrics", []):
+        missing = sorted(metric_fields - set(metric))
+        if missing:
+            errors.append(f"metric {metric.get('id', 'unknown')} lacks semantic fields: {', '.join(missing)}")
+        if metric.get("freshness") not in {"LIVE", "CURRENT", "HISTORICAL"}:
+            errors.append(f"metric {metric.get('id', 'unknown')} has invalid freshness class")
+    control = load_json(ROOT / ".agents/project/control-centre.json")
+    dashboard = control.get("dashboard", {})
+    required_routes = {"overview", "agents", "agent-tree", "workstreams", "capabilities", "skills", "tools", "quality", "cost-tokens", "performance", "failures-retries", "decisions", "environments", "traceability", "audit", "historical-trends"}
+    if {item.get("id") for item in dashboard.get("routes", [])} != required_routes:
+        errors.append("control centre must configure every required dashboard route exactly once")
+    if dashboard.get("bindHost") != "127.0.0.1" or dashboard.get("readOnly") is not True:
+        errors.append("control centre must remain loopback-only and read-only")
+    if set(dashboard.get("allowedMethods", [])) != {"GET", "HEAD", "OPTIONS"}:
+        errors.append("control centre may expose only GET, HEAD and OPTIONS")
+    project = control.get("githubProject", {})
+    if project.get("title") != "Doculyra Product Delivery" or len(project.get("fields", [])) != 22 or len(project.get("views", [])) != 10:
+        errors.append("control centre GitHub Project must define the required title, 22 semantic fields and ten views")
+    if any(
+        not (
+            (view.get("layout") == "ROADMAP_LAYOUT" and not view.get("visibleFields") and view.get("itemMetadataFields"))
+            or (view.get("visibleFields") and set(view["visibleFields"]).issubset(set(project.get("fields", []))))
+        )
+        for view in project.get("views", [])
+    ):
+        errors.append("each control centre Project view must declare relevant governed visible fields")
+    if project.get("fieldAliases") != {"Type": "Work Type"}:
+        errors.append("control centre must document GitHub's reserved Type field compatibility mapping")
+    if set(project.get("fieldOptions", {})) != {"Work Type", "Status", "Priority"}:
+        errors.append("control centre must version the required Work Type, Status and Priority options")
+    automation = project.get("automation", {})
+    if automation.get("provider") != "GITHUB_PROJECTS_BUILT_IN" or automation.get("autoAdd", {}).get("repository") != control.get("repository") or automation.get("autoAdd", {}).get("status") != "ENABLED":
+        errors.append("control centre must define native GitHub Project auto-add automation for this repository")
+    if len(project.get("insights", [])) < 1 or not project["insights"][0].get("url", "").endswith("/projects/1/insights"):
+        errors.append("control centre must expose at least one useful persistent GitHub Project insight")
+    control_report = (ROOT / ".agents/bootstrap/2026-08-30-ai-native-delivery-control-centre-readiness-report.md").read_text(encoding="utf-8")
+    report_markers = [
+        "# AI-NATIVE DELIVERY CONTROL CENTRE READINESS REPORT",
+        *[f"## {index}." for index in range(1, 17)],
+        "## CONTROL CENTRE ACCESS LINKS",
+        "https://github.com/users/syedtabishmobin/projects/1/views/10",
+        "http://127.0.0.1:4178/historical-trends",
+        "https://github.com/syedtabishmobin/DocumentManagement/pull/62",
+    ]
+    for marker in report_markers:
+        if marker not in control_report:
+            errors.append(f"Control Centre readiness report is missing marker: {marker}")
+    measures = control.get("progressMeasures", [])
+    if len(measures) != 6 or len({item.get("id") for item in measures}) != 6 or any(not item.get("formula") or not item.get("completionBoundary") for item in measures):
+        errors.append("control centre must define six non-conflated progress measures with completion boundaries")
+    checkpoint = load_json(ROOT / ".agents/state/control-centre-checkpoint.json")
+    if checkpoint.get("queueState") != "PAUSED_BY_PRODUCT_AUTHORITY" or checkpoint.get("dispatchAllowed") is not False:
+        errors.append("control centre work must preserve the Product Authority queue pause checkpoint")
     required_event_types = {
         "AGENT_STARTED", "AGENT_COMPLETED", "AGENT_FAILED", "AGENT_BLOCKED", "SUBAGENT_SPAWNED", "HANDOFF_CREATED",
         "WORK_ITEM_STARTED", "WORK_ITEM_COMPLETED", "CAPABILITY_SELECTED", "SKILL_STARTED", "SKILL_COMPLETED", "SKILL_FAILED",

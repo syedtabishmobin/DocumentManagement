@@ -5,7 +5,7 @@ This file is the executable repository workflow. Reusable policy is in `.agents/
 ## 1. Start and discover
 
 1. Read `AGENTS.md`, `CODEX.md`, `04_USING_THIS_REPO_WITH_CODEX.md`, `.agents/project/source-of-truth.json`, and the applicable approved product/architecture/security/operations records.
-2. Pull `main`, inspect the working tree and recent history, and query open GitHub Issues and pull requests. Never assume the repository is greenfield.
+2. Pull `main`, inspect the working tree and recent history, and query the `Doculyra Product Delivery` GitHub Project plus open GitHub Issues and pull requests. Never assume the repository is greenfield. If `.agents/state/control-centre-checkpoint.json` records a Product Authority queue pause, do not dispatch product work until its resume policy is satisfied.
 3. Create or select the authoritative GitHub Issue. Record scope, acceptance criteria, requirement/decision links, risks, owner, and dependencies.
 4. Produce a discovery record for material work using `.agents/protocols/discovery.schema.json` and classify each affected area as `REUSE`, `EXTEND`, `REFACTOR`, `REPLACE_SELECTIVELY`, or `REBUILD`.
 5. Emit `AGENT_STARTED` and `WORK_ITEM_STARTED` metadata for material execution using `scripts/agent_ops.py`; include the Issue, role, capability, selected skills, branch/worktree and parent agent when reliably available.

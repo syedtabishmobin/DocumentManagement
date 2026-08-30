@@ -9,6 +9,7 @@
     {"id": "github-issue-control-plane", "skill": ".agents/skills/github-issue-control-plane/SKILL.md", "outputs": ["authoritative-issue"]},
     {"id": "agent-operations-observability", "skill": ".agents/skills/observability-status/SKILL.md", "outputs": ["operations-status", "agent-tree"]},
     {"id": "telemetry-validation", "skill": ".agents/skills/telemetry-validation/SKILL.md", "outputs": ["observability-validation"]},
-    {"id": "agent-cost-performance-analysis", "skill": ".agents/skills/cost-performance-analysis/SKILL.md", "outputs": ["quality-linked-optimisation-analysis"]}
+    {"id": "agent-cost-performance-analysis", "skill": ".agents/skills/cost-performance-analysis/SKILL.md", "outputs": ["quality-linked-optimisation-analysis"]},
+    {"id": "delivery-control-centre", "skill": ".agents/skills/delivery-control-centre/SKILL.md", "outputs": ["control-centre-snapshot", "traceability-view", "audit-view"]}
   ]
 }

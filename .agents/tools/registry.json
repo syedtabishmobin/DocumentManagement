@@ -12,7 +12,9 @@
     {"id": "agent-ops-local-store", "purpose": "validated metadata-only lifecycle event storage and query", "minimumAccess": "workspace runtime read-write", "status": "AVAILABLE"},
     {"id": "codex-agents-native", "purpose": "interactive native local agent/session view", "minimumAccess": "local Codex session read", "status": "AVAILABLE_INTERACTIVE"},
     {"id": "codex-otel", "purpose": "native runtime logs, metrics, traces and provider-reported usage", "minimumAccess": "user configuration plus approved exporter", "status": "SUPPORTED_CONFIGURED_DISABLED"},
-    {"id": "azure-monitor-agent-operations", "purpose": "future durable agent-operations telemetry destination", "minimumAccess": "approved exporter identity and telemetry write", "status": "EXISTING_INFRASTRUCTURE_NOT_BOUND"}
+    {"id": "azure-monitor-agent-operations", "purpose": "future durable agent-operations telemetry destination", "minimumAccess": "approved exporter identity and telemetry write", "status": "EXISTING_INFRASTRUCTURE_NOT_BOUND"},
+    {"id": "agent-ops-dashboard", "purpose": "loopback-only read-only operations, traceability and audit interface", "minimumAccess": "local repository and runtime read", "status": "AVAILABLE_LOCAL"},
+    {"id": "github-projects", "purpose": "persistent Delivery and Management views over governed GitHub work", "minimumAccess": "project read-write", "status": "AVAILABLE_CONFIGURED"}
   ],
   "principles": ["least-privilege", "no-secret-output", "no-production-credentials-in-change-code", "truthful-external-status"]
 }
