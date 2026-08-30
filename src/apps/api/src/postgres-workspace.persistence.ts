@@ -148,6 +148,9 @@ function validateWorkspaceState(state: WorkspaceState): void {
   const scopedCollections: Array<[Array<{ workspaceId: string; id: string }>, string]> = [
     [state.ownerBindings, "owner binding"],
     [state.documents, "document"],
+    [state.artifacts, "artifact"],
+    [state.documentVersions, "document version"],
+    [state.artifactAccessGrants, "artifact access grant"],
     [state.facts, "fact"],
     [state.tasks, "task"],
     [state.notifications, "notification"],
@@ -168,6 +171,8 @@ function validateWorkspaceState(state: WorkspaceState): void {
 
   const subjects = new Map(state.subjects.map((subject) => [subject.id, subject]));
   const documents = new Set(state.documents.map((document) => document.id));
+  const artifacts = new Set(state.artifacts.map((artifact) => artifact.id));
+  const documentVersions = new Set(state.documentVersions.map((version) => version.id));
   const tasks = new Set(state.tasks.map((task) => task.id));
   const owners = state.ownerBindings.filter((binding) => binding.state === "ACTIVE");
   const ownerMembers = state.members.filter((member) => member.role === "OWNER" && member.state === "ACTIVE");
@@ -183,6 +188,8 @@ function validateWorkspaceState(state: WorkspaceState): void {
   for (const member of state.members) if (!subjects.has(member.subjectId)) throw new Error(`Membership subject reference missing for ${workspaceId}`);
   for (const link of state.subjectIdentityLinks) if (!subjects.has(link.subjectId)) throw new Error(`Subject identity link reference missing for ${workspaceId}`);
   for (const document of state.documents) if (document.subjectIds.some((subjectId) => !subjects.has(subjectId))) throw new Error(`Document subject reference missing for ${workspaceId}`);
+  for (const version of state.documentVersions) if (!documents.has(version.documentId) || !artifacts.has(version.artifactId)) throw new Error(`Document version reference missing for ${workspaceId}`);
+  for (const grant of state.artifactAccessGrants) if (!documents.has(grant.documentId) || !documentVersions.has(grant.documentVersionId) || !artifacts.has(grant.artifactId)) throw new Error(`Artifact access grant reference missing for ${workspaceId}`);
   for (const fact of state.facts) {
     if (!documents.has(fact.documentId) || fact.subjectIds.some((subjectId) => !subjects.has(subjectId))) throw new Error(`Fact reference missing for ${workspaceId}`);
   }
@@ -212,6 +219,9 @@ function validateDatabase(database: WorkspaceDatabase): void {
   const globallyUniqueCollections: Array<[string, (state: WorkspaceState) => Array<{ id: string }>]> = [
     ["owner binding", (state) => state.ownerBindings],
     ["document", (state) => state.documents],
+    ["artifact", (state) => state.artifacts],
+    ["document version", (state) => state.documentVersions],
+    ["artifact access grant", (state) => state.artifactAccessGrants],
     ["fact", (state) => state.facts],
     ["task", (state) => state.tasks],
     ["notification", (state) => state.notifications],
@@ -239,6 +249,7 @@ function validateDatabase(database: WorkspaceDatabase): void {
     if (event.aggregateType === "WORKSPACE_AUTHORITY" && event.aggregateId !== event.workspaceId) throw new Error("Authority outbox aggregate mismatch");
     if (event.aggregateType === "IngestionCase" && (event.eventType !== "EVT-P1-006" || event.eventEnvelope?.event_type !== "EVT-P1-006" || event.eventEnvelope.aggregate_id !== event.aggregateId)) throw new Error("Ingestion outbox envelope mismatch");
     if (event.aggregateType === "ArtifactRecord" && (event.eventType !== "EVT-P1-007" || event.eventEnvelope?.event_type !== "EVT-P1-007" || event.eventEnvelope.aggregate_id !== event.aggregateId)) throw new Error("Artifact integrity outbox envelope mismatch");
+    if (event.aggregateType === "LogicalDocument" && (event.eventType !== "EVT-P1-009" || event.eventEnvelope?.event_type !== "EVT-P1-009" || event.eventEnvelope.aggregate_id !== event.aggregateId)) throw new Error("Document version outbox envelope mismatch");
   }
 }
 

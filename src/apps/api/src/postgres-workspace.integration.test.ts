@@ -152,6 +152,32 @@ integration.sequential("PostgreSQL workspace authority integration", () => {
     expect(Number(outbox.rows[0]!.authorization_epoch)).toBeGreaterThan(createFence.authorizationEpoch);
   });
 
+  it("persists immutable artifact identity, exact versions and bounded redemption across PostgreSQL restart", async () => {
+    const store = new LocalStore(firstPersistence);
+    const workspace = await store.createWorkspace(actor, "Immutable artifact household", "FAMILY", "real-postgres-artifact-workspace-0001");
+    const subjectId = (await store.dashboard(workspace.id)).subjects.find((subject) => subject.kind === "OWNER")!.id;
+    const bytes = Buffer.from("Synthetic PostgreSQL immutable artifact");
+    const file = (name: string) => ({ originalname: name, mimetype: "text/plain", size: bytes.byteLength, buffer: bytes } as Express.Multer.File);
+    const first = await store.addDocument(workspace.id, actor, file("first.txt"), [subjectId], "FILE", await store.startAuthorization(actor, workspace.id, "document.create", "WORKSPACE"), "corr-real-postgres-artifact-first");
+    const second = await store.addDocument(workspace.id, actor, file("second.txt"), [subjectId], "FILE", await store.startAuthorization(actor, workspace.id, "document.create", "WORKSPACE"), "corr-real-postgres-artifact-second");
+    expect(second.id).not.toBe(first.id);
+    const versionFence = await store.startAuthorization(actor, workspace.id, "document.read", "DOCUMENT", first.id);
+    const version = (await store.documentVersions(workspace.id, first.id, actor, versionFence, "corr-real-postgres-artifact-version"))[0]!;
+    const issueFence = await store.startAuthorization(actor, workspace.id, "document.read", "DOCUMENT", first.id, { fieldRef: "document.content" });
+    const grant = await store.issueArtifactAccessGrant(workspace.id, first.id, version.id, actor, { operation: "VIEW", purpose_id: "PUR-P1-001", audience_ref: actor.identityId }, "real-postgres-artifact-grant-0001", issueFence, "corr-real-postgres-artifact-grant");
+    const redemption = await store.redeemArtifactAccessGrant(workspace.id, grant.id, actor, { requested_operation: "VIEW" }, "real-postgres-artifact-redemption-0001", await store.startAuthorization(actor, workspace.id, "document.read", "WORKSPACE", workspace.id), "corr-real-postgres-artifact-redemption");
+    expect(redemption.buffer.equals(bytes)).toBe(true);
+
+    const restarted = new LocalStore(new PostgresWorkspacePersistence({ pool, migrationMode: "verify", migrationsDirectory }));
+    const replay = await restarted.redeemArtifactAccessGrant(workspace.id, grant.id, actor, { requested_operation: "VIEW" }, "real-postgres-artifact-redemption-0002", await restarted.startAuthorization(actor, workspace.id, "document.read", "WORKSPACE", workspace.id), "corr-real-postgres-artifact-restart");
+    expect(replay.buffer.equals(bytes)).toBe(true);
+    const state = (await firstPersistence.read()).workspaces.find((candidate) => candidate.workspace.id === workspace.id)!;
+    const versions = state.documentVersions.filter((candidate) => candidate.documentId === first.id || candidate.documentId === second.id);
+    expect(new Set(versions.map((candidate) => candidate.artifactId)).size).toBe(2);
+    expect(new Set(versions.map((candidate) => state.artifacts.find((artifact) => artifact.id === candidate.artifactId)!.contentDigest)).size).toBe(1);
+    await expect(firstPersistence.verifyInvariants()).resolves.toEqual(expect.objectContaining({ workspaces: 1 }));
+  });
+
   it("persists idempotent ingestion cases, attempts and outbox evidence across PostgreSQL restart", async () => {
     const store = new LocalStore(firstPersistence);
     const workspace = await store.createWorkspace(actor, "Ingestion evidence household", "FAMILY", "real-postgres-ingestion-workspace-0001");

@@ -204,6 +204,58 @@ describe("LocalStore", () => {
     await expect(artifact(uploaded.id)).rejects.toThrow("not found");
   });
 
+  it("keeps artifact bytes immutable and redeems only exact short-lived document-version grants", async () => {
+    const bytes = "Synthetic immutable artifact bytes";
+    const first = await store.addDocument(workspaceId, actor, textFile(bytes, "first.txt"), [ownerSubjectId], "FILE", await effect("document.create", "WORKSPACE"), "corr-story-007-first");
+    const second = await store.addDocument(workspaceId, actor, textFile(bytes, "second.txt"), [ownerSubjectId], "FILE", await effect("document.create", "WORKSPACE"), "corr-story-007-second");
+    expect(second.id).not.toBe(first.id);
+
+    const readFence = await effect("document.read", "DOCUMENT", first.id);
+    const versions = await store.documentVersions(workspaceId, first.id, actor, readFence, "corr-story-007-versions");
+    expect(versions).toHaveLength(1);
+    expect(versions[0]).toMatchObject({ documentId: first.id, versionRelation: "INITIAL", revision: 1 });
+    const persisted = JSON.parse(await readFile(join(directory, "state.json"), "utf8")) as { workspaces: Array<{ artifacts: Array<{ id: string; contentDigest: string }>; documentVersions: Array<{ documentId: string; artifactId: string }> }> };
+    const authority = persisted.workspaces[0]!;
+    const firstVersion = authority.documentVersions.find((version) => version.documentId === first.id)!;
+    const secondVersion = authority.documentVersions.find((version) => version.documentId === second.id)!;
+    expect(firstVersion.artifactId).not.toBe(secondVersion.artifactId);
+    expect(authority.artifacts.find((artifact) => artifact.id === firstVersion.artifactId)?.contentDigest).toBe(authority.artifacts.find((artifact) => artifact.id === secondVersion.artifactId)?.contentDigest);
+
+    const issueFence = await store.startAuthorization(actor, workspaceId, "document.read", "DOCUMENT", first.id, { fieldRef: "document.content", correlationId: "corr-story-007-issue-auth" });
+    const grant = await store.issueArtifactAccessGrant(workspaceId, first.id, versions[0]!.id, actor, { operation: "VIEW", purpose_id: "PUR-P1-001", audience_ref: actor.identityId }, "story-007-artifact-grant-0001", issueFence, "corr-story-007-issue");
+    expect(new Date(grant.expiresAt).getTime() - new Date(grant.createdAt).getTime()).toBe(5 * 60_000);
+
+    const redemptionFence = await effect("document.read", "WORKSPACE", workspaceId);
+    const redeemed = await store.redeemArtifactAccessGrant(workspaceId, grant.id, actor, { requested_operation: "VIEW" }, "story-007-redemption-0001", redemptionFence, "corr-story-007-redeem");
+    expect(redeemed.buffer.toString("utf8")).toBe(bytes);
+    expect(redeemed.digest).toBe(createHash("sha256").update(bytes).digest("hex"));
+    expect(redeemed.transferRef).toMatch(/^protected-transfer:/);
+    const replayFence = await effect("document.read", "WORKSPACE", workspaceId);
+    const replay = await store.redeemArtifactAccessGrant(workspaceId, grant.id, actor, { requested_operation: "VIEW" }, "story-007-redemption-0001", replayFence, "corr-story-007-replay");
+    expect(replay.redemptionId).toBe(redeemed.redemptionId);
+    expect(replay.buffer.equals(redeemed.buffer)).toBe(true);
+
+    const restarted = new LocalStore();
+    const restartFence = await effect("document.read", "WORKSPACE", workspaceId, { store: restarted, actor, workspaceId });
+    const afterRestart = await restarted.redeemArtifactAccessGrant(workspaceId, grant.id, actor, { requested_operation: "VIEW" }, "story-007-redemption-0002", restartFence, "corr-story-007-restart");
+    expect(afterRestart.buffer.toString("utf8")).toBe(bytes);
+
+    const expiringIssueFence = await restarted.startAuthorization(actor, workspaceId, "document.read", "DOCUMENT", first.id, { fieldRef: "document.content" });
+    const expiring = await restarted.issueArtifactAccessGrant(workspaceId, first.id, versions[0]!.id, actor, { operation: "DOWNLOAD", purpose_id: "PUR-P1-001", audience_ref: actor.identityId }, "story-007-artifact-grant-0002", expiringIssueFence, "corr-story-007-expiring");
+    const expiredFence = await restarted.startAuthorization(actor, workspaceId, "document.read", "WORKSPACE", workspaceId);
+    await expect(restarted.redeemArtifactAccessGrant(workspaceId, expiring.id, actor, { requested_operation: "DOWNLOAD" }, "story-007-redemption-expired", expiredFence, "corr-story-007-expired", new Date(new Date(expiring.expiresAt).getTime() + 1).toISOString())).rejects.toThrow("not available");
+
+    const deletionIssueFence = await restarted.startAuthorization(actor, workspaceId, "document.read", "DOCUMENT", second.id, { fieldRef: "document.content" });
+    const deletionGrant = await restarted.issueArtifactAccessGrant(workspaceId, second.id, (await restarted.documentVersions(workspaceId, second.id, actor, deletionIssueFence, "corr-story-007-second-version"))[0]!.id, actor, { operation: "VIEW", purpose_id: "PUR-P1-001", audience_ref: actor.identityId }, "story-007-artifact-grant-0003", deletionIssueFence, "corr-story-007-delete-grant");
+    await restarted.deleteDocument(workspaceId, actor, second.id, await restarted.startAuthorization(actor, workspaceId, "document.delete", "DOCUMENT", second.id), "corr-story-007-delete");
+    const deletedFence = await restarted.startAuthorization(actor, workspaceId, "document.read", "WORKSPACE", workspaceId);
+    await expect(restarted.redeemArtifactAccessGrant(workspaceId, deletionGrant.id, actor, { requested_operation: "VIEW" }, "story-007-redemption-deleted", deletedFence, "corr-story-007-deleted")).rejects.toThrow("not available");
+
+    const finalState = JSON.parse(await readFile(join(directory, "state.json"), "utf8")) as { workspaces: Array<{ audit: unknown[] }>; authorityOutbox: unknown[] };
+    expect(JSON.stringify({ audit: finalState.workspaces[0]!.audit, authorityOutbox: finalState.authorityOutbox })).not.toContain(bytes);
+    expect(JSON.stringify(finalState)).toContain("ARTIFACT_ACCESS_REDEMPTION_DENIED");
+  });
+
   it("isolates suspected clinical content", async () => {
     const text = "Clinical note: diagnosis and pathology result.";
     const uploaded = await store.addDocument(workspaceId, actor, textFile(text, "record.txt"), [ownerSubjectId], "FILE", await effect("document.create", "WORKSPACE"), "corr-test-clinical-create");
