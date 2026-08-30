@@ -230,6 +230,17 @@
       "roleId": "qa-release-lead",
       "parentDisplayAgentId": "ORCH-008",
       "workItem": "issue-57/pr-56",
+      "status": "COMPLETED"
+    },
+    {
+      "displayAgentId": "ORCH-009",
+      "displayRole": "Framework Delivery Orchestrator",
+      "displayRunId": "RUN-20260830-0076",
+      "runtimeAgentId": "codex-01a04b98-20f5-7831-8b62-3fe5bd5f4add",
+      "runtimeRunId": "run-phase1-story-p1-006-20260830",
+      "roleId": "delivery-orchestrator",
+      "parentDisplayAgentId": "ORCH-008",
+      "workItem": "issue-58/story-p1-006",
       "status": "ACTIVE"
     }
   ]

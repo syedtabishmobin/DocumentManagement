@@ -101,7 +101,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `IN_REVIEW — Issue #55 / PR #56`; Security + Document Platform; independent Functional/Security QA required on the exact candidate. |
+| State / owner | `DEV_ACCEPTED — Issue #55 / PR #56`; Security + Document Platform; independent `QA-FUNC-015` passed both story ACs and defect #57 on exact candidate `e7879c8`; Stage/BA/UAT and parent completion remain open. |
 | Product | `REQ-P1-DOC-007`, `REQ-P1-ING-003`; `FEAT-P1-005`; `UC-P1-002`; `OUT-P1-001`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-004`; `UX-SCR-P1-012`; `UX-DS-P1-026`–`034`; `A11Y-P1-001`–`005`, `014`–`028`, `036`, `037`, `043`–`056` |
 | API / events | `API-P1-118`, `120`, conditional `121`; `EVT-P1-006`, `007`, `029`; `API-P1-033`–`040`, `047`–`052` |
@@ -120,7 +120,7 @@ The DRAFT testing pack now defines stable `TEST-UNIT/CON/AI/SEC/E2E/PERF/DR-P1-*
 
 | Field | Contract |
 |---|---|
-| State / owner | `BASELINED — PLANNED_UNISSUED`; Document Platform |
+| State / owner | `IN_IMPLEMENTATION — Issue #58`; Document Platform |
 | Product | `REQ-P1-ING-004`; `FEAT-P1-004`; `UC-P1-002`; `OUT-P1-001`, `OUT-P1-007` |
 | UX / accessibility | `UX-FLOW-P1-003`, `005`; `UX-SCR-P1-011`; `A11Y-P1-002`, `017`, `021`–`028`, `046`, `051`–`054` |
 | API / events | `API-P1-118`–`120`, `142`, `143`; `EVT-P1-006`, `008`; `API-P1-027`–`040`, `047`–`050` |
