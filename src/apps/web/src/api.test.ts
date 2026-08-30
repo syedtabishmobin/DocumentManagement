@@ -27,6 +27,10 @@ describe("web API request context", () => {
     await api.register({ displayName: "Synthetic Owner", email: "owner@example.test", password: "synthetic-password" });
     await api.configureWorkspace({ name: "Synthetic household", type: "FAMILY" });
     await api.dashboard();
+    const file = new File(["synthetic"], "synthetic.txt", { type: "text/plain" });
+    await api.upload(file, ["subject_a"], "FILE", true, "capture-operation-0001");
+    await api.upload(file, ["subject_a"], "FILE", true, "capture-operation-0001");
+    await api.upload(file, ["subject_a"], "FILE", true, "capture-operation-0002");
 
     const registrationHeaders = new Headers(calls[0]!.init?.headers);
     expect(registrationHeaders.get("X-CSRF-Token")).toBeNull();
@@ -43,5 +47,7 @@ describe("web API request context", () => {
     expect(dashboardHeaders.get("X-Workspace-Id")).toBe("wrk_a");
     expect(dashboardHeaders.get("X-Purpose-Id")).toBe("PUR-P1-001");
     expect(dashboardHeaders.get("X-Correlation-Id")).toBeTruthy();
+    const uploadKeys = calls.slice(3).map((call) => new Headers(call.init?.headers).get("Idempotency-Key"));
+    expect(uploadKeys).toEqual(["capture-operation-0001", "capture-operation-0001", "capture-operation-0002"]);
   });
 });

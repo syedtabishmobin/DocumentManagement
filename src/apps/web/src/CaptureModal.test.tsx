@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { CaptureModal } from "./CaptureModal.js";
+import { CaptureModal, createCaptureOperation } from "./CaptureModal.js";
 
 describe("CaptureModal route equivalence", () => {
   it("exposes keyboard-operable file, camera and manual choices from one labelled dialog", () => {
@@ -15,5 +15,15 @@ describe("CaptureModal route equivalence", () => {
     expect(markup).toContain("Camera or scan");
     expect(markup).toContain("Enter details");
     expect(markup).toContain("Close");
+    expect(markup).toContain("camera access is denied or cancelled");
+  });
+
+  it("retains one bounded operation key across retry and allocates a new key for a new acquisition", () => {
+    const file = new File(["synthetic"], "synthetic.txt", { type: "text/plain" });
+    const first = createCaptureOperation([file], "FILE", ["subject_synthetic_001"], true);
+    const retry = first;
+    const second = createCaptureOperation([file], "FILE", ["subject_synthetic_001"], true);
+    expect(retry.keys).toEqual(first.keys);
+    expect(second.keys[0]).not.toBe(first.keys[0]);
   });
 });

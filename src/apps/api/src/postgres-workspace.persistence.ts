@@ -38,7 +38,7 @@ interface ReceiptRow extends QueryResultRow {
 interface OutboxRow extends QueryResultRow {
   event_id: string;
   workspace_id: string;
-  aggregate_type: "WORKSPACE_AUTHORITY";
+  aggregate_type: AuthorityOutboxEvent["aggregateType"];
   aggregate_id: string;
   aggregate_revision: string | number;
   event_type: string;
@@ -51,6 +51,7 @@ interface OutboxRow extends QueryResultRow {
   authorization_epoch: string | number | null;
   authorization_phase: AuthorityOutboxEvent["authorizationPhase"] | null;
   decision_reason: string | null;
+  event_envelope: Record<string, unknown> | null;
   occurred_at: Date | string;
 }
 
@@ -127,6 +128,7 @@ function databaseFromRows(workspaces: WorkspaceRow[], receipts: ReceiptRow[], ou
       ...(row.authorization_epoch !== null ? { authorizationEpoch: Number(row.authorization_epoch) } : {}),
       ...(row.authorization_phase ? { authorizationPhase: row.authorization_phase } : {}),
       ...(row.decision_reason ? { decisionReason: row.decision_reason } : {}),
+      ...(row.event_envelope ? { eventEnvelope: row.event_envelope } : {}),
       occurredAt: iso(row.occurred_at),
     })),
   };
@@ -233,7 +235,9 @@ function validateDatabase(database: WorkspaceDatabase): void {
   }
   assertUniqueIds(database.authorityOutbox, "authority outbox event", "database");
   for (const event of database.authorityOutbox) {
-    if (!workspaceIds.has(event.workspaceId) || event.aggregateId !== event.workspaceId || event.aggregateType !== "WORKSPACE_AUTHORITY" || event.aggregateRevision < 1) throw new Error("Authority outbox event scope mismatch");
+    if (!workspaceIds.has(event.workspaceId) || event.aggregateRevision < 1) throw new Error("Authority outbox event scope mismatch");
+    if (event.aggregateType === "WORKSPACE_AUTHORITY" && event.aggregateId !== event.workspaceId) throw new Error("Authority outbox aggregate mismatch");
+    if (event.aggregateType === "IngestionCase" && (event.eventType !== "EVT-P1-006" || event.eventEnvelope?.event_type !== "EVT-P1-006" || event.eventEnvelope.aggregate_id !== event.aggregateId)) throw new Error("Ingestion outbox envelope mismatch");
   }
 }
 
@@ -307,7 +311,7 @@ export class PostgresWorkspacePersistence implements WorkspacePersistence {
     const [workspaces, receipts, outbox] = await Promise.all([
       client.query<WorkspaceRow>("SELECT workspace_id, storage_revision, state FROM doculyra.workspace_state ORDER BY workspace_id"),
       client.query<ReceiptRow>("SELECT identity_id, idempotency_key_hash, request_fingerprint, workspace_id, created_at FROM doculyra.workspace_creation_receipt ORDER BY identity_id, idempotency_key_hash"),
-      client.query<OutboxRow>("SELECT event_id, workspace_id, aggregate_type, aggregate_id, aggregate_revision, event_type, schema_version, correlation_id, actor_id, resource_type, resource_id, policy_version, authorization_epoch, authorization_phase, decision_reason, occurred_at FROM doculyra.authority_outbox ORDER BY occurred_at, event_id"),
+      client.query<OutboxRow>("SELECT event_id, workspace_id, aggregate_type, aggregate_id, aggregate_revision, event_type, schema_version, correlation_id, actor_id, resource_type, resource_id, policy_version, authorization_epoch, authorization_phase, decision_reason, event_envelope, occurred_at FROM doculyra.authority_outbox ORDER BY occurred_at, event_id"),
     ]);
     return {
       database: databaseFromRows(workspaces.rows, receipts.rows, outbox.rows),
@@ -375,10 +379,10 @@ export class PostgresWorkspacePersistence implements WorkspacePersistence {
 
   private async persistOutbox(client: SqlClient, event: AuthorityOutboxEvent): Promise<void> {
     await client.query(
-      `INSERT INTO doculyra.authority_outbox(event_id, workspace_id, aggregate_type, aggregate_id, aggregate_revision, event_type, schema_version, correlation_id, actor_id, resource_type, resource_id, policy_version, authorization_epoch, authorization_phase, decision_reason, occurred_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      `INSERT INTO doculyra.authority_outbox(event_id, workspace_id, aggregate_type, aggregate_id, aggregate_revision, event_type, schema_version, correlation_id, actor_id, resource_type, resource_id, policy_version, authorization_epoch, authorization_phase, decision_reason, event_envelope, occurred_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16::jsonb, $17)
        ON CONFLICT (event_id) DO NOTHING`,
-      [event.id, event.workspaceId, event.aggregateType, event.aggregateId, event.aggregateRevision, event.eventType, event.schemaVersion, event.correlationId, event.actorId, event.resourceType, event.resourceId ?? null, event.policyVersion ?? null, event.authorizationEpoch ?? null, event.authorizationPhase ?? null, event.decisionReason ?? null, event.occurredAt],
+      [event.id, event.workspaceId, event.aggregateType, event.aggregateId, event.aggregateRevision, event.eventType, event.schemaVersion, event.correlationId, event.actorId, event.resourceType, event.resourceId ?? null, event.policyVersion ?? null, event.authorizationEpoch ?? null, event.authorizationPhase ?? null, event.decisionReason ?? null, event.eventEnvelope ? JSON.stringify(event.eventEnvelope) : null, event.occurredAt],
     );
   }
 

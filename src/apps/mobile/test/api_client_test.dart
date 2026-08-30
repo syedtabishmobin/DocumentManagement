@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:doculyra_mobile/api_client.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -86,4 +87,30 @@ void main() {
       api.close();
     },
   );
+
+  test('retains an explicit upload operation key across retry and rotates for a new acquisition', () async {
+    final requests = <http.Request>[];
+    final api = DoculyraApi(
+      baseUrl: 'https://doculyra.example.test/api',
+      client: MockClient((request) async {
+        requests.add(request);
+        return http.Response('{"id":"document_synthetic_001"}', 201);
+      }),
+    );
+    final directory = await Directory.systemTemp.createTemp('doculyra-mobile-upload-');
+    final file = File('${directory.path}/synthetic.txt');
+    await file.writeAsString('synthetic capture');
+    try {
+      final firstKey = api.newOperationKey();
+      await api.upload(file, ['subject_synthetic_001'], 'FILE', true, firstKey);
+      await api.upload(file, ['subject_synthetic_001'], 'FILE', true, firstKey);
+      final secondKey = api.newOperationKey();
+      await api.upload(file, ['subject_synthetic_001'], 'FILE', true, secondKey);
+      expect(requests.map((request) => request.headers['idempotency-key']).toList(), [firstKey, firstKey, secondKey]);
+      expect(secondKey, isNot(firstKey));
+    } finally {
+      api.close();
+      await directory.delete(recursive: true);
+    }
+  });
 }

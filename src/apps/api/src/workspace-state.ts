@@ -70,7 +70,7 @@ export interface WorkspaceCreationReceipt {
 export interface AuthorityOutboxEvent {
   id: string;
   workspaceId: string;
-  aggregateType: "WORKSPACE_AUTHORITY";
+  aggregateType: "WORKSPACE_AUTHORITY" | "IngestionCase";
   aggregateId: string;
   aggregateRevision: number;
   eventType: string;
@@ -83,6 +83,7 @@ export interface AuthorityOutboxEvent {
   authorizationEpoch?: number;
   authorizationPhase?: AuditRecord["authorizationPhase"];
   decisionReason?: string;
+  eventEnvelope?: Record<string, unknown>;
   occurredAt: string;
 }
 

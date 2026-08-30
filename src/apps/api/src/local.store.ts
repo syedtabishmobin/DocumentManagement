@@ -368,6 +368,84 @@ function appendAuthorityOutbox(database: WorkspaceDatabase, state: WorkspaceStat
   });
 }
 
+function appendIngestionStateEvent(
+  database: WorkspaceDatabase,
+  state: WorkspaceState,
+  actor: WorkspaceActor,
+  ingestionCase: IngestionCase,
+  fromState: IngestionCase["state"] | null,
+  reasonCode: string,
+  operation: "API_P1_116" | "API_P1_117" | "API_P1_119",
+  idempotencyKey: string,
+  correlationId: string,
+  authorization: { policyVersion: string; authorizationEpoch: number },
+): void {
+  const eventId = randomUUID();
+  const occurredAt = ingestionCase.updatedAt;
+  const envelope = {
+    event_id: eventId,
+    event_type: "EVT-P1-006",
+    schema_version: "1.0.0",
+    occurred_at: occurredAt,
+    recorded_at: occurredAt,
+    scope_kind: "WORKSPACE",
+    workspace_id: state.workspace.id,
+    aggregate_type: "IngestionCase",
+    aggregate_id: ingestionCase.id,
+    aggregate_revision: ingestionCase.revision,
+    aggregate_event_index: ingestionCase.revision - 1,
+    attempt: Math.max(1, ingestionCase.attempts.length),
+    producer: { producer_id: "doculyra-api", operation },
+    actor: { actor_id: actor.identityId, actor_class: "HUMAN" },
+    authorization: {
+      decision_ref: stableId("auth", correlationId, ingestionCase.id, String(ingestionCase.revision)),
+      decision: "ALLOW",
+      policy_version: stableId("policy", authorization.policyVersion),
+      authorization_epoch: `epoch:${authorization.authorizationEpoch}`,
+    },
+    correlation_id: correlationId,
+    causation_id: stableId("cause", correlationId, operation),
+    idempotency_key: stableId("idem", actor.identityId, operation, idempotencyKey),
+    classification: {
+      data_class: "P2-HOUSEHOLD",
+      purpose_id: "PUR-P1-001",
+      residency_policy_ref: state.workspace.residencyPolicyRef,
+      retention_rule_ref: "retention.phase1.synthetic",
+      deletion_lineage_ref: `workspace:${state.workspace.id}`,
+    },
+    deletion_fence: { state: "NOT_FENCED", generation: 0 },
+    payload: {
+      transition_id: stableId("transition", ingestionCase.id, String(ingestionCase.revision)),
+      stage_id: "INGESTION_ACQUISITION",
+      from_state: fromState,
+      to_state: ingestionCase.state,
+      reason_code: reasonCode,
+      attempt: Math.max(1, ingestionCase.attempts.length),
+      publication_checkpoint_ref: `checkpoint:${ingestionCase.id}:${ingestionCase.revision}`,
+      artifact_id: ingestionCase.artifactId,
+    },
+  };
+  database.authorityOutbox.push({
+    id: eventId,
+    workspaceId: state.workspace.id,
+    aggregateType: "IngestionCase",
+    aggregateId: ingestionCase.id,
+    aggregateRevision: ingestionCase.revision,
+    eventType: "EVT-P1-006",
+    schemaVersion: 1,
+    correlationId,
+    actorId: actor.identityId,
+    resourceType: "DOCUMENT",
+    resourceId: ingestionCase.id,
+    policyVersion: authorization.policyVersion,
+    authorizationEpoch: authorization.authorizationEpoch,
+    authorizationPhase: "EFFECT",
+    decisionReason: "EXPLICIT_GRANT",
+    eventEnvelope: envelope,
+    occurredAt,
+  });
+}
+
 function recordAuthorityTransition(
   database: WorkspaceDatabase,
   state: WorkspaceState,
@@ -760,12 +838,14 @@ export class LocalStore {
         state.ingestionCases.push(ingestionCase);
         appendCommandReceipt(state, actor, "API-P1-116", idempotencyKey, ingestionFingerprint, ingestionCase.id, ingestionCase.revision);
         recordAuthorityTransition(database, state, actor, "INGESTION_CASE_RECEIVED", "DOCUMENT", "Accepted one synthetic capture into a durable ingestion case without claiming safety, extraction, publication, or readiness", ingestionCase.id, correlationId, { policyVersion: fence.policyVersion, authorizationEpoch: fence.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: "EXPLICIT_GRANT" });
+        appendIngestionStateEvent(database, state, actor, ingestionCase, null, "CAPTURE_RECEIVED", "API_P1_116", idempotencyKey, correlationId, fence);
       };
       if (duplicate) { recordIngestion(duplicate); return duplicate; }
 
       const id = randomUUID();
       const textual = /^(text\/|application\/(json|xml))/.test(file.mimetype);
-      const extractedText = textual ? file.buffer.toString("utf8").slice(0, 500_000) : "";
+      const governedCapture = Boolean(idempotencyKey) && captureRoute !== "MANUAL";
+      const extractedText = textual && !governedCapture ? file.buffer.toString("utf8").slice(0, 500_000) : "";
       const classification = classifyDocument(file.originalname, extractedText);
       const createdAt = now();
       const document: DocumentRecord = {
@@ -775,7 +855,7 @@ export class LocalStore {
         mediaType: file.mimetype || "application/octet-stream",
         size: file.size,
         sha256: digest,
-        status: classification.policyHold ? "POLICY_HOLD" : textual ? "READY" : "NEEDS_REVIEW",
+        status: classification.policyHold ? "POLICY_HOLD" : governedCapture ? "NEEDS_REVIEW" : textual ? "READY" : "NEEDS_REVIEW",
         category: classification.category,
         version: 1,
         createdAt,
@@ -783,7 +863,8 @@ export class LocalStore {
         subjectIds,
         captureRoute,
         ...(extractedText ? { extractedText } : {}),
-        ...(!textual && !classification.policyHold ? { reviewReason: "Local text extraction is not yet available for this format." } : {}),
+        ...(governedCapture && !classification.policyHold ? { reviewReason: "Content is unavailable until validation and mandatory safety checkpoints pass." } : {}),
+        ...(!governedCapture && !textual && !classification.policyHold ? { reviewReason: "Local text extraction is not yet available for this format." } : {}),
         ...(classification.policyHold ? { reviewReason: "Suspected clinical content is isolated by policy." } : {}),
       };
 
@@ -813,11 +894,15 @@ export class LocalStore {
     if (!document || document.status === "DELETED") throw new NotFoundException("Document not found");
     if (document.status === "POLICY_HOLD") throw new BadRequestException("This item is isolated and cannot be previewed in the ordinary document view");
     await this.reauthorize(fence, actor, "OUTPUT", correlationId);
+    const ingestionCase = state.ingestionCases.find((item) => item.documentId === id && item.captureRoute !== "MANUAL_RECORD");
+    const safetyCleared = !ingestionCase || (["PROCESSING", "NEEDS_REVIEW", "PUBLISHING", "READY"] as IngestionCase["state"][]).includes(ingestionCase.state) && ingestionCase.mandatoryCheckpointState === "PASSED";
     const contentDecision = await this.checkAuthorization(actor, workspaceId, "document.read", "DOCUMENT", id, { fieldRef: "document.content", expectedAuthorizationEpoch: fence.authorizationEpoch, phase: "OUTPUT", correlationId });
     const factDecision = await this.checkAuthorization(actor, workspaceId, "document.read", "DOCUMENT", id, { fieldRef: "fact.value", expectedAuthorizationEpoch: fence.authorizationEpoch, phase: "OUTPUT", correlationId });
     const evidenceDecision = await this.checkAuthorization(actor, workspaceId, "document.read", "DOCUMENT", id, { fieldRef: "fact.evidence", expectedAuthorizationEpoch: fence.authorizationEpoch, phase: "OUTPUT", correlationId });
     const artifactUrl = `/api/documents/${document.id}/artifact`;
-    const preview: DocumentDetail["preview"] = contentDecision.decision !== "ALLOW"
+    const preview: DocumentDetail["preview"] = !safetyCleared
+      ? { kind: "UNAVAILABLE", message: "Preview is unavailable until validation and mandatory safety checks pass." }
+      : contentDecision.decision !== "ALLOW"
       ? { kind: "UNAVAILABLE", message: "Preview is unavailable for the current access scope." }
       : document.extractedText
       ? { kind: "TEXT", text: document.extractedText.slice(0, 100_000), artifactUrl }
@@ -828,8 +913,8 @@ export class LocalStore {
           : { kind: "UNAVAILABLE", artifactUrl, message: "A safe inline preview is not available for this format. You can open the exact local original." };
     return {
       document: documentSummary(document),
-      facts: factDecision.decision === "ALLOW" && evidenceDecision.decision === "ALLOW" ? state.facts.filter((fact) => fact.documentId === document.id) : [],
-      dependencies: (await Promise.all(state.dependencies.filter((edge) => edge.evidenceDocumentId === document.id).map(async (edge) => ({ edge, decision: await this.checkAuthorization(actor, workspaceId, "document.read", "DOCUMENT", id, { edgeRef: `dependency.${edge.kind}`, expectedAuthorizationEpoch: fence.authorizationEpoch, phase: "OUTPUT", correlationId }) })))).filter(({ decision }) => decision.decision === "ALLOW").map(({ edge }) => edge),
+      facts: safetyCleared && factDecision.decision === "ALLOW" && evidenceDecision.decision === "ALLOW" ? state.facts.filter((fact) => fact.documentId === document.id) : [],
+      dependencies: safetyCleared ? (await Promise.all(state.dependencies.filter((edge) => edge.evidenceDocumentId === document.id).map(async (edge) => ({ edge, decision: await this.checkAuthorization(actor, workspaceId, "document.read", "DOCUMENT", id, { edgeRef: `dependency.${edge.kind}`, expectedAuthorizationEpoch: fence.authorizationEpoch, phase: "OUTPUT", correlationId }) })))).filter(({ decision }) => decision.decision === "ALLOW").map(({ edge }) => edge) : [],
       preview,
     };
   }
@@ -840,6 +925,8 @@ export class LocalStore {
     if (!document || document.status === "DELETED") throw new NotFoundException("Document not found");
     if (document.status === "POLICY_HOLD") throw new BadRequestException("This item is isolated and cannot be opened");
     await this.reauthorize(fence, actor, "OUTPUT", correlationId);
+    const ingestionCase = state.ingestionCases.find((item) => item.documentId === id && item.captureRoute !== "MANUAL_RECORD");
+    if (ingestionCase && (!(["PROCESSING", "NEEDS_REVIEW", "PUBLISHING", "READY"] as IngestionCase["state"][]).includes(ingestionCase.state) || ingestionCase.mandatoryCheckpointState !== "PASSED")) throw new NotFoundException("Document artifact is not available");
     await this.startAuthorization(actor, workspaceId, "document.read", "DOCUMENT", id, { fieldRef: "document.content", expectedAuthorizationEpoch: fence.authorizationEpoch, phase: "OUTPUT", correlationId });
     return { buffer: await this.readArtifact(workspaceId, id), mediaType: document.mediaType, name: document.name };
   }
@@ -1125,6 +1212,7 @@ export class LocalStore {
       state.ingestionCases.push(ingestionCase);
       appendCommandReceipt(state, actor, "API-P1-116", idempotencyKey, input, ingestionCase.id, ingestionCase.revision);
       recordAuthorityTransition(database, state, actor, "INGESTION_CASE_CREATED", "DOCUMENT", "Created a durable synthetic acquisition case without claiming receipt, validation, extraction, or readiness", ingestionCase.id, correlationId, { policyVersion: decision.policyVersion, authorizationEpoch: decision.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: decision.reason });
+      appendIngestionStateEvent(database, state, actor, ingestionCase, null, "CASE_CREATED", "API_P1_116", idempotencyKey, correlationId, decision);
       return ingestionCase;
     });
     if (result === "NOT_AVAILABLE") throw new NotFoundException("Resource not available");
@@ -1151,11 +1239,13 @@ export class LocalStore {
       if (!ingestionCase) return "NOT_AVAILABLE";
       if (ingestionCase.revision !== expectedRevision) return "STALE";
       if (ingestionCase.state !== "CREATED" && ingestionCase.state !== "RECEIVING") throw new UnprocessableEntityException("Ingestion receipt cannot be committed in the current state");
+      const fromState = ingestionCase.state;
       const recordedAt = now();
       ingestionCase.state = "RECEIVED"; ingestionCase.revision += 1; ingestionCase.updatedAt = recordedAt;
       ingestionCase.attempts.push({ id: randomUUID(), kind: "RECEIPT_COMMIT", outcome: "SUCCEEDED", correlationId, recordedAt, byteCount: input.byte_count, transferRefHash: commandHash(input.transfer_ref), digestRefHash: commandHash(input.content_digest_ref) });
       appendCommandReceipt(state, actor, "API-P1-117", idempotencyKey, { ingestionCaseId, ...input }, ingestionCase.id, ingestionCase.revision);
       recordAuthorityTransition(database, state, actor, "INGESTION_RECEIPT_COMMITTED", "DOCUMENT", "Recorded complete synthetic acquisition receipt without claiming safety, extraction, publication, or readiness", ingestionCase.id, correlationId, { policyVersion: decision.policyVersion, authorizationEpoch: decision.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: decision.reason });
+      appendIngestionStateEvent(database, state, actor, ingestionCase, fromState, "RECEIPT_COMMITTED", "API_P1_117", idempotencyKey, correlationId, decision);
       return ingestionCase;
     });
     if (result === "NOT_AVAILABLE") throw new NotFoundException("Resource not available");
@@ -1175,10 +1265,12 @@ export class LocalStore {
       if (!ingestionCase) return "NOT_AVAILABLE";
       if (ingestionCase.revision !== expectedRevision) return "STALE";
       if (["CANCELLED", "PURGED"].includes(ingestionCase.state)) throw new UnprocessableEntityException("Ingestion case cannot be cancelled in the current state");
+      const fromState = ingestionCase.state;
       const recordedAt = now(); ingestionCase.state = "CANCELLED"; ingestionCase.revision += 1; ingestionCase.updatedAt = recordedAt;
       ingestionCase.attempts.push({ id: randomUUID(), kind: "CANCEL", outcome: "SUCCEEDED", correlationId, recordedAt });
       appendCommandReceipt(state, actor, "API-P1-119", idempotencyKey, { ingestionCaseId, reasonCode }, ingestionCase.id, ingestionCase.revision);
       recordAuthorityTransition(database, state, actor, "INGESTION_CASE_CANCELLED", "DOCUMENT", `Cancelled a synthetic acquisition case using registered reason ${reasonCode}`, ingestionCase.id, correlationId, { policyVersion: decision.policyVersion, authorizationEpoch: decision.authorizationEpoch, authorizationPhase: "EFFECT", decisionReason: decision.reason });
+      appendIngestionStateEvent(database, state, actor, ingestionCase, fromState, reasonCode, "API_P1_119", idempotencyKey, correlationId, decision);
       return ingestionCase;
     });
     if (result === "NOT_AVAILABLE") throw new NotFoundException("Resource not available");

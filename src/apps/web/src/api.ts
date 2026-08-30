@@ -77,13 +77,13 @@ export const api = {
     return workspace;
   },
   dashboard: () => request<DashboardSnapshot>("/dashboard"),
-  upload: (file: File, subjectIds: string[], captureRoute: "FILE" | "CAMERA" | "BULK", syntheticConfirmed: boolean) => {
+  upload: (file: File, subjectIds: string[], captureRoute: "FILE" | "CAMERA" | "BULK", syntheticConfirmed: boolean, idempotencyKey: string) => {
     const body = new FormData();
     body.set("file", file);
     body.set("subjectIds", subjectIds.join(","));
     body.set("captureRoute", captureRoute);
     body.set("syntheticConfirmed", String(syntheticConfirmed));
-    return request<DocumentRecord>("/documents", { method: "POST", body });
+    return request<DocumentRecord>("/documents", { method: "POST", headers: { "Idempotency-Key": idempotencyKey }, body });
   },
   manualDocument: (input: { name: string; content: string; subjectIds: string[]; syntheticConfirmed: boolean }) => request<DocumentRecord>("/documents/manual", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }),
   documentDetail: (id: string) => request<DocumentDetail>(`/documents/${id}`),

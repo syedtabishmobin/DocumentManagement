@@ -4,6 +4,11 @@ import { Camera, Cloud, FilePenLine, FolderUp, Mail, ScanLine, ShieldCheck, Uplo
 import { api } from "./api.js";
 
 type Mode = "choose" | "file" | "camera" | "manual" | "connect";
+type CaptureOperation = { files: File[]; route: "FILE" | "CAMERA" | "BULK"; subjectIds: string[]; syntheticConfirmed: boolean; keys: string[] };
+
+export function createCaptureOperation(files: File[], route: CaptureOperation["route"], subjectIds: string[], syntheticConfirmed: boolean): CaptureOperation {
+  return { files, route, subjectIds: [...subjectIds], syntheticConfirmed, keys: files.map(() => crypto.randomUUID()) };
+}
 
 export function CaptureModal({ subjects, onClose, onAdded }: { subjects: SubjectRecord[]; onClose: () => void; onAdded: () => Promise<void> }) {
   const [mode, setMode] = useState<Mode>("choose");
@@ -16,6 +21,7 @@ export function CaptureModal({ subjects, onClose, onAdded }: { subjects: Subject
   const [manualName, setManualName] = useState("");
   const [manualContent, setManualContent] = useState("");
   const [syntheticConfirmed, setSyntheticConfirmed] = useState(false);
+  const [failedOperation, setFailedOperation] = useState<CaptureOperation>();
   const browser = useRef<HTMLInputElement>(null);
   const camera = useRef<HTMLInputElement>(null);
 
@@ -23,16 +29,20 @@ export function CaptureModal({ subjects, onClose, onAdded }: { subjects: Subject
 
   function toggleSubject(id: string) { setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]); }
 
+  async function submitCapture(operation: CaptureOperation) {
+    setBusy(true); setError("");
+    try {
+      for (const [index, file] of operation.files.entries()) await api.upload(file, operation.subjectIds, operation.files.length > 1 && operation.route === "FILE" ? "BULK" : operation.route, operation.syntheticConfirmed, operation.keys[index]!);
+      setFailedOperation(undefined); await onAdded(); onClose();
+    } catch (cause) { setFailedOperation(operation); setError(cause instanceof Error ? cause.message : "Document capture failed"); }
+    finally { setBusy(false); }
+  }
+
   async function addFiles(files: FileList | File[], route: "FILE" | "CAMERA" | "BULK") {
     if (!selected.length) { setError("Choose at least one person for these documents"); return; }
     if (!syntheticConfirmed) { setError("Confirm that every selected document contains synthetic test data only"); return; }
     const list = Array.from(files); if (!list.length) return;
-    setBusy(true); setError("");
-    try {
-      for (const file of list) await api.upload(file, selected, list.length > 1 && route === "FILE" ? "BULK" : route, syntheticConfirmed);
-      await onAdded(); onClose();
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Document capture failed"); }
-    finally { setBusy(false); }
+    await submitCapture(createCaptureOperation(list, route, selected, syntheticConfirmed));
   }
 
   async function addManual(event: React.FormEvent) {
@@ -50,7 +60,7 @@ export function CaptureModal({ subjects, onClose, onAdded }: { subjects: Subject
       <header><div><span className="eyebrow">Secure acquisition</span><h2 id="capture-title">{mode === "choose" ? "How would you like to add it?" : mode === "connect" ? "Connect a source" : "Add documents"}</h2></div><button className="icon-button" aria-label="Close" onClick={onClose}><X /></button></header>
       {mode !== "choose" ? <button className="modal-back" onClick={() => { setMode("choose"); setError(""); }}>← All options</button> : null}
       {mode === "choose" ? <>
-        <p>Choose a source. Direct capture routes work in this synthetic preview; connected services require deliberate configuration.</p>
+        <p>Choose a source. Direct capture routes work in this synthetic preview; connected services require deliberate configuration. If camera access is denied or cancelled, choose files or enter details instead.</p>
         <div className="capture-grid">
           <CaptureChoice icon={Upload} title="Files or folder" copy="Browse, drag and drop, or add several files at once" onClick={() => setMode("file")} />
           <CaptureChoice icon={Camera} title="Camera or scan" copy="Photograph a page with your phone or device camera" onClick={() => setMode("camera")} />
@@ -67,7 +77,7 @@ export function CaptureModal({ subjects, onClose, onAdded }: { subjects: Subject
       {mode === "camera" ? <div className="capture-body"><div className="camera-choice"><ScanLine /><h3>Scan a document</h3><p>Your browser opens the device camera when supported. The captured image is stored in this synthetic workspace and linked to the selected people.</p><button className="primary" onClick={() => camera.current?.click()}><Camera size={18} /> Open camera</button><input ref={camera} hidden type="file" accept="image/*" capture="environment" onChange={(event) => event.target.files && void addFiles(event.target.files, "CAMERA")} /></div></div> : null}
       {mode === "manual" ? <form className="manual-form" onSubmit={(event) => void addManual(event)}><label>Record name<input value={manualName} onChange={(event) => setManualName(event.target.value)} required placeholder="e.g. Medicare member number" /></label><label>Details<textarea value={manualContent} onChange={(event) => setManualContent(event.target.value)} required rows={8} placeholder="Enter the details you want to store and search…" /></label><button className="primary" disabled={busy}>{busy ? "Saving…" : "Save test record"}</button></form> : null}
       {mode === "connect" ? <div className="connector-body"><div className="connector-note"><ShieldCheck /><span><strong>Consent comes before connection.</strong><small>Select a source to see exactly why it is needed, what permission it requests, and whether its provider application has been configured.</small></span></div><div className="connector-grid">{connectors.map((connector) => <button key={connector.id} className={selectedConnector?.id === connector.id ? "selected" : ""} onClick={() => { setSelectedConnector(connector); setConnectorConsent(false); }}>{connector.id.includes("MAIL") || connector.id.includes("EMAIL") ? <Mail /> : <Cloud />}<span><strong>{connector.name}</strong><small>{connectorStatusLabel(connector.status)}</small></span></button>)}</div>{selectedConnector ? <section className="connector-consent"><span className="eyebrow">Connection consent</span><h3>{selectedConnector.name}</h3><p>{selectedConnector.consentPurpose}</p><dl><div><dt>Requested access</dt><dd>{selectedConnector.permissionSummary}</dd></div><div><dt>Current status</dt><dd>{connectorStatusDetail(selectedConnector.status)}</dd></div>{selectedConnector.callbackUrl ? <div><dt>Exact callback URL</dt><dd><code>{selectedConnector.callbackUrl}</code></dd></div> : null}</dl>{selectedConnector.status === "REQUIRES_CONFIGURATION" ? <details><summary>Configuration still needed</summary><code>{selectedConnector.requiredConfiguration.join("\n")}</code></details> : null}<label><input type="checkbox" checked={connectorConsent} onChange={(event) => setConnectorConsent(event.target.checked)} /> I consent to this source accessing only the permissions described above.</label><button className="primary" disabled={!connectorConsent || selectedConnector.status !== "READY_TO_CONNECT"}>{selectedConnector.status === "READY_TO_CONNECT" ? "Continue to provider" : selectedConnector.status === "CONFIGURED_DISABLED" ? "Security validation in progress" : "Configure provider first"}</button></section> : null}</div> : null}
-      {error ? <div className="form-error">{error}</div> : null}
+      {error ? <div className="form-error">{error}{failedOperation ? <button className="secondary" disabled={busy} onClick={() => void submitCapture(failedOperation)}>Retry capture</button> : null}</div> : null}
       {busy ? <div className="busy-line">Adding document securely…</div> : null}
     </section>
   </div>;

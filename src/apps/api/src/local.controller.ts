@@ -364,7 +364,7 @@ export class LocalController {
       const context = this.workspaceContext(request, workspaceId); const correlationId = this.correlation(request, response);
       const fence = await this.store.startAuthorization(context.actor, workspaceId, "document.create", "WORKSPACE", workspaceId, { correlationId });
       const ingestionCase = await this.store.createIngestionCase(workspaceId, context.actor, this.idempotencyKey(request, response), parsed.data, fence, correlationId);
-      response.setHeader("ETag", `"${ingestionCase.revision}"`); response.setHeader("Location", `/api/v1/workspaces/${workspaceId}/ingestion-cases/${ingestionCase.id}`);
+      response.setHeader("ETag", `"${ingestionCase.revision}"`); response.setHeader("Location", `/api/v1/workspaces/${workspaceId}/ingestion-cases/${ingestionCase.id}`); response.setHeader("RateLimit-Policy", "ingestion-synthetic;w=60;q=20");
       return this.ingestionCaseView(ingestionCase);
     } catch (error) { this.canonicalProblem(error, request, response); }
   }
@@ -378,7 +378,7 @@ export class LocalController {
       const context = this.workspaceContext(request, workspaceId); const correlationId = this.correlation(request, response);
       const fence = await this.store.startAuthorization(context.actor, workspaceId, "document.create", "WORKSPACE", workspaceId, { correlationId });
       const ingestionCase = await this.store.commitIngestionReceipt(workspaceId, context.actor, ingestionCaseId, this.expectedRevision(request, response), this.idempotencyKey(request, response), parsed.data, fence, correlationId);
-      response.setHeader("ETag", `"${ingestionCase.revision}"`); response.setHeader("Location", `/api/v1/workspaces/${workspaceId}/ingestion-cases/${ingestionCase.id}`);
+      response.setHeader("ETag", `"${ingestionCase.revision}"`); response.setHeader("Location", `/api/v1/workspaces/${workspaceId}/ingestion-cases/${ingestionCase.id}`); response.setHeader("RateLimit-Policy", "ingestion-synthetic;w=60;q=20");
       return this.ingestionCaseView(ingestionCase);
     } catch (error) { this.canonicalProblem(error, request, response); }
   }
@@ -389,7 +389,7 @@ export class LocalController {
       const context = this.workspaceContext(request, workspaceId); const correlationId = this.correlation(request, response);
       const fence = await this.store.startAuthorization(context.actor, workspaceId, "document.read", "WORKSPACE", workspaceId, { correlationId });
       const ingestionCase = await this.store.getIngestionCase(workspaceId, context.actor, ingestionCaseId, fence, correlationId);
-      response.setHeader("ETag", `"${ingestionCase.revision}"`); return this.ingestionCaseView(ingestionCase);
+      response.setHeader("ETag", `"${ingestionCase.revision}"`); response.setHeader("RateLimit-Policy", "ingestion-synthetic;w=60;q=20"); return this.ingestionCaseView(ingestionCase);
     } catch (error) { this.canonicalProblem(error, request, response); }
   }
 
@@ -402,7 +402,7 @@ export class LocalController {
       const context = this.workspaceContext(request, workspaceId); const correlationId = this.correlation(request, response);
       const fence = await this.store.startAuthorization(context.actor, workspaceId, "document.create", "WORKSPACE", workspaceId, { correlationId });
       const ingestionCase = await this.store.cancelIngestionCase(workspaceId, context.actor, ingestionCaseId, this.expectedRevision(request, response), this.idempotencyKey(request, response), parsed.data.reason_code, fence, correlationId);
-      response.setHeader("ETag", `"${ingestionCase.revision}"`); response.setHeader("Location", `/api/v1/workspaces/${workspaceId}/ingestion-cases/${ingestionCase.id}`);
+      response.setHeader("ETag", `"${ingestionCase.revision}"`); response.setHeader("Location", `/api/v1/workspaces/${workspaceId}/ingestion-cases/${ingestionCase.id}`); response.setHeader("RateLimit-Policy", "ingestion-synthetic;w=60;q=20");
       return this.ingestionCaseView(ingestionCase);
     } catch (error) { this.canonicalProblem(error, request, response); }
   }

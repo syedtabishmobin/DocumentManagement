@@ -174,5 +174,11 @@ integration.sequential("PostgreSQL workspace authority integration", () => {
       { event_type: "INGESTION_CASE_CREATED", correlation_id: "corr-real-postgres-ingestion-create" },
       { event_type: "INGESTION_RECEIPT_COMMITTED", correlation_id: "corr-real-postgres-ingestion-receipt" },
     ]);
+    const domainEvents = await pool.query<{ aggregate_type: string; aggregate_id: string; aggregate_revision: string; event_envelope: Record<string, unknown> }>("SELECT aggregate_type, aggregate_id, aggregate_revision, event_envelope FROM doculyra.authority_outbox WHERE event_type = 'EVT-P1-006' ORDER BY aggregate_revision");
+    expect(domainEvents.rows).toHaveLength(2);
+    expect(domainEvents.rows.map((row) => ({ aggregateType: row.aggregate_type, aggregateId: row.aggregate_id, revision: Number(row.aggregate_revision), envelope: row.event_envelope }))).toEqual([
+      expect.objectContaining({ aggregateType: "IngestionCase", aggregateId: created.id, revision: 1, envelope: expect.objectContaining({ event_type: "EVT-P1-006", aggregate_id: created.id, aggregate_revision: 1, payload: expect.objectContaining({ from_state: null, to_state: "CREATED" }) }) }),
+      expect.objectContaining({ aggregateType: "IngestionCase", aggregateId: created.id, revision: 2, envelope: expect.objectContaining({ event_type: "EVT-P1-006", aggregate_id: created.id, aggregate_revision: 2, payload: expect.objectContaining({ from_state: "CREATED", to_state: "RECEIVED" }) }) }),
+    ]);
   });
 });

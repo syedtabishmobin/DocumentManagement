@@ -23,7 +23,7 @@ describe("durable multi-route IngestionCase HTTP boundary", () => {
       const casesUrl = `${base}/v1/workspaces/${workspace.id}/ingestion-cases`;
       const createBody = { capture_route: "PWA_CAMERA_CAPTURE", format_profile_ref: "format-profile-synthetic@0.1", source_descriptor_ref: "source-synthetic-camera-001" };
       const createdResponse = await fetch(casesUrl, { method: "POST", headers: headers("ingestion-create-0001"), body: JSON.stringify(createBody) });
-      expect(createdResponse.status).toBe(202); expect(createdResponse.headers.get("location")).toContain("/ingestion-cases/");
+      expect(createdResponse.status).toBe(202); expect(createdResponse.headers.get("location")).toContain("/ingestion-cases/"); expect(createdResponse.headers.get("ratelimit-policy")).toBe("ingestion-synthetic;w=60;q=20");
       const created = await createdResponse.json() as { ingestion_case_id: string; acquisition_id: string; state: string; artifact_id: null; document_id: null; revision: number };
       expect(created).toMatchObject({ state: "CREATED", artifact_id: null, document_id: null, revision: 1 });
       const replay = await fetch(casesUrl, { method: "POST", headers: headers("ingestion-create-0001"), body: JSON.stringify(createBody) });
@@ -50,20 +50,32 @@ describe("durable multi-route IngestionCase HTTP boundary", () => {
 
       const dashboard = await (await fetch(`${base}/dashboard`, { headers: headers("ingestion-dashboard") })).json() as { subjects: Array<{ id: string }> };
       const upload = () => { const body = new FormData(); body.set("file", new Blob(["Synthetic capture payload"], { type: "text/plain" }), "synthetic-capture.txt"); body.set("subjectIds", dashboard.subjects[0]!.id); body.set("captureRoute", "CAMERA"); body.set("syntheticConfirmed", "true"); return fetch(`${base}/documents`, { method: "POST", headers: Object.fromEntries(Object.entries(headers("legacy-camera-capture-0001")).filter(([name]) => name !== "Content-Type")), body }); };
-      const legacy = await upload(); expect(legacy.status).toBe(201); const legacyDocument = await legacy.json() as { id: string };
+      const legacy = await upload(); expect(legacy.status).toBe(201); const legacyDocument = await legacy.json() as { id: string; status: string; extractedText?: string };
+      expect(legacyDocument).toMatchObject({ status: "NEEDS_REVIEW" }); expect(legacyDocument).not.toHaveProperty("extractedText");
       const legacyReplay = await upload(); expect(legacyReplay.status).toBe(201); expect(await legacyReplay.json()).toMatchObject({ id: legacyDocument.id });
+      const legacyDetail = await fetch(`${base}/documents/${legacyDocument.id}`, { headers: headers("legacy-camera-detail-0001") });
+      expect(legacyDetail.status).toBe(200); expect(await legacyDetail.json()).toMatchObject({ preview: { kind: "UNAVAILABLE" }, facts: [], dependencies: [] });
+      const legacyArtifact = await fetch(`${base}/documents/${legacyDocument.id}/artifact`, { headers: headers("legacy-camera-artifact-0001") });
+      expect(legacyArtifact.status).toBe(404);
+      const binaryBody = new FormData(); binaryBody.set("file", new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], { type: "image/png" }), "synthetic-camera.png"); binaryBody.set("subjectIds", dashboard.subjects[0]!.id); binaryBody.set("captureRoute", "CAMERA"); binaryBody.set("syntheticConfirmed", "true");
+      const binary = await fetch(`${base}/documents`, { method: "POST", headers: Object.fromEntries(Object.entries(headers("legacy-camera-binary-0001")).filter(([name]) => name !== "Content-Type")), body: binaryBody });
+      expect(binary.status).toBe(201); const binaryDocument = await binary.json() as { id: string; status: string; extractedText?: string }; expect(binaryDocument.status).toBe("NEEDS_REVIEW"); expect(binaryDocument).not.toHaveProperty("extractedText");
+      expect((await fetch(`${base}/documents/${binaryDocument.id}/artifact`, { headers: headers("legacy-camera-binary-artifact-0001") })).status).toBe(404);
       const manualBody = { name: "Synthetic manual capture", content: "Synthetic manual content", subjectIds: [dashboard.subjects[0]!.id], syntheticConfirmed: true };
       const manual = await fetch(`${base}/documents/manual`, { method: "POST", headers: headers("legacy-manual-capture-0001"), body: JSON.stringify(manualBody) });
       expect(manual.status).toBe(201); const manualDocument = await manual.json() as { id: string };
       const manualReplay = await fetch(`${base}/documents/manual`, { method: "POST", headers: headers("legacy-manual-capture-0001"), body: JSON.stringify(manualBody) });
       expect(manualReplay.status).toBe(201); expect(await manualReplay.json()).toMatchObject({ id: manualDocument.id });
 
-      const persisted = JSON.parse(await readFile(join(directory, "state.json"), "utf8")) as { workspaces: Array<{ workspace: { id: string }; ingestionCases: Array<{ id: string; attempts: Array<Record<string, unknown>> }>; audit: Array<{ type: string; detail: string; correlationId?: string }> }>; authorityOutbox: Array<{ eventType: string; correlationId: string }> };
+      const persisted = JSON.parse(await readFile(join(directory, "state.json"), "utf8")) as { workspaces: Array<{ workspace: { id: string }; ingestionCases: Array<{ id: string; attempts: Array<Record<string, unknown>> }>; audit: Array<{ type: string; detail: string; correlationId?: string }> }>; authorityOutbox: Array<{ eventType: string; correlationId: string; eventEnvelope?: Record<string, unknown> }> };
       const authority = persisted.workspaces.find((item) => item.workspace.id === workspace.id)!; const stored = authority.ingestionCases.find((item) => item.id === created.ingestion_case_id)!;
       expect(stored.attempts).toHaveLength(3);
-      expect(authority.ingestionCases.filter((item) => item.id !== created.ingestion_case_id)).toHaveLength(2);
+      expect(authority.ingestionCases.filter((item) => item.id !== created.ingestion_case_id)).toHaveLength(3);
       expect(authority.audit).toEqual(expect.arrayContaining([expect.objectContaining({ type: "INGESTION_CASE_CREATED", correlationId: "corr-ingestion-create-0001" }), expect.objectContaining({ type: "INGESTION_RECEIPT_COMMITTED", correlationId: "corr-ingestion-receipt-0001" }), expect.objectContaining({ type: "INGESTION_CASE_CANCELLED", correlationId: "corr-ingestion-cancel-0001" })]));
       expect(persisted.authorityOutbox.filter((event) => event.eventType !== "INGESTION_CASE_RECEIVED" && event.eventType.startsWith("INGESTION_")).map((event) => event.correlationId)).toEqual(["corr-ingestion-create-0001", "corr-ingestion-receipt-0001", "corr-ingestion-cancel-0001"]);
+      const domainEvents = persisted.authorityOutbox.filter((event) => event.eventType === "EVT-P1-006").map((event) => event.eventEnvelope!);
+      expect(domainEvents).toHaveLength(6);
+      for (const event of domainEvents) expect(event).toMatchObject({ event_type: "EVT-P1-006", schema_version: "1.0.0", scope_kind: "WORKSPACE", aggregate_type: "IngestionCase", producer: { producer_id: "doculyra-api" }, actor: { actor_class: "HUMAN" }, authorization: { decision: "ALLOW" }, classification: { purpose_id: "PUR-P1-001" }, deletion_fence: { state: "NOT_FENCED", generation: 0 }, payload: { stage_id: "INGESTION_ACQUISITION" } });
       expect(JSON.stringify(authority.audit)).not.toContain("source-synthetic-camera-001"); expect(JSON.stringify(authority.audit)).not.toContain("digest-ref-synthetic-001");
     } finally { await app.close(); }
   });

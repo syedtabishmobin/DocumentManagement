@@ -586,6 +586,40 @@ class _VaultShellState extends State<VaultShell> {
     );
   }
 
+  Future<bool> _uploadCapture(
+    File file,
+    HouseholdPerson person,
+    String route,
+    bool confirmed,
+    String operationKey,
+  ) async {
+    try {
+      await widget.api.upload(
+        file,
+        [person.id],
+        route,
+        confirmed,
+        operationKey,
+      );
+      return true;
+    } catch (cause) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('$cause The result may be unknown; retry uses the same operation key.'),
+            action: SnackBarAction(
+              label: 'Retry',
+              onPressed: () async {
+                if (await _uploadCapture(file, person, route, confirmed, operationKey)) await refresh();
+              },
+            ),
+          ),
+        );
+      }
+      return false;
+    }
+  }
+
   Future<void> _capture(VaultDashboard data) async {
     final person = await showModalBottomSheet<HouseholdPerson>(
       context: context,
@@ -677,14 +711,19 @@ class _VaultShellState extends State<VaultShell> {
     try {
       if (route == 'FILE') {
         final files = await FilePicker.pickFiles();
+        if (files.isEmpty && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('File selection cancelled. You can choose files again, use the camera, or enter details manually.')));
+        }
         for (final file in files) {
           if (file.path != null) {
-            await widget.api.upload(
+            final succeeded = await _uploadCapture(
               File(file.path!),
-              [person.id],
+              person,
               'FILE',
               confirmed,
+              widget.api.newOperationKey(),
             );
+            if (!succeeded) return;
           }
         }
       } else if (route == 'CAMERA') {
@@ -693,12 +732,16 @@ class _VaultShellState extends State<VaultShell> {
           imageQuality: 92,
         );
         if (image != null) {
-          await widget.api.upload(
+          final succeeded = await _uploadCapture(
             File(image.path),
-            [person.id],
+            person,
             'CAMERA',
             confirmed,
+            widget.api.newOperationKey(),
           );
+          if (!succeeded) return;
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Camera access was denied or capture was cancelled. Choose files or enter details manually instead.')));
         }
       } else {
         if (!mounted) return;
