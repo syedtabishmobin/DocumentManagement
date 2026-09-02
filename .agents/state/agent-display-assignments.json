@@ -396,6 +396,17 @@
       "parentDisplayAgentId": "ORCH-017",
       "workItem": "external-identity-dev",
       "status": "ACTIVE"
+    },
+    {
+      "displayAgentId": "QA-FUNC-025",
+      "displayRole": "Independent Functional QA",
+      "displayRunId": "RUN-20260902-0101",
+      "runtimeAgentId": "codex-01a061e9-1687-7eb0-bfe3-89ffe98e7252",
+      "runtimeRunId": "run-qa-external-identity-dev-20260902",
+      "roleId": "qa-release-lead",
+      "parentDisplayAgentId": "ORCH-017",
+      "workItem": "external-identity-dev",
+      "status": "ACTIVE"
     }
   ]
 }
