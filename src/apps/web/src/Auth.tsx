@@ -1,15 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AuthSession } from "@document-management/contracts";
 import { Apple, Check, KeyRound, Laptop, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import { api } from "./api.js";
 import { BrandMark, BrandName } from "./Brand.js";
 import { isLocalRuntime } from "./runtime.js";
+import { availabilityByProvider, externalIdentityProviderIds, providerName, safeAuthReturnTo, safeExternalAuthorizationUrl, type ExternalIdentityAvailability, type ExternalIdentityCallbackNotice, type ExternalIdentityProviderAvailability, type ExternalIdentityProviderId } from "./externalIdentity.js";
 
 export function Startup({ message, retry }: { message: string; retry?: () => void }) {
   return <div className="startup"><div className="brand-mark"><BrandMark /></div><h1>Doculyra</h1><p>{message}</p>{retry ? <button onClick={retry}>Try again</button> : null}</div>;
 }
 
-export function AuthScreen({ onAuthenticated, onModeChange, initialMode = "register" }: { onAuthenticated: (session: AuthSession) => void | Promise<void>; onModeChange?: (mode: "register" | "login") => void; initialMode?: "register" | "login" }) {
+export function AuthScreen({ onAuthenticated, onModeChange, initialMode = "register", returnTo = "/app", callbackNotice }: { onAuthenticated: (session: AuthSession) => void | Promise<void>; onModeChange?: (mode: "register" | "login") => void; initialMode?: "register" | "login"; returnTo?: string; callbackNotice?: ExternalIdentityCallbackNotice }) {
   const localRuntime = isLocalRuntime();
   const [mode, setMode] = useState<"register" | "login">(initialMode);
   const [displayName, setDisplayName] = useState("");
@@ -18,8 +19,35 @@ export function AuthScreen({ onAuthenticated, onModeChange, initialMode = "regis
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [recoveryOpen, setRecoveryOpen] = useState(false);
+  const [providerState, setProviderState] = useState<{ status: "loading" | "ready" | "failed"; availability?: ExternalIdentityAvailability }>({ status: "loading" });
+  const [startingProvider, setStartingProvider] = useState<ExternalIdentityProviderId>();
+  const [providerStartError, setProviderStartError] = useState("");
+  const callbackNoticeRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setMode(initialMode); }, [initialMode]);
+  useEffect(() => {
+    let active = true;
+    void api.externalIdentityProviders().then(
+      (availability) => { if (active) setProviderState({ status: "ready", availability }); },
+      () => { if (active) setProviderState({ status: "failed" }); },
+    );
+    return () => { active = false; };
+  }, []);
+  useEffect(() => { if (callbackNotice) callbackNoticeRef.current?.focus(); }, [callbackNotice]);
+
+  async function startExternalIdentity(provider: ExternalIdentityProviderId) {
+    setProviderStartError("");
+    setStartingProvider(provider);
+    try {
+      const result = await api.startExternalIdentity(provider.toUpperCase() as "GOOGLE" | "APPLE" | "MICROSOFT", safeAuthReturnTo(returnTo));
+      const authorizationUrl = safeExternalAuthorizationUrl(result.authorizationUrl);
+      if (!authorizationUrl) throw new Error("Invalid provider redirect");
+      window.location.assign(authorizationUrl);
+    } catch {
+      setProviderStartError(`${providerName(provider)} sign-in could not be started. Try again or use email and password.`);
+      setStartingProvider(undefined);
+    }
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setError("");
@@ -44,13 +72,10 @@ export function AuthScreen({ onAuthenticated, onModeChange, initialMode = "regis
         <span className="eyebrow">{mode === "register" ? "Create your private vault" : "Welcome back"}</span>
         <h2>{mode === "register" ? "Create an account" : "Sign in"}</h2>
         <p>{mode === "register" ? `Start with a ${localRuntime ? "local" : "development preview"} account. You will create your personal or family workspace next.` : `Open your ${localRuntime ? "local" : "development preview"} household workspace.`}</p>
-        <div className="provider-grid" aria-label="Alternative sign-in options">
-          <button disabled title="Available after identity integrations are configured"><span className="provider-g">G</span> Google</button>
-          <button disabled title="Available after identity integrations are configured"><Apple size={18} /> Apple</button>
-          <button disabled title="Available after identity integrations are configured"><span className="provider-ms">⊞</span> Microsoft</button>
-          {mode === "login" ? <button disabled title="Enroll a passkey from account security first"><KeyRound size={18} /> Use a passkey</button> : null}
-        </div>
-        <p className="integration-note">External identity options are intentionally inactive while the core product experience is being finalised.</p>
+        {callbackNotice ? <div ref={callbackNoticeRef} className={`auth-callback-notice ${callbackNotice.kind}`} role={callbackNotice.kind === "failed" ? "alert" : "status"} tabIndex={-1}>{callbackNotice.message}</div> : null}
+        <ExternalIdentityOptions state={providerState} startingProvider={startingProvider} onStart={(provider) => void startExternalIdentity(provider)} />
+        {providerStartError ? <p className="auth-callback-notice failed" role="alert">{providerStartError}</p> : null}
+        {mode === "login" ? <div className="passkey-option"><button type="button" disabled aria-describedby="passkey-explanation"><KeyRound size={18} /> Use a passkey</button><small id="passkey-explanation">Passkeys require a separate enrolment and authenticator-lifecycle release. They are not a social sign-in provider.</small></div> : null}
         <div className="divider"><span>{localRuntime ? "or use email locally" : "or use preview email sign-in"}</span></div>
         <form className="auth-form" onSubmit={(event) => void submit(event)}>
           {mode === "register" ? <label>Full name<input autoComplete="name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} required placeholder="Your name" /></label> : null}
@@ -65,6 +90,33 @@ export function AuthScreen({ onAuthenticated, onModeChange, initialMode = "regis
         <a className="back-to-site" href="/">← Back to website</a>
       </div>
     </main>
+  </div>;
+}
+
+export function ExternalIdentityOptions({ state, startingProvider, onStart = () => undefined }: { state: { status: "loading" | "ready" | "failed"; availability?: ExternalIdentityAvailability }; startingProvider: ExternalIdentityProviderId | undefined; onStart?: (provider: ExternalIdentityProviderId) => void }) {
+  const availability = state.availability ? availabilityByProvider(state.availability) : undefined;
+  return <section className="external-identity-options" aria-labelledby="external-identity-heading" aria-busy={state.status === "loading"}>
+    <h3 id="external-identity-heading">Continue with an identity provider</h3>
+    <div className="provider-grid">
+      {externalIdentityProviderIds.map((provider) => <ProviderButton key={provider} provider={provider} status={state.status} availability={availability?.[provider]} starting={startingProvider === provider} onStart={() => onStart(provider)} />)}
+    </div>
+    {state.status === "loading" ? <p className="integration-note" role="status">Checking provider availability…</p> : null}
+    {state.status === "failed" ? <p className="integration-note provider-check-failed" role="alert">Provider availability could not be checked. External sign-in is disabled; email and password still work.</p> : null}
+  </section>;
+}
+
+function ProviderButton({ provider, status, availability, starting, onStart }: { provider: ExternalIdentityProviderId; status: "loading" | "ready" | "failed"; availability: ExternalIdentityProviderAvailability | undefined; starting: boolean; onStart: () => void }) {
+  const name = providerName(provider);
+  const enabled = status === "ready" && availability?.available === true && !starting;
+  const explanation = status === "loading"
+    ? `Checking ${name} availability.`
+    : status === "failed"
+      ? `${name} sign-in is unavailable because provider status could not be verified.`
+      : availability?.available ? `Continue securely to ${name}.` : `${name} sign-in is not enabled in this environment.`;
+  const explanationId = `provider-${provider}-explanation`;
+  return <div className="provider-option">
+    <button type="button" disabled={!enabled} aria-describedby={explanationId} onClick={enabled ? onStart : undefined}>{provider === "google" ? <span className="provider-g" aria-hidden="true">G</span> : provider === "apple" ? <Apple size={18} aria-hidden="true" /> : <span className="provider-ms" aria-hidden="true">⊞</span>} {starting ? `Opening ${name}…` : name}</button>
+    <small id={explanationId}>{explanation}</small>
   </div>;
 }
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Answer, AuthSession, DashboardSnapshot } from "@document-management/contracts";
 import { Archive, Bell, Bot, CalendarClock, Check, ChevronRight, Eye, FileLock2, FileText, FolderSearch2, Home, ListChecks, Menu, Network, Plus, RotateCcw, Search, ShieldCheck, Sparkles, Trash2, Upload, Users, X } from "lucide-react";
 import { api } from "./api.js";
+import { externalIdentityCallbackNotice, safeAuthReturnTo } from "./externalIdentity.js";
 import { AuthScreen, Onboarding, Startup } from "./Auth.js";
 import { CaptureModal } from "./CaptureModal.js";
 import { MarketingSite } from "./Marketing.js";
@@ -60,7 +61,10 @@ export function App() {
   if (routeUrl.pathname === "/terms") return <LegalPage kind="terms" />;
   if (routeUrl.pathname === "/") return <MarketingSite />;
   if (!session) return <Startup message={error || "Opening your private workspace…"} {...(error ? { retry: () => void loadSession() } : {})} />;
-  if (!session.authenticated) return <AuthScreen initialMode={authModeForRoute(routeUrl)} onModeChange={(mode) => navigate(`/app?mode=${mode}`, true)} onAuthenticated={async (current) => { setSession(current); if (current.onboardingComplete) await refresh(); navigate("/app", true); }} />;
+  if (!session.authenticated) {
+    const callbackNotice = externalIdentityCallbackNotice(routeUrl);
+    return <AuthScreen initialMode={authModeForRoute(routeUrl)} {...(callbackNotice ? { callbackNotice } : {})} returnTo={authReturnToForRoute(routeUrl)} onModeChange={(mode) => navigate(`/app?mode=${mode}&return_to=${encodeURIComponent(authReturnToForRoute(routeUrl))}`, true)} onAuthenticated={async (current) => { setSession(current); if (current.onboardingComplete) await refresh(); navigate(authReturnToForRoute(routeUrl), true); }} />;
+  }
   if (!session.onboardingComplete) return <Onboarding session={session} onComplete={async () => { const current = await api.session(); setSession(current); await refresh(); navigate("/app", true); }} />;
   if (!data) return <Startup message={error || "Opening your household workspace…"} {...(error ? { retry: () => void refresh() } : {})} />;
 
@@ -108,6 +112,10 @@ export function App() {
 
 export function authModeForRoute(route: URL): "register" | "login" {
   return route.searchParams.get("mode") === "login" ? "login" : "register";
+}
+
+export function authReturnToForRoute(route: URL): string {
+  return safeAuthReturnTo(route.searchParams.get("return_to"));
 }
 
 function PageHead({ eyebrow, title, copy, action }: { eyebrow: string; title: string; copy: string; action?: React.ReactNode }) {
