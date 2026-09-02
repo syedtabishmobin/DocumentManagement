@@ -18,6 +18,14 @@ param dropboxAppKey string
 param dropboxAppSecretConfigured bool
 param boxClientId string
 param boxClientSecretConfigured bool
+param externalIdentityAdapterActivated bool
+param externalIdentityAuthority string
+param externalIdentityTenantId string
+param externalIdentityClientId string
+param externalIdentityCallbackUrl string
+param externalIdentityProviderAllowList array
+param externalIdentityClientSecretName string
+param externalIdentityClientSecretConfigured bool
 param azureCommunicationServiceName string
 param azureCommunicationEndpoint string
 param emailFromAddress string
@@ -28,6 +36,29 @@ param tags object
 
 var webAppName = 'ca-${resourcePrefix}-${environment}-web'
 var publicBaseUrl = 'https://${webAppName}.${managedEnvironment.properties.defaultDomain}'
+var externalIdentitySecretAlias = 'entra-external-id-client-secret'
+var externalIdentityContainerSecrets = externalIdentityClientSecretConfigured ? [
+  {
+    name: externalIdentitySecretAlias
+    keyVaultUrl: 'https://${keyVaultName}.vault.azure.net/secrets/${externalIdentityClientSecretName}'
+    identity: runtimeIdentity.id
+  }
+] : []
+var externalIdentitySecretEnvironment = externalIdentityClientSecretConfigured ? [
+  {
+    name: 'DM_ENTRA_EXTERNAL_ID_CLIENT_SECRET'
+    secretRef: externalIdentitySecretAlias
+  }
+] : []
+var externalIdentityEnvironment = [
+  { name: 'DM_EXTERNAL_IDENTITY_ADAPTER', value: externalIdentityAdapterActivated ? 'enabled' : 'disabled' }
+  { name: 'DM_ENTRA_EXTERNAL_ID_AUTHORITY', value: externalIdentityAuthority }
+  { name: 'DM_ENTRA_EXTERNAL_ID_TENANT_ID', value: externalIdentityTenantId }
+  { name: 'DM_ENTRA_EXTERNAL_ID_CLIENT_ID', value: externalIdentityClientId }
+  { name: 'DM_ENTRA_EXTERNAL_ID_CALLBACK_URL', value: externalIdentityCallbackUrl }
+  { name: 'DM_EXTERNAL_IDENTITY_PROVIDER_ALLOW_LIST', value: join(externalIdentityProviderAllowList, ',') }
+  { name: 'DM_ENTRA_EXTERNAL_ID_CLIENT_SECRET_CONFIGURED', value: externalIdentityClientSecretConfigured ? 'true' : 'false' }
+]
 var providerRegistrationEnvironment = configureProviderRegistrations ? [
   { name: 'DM_PUBLIC_BASE_URL', value: publicBaseUrl }
   { name: 'DM_GOOGLE_CLIENT_ID', value: googleClientId }
@@ -185,6 +216,7 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
     environmentId: managedEnvironment.id
     configuration: {
       activeRevisionsMode: 'Single'
+      secrets: externalIdentityContainerSecrets
       ingress: {
         external: true
         targetPort: 3000
@@ -203,7 +235,7 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
         {
           name: 'api'
           image: apiImage
-          env: concat([
+          env: concat(concat([
             { name: 'DM_PROFILE', value: environment }
             { name: 'DM_API_PORT', value: '3000' }
             { name: 'DM_BIND_HOST', value: '0.0.0.0' }
@@ -221,7 +253,7 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
             { name: 'DM_AZURE_STORAGE_ACCOUNT', value: ciphertextStorageName }
             { name: 'DM_AZURE_KEY_VAULT', value: keyVaultName }
             { name: 'DM_CUSTOMER_DATA_POLICY', value: environment == 'prod' ? 'production-gated' : 'synthetic-only' }
-          ], providerRegistrationEnvironment)
+          ], providerRegistrationEnvironment), concat(externalIdentityEnvironment, externalIdentitySecretEnvironment))
           resources: {
             cpu: json('0.5')
             memory: '1Gi'
@@ -303,3 +335,4 @@ resource web 'Microsoft.App/containerApps@2024-03-01' = {
 output apiUrl string = 'https://${api.properties.configuration.ingress.fqdn}'
 output webUrl string = 'https://${web.properties.configuration.ingress.fqdn}'
 output notificationAdapterInfrastructureConfigured bool = configureNotificationAdapterInfrastructure
+output externalIdentityActivated bool = externalIdentityAdapterActivated
