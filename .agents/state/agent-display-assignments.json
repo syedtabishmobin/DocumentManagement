@@ -352,6 +352,17 @@
       "parentDisplayAgentId": "ORCH-015",
       "workItem": "auth-preview-repair",
       "status": "ACTIVE"
+    },
+    {
+      "displayAgentId": "ORCH-017",
+      "displayRole": "Framework Delivery Orchestrator",
+      "displayRunId": "RUN-20260902-0096",
+      "runtimeAgentId": "codex-01a051b3-63fa-7c63-be4a-37d664579315",
+      "runtimeRunId": "run-external-identity-dev-20260902",
+      "roleId": "delivery-orchestrator",
+      "parentDisplayAgentId": "NONE",
+      "workItem": "external-identity-dev",
+      "status": "ACTIVE"
     }
   ]
 }
