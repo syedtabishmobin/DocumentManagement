@@ -363,6 +363,39 @@
       "parentDisplayAgentId": "NONE",
       "workItem": "external-identity-dev",
       "status": "ACTIVE"
+    },
+    {
+      "displayAgentId": "ORCH-018",
+      "displayRole": "Framework Delivery Orchestrator",
+      "displayRunId": "RUN-20260902-0097",
+      "runtimeAgentId": "codex-01a061c9-0340-7b42-92aa-5b6ab59ae8b6",
+      "runtimeRunId": "run-api-external-identity-dev-20260902",
+      "roleId": "delivery-orchestrator",
+      "parentDisplayAgentId": "ORCH-017",
+      "workItem": "external-identity-dev",
+      "status": "ACTIVE"
+    },
+    {
+      "displayAgentId": "ORCH-019",
+      "displayRole": "Framework Delivery Orchestrator",
+      "displayRunId": "RUN-20260902-0098",
+      "runtimeAgentId": "codex-01a061c9-03b6-7150-ae59-acdb828dba50",
+      "runtimeRunId": "run-web-external-identity-dev-20260902",
+      "roleId": "delivery-orchestrator",
+      "parentDisplayAgentId": "ORCH-017",
+      "workItem": "external-identity-dev",
+      "status": "ACTIVE"
+    },
+    {
+      "displayAgentId": "ORCH-020",
+      "displayRole": "Framework Delivery Orchestrator",
+      "displayRunId": "RUN-20260902-0099",
+      "runtimeAgentId": "codex-01a061c9-0410-7c72-99a3-14c1634eeb6a",
+      "runtimeRunId": "run-platform-external-identity-dev-20260902",
+      "roleId": "delivery-orchestrator",
+      "parentDisplayAgentId": "ORCH-017",
+      "workItem": "external-identity-dev",
+      "status": "ACTIVE"
     }
   ]
 }
