@@ -235,7 +235,7 @@ resource api 'Microsoft.App/containerApps@2024-03-01' = {
         }
       ]
       scale: {
-        minReplicas: environment == 'prod' ? 1 : 0
+        minReplicas: environment == 'dev' || environment == 'prod' ? 1 : 0
         maxReplicas: environment == 'prod' ? 10 : 2
       }
       volumes: [

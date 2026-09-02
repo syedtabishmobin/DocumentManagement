@@ -14,7 +14,7 @@
     "AGENTS.md, CODEX.md, 04_USING_THIS_REPO_WITH_CODEX.md and current source-of-truth/current-state records",
     "DEC-038, REQ-P1-TRUST-001/008, REQ-P1-PLT-003, STORY-P1-008 and STORY-P1-047",
     "Current React auth UI, API client, NestJS AuthController, IdentityStore, contracts and focused authentication tests",
-    "Live DEV browser inspection, unauthenticated session HTTP probe, schema-invalid register/login probes and Azure Container App console evidence",
+    "Live DEV browser inspection and user screenshot of the indefinitely pending account-entry startup screen; unauthenticated session timing probe; schema-invalid register/login probes; Azure Container App console evidence; observed API minReplicas=0",
     "Observed DEV web image dev-b5720beedd6afa908a823775efeab88b4d47968a and API image dev-8e39e77a9a94d43cb5f96ea2c76e53de96c95473",
     "Current Bicep application deployment, dev parameters, container image workflow, branch protection documentation and Phase 1 quality workflow",
     "Seven-day agent summary with token, provider-cost and context-efficiency values truthfully UNAVAILABLE"
@@ -43,7 +43,7 @@
     {
       "area": "Azure DEV application deployment",
       "decision": "REPLACE_SELECTIVELY",
-      "evidence": "Retain the existing Container Apps, reverse proxy, managed identity, synthetic Azure Files and Bicep model; replace only stale web/API images with immutable exact-candidate artifacts after QA."
+      "evidence": "Retain the existing Container Apps, reverse proxy, managed identity, synthetic Azure Files and Bicep model; replace stale web/API images with immutable exact-candidate artifacts after QA and retain one DEV API replica so interactive account entry does not wait on scale-to-zero."
     },
     {
       "area": "Pull-request quality routing",
@@ -61,8 +61,9 @@
     "Creating a working forgot-password path would violate approved DEC-038 and could introduce a weaker account/workspace/key takeover route.",
     "A healthy GET session endpoint does not prove registration/login writes; exact-candidate and deployed synthetic end-to-end smoke evidence are required.",
     "The DEV Azure Files identity state is synthetic but persistent; smoke fixtures must be unique, non-personal and privacy-safe.",
+    "Keeping one 0.5 vCPU / 1 GiB DEV API replica continuously available increases Azure Container Apps cost; exact AUD impact is provider/usage dependent and remains UNAVAILABLE until billing evidence is observed.",
     "Deploying directly without updating immutable Bicep image references would create configuration drift.",
     "Changing test routing in the authentication repair would make product acceptance harder to attribute and could weaken branch protection."
   ],
-  "recommendation": "Repair only the auth validation and recovery-unavailable presentation, pass focused and protected exact-candidate QA, build immutable candidate images, update reviewed DEV image references, deploy through Bicep, and prove registration/logout/login in DEV with synthetic data. Create a separate governed CI-routing item from OPS-001 evidence rather than weakening this repair's gates."
+  "recommendation": "Repair auth validation, bounded startup/retry behavior and recovery-unavailable presentation; retain one DEV API replica; pass focused and protected exact-candidate QA; build immutable candidate images; update reviewed DEV image references; deploy through Bicep; and prove registration/logout/login in DEV with synthetic data. Create a separate governed CI-routing item from OPS-001 evidence rather than weakening this repair's gates."
 }

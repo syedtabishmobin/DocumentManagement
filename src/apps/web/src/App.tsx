@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Answer, AuthSession, DashboardSnapshot } from "@document-management/contracts";
 import { Archive, Bell, Bot, CalendarClock, Check, ChevronRight, Eye, FileLock2, FileText, FolderSearch2, Home, ListChecks, Menu, Network, Plus, RotateCcw, Search, ShieldCheck, Sparkles, Trash2, Upload, Users, X } from "lucide-react";
 import { api } from "./api.js";
@@ -13,6 +13,7 @@ import { ProfileView } from "./Profile.js";
 import { LegalPage } from "./Legal.js";
 
 type View = "home" | "documents" | "profile" | "assistant" | "attention" | "family" | "activity" | "trash";
+const STARTUP_UNAVAILABLE_MESSAGE = "Doculyra took too long to start. Try again.";
 const nav: Array<{ id: View; label: string; icon: typeof Home }> = [
   { id: "home", label: "Overview", icon: Home },
   { id: "documents", label: "Documents", icon: FileText },
@@ -32,13 +33,18 @@ export function App() {
   const [menu, setMenu] = useState(false);
   const [capture, setCapture] = useState(false);
   const [error, setError] = useState("");
+  const sessionRequestInFlight = useRef(false);
 
   const refresh = async () => { const dashboard = await api.dashboard(); setData(dashboard); setError(""); };
   async function loadSession() {
+    if (sessionRequestInFlight.current) return;
+    sessionRequestInFlight.current = true;
+    setError("");
     try {
       const current = await api.session(); setSession(current);
       if (current.authenticated && current.onboardingComplete) await refresh();
-    } catch { setError("The workspace API is not available. Try again shortly."); }
+    } catch { setError(STARTUP_UNAVAILABLE_MESSAGE); }
+    finally { sessionRequestInFlight.current = false; }
   }
   useEffect(() => {
     const updateRoute = () => setRoute(`${window.location.pathname}${window.location.search}`);
@@ -53,10 +59,10 @@ export function App() {
   if (routeUrl.pathname === "/privacy") return <LegalPage kind="privacy" />;
   if (routeUrl.pathname === "/terms") return <LegalPage kind="terms" />;
   if (routeUrl.pathname === "/") return <MarketingSite />;
-  if (!session) return <Startup message={error || "Opening your private workspace…"} retry={() => void loadSession()} />;
-  if (!session.authenticated) return <AuthScreen initialMode={routeUrl.searchParams.get("mode") === "login" ? "login" : "register"} onModeChange={(mode) => navigate(`/app?mode=${mode}`, true)} onAuthenticated={async (current) => { setSession(current); if (current.onboardingComplete) await refresh(); navigate("/app", true); }} />;
+  if (!session) return <Startup message={error || "Opening your private workspace…"} {...(error ? { retry: () => void loadSession() } : {})} />;
+  if (!session.authenticated) return <AuthScreen initialMode={authModeForRoute(routeUrl)} onModeChange={(mode) => navigate(`/app?mode=${mode}`, true)} onAuthenticated={async (current) => { setSession(current); if (current.onboardingComplete) await refresh(); navigate("/app", true); }} />;
   if (!session.onboardingComplete) return <Onboarding session={session} onComplete={async () => { const current = await api.session(); setSession(current); await refresh(); navigate("/app", true); }} />;
-  if (!data) return <Startup message={error || "Opening your household workspace…"} retry={() => void refresh()} />;
+  if (!data) return <Startup message={error || "Opening your household workspace…"} {...(error ? { retry: () => void refresh() } : {})} />;
 
   const activeDocuments = data.documents.filter((document) => document.status !== "DELETED");
   const attention = activeDocuments.filter((document) => document.status === "NEEDS_REVIEW" || document.status === "POLICY_HOLD").length + data.tasks.filter((task) => task.state === "OPEN").length;
@@ -98,6 +104,10 @@ export function App() {
     </main>
     {capture ? <CaptureModal subjects={data.subjects} onClose={() => setCapture(false)} onAdded={async () => { await refresh(); setView("documents"); }} /> : null}
   </div>;
+}
+
+export function authModeForRoute(route: URL): "register" | "login" {
+  return route.searchParams.get("mode") === "login" ? "login" : "register";
 }
 
 function PageHead({ eyebrow, title, copy, action }: { eyebrow: string; title: string; copy: string; action?: React.ReactNode }) {

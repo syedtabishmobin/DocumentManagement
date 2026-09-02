@@ -5,8 +5,8 @@ import { api } from "./api.js";
 import { BrandMark, BrandName } from "./Brand.js";
 import { isLocalRuntime } from "./runtime.js";
 
-export function Startup({ message, retry }: { message: string; retry: () => void }) {
-  return <div className="startup"><div className="brand-mark"><BrandMark /></div><h1>Doculyra</h1><p>{message}</p><button onClick={retry}>Try again</button></div>;
+export function Startup({ message, retry }: { message: string; retry?: () => void }) {
+  return <div className="startup"><div className="brand-mark"><BrandMark /></div><h1>Doculyra</h1><p>{message}</p>{retry ? <button onClick={retry}>Try again</button> : null}</div>;
 }
 
 export function AuthScreen({ onAuthenticated, onModeChange, initialMode = "register" }: { onAuthenticated: (session: AuthSession) => void | Promise<void>; onModeChange?: (mode: "register" | "login") => void; initialMode?: "register" | "login" }) {
