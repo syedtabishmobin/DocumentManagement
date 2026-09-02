@@ -1,4 +1,5 @@
 import type { Answer, AuthSession, ConnectorDescriptor, DashboardSnapshot, DocumentDeletionResult, DocumentDetail, DocumentRecord, DocumentRestoreResult, FactRecord, ManagePersonInput, Member, SubjectRecord, TaskRecord, Workspace, WorkspaceRole } from "@document-management/contracts";
+import { externalIdentityStartPath, parseExternalIdentityAvailability, type ExternalIdentityAvailability } from "./externalIdentity.js";
 
 let csrfToken: string | undefined;
 let activeWorkspaceId: string | undefined;
@@ -83,6 +84,8 @@ function requestSession(timeoutMs: number): Promise<AuthSession> {
 
 export const api = {
   session: ({ timeoutMs = SESSION_REQUEST_TIMEOUT_MS }: { timeoutMs?: number } = {}) => requestSession(timeoutMs),
+  externalIdentityProviders: async (): Promise<ExternalIdentityAvailability> => parseExternalIdentityAvailability(await request<unknown>("/auth/external/providers")),
+  startExternalIdentity: (provider: "GOOGLE" | "APPLE" | "MICROSOFT", returnPath: string) => request<{ authorizationUrl: string; expiresIn: number }>(externalIdentityStartPath(provider, returnPath)),
   register: (input: { displayName: string; email: string; password: string }) => request<AuthSession>("/auth/register", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }),
   login: (input: { email: string; password: string }) => request<AuthSession>("/auth/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }),
   logout: async () => {

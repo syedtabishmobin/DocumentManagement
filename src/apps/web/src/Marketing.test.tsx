@@ -17,11 +17,12 @@ describe("Doculyra public experience", () => {
     expect(markup).toContain('href="/terms"');
   });
 
-  it("does not present deferred identity providers as active", () => {
+  it("fails external identity providers closed while availability is loading", () => {
     const markup = renderToStaticMarkup(<AuthScreen initialMode="login" onAuthenticated={() => undefined} />);
 
-    expect(markup).toContain("External identity options are intentionally inactive");
-    expect(markup).toMatch(/disabled=""[^>]*title="Available after identity integrations are configured"/);
+    expect(markup).toContain("Checking provider availability");
+    expect(markup.match(/disabled=""/g)?.length).toBeGreaterThanOrEqual(4);
+    expect(markup).not.toMatch(/external account (was )?connected|successfully signed/i);
     expect(markup).toContain("Use a passkey");
   });
 

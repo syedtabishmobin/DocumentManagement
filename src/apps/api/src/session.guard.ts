@@ -3,7 +3,7 @@ import type { Request, Response } from "express";
 import { IdentityStore } from "./identity.store.js";
 import { assertTrustedOrigin, sessionToken, type AuthenticatedRequest } from "./auth.controller.js";
 
-const publicPaths = new Set(["/api/health", "/api/auth/session", "/api/auth/register", "/api/auth/login"]);
+const publicPaths = new Set(["/api/health", "/api/auth/session", "/api/auth/register", "/api/auth/login", "/api/auth/external/providers", "/api/auth/external/start", "/api/auth/external/callback"]);
 const unsafeMethods = new Set(["POST", "PATCH", "PUT", "DELETE"]);
 
 @Injectable()

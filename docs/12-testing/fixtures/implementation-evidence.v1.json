@@ -114,6 +114,30 @@
       "product_completion_claim": "NONE"
     },
     {
+      "path": "src/apps/api/src/external-identity.service.test.ts",
+      "scope": "PRODUCT_BOUNDED",
+      "evidence_type": "DEVELOPER_INTEGRATION",
+      "source_state": "GOVERNED_DEVELOPER_EVIDENCE_PENDING_INDEPENDENT_QA",
+      "test_refs": ["TEST-CON-P1-001", "TEST-SEC-P1-008", "TEST-DR-P1-007"],
+      "framework_acceptance_refs": [],
+      "story_refs": ["STORY-P1-008"],
+      "acceptance_refs": ["AC-STORY-P1-008-01", "AC-STORY-P1-008-02"],
+      "historical_work": [],
+      "product_completion_claim": "NONE"
+    },
+    {
+      "path": "src/apps/api/src/external-identity.controller.test.ts",
+      "scope": "PRODUCT_BOUNDED",
+      "evidence_type": "DEVELOPER_INTEGRATION",
+      "source_state": "GOVERNED_DEVELOPER_EVIDENCE_PENDING_INDEPENDENT_QA",
+      "test_refs": ["TEST-CON-P1-001", "TEST-SEC-P1-008"],
+      "framework_acceptance_refs": [],
+      "story_refs": ["STORY-P1-008"],
+      "acceptance_refs": ["AC-STORY-P1-008-02"],
+      "historical_work": [],
+      "product_completion_claim": "NONE"
+    },
+    {
       "path": "src/apps/api/src/local.store.test.ts",
       "scope": "PRODUCT_BOUNDED",
       "evidence_type": "DEVELOPER_INTEGRATION",
@@ -350,6 +374,18 @@
       "framework_acceptance_refs": [],
       "story_refs": ["STORY-P1-001", "STORY-P1-003", "STORY-P1-004"],
       "acceptance_refs": ["AC-STORY-P1-001-01", "AC-STORY-P1-003-01", "AC-STORY-P1-004-01"],
+      "historical_work": [],
+      "product_completion_claim": "NONE"
+    },
+    {
+      "path": "src/apps/web/src/externalIdentity.test.ts",
+      "scope": "PRODUCT_BOUNDED",
+      "evidence_type": "DEVELOPER_UNIT",
+      "source_state": "GOVERNED_DEVELOPER_EVIDENCE_PENDING_INDEPENDENT_QA",
+      "test_refs": ["TEST-CON-P1-013", "TEST-SEC-P1-008", "TEST-E2E-P1-001"],
+      "framework_acceptance_refs": [],
+      "story_refs": ["STORY-P1-008"],
+      "acceptance_refs": ["AC-STORY-P1-008-01", "AC-STORY-P1-008-02"],
       "historical_work": [],
       "product_completion_claim": "NONE"
     },

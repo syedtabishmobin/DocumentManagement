@@ -3,7 +3,7 @@ import { createHash, createHmac, randomBytes, randomUUID, scrypt as scryptCallba
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { promisify } from "node:util";
-import type { AuthSession, LoginInput, RegisterInput } from "@document-management/contracts";
+import type { AuthSession, ExternalIdentityProvider, LoginInput, RegisterInput } from "@document-management/contracts";
 
 const scrypt = promisify(scryptCallback);
 const IDLE_SESSION_SECONDS = 60 * 30;
@@ -20,8 +20,8 @@ interface AccountRecord {
   id: string;
   displayName: string;
   email: string;
-  passwordHash: string;
-  salt: string;
+  passwordHash?: string;
+  salt?: string;
   passwordVersion: 1;
   securityVersion: number;
   state: "ACTIVE" | "SUSPENDED";
@@ -41,7 +41,7 @@ interface SessionRecord {
   lastSeenAt: string;
   idleExpiresAt: string;
   absoluteExpiresAt: string;
-  authenticationMethod: "LOCAL_PASSWORD";
+  authenticationMethod: "LOCAL_PASSWORD" | "EXTERNAL_IDENTITY";
   assurance: "SINGLE_FACTOR";
   activeWorkspaceId?: string;
 }
@@ -56,25 +56,52 @@ interface IdentitySecurityEventRecord {
   id: string;
   accountId: string;
   sessionId?: string;
-  eventType: "SESSION_ISSUED" | "SECURITY_STATE_ROTATED" | "SESSION_ROTATED" | "SESSION_REVOKED" | "SESSION_LOGGED_OUT";
+  eventType: "SESSION_ISSUED" | "SECURITY_STATE_ROTATED" | "SESSION_ROTATED" | "SESSION_REVOKED" | "SESSION_LOGGED_OUT" | "EXTERNAL_IDENTITY_MAPPED" | "EXTERNAL_IDENTITY_AUTHENTICATED";
+  provider?: ExternalIdentityProvider;
   securityVersion: number;
   occurredAt: string;
 }
 
+interface ExternalIdentityRecord {
+  id: string;
+  provider: ExternalIdentityProvider;
+  issuer: string;
+  subject: string;
+  accountId: string;
+  createdAt: string;
+}
+
+interface ExternalAuthorizationRecord {
+  stateHash: string;
+  provider: ExternalIdentityProvider;
+  returnPath: string;
+  clientFingerprintHash: string;
+  createdAt: string;
+  expiresAt: string;
+}
+
 interface IdentityState {
-  schemaVersion: 3;
+  schemaVersion: 4;
   accounts: AccountRecord[];
   sessions: SessionRecord[];
   loginAttempts: LoginAttemptRecord[];
   securityEvents: IdentitySecurityEventRecord[];
+  externalIdentities: ExternalIdentityRecord[];
+  externalAuthorizations: ExternalAuthorizationRecord[];
+  externalStartAttempts: Array<{ clientFingerprintHash: string; attemptedAt: string[] }>;
+  externalIdentityOutcomes: Array<{ id: string; provider: ExternalIdentityProvider; outcome: "CANCELLED" | "PROVIDER_UNAVAILABLE" | "TOKEN_EXCHANGE_REJECTED" | "TOKEN_INVALID" | "ACCOUNT_COLLISION"; occurredAt: string }>;
 }
 
 interface PersistedIdentityInput {
   schemaVersion?: number;
-  accounts?: Array<Partial<AccountRecord> & Pick<AccountRecord, "id" | "displayName" | "email" | "passwordHash" | "salt" | "onboardingComplete" | "createdAt">>;
+  accounts?: Array<Partial<AccountRecord> & Pick<AccountRecord, "id" | "displayName" | "email" | "onboardingComplete" | "createdAt">>;
   sessions?: Array<Partial<SessionRecord> & { tokenHash: string; accountId: string; expiresAt?: string }>;
   loginAttempts?: LoginAttemptRecord[];
   securityEvents?: IdentitySecurityEventRecord[];
+  externalIdentities?: ExternalIdentityRecord[];
+  externalAuthorizations?: ExternalAuthorizationRecord[];
+  externalStartAttempts?: Array<{ clientFingerprintHash: string; attemptedAt: string[] }>;
+  externalIdentityOutcomes?: IdentityState["externalIdentityOutcomes"];
 }
 
 export interface SessionCredentials {
@@ -120,13 +147,13 @@ export class IdentityStore {
   private normalize(input: PersistedIdentityInput): IdentityState {
     const updatedAt = new Date().toISOString();
     return {
-      schemaVersion: 3,
+      schemaVersion: 4,
       accounts: (input.accounts ?? []).map((account) => ({
         id: account.id,
         displayName: account.displayName,
         email: account.email,
-        passwordHash: account.passwordHash,
-        salt: account.salt,
+        ...(account.passwordHash ? { passwordHash: account.passwordHash } : {}),
+        ...(account.salt ? { salt: account.salt } : {}),
         passwordVersion: 1,
         securityVersion: account.securityVersion ?? 1,
         state: account.state ?? "ACTIVE",
@@ -148,13 +175,17 @@ export class IdentityStore {
           lastSeenAt: session.lastSeenAt,
           idleExpiresAt: session.idleExpiresAt,
           absoluteExpiresAt: session.absoluteExpiresAt,
-          authenticationMethod: "LOCAL_PASSWORD" as const,
+          authenticationMethod: session.authenticationMethod === "EXTERNAL_IDENTITY" ? "EXTERNAL_IDENTITY" as const : "LOCAL_PASSWORD" as const,
           assurance: "SINGLE_FACTOR" as const,
           ...(session.activeWorkspaceId ? { activeWorkspaceId: session.activeWorkspaceId } : {}),
         }];
       }),
       loginAttempts: input.loginAttempts ?? [],
       securityEvents: input.securityEvents ?? [],
+      externalIdentities: input.externalIdentities ?? [],
+      externalAuthorizations: input.externalAuthorizations ?? [],
+      externalStartAttempts: input.externalStartAttempts ?? [],
+      externalIdentityOutcomes: input.externalIdentityOutcomes ?? [],
     };
   }
 
@@ -163,7 +194,7 @@ export class IdentityStore {
       return this.normalize(JSON.parse(await readFile(this.path, "utf8")) as PersistedIdentityInput);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
-      return { schemaVersion: 3, accounts: [], sessions: [], loginAttempts: [], securityEvents: [] };
+      return { schemaVersion: 4, accounts: [], sessions: [], loginAttempts: [], securityEvents: [], externalIdentities: [], externalAuthorizations: [], externalStartAttempts: [], externalIdentityOutcomes: [] };
     }
   }
 
@@ -199,9 +230,14 @@ export class IdentityStore {
       if (lockActive && attempt.lockUntil) current.lockUntil = attempt.lockUntil;
       return [current];
     });
+    state.externalAuthorizations = state.externalAuthorizations.filter((authorization) => new Date(authorization.expiresAt).getTime() > at);
+    state.externalStartAttempts = state.externalStartAttempts.flatMap((attempt) => {
+      const attemptedAt = attempt.attemptedAt.filter((value) => new Date(value).getTime() > at - LOGIN_WINDOW_SECONDS * 1000);
+      return attemptedAt.length ? [{ clientFingerprintHash: attempt.clientFingerprintHash, attemptedAt }] : [];
+    });
   }
 
-  private issueSession(state: IdentityState, account: AccountRecord, at: number, activeWorkspaceId = account.activeWorkspaceId): IdentityResult {
+  private issueSession(state: IdentityState, account: AccountRecord, at: number, activeWorkspaceId = account.activeWorkspaceId, authenticationMethod: SessionRecord["authenticationMethod"] = "LOCAL_PASSWORD"): IdentityResult {
     const token = randomBytes(32).toString("base64url");
     const csrfToken = csrfForSessionToken(token);
     const createdAt = iso(at);
@@ -209,7 +245,7 @@ export class IdentityStore {
       id: randomUUID(), tokenHash: hash(token), csrfHash: hash(csrfToken), accountId: account.id,
       securityVersion: account.securityVersion, createdAt, lastSeenAt: createdAt,
       idleExpiresAt: iso(at + IDLE_SESSION_SECONDS * 1000), absoluteExpiresAt: iso(at + ABSOLUTE_SESSION_SECONDS * 1000),
-      authenticationMethod: "LOCAL_PASSWORD", assurance: "SINGLE_FACTOR",
+      authenticationMethod, assurance: "SINGLE_FACTOR",
       ...(activeWorkspaceId ? { activeWorkspaceId } : {}),
     };
     state.sessions.push(session);
@@ -264,7 +300,7 @@ export class IdentityStore {
     const salt = account?.salt ?? "00000000000000000000000000000000";
     const actual = Buffer.from(await this.passwordDigest(input.password, salt), "hex");
     const expected = Buffer.from(account?.passwordHash ?? "00".repeat(64), "hex");
-    const validAccountId = account && actual.length === expected.length && timingSafeEqual(actual, expected) ? account.id : undefined;
+    const validAccountId = account?.passwordHash && actual.length === expected.length && timingSafeEqual(actual, expected) ? account.id : undefined;
 
     const result = await this.mutate((state): { ok: true; value: IdentityResult } | { ok: false; locked: boolean } => {
       this.prune(state, at);
@@ -286,6 +322,56 @@ export class IdentityStore {
       throw new UnauthorizedException("Email or password is incorrect");
     }
     return result.value;
+  }
+
+  async createExternalAuthorization(provider: ExternalIdentityProvider, stateValue: string, returnPath: string, fingerprint: string, at = Date.now()): Promise<void> {
+    await this.mutate((state) => {
+      this.prune(state, at);
+      const clientFingerprintHash = hash(fingerprint);
+      const attempts = state.externalStartAttempts.find((candidate) => candidate.clientFingerprintHash === clientFingerprintHash)
+        ?? { clientFingerprintHash, attemptedAt: [] };
+      if (!state.externalStartAttempts.includes(attempts)) state.externalStartAttempts.push(attempts);
+      if (attempts.attemptedAt.length >= 10) throw signInRateLimit();
+      attempts.attemptedAt.push(iso(at));
+      state.externalAuthorizations.push({ stateHash: hash(stateValue), provider, returnPath, clientFingerprintHash, createdAt: iso(at), expiresAt: iso(at + 10 * 60 * 1000) });
+    });
+  }
+
+  async consumeExternalAuthorization(stateValue: string, fingerprint: string, at = Date.now()): Promise<{ provider: ExternalIdentityProvider; returnPath: string }> {
+    return this.mutate((state) => {
+      this.prune(state, at);
+      const stateHash = hash(stateValue);
+      const authorization = state.externalAuthorizations.find((candidate) => candidate.stateHash === stateHash && candidate.clientFingerprintHash === hash(fingerprint));
+      state.externalAuthorizations = state.externalAuthorizations.filter((candidate) => candidate.stateHash !== stateHash);
+      if (!authorization) throw new UnauthorizedException("External sign-in could not be completed");
+      return { provider: authorization.provider, returnPath: authorization.returnPath };
+    });
+  }
+
+  async authenticateExternal(input: { provider: ExternalIdentityProvider; issuer: string; subject: string; email: string; displayName: string }, at = Date.now()): Promise<IdentityResult> {
+    return this.mutate((state) => {
+      this.prune(state, at);
+      const mapping = state.externalIdentities.find((candidate) => candidate.issuer === input.issuer && candidate.subject === input.subject);
+      let account = mapping ? state.accounts.find((candidate) => candidate.id === mapping.accountId && candidate.state === "ACTIVE") : undefined;
+      if (mapping && !account) throw new UnauthorizedException("External sign-in could not be completed");
+      if (!mapping) {
+        if (state.accounts.some((candidate) => candidate.email === input.email)) throw new ConflictException("External sign-in could not be completed");
+        const createdAt = iso(at);
+        account = { id: randomUUID(), displayName: input.displayName, email: input.email, passwordVersion: 1, securityVersion: 1, state: "ACTIVE", onboardingComplete: false, createdAt, updatedAt: createdAt };
+        state.accounts.push(account);
+        state.externalIdentities.push({ id: randomUUID(), provider: input.provider, issuer: input.issuer, subject: input.subject, accountId: account.id, createdAt });
+        state.securityEvents.push({ id: randomUUID(), accountId: account.id, eventType: "EXTERNAL_IDENTITY_MAPPED", provider: input.provider, securityVersion: account.securityVersion, occurredAt: createdAt });
+      }
+      const result = this.issueSession(state, account!, at, account!.activeWorkspaceId, "EXTERNAL_IDENTITY");
+      state.securityEvents.push({ id: randomUUID(), accountId: account!.id, sessionId: result.identity.session.id, eventType: "EXTERNAL_IDENTITY_AUTHENTICATED", provider: input.provider, securityVersion: account!.securityVersion, occurredAt: iso(at) });
+      return result;
+    });
+  }
+
+  async recordExternalIdentityOutcome(provider: ExternalIdentityProvider, outcome: IdentityState["externalIdentityOutcomes"][number]["outcome"], at = Date.now()): Promise<void> {
+    await this.mutate((state) => {
+      state.externalIdentityOutcomes.push({ id: randomUUID(), provider, outcome, occurredAt: iso(at) });
+    });
   }
 
   async session(token?: string, at = Date.now()): Promise<{ identity?: AuthenticatedIdentity; csrfToken?: string }> {

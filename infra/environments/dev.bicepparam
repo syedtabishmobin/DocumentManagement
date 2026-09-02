@@ -16,6 +16,18 @@ param dropboxAppKey = '42q2oall797rlcs'
 param dropboxAppSecretConfigured = true
 param boxClientId = '46o6gjad76z6byt0hacdfabhovf9ga47'
 param boxClientSecretConfigured = true
+// Issue #77 is deployed fail-closed. Populate the public Entra External ID
+// metadata and Key Vault presence marker only after the owner completes the
+// external tenant, app/user-flow and provider federation steps in OPS-PROVIDER-001.
+// Activation remains false until synthetic live conformance and independent QA pass.
+param externalIdentityAdapterActivated = false
+param externalIdentityAuthority = ''
+param externalIdentityTenantId = ''
+param externalIdentityClientId = ''
+param externalIdentityCallbackUrl = ''
+param externalIdentityProviderAllowList = []
+param externalIdentityClientSecretName = ''
+param externalIdentityClientSecretConfigured = false
 param azureCommunicationServiceName = 'acs-doculyra-dev'
 param azureCommunicationEndpoint = 'https://acs-doculyra-dev.australia.communication.azure.com'
 param emailFromAddress = 'DoNotReply@9900614b-2e01-4d86-93aa-379c583ada57.azurecomm.net'

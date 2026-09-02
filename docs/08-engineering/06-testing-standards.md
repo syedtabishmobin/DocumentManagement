@@ -71,7 +71,7 @@ Statement/branch coverage may be a diagnostic after tool selection, but no unive
 
 ### 5.1 API
 
-For every `API-P1-101`–`183` operation test:
+For every `API-P1-101`–`186` operation test:
 
 - explicit bearer authentication and current authorization;
 - workspace path/header equality and required purpose;

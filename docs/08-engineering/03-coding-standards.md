@@ -96,7 +96,7 @@ External effects use a separate exact effect digest, approval binding, external 
 
 ## 8. API, event, AI, and generated-contract code
 
-- API implementations conform to `API-P1-001`–`052` and `API-P1-101`–`183`, including caller-safe problem responses, headers, examples, and decision metadata.
+- API implementations conform to `API-P1-001`–`052` and `API-P1-101`–`186`, including caller-safe problem responses, headers, examples, and decision metadata.
 - Event producers/consumers conform to `EVT-P1-001`–`032` and the common envelope; event payloads remain closed and reference-oriented.
 - Connector adapters conform to `CON-P1-001`–`050` and stay disabled where decisions require.
 - AI/document processing is an untrusted interpretation path behind registered ports. Structured outputs are schema-, evidence-, policy-, guardrail-, and provenance-validated before immutable proposal storage.

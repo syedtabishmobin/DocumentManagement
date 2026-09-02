@@ -39,6 +39,38 @@ describe("web API request context", () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it("reads the fail-closed provider availability contract without workspace or purpose context", async () => {
+    const response = {
+      broker: "MICROSOFT_ENTRA_EXTERNAL_ID",
+      providers: [
+        { provider: "GOOGLE", available: true },
+        { provider: "APPLE", available: false },
+        { provider: "MICROSOFT", available: false },
+      ],
+    };
+    const fetchMock = vi.fn(async (_input: string | URL | Request, _init?: RequestInit): Promise<Response> => new Response(JSON.stringify(response), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { api } = await import("./api.js");
+
+    await expect(api.externalIdentityProviders()).resolves.toEqual(response);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/auth/external/providers");
+    const headers = new Headers(fetchMock.mock.calls[0]?.[1]?.headers);
+    expect(headers.get("X-Purpose-Id")).toBeNull();
+    expect(headers.get("X-Workspace-Id")).toBeNull();
+    expect(headers.get("X-Correlation-Id")).toBeTruthy();
+  });
+
+  it("starts the selected provider through the same-origin API with the preserved safe return path", async () => {
+    const fetchMock = vi.fn(async (_input: string | URL | Request, _init?: RequestInit): Promise<Response> => new Response(JSON.stringify({ authorizationUrl: "https://identity.example/authorize?state=opaque", expiresIn: 600 }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const { api } = await import("./api.js");
+
+    await expect(api.startExternalIdentity("MICROSOFT", "/app/documents")).resolves.toEqual({ authorizationUrl: "https://identity.example/authorize?state=opaque", expiresIn: 600 });
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/auth/external/start?provider=MICROSOFT&returnPath=%2Fapp%2Fdocuments");
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({ credentials: "same-origin" });
+  });
+
   it("reuses one in-flight session request when startup is retried concurrently", async () => {
     let resolveSession: ((response: Response) => void) | undefined;
     const fetchMock = vi.fn((): Promise<Response> => new Promise((resolve) => { resolveSession = resolve; }));

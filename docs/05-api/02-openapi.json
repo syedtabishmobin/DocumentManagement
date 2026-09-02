@@ -92,6 +92,94 @@
     }
   ],
   "paths": {
+    "/auth/external/providers": {
+      "get": {
+        "operationId": "API-P1-184",
+        "summary": "Get fail-closed external identity provider availability",
+        "tags": ["Identity"],
+        "security": [],
+        "x-scope": "ACCOUNT_ENTRY",
+        "x-workspace-context": "NOT_ESTABLISHED",
+        "x-current-authorization-required": false,
+        "x-command": false,
+        "x-idempotency-required": false,
+        "x-concurrency-required": false,
+        "x-requirements": ["REQ-P1-TRUST-001"],
+        "x-rules": ["API-P1-007", "API-P1-020", "API-P1-047"],
+        "x-decision-fence": ["DEC-045", "DEC-054"],
+        "x-decision-state": {"DEC-045": "APPROVED_DISABLED_FIRST", "DEC-054": "EXACT_PROVIDER_ACTIVATION_GATED"},
+        "x-availability": "CONFIGURATION_AND_CONFORMANCE_GATED",
+        "responses": {
+          "200": {
+            "description": "Content-minimized provider availability.",
+            "content": {"application/json": {"schema": {"type": "object", "additionalProperties": false, "required": ["broker", "providers"], "properties": {"broker": {"type": "string", "const": "MICROSOFT_ENTRA_EXTERNAL_ID"}, "providers": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["provider", "available"], "properties": {"provider": {"type": "string", "enum": ["GOOGLE", "APPLE", "MICROSOFT"]}, "available": {"type": "boolean"}}}}}}, "examples": {"disabled": {"value": {"broker": "MICROSOFT_ENTRA_EXTERNAL_ID", "providers": [{"provider": "GOOGLE", "available": false}, {"provider": "APPLE", "available": false}, {"provider": "MICROSOFT", "available": false}]}}}}}
+          },
+          "default": {"$ref": "#/components/responses/Problem"}
+        }
+      }
+    },
+    "/auth/external/start": {
+      "get": {
+        "operationId": "API-P1-185",
+        "summary": "Start a bounded Entra-brokered external identity authorization",
+        "tags": ["Identity"],
+        "security": [],
+        "x-scope": "ACCOUNT_ENTRY",
+        "x-workspace-context": "NOT_ESTABLISHED",
+        "x-current-authorization-required": false,
+        "x-command": true,
+        "x-idempotency-required": false,
+        "x-concurrency-required": false,
+        "x-requirements": ["REQ-P1-TRUST-001"],
+        "x-rules": ["API-P1-007", "API-P1-020", "API-P1-047"],
+        "x-decision-fence": ["DEC-045", "DEC-054"],
+        "x-decision-state": {"DEC-045": "APPROVED_DISABLED_FIRST", "DEC-054": "EXACT_PROVIDER_ACTIVATION_GATED"},
+        "x-availability": "CONFIGURATION_AND_CONFORMANCE_GATED",
+        "parameters": [
+          {"name": "provider", "in": "query", "required": true, "schema": {"type": "string", "enum": ["GOOGLE", "APPLE", "MICROSOFT"]}},
+          {"name": "returnPath", "in": "query", "required": false, "schema": {"type": "string", "enum": ["/app", "/app/documents", "/app/settings", "/app/security"], "default": "/app"}}
+        ],
+        "responses": {
+          "200": {
+            "description": "Authorization URL containing only bounded state, nonce and PKCE challenge.",
+            "content": {"application/json": {"schema": {"type": "object", "additionalProperties": false, "required": ["authorizationUrl", "expiresIn"], "properties": {"authorizationUrl": {"type": "string", "format": "uri"}, "expiresIn": {"type": "integer", "const": 600}}}, "examples": {"synthetic": {"value": {"authorizationUrl": "https://tenant.ciamlogin.com/tenant/oauth2/v2.0/authorize?client_id=synthetic&response_type=code&scope=openid%20profile%20email&state=opaque&nonce=opaque&code_challenge=opaque&code_challenge_method=S256&domain_hint=google", "expiresIn": 600}}}}}
+          },
+          "default": {"$ref": "#/components/responses/Problem"}
+        }
+      }
+    },
+    "/auth/external/callback": {
+      "get": {
+        "operationId": "API-P1-186",
+        "summary": "Complete a one-time Entra-brokered external identity callback",
+        "tags": ["Identity"],
+        "security": [],
+        "x-scope": "ACCOUNT_ENTRY",
+        "x-workspace-context": "NOT_ESTABLISHED",
+        "x-current-authorization-required": false,
+        "x-command": true,
+        "x-idempotency-required": false,
+        "x-concurrency-required": false,
+        "x-requirements": ["REQ-P1-TRUST-001"],
+        "x-rules": ["API-P1-007", "API-P1-020", "API-P1-047"],
+        "x-decision-fence": ["DEC-045", "DEC-054"],
+        "x-decision-state": {"DEC-045": "APPROVED_DISABLED_FIRST", "DEC-054": "EXACT_PROVIDER_ACTIVATION_GATED"},
+        "x-availability": "CONFIGURATION_AND_CONFORMANCE_GATED",
+        "parameters": [
+          {"name": "state", "in": "query", "required": true, "schema": {"type": "string", "minLength": 32, "maxLength": 200}},
+          {"name": "code", "in": "query", "required": false, "schema": {"type": "string", "minLength": 1, "maxLength": 4096}},
+          {"name": "error", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 120}},
+          {"name": "error_description", "in": "query", "required": false, "schema": {"type": "string", "maxLength": 500}}
+        ],
+        "responses": {
+          "303": {
+            "description": "Redirect to an allow-listed web path with only a bounded success, cancellation, invalid, or unavailable marker; a successful callback also issues the bounded Doculyra session cookie.",
+            "headers": {"Location": {"description": "Same-origin web return path with privacy-safe result marker.", "schema": {"type": "string", "format": "uri"}}}
+          },
+          "default": {"$ref": "#/components/responses/Problem"}
+        }
+      }
+    },
     "/v1/workspaces": {
       "parameters": [
         {

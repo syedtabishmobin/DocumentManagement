@@ -30,6 +30,17 @@ param dropboxAppKey string = ''
 param dropboxAppSecretConfigured bool = false
 param boxClientId string = ''
 param boxClientSecretConfigured bool = false
+// Entra External ID is the browser-delegated customer identity broker selected
+// by ADR-ARCH-007. These values are non-secret deployment metadata. Activation
+// remains a separate fail-closed gate and is permitted only in synthetic DEV.
+param externalIdentityAdapterActivated bool = false
+param externalIdentityAuthority string = ''
+param externalIdentityTenantId string = ''
+param externalIdentityClientId string = ''
+param externalIdentityCallbackUrl string = ''
+param externalIdentityProviderAllowList array = []
+param externalIdentityClientSecretName string = ''
+param externalIdentityClientSecretConfigured bool = false
 param azureCommunicationServiceName string = ''
 param azureCommunicationEndpoint string = ''
 param emailFromAddress string = ''
@@ -47,6 +58,36 @@ param budgetStartDate string = utcNow('yyyy-MM-dd')
 
 var suffix = toLower(uniqueString(subscription().id, environment, resourcePrefix))
 var resourceGroupName = 'rg-${resourcePrefix}-${environment}-aue'
+var supportedExternalIdentityProviders = [
+  'apple'
+  'google'
+  'microsoft'
+]
+var invalidExternalIdentityProviders = filter(externalIdentityProviderAllowList, provider => !contains(supportedExternalIdentityProviders, provider))
+var externalIdentityConfigurationAbsent = empty(externalIdentityAuthority)
+  && empty(externalIdentityTenantId)
+  && empty(externalIdentityClientId)
+  && empty(externalIdentityCallbackUrl)
+  && empty(externalIdentityProviderAllowList)
+  && empty(externalIdentityClientSecretName)
+  && !externalIdentityClientSecretConfigured
+var externalIdentityBrokerConfigurationComplete = !empty(externalIdentityAuthority)
+  && !empty(externalIdentityTenantId)
+  && !empty(externalIdentityClientId)
+  && !empty(externalIdentityCallbackUrl)
+  && !empty(externalIdentityClientSecretName)
+  && externalIdentityClientSecretConfigured
+var externalIdentityActivationComplete = externalIdentityBrokerConfigurationComplete && !empty(externalIdentityProviderAllowList)
+
+assert externalIdentityProviderAllowListValid = empty(invalidExternalIdentityProviders)
+assert externalIdentityProviderAllowListUnique = length(union(externalIdentityProviderAllowList, externalIdentityProviderAllowList)) == length(externalIdentityProviderAllowList)
+assert externalIdentityAuthorityIsTlsCiam = empty(externalIdentityAuthority) || (startsWith(externalIdentityAuthority, 'https://') && contains(externalIdentityAuthority, '.ciamlogin.com/'))
+assert externalIdentityAuthorityMatchesTenant = empty(externalIdentityAuthority) || (!empty(externalIdentityTenantId) && contains(externalIdentityAuthority, externalIdentityTenantId))
+assert externalIdentityCallbackIsTls = empty(externalIdentityCallbackUrl) || (startsWith(externalIdentityCallbackUrl, 'https://') && endsWith(externalIdentityCallbackUrl, '/api/auth/external/callback'))
+assert externalIdentitySecretNameIsVaultRelative = empty(externalIdentityClientSecretName) || (!contains(externalIdentityClientSecretName, '/') && !contains(externalIdentityClientSecretName, '://'))
+assert externalIdentityConfigurationIsWhole = externalIdentityConfigurationAbsent || externalIdentityBrokerConfigurationComplete
+assert externalIdentityActivationIsDevOnly = !externalIdentityAdapterActivated || environment == 'dev'
+assert externalIdentityActivationIsComplete = !externalIdentityAdapterActivated || externalIdentityActivationComplete
 var commonTags = {
   product: 'Doculyra'
   environment: environment
@@ -99,6 +140,14 @@ module applications './modules/applications.bicep' = if (deployApplications) {
     dropboxAppSecretConfigured: dropboxAppSecretConfigured
     boxClientId: boxClientId
     boxClientSecretConfigured: boxClientSecretConfigured
+    externalIdentityAdapterActivated: externalIdentityAdapterActivated
+    externalIdentityAuthority: externalIdentityAuthority
+    externalIdentityTenantId: externalIdentityTenantId
+    externalIdentityClientId: externalIdentityClientId
+    externalIdentityCallbackUrl: externalIdentityCallbackUrl
+    externalIdentityProviderAllowList: externalIdentityProviderAllowList
+    externalIdentityClientSecretName: externalIdentityClientSecretName
+    externalIdentityClientSecretConfigured: externalIdentityClientSecretConfigured
     azureCommunicationServiceName: azureCommunicationServiceName
     azureCommunicationEndpoint: azureCommunicationEndpoint
     emailFromAddress: emailFromAddress
@@ -153,4 +202,7 @@ output webUrl string = deployApplications ? applications!.outputs.webUrl : ''
 output customerDataPolicy string = commonTags.customerData
 output ciClientId string = foundation.outputs.ciClientId
 output providerRegistrationMetadataConfigured bool = configureProviderRegistrations
+output externalIdentityActivated bool = externalIdentityAdapterActivated
+output externalIdentityConfiguredProviders array = externalIdentityProviderAllowList
+output externalIdentitySecretPresenceDeclared bool = externalIdentityClientSecretConfigured
 output notificationAdapterInfrastructureConfigured bool = configureNotificationAdapterInfrastructure
