@@ -341,6 +341,17 @@
       "parentDisplayAgentId": "ORCH-015",
       "workItem": "auth-preview-repair",
       "status": "COMPLETED"
+    },
+    {
+      "displayAgentId": "QA-FUNC-024",
+      "displayRole": "Independent Functional QA",
+      "displayRunId": "RUN-20260902-0095",
+      "runtimeAgentId": "codex-01a061a3-9c76-7b53-91e0-7d1a84f77a54",
+      "runtimeRunId": "run-qa-auth-preview-repair-20260902",
+      "roleId": "qa-release-lead",
+      "parentDisplayAgentId": "ORCH-015",
+      "workItem": "auth-preview-repair",
+      "status": "ACTIVE"
     }
   ]
 }
