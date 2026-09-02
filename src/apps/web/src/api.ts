@@ -3,6 +3,9 @@ import type { Answer, AuthSession, ConnectorDescriptor, DashboardSnapshot, Docum
 let csrfToken: string | undefined;
 let activeWorkspaceId: string | undefined;
 let workspaceCreationKey = crypto.randomUUID();
+let sessionRequestInFlight: Promise<AuthSession> | undefined;
+
+export const SESSION_REQUEST_TIMEOUT_MS = 8_000;
 
 function requestHeaders(path: string, init?: RequestInit): Headers {
   const headers = new Headers(init?.headers);
@@ -59,8 +62,27 @@ async function requestBlob(path: string): Promise<Blob> {
   return response.blob();
 }
 
+function requestSession(timeoutMs: number): Promise<AuthSession> {
+  if (sessionRequestInFlight) return sessionRequestInFlight;
+  const controller = new AbortController();
+  const timeout = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+  const operation = request<AuthSession>("/auth/session", { signal: controller.signal })
+    .catch((cause: unknown) => {
+      if (controller.signal.aborted) {
+        throw new Error("Doculyra took too long to respond.");
+      }
+      throw cause;
+    })
+    .finally(() => {
+      globalThis.clearTimeout(timeout);
+      if (sessionRequestInFlight === operation) sessionRequestInFlight = undefined;
+    });
+  sessionRequestInFlight = operation;
+  return operation;
+}
+
 export const api = {
-  session: () => request<AuthSession>("/auth/session"),
+  session: ({ timeoutMs = SESSION_REQUEST_TIMEOUT_MS }: { timeoutMs?: number } = {}) => requestSession(timeoutMs),
   register: (input: { displayName: string; email: string; password: string }) => request<AuthSession>("/auth/register", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }),
   login: (input: { email: string; password: string }) => request<AuthSession>("/auth/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input) }),
   logout: async () => {
