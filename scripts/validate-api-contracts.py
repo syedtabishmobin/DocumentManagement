@@ -27,7 +27,7 @@ RULE_ID = re.compile(r"(?<![A-Z0-9-])API-P1-[0-9]{3}\b")
 SCHEMA_NAME = re.compile(r"^evt-p1-([0-9]{3})-[a-z0-9-]+\.v1\.schema\.json$")
 EXAMPLE_NAME = re.compile(r"^evt-p1-([0-9]{3})-[a-z0-9-]+\.v1\.example\.json$")
 
-EXPECTED_OPERATIONS = set(range(101, 184))
+EXPECTED_OPERATIONS = set(range(101, 187))
 EXPECTED_EVENTS = set(range(1, 33))
 CONDITIONAL = {
     "API-P1-121",
@@ -49,6 +49,9 @@ CONDITIONAL = {
     "API-P1-181",
     "API-P1-182",
     "API-P1-183",
+    "API-P1-184",
+    "API-P1-185",
+    "API-P1-186",
 }
 DISABLED = {
     "API-P1-121",
@@ -454,12 +457,17 @@ def validate_openapi(errors: list[str], counts: dict[str, int]) -> None:
             operations[operation_id] = (method.upper(), path)
 
             security = operation.get("security")
-            if not isinstance(security, list) or not any(
-                isinstance(item, dict) and "bearerAuth" in item for item in security
-            ):
-                errors.append(f"{label}: explicit bearerAuth security required")
-            if operation.get("x-current-authorization-required") is not True:
-                errors.append(f"{label}: current authorization must be required")
+            account_entry = operation.get("x-scope") == "ACCOUNT_ENTRY"
+            if account_entry:
+                if security != [] or operation.get("x-current-authorization-required") is not False:
+                    errors.append(f"{label}: account entry must explicitly allow anonymous pre-session access")
+            else:
+                if not isinstance(security, list) or not any(
+                    isinstance(item, dict) and "bearerAuth" in item for item in security
+                ):
+                    errors.append(f"{label}: explicit bearerAuth security required")
+                if operation.get("x-current-authorization-required") is not True:
+                    errors.append(f"{label}: current authorization must be required")
 
             requirements = operation.get("x-requirements")
             if not isinstance(requirements, list) or not requirements:
@@ -489,6 +497,9 @@ def validate_openapi(errors: list[str], counts: dict[str, int]) -> None:
                         errors.append(f"{label}: required {key[0]} {key[1]} missing")
                 if operation.get("x-workspace-context") != "PATH_AND_HEADER":
                     errors.append(f"{label}: workspace context must be PATH_AND_HEADER")
+            elif account_entry:
+                if operation.get("x-workspace-context") != "NOT_ESTABLISHED":
+                    errors.append(f"{label}: account entry workspace context must be NOT_ESTABLISHED")
             elif operation_id != "API-P1-101":
                 errors.append(f"{label}: unexpected non-workspace scope")
             elif params.get(("header", "x-purpose-id"), {}).get("required") is not True:
@@ -497,7 +508,7 @@ def validate_openapi(errors: list[str], counts: dict[str, int]) -> None:
             command = operation.get("x-command") is True
             idempotent = operation.get("x-idempotency-required") is True
             idem_param = params.get(("header", "idempotency-key"))
-            if command and (
+            if command and not account_entry and (
                 not idempotent or not idem_param or idem_param.get("required") is not True
             ):
                 errors.append(f"{label}: command requires Idempotency-Key")
@@ -552,7 +563,8 @@ def validate_openapi(errors: list[str], counts: dict[str, int]) -> None:
                 )
             success = False
             for status, raw_response in responses.items():
-                if status == "default" or not str(status).startswith("2"):
+                accepted_redirect = operation_id == "API-P1-186" and str(status) == "303"
+                if status == "default" or (not str(status).startswith("2") and not accepted_redirect):
                     continue
                 success = True
                 response = dereference_openapi(raw_response, document, errors)
@@ -565,7 +577,7 @@ def validate_openapi(errors: list[str], counts: dict[str, int]) -> None:
                             OPENAPI,
                             errors,
                         )
-                elif status != "204":
+                elif status != "204" and not accepted_redirect:
                     errors.append(f"{label}: success {status} lacks content")
             if not success:
                 errors.append(f"{label}: a 2xx response is required")
@@ -577,7 +589,7 @@ def validate_openapi(errors: list[str], counts: dict[str, int]) -> None:
     }
     if numbers != EXPECTED_OPERATIONS:
         errors.append(
-            "operation inventory is not API-P1-101..183; "
+            "operation inventory is not API-P1-101..186; "
             f"missing={sorted(EXPECTED_OPERATIONS - numbers) or 'none'}, "
             f"extra={sorted(numbers - EXPECTED_OPERATIONS) or 'none'}"
         )

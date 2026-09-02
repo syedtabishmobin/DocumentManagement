@@ -45,7 +45,7 @@ describe("IdentityStore", () => {
     await store.logout(completed.credentials.token);
     expect(await store.session(completed.credentials.token)).toEqual({});
     const finalState = JSON.parse(await readFile(join(directory, "identity.json"), "utf8")) as { schemaVersion: number; securityEvents: Array<{ eventType: string; accountId: string; securityVersion: number }> };
-    expect(finalState.schemaVersion).toBe(3);
+    expect(finalState.schemaVersion).toBe(4);
     expect(finalState.securityEvents.map((event) => event.eventType)).toEqual(expect.arrayContaining(["SESSION_ISSUED", "SECURITY_STATE_ROTATED", "SESSION_LOGGED_OUT"]));
     expect(finalState.securityEvents.every((event) => event.accountId === registered.identity.account.id && event.securityVersion >= 1)).toBe(true);
     expect(JSON.stringify(finalState.securityEvents)).not.toContain("synthetic-password");

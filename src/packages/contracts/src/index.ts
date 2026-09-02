@@ -76,6 +76,22 @@ export const loginSchema = z.object({
   password: z.string().min(1).max(200),
 });
 
+export const externalIdentityProviderSchema = z.enum(["GOOGLE", "APPLE", "MICROSOFT"]);
+
+export const externalIdentityStartSchema = z.object({
+  provider: externalIdentityProviderSchema,
+  returnPath: z.enum(["/app", "/app/documents", "/app/settings", "/app/security"]).default("/app"),
+}).strict();
+
+export const externalIdentityCallbackSchema = z.object({
+  state: z.string().min(32).max(200),
+  code: z.string().min(1).max(4096).optional(),
+  error: z.string().max(120).optional(),
+  error_description: z.string().max(500).optional(),
+}).strict().superRefine((value, context) => {
+  if (Boolean(value.code) === Boolean(value.error)) context.addIssue({ code: "custom", message: "Exactly one callback outcome is required" });
+});
+
 export const configureWorkspaceSchema = z.object({
   name: z.string().trim().min(1).max(120),
   type: z.enum(["PERSONAL", "FAMILY"]),
@@ -218,6 +234,9 @@ export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type CreateMemberInput = z.infer<typeof createMemberSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type ExternalIdentityProvider = z.infer<typeof externalIdentityProviderSchema>;
+export type ExternalIdentityStartInput = z.infer<typeof externalIdentityStartSchema>;
+export type ExternalIdentityCallbackInput = z.infer<typeof externalIdentityCallbackSchema>;
 export type ConfigureWorkspaceInput = z.infer<typeof configureWorkspaceSchema>;
 export type CanonicalCreateWorkspaceInput = z.infer<typeof canonicalCreateWorkspaceSchema>;
 export type CanonicalCreateSubjectInput = z.infer<typeof canonicalCreateSubjectSchema>;

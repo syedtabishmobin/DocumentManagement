@@ -19,7 +19,7 @@
 | Namespace | Owner | Coverage |
 |---|---|---|
 | `API-P1-001`–`API-P1-052` | `API-STD-001` | HTTP/API rules, context, errors, paging, compatibility, concurrency, idempotency, jobs, artifacts, privacy, and decision fences |
-| `API-P1-101`–`API-P1-183` | `API-OAS-001` | Eighty-three stable HTTP operation IDs and their wire contracts |
+| `API-P1-101`–`API-P1-186` | `API-OAS-001` | Eighty-six stable HTTP operation IDs and their wire contracts |
 | `EVT-P1-001`–`EVT-P1-032` | `API-EVT-001` and `events/` | Domain/integration event types, common envelope, schemas, examples, ordering, replay, and privacy |
 | `CON-P1-001`–`CON-P1-050` | `API-CON-001` | Provider-neutral import, external-action, notification, source, and processing adapter contracts |
 

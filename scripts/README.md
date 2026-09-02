@@ -67,7 +67,7 @@ Run from the repository root:
 python3 scripts/validate-api-contracts.py
 ```
 
-This standard-library validator parses the OpenAPI 3.1 contract and every event schema/example; rejects duplicate JSON keys and non-local or unresolved references; checks the exact, unique `API-P1-101`–`183` and `EVT-P1-001`–`032` inventories; enforces bearer security, workspace/purpose context, command idempotency, optimistic concurrency, and open-decision fences; and validates request, response, and event examples against their declared schemas.
+This standard-library validator parses the OpenAPI 3.1 contract and every event schema/example; rejects duplicate JSON keys and non-local or unresolved references; checks the exact, unique `API-P1-101`–`186` and `EVT-P1-001`–`032` inventories; enforces authenticated workspace operations and explicitly anonymous account-entry boundaries, command idempotency where applicable, optimistic concurrency, and open-decision fences; and validates request, response, and event examples against their declared schemas.
 
 ## Test traceability and fixture validation
 
