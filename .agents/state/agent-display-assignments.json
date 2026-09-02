@@ -308,6 +308,39 @@
       "parentDisplayAgentId": "ORCH-011",
       "workItem": "issue-65/story-p1-007",
       "status": "ACTIVE"
+    },
+    {
+      "displayAgentId": "ORCH-015",
+      "displayRole": "Framework Delivery Orchestrator",
+      "displayRunId": "RUN-20260902-0092",
+      "runtimeAgentId": "codex-01a051b3-63fa-7c63-be4a-37d664579315",
+      "runtimeRunId": "run-auth-preview-repair-20260902",
+      "roleId": "delivery-orchestrator",
+      "parentDisplayAgentId": "NONE",
+      "workItem": "auth-preview-repair",
+      "status": "ACTIVE"
+    },
+    {
+      "displayAgentId": "ORCH-016",
+      "displayRole": "Framework Delivery Orchestrator",
+      "displayRunId": "RUN-20260902-0093",
+      "runtimeAgentId": "codex-01a06187-8968-7522-a1e9-461d63e91ad4",
+      "runtimeRunId": "run-dev-auth-preview-repair-20260902",
+      "roleId": "delivery-orchestrator",
+      "parentDisplayAgentId": "ORCH-015",
+      "workItem": "auth-preview-repair",
+      "status": "COMPLETED"
+    },
+    {
+      "displayAgentId": "OPS-001",
+      "displayRole": "Agent Operations Lead",
+      "displayRunId": "RUN-20260902-0094",
+      "runtimeAgentId": "codex-01a06187-89c7-79b3-bd92-54f3ee0026af",
+      "runtimeRunId": "run-ci-efficiency-analysis-20260902",
+      "roleId": "agent-operations-lead",
+      "parentDisplayAgentId": "ORCH-015",
+      "workItem": "auth-preview-repair",
+      "status": "COMPLETED"
     }
   ]
 }

@@ -19,6 +19,70 @@ describe("authentication, session and DEC-038 security boundary", () => {
     delete process.env.DM_DATA_DIR;
   });
 
+  it("returns actionable privacy-safe 400 responses for malformed account entry without weakening authentication controls", async () => {
+    const app = await NestFactory.create(AppModule, { logger: false });
+    app.setGlobalPrefix("api");
+    await app.listen(0, "127.0.0.1");
+    try {
+      const base = `http://127.0.0.1:${(app.getHttpServer().address() as AddressInfo).port}/api`;
+      const origin = "http://localhost:4173";
+      const request = (path: "register" | "login", body: unknown, requestOrigin = origin) => fetch(`${base}/auth/${path}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Origin: requestOrigin },
+        body: JSON.stringify(body),
+      });
+
+      const invalidRegistration = await request("register", { displayName: "", email: "not-an-email", password: "short", privateCanary: "do-not-return-auth-canary" });
+      expect(invalidRegistration.status).toBe(400);
+      expect(invalidRegistration.headers.get("set-cookie")).toBeNull();
+      const registrationError = await invalidRegistration.text();
+      expect(registrationError).toContain("Enter a name between 1 and 120 characters");
+      expect(registrationError).toContain("Enter a valid email address");
+      expect(registrationError).toContain("Use a password between 10 and 200 characters");
+      expect(registrationError).not.toContain("do-not-return-auth-canary");
+      expect(registrationError).not.toContain("ZodError");
+
+      const invalidLogin = await request("login", { email: "not-an-email", password: "" });
+      expect(invalidLogin.status).toBe(400);
+      expect(await invalidLogin.json()).toMatchObject({
+        statusCode: 400,
+        message: ["Enter a valid email address", "Enter your password"],
+      });
+
+      const validRegistration = await request("register", { displayName: "Preview Synthetic Owner", email: "preview-owner@example.test", password: "synthetic-password" });
+      expect(validRegistration.status).toBe(201);
+      expect(validRegistration.headers.get("set-cookie")).toMatch(/HttpOnly; SameSite=Strict/);
+      const registrationCookie = validRegistration.headers.get("set-cookie")!.split(";")[0]!;
+      const registrationCsrf = validRegistration.headers.get("x-csrf-token")!;
+
+      const duplicate = await request("register", { displayName: "Another Synthetic Owner", email: "preview-owner@example.test", password: "another-password" });
+      expect(duplicate.status).toBe(409);
+      expect(await duplicate.json()).toMatchObject({ message: "Unable to create an account with those details" });
+
+      const wrongCredentials = await request("login", { email: "preview-owner@example.test", password: "wrong-password" });
+      expect(wrongCredentials.status).toBe(401);
+      expect(await wrongCredentials.json()).toMatchObject({ message: "Email or password is incorrect" });
+
+      const logout = await fetch(`${base}/auth/logout`, {
+        method: "POST",
+        headers: { Origin: origin, Cookie: registrationCookie, "X-CSRF-Token": registrationCsrf },
+      });
+      expect(logout.status).toBe(201);
+      expect(await logout.json()).toEqual({ signedOut: true });
+      expect(await (await fetch(`${base}/auth/session`, { headers: { Cookie: registrationCookie } })).json()).toMatchObject({ authenticated: false });
+
+      const validLogin = await request("login", { email: "preview-owner@example.test", password: "synthetic-password" });
+      expect(validLogin.status).toBe(201);
+      expect(validLogin.headers.get("set-cookie")).toMatch(/HttpOnly; SameSite=Strict/);
+
+      const untrustedOrigin = await request("login", { email: "preview-owner@example.test", password: "synthetic-password" }, "https://untrusted.example.test");
+      expect(untrustedOrigin.status).toBe(403);
+      expect(await untrustedOrigin.json()).toMatchObject({ message: "Request could not be authorized" });
+    } finally {
+      await app.close();
+    }
+  });
+
   it("rotates and revokes bounded sessions while API-P1-181 remains idempotently policy blocked", async () => {
     const app = await NestFactory.create(AppModule, { logger: false });
     app.setGlobalPrefix("api");

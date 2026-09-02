@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, ForbiddenException, Get, Inject, NotFoundException, Param, Post, Req, Res } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, Inject, NotFoundException, Param, Post, Req, Res } from "@nestjs/common";
 import { createHash } from "node:crypto";
 import type { Request, Response } from "express";
 import { loginSchema, registerSchema, selectWorkspaceSchema, type AuthSession, type WorkspaceSummary } from "@document-management/contracts";
@@ -44,6 +44,17 @@ export function clientFingerprint(request: Request): string {
 
 export function actorFor(identity: AuthenticatedIdentity): WorkspaceActor {
   return { identityId: identity.account.id, displayName: identity.account.displayName };
+}
+
+type AuthInputKind = "register" | "login";
+
+function invalidAuthInput(kind: AuthInputKind, issues: ReadonlyArray<{ path: ReadonlyArray<PropertyKey> }>): BadRequestException {
+  const invalidFields = new Set(issues.map((issue) => issue.path[0]).filter((field): field is string => typeof field === "string"));
+  const messages: string[] = [];
+  if (kind === "register" && invalidFields.has("displayName")) messages.push("Enter a name between 1 and 120 characters");
+  if (invalidFields.has("email")) messages.push("Enter a valid email address");
+  if (invalidFields.has("password")) messages.push(kind === "register" ? "Use a password between 10 and 200 characters" : "Enter your password");
+  return new BadRequestException(messages.length > 0 ? messages : "Check the account details and try again");
 }
 
 export function authSession(identity: AuthenticatedIdentity, workspaces: WorkspaceSummary[]): AuthSession {
@@ -101,7 +112,9 @@ export class AuthController {
   @Post("register")
   async register(@Body() body: unknown, @Req() request: Request, @Res({ passthrough: true }) response: Response): Promise<AuthSession> {
     assertTrustedOrigin(request);
-    const result = await this.identities.register(registerSchema.parse(body));
+    const parsed = registerSchema.safeParse(body);
+    if (!parsed.success) throw invalidAuthInput("register", parsed.error.issues);
+    const result = await this.identities.register(parsed.data);
     setSessionCredentials(response, result.credentials);
     return this.enrich(result.identity);
   }
@@ -109,7 +122,9 @@ export class AuthController {
   @Post("login")
   async login(@Body() body: unknown, @Req() request: Request, @Res({ passthrough: true }) response: Response): Promise<AuthSession> {
     assertTrustedOrigin(request);
-    let result = await this.identities.login(loginSchema.parse(body), clientFingerprint(request));
+    const parsed = loginSchema.safeParse(body);
+    if (!parsed.success) throw invalidAuthInput("login", parsed.error.issues);
+    let result = await this.identities.login(parsed.data, clientFingerprint(request));
     let summaries = await this.workspaces.listWorkspaces(result.identity.account.id);
     if (result.identity.onboardingComplete && summaries.length === 0) {
       await this.workspaces.claimLegacyWorkspace(actorFor(result.identity));

@@ -25,6 +25,16 @@ describe("Doculyra public experience", () => {
     expect(markup).toContain("Use a passkey");
   });
 
+  it("visibly explains the DEC-038 recovery boundary without offering a reset or transfer action", () => {
+    const markup = renderToStaticMarkup(<AuthScreen initialMode="login" onAuthenticated={() => undefined} />);
+
+    expect(markup).toContain("Can’t sign in? Account recovery is not available yet.");
+    expect(markup).toContain("cannot reset access or transfer a workspace owner");
+    expect(markup).toContain('aria-expanded="false"');
+    expect(markup).not.toMatch(/forgot password|reset password|upload evidence/i);
+    expect(markup).not.toMatch(/href="[^"]*(recovery|reset)/i);
+  });
+
   it("publishes distinct privacy and terms pages with truthful preview boundaries", () => {
     const privacy = renderToStaticMarkup(<LegalPage kind="privacy" />);
     const terms = renderToStaticMarkup(<LegalPage kind="terms" />);
